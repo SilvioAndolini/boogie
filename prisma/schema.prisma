@@ -1,7 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
+// Esquema de Base de Datos — Boogie
+// Proveedor: PostgreSQL (Supabase)
 
 generator client {
   provider = "prisma-client"
@@ -10,4 +8,393 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+// =============================================
+// USUARIOS
+// =============================================
+
+model Usuario {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  nombre          String
+  apellido        String
+  telefono        String?
+  avatarUrl       String?  @map("avatar_url")
+  cedula          String?  @unique
+  verificado      Boolean  @default(false)
+  rol             Rol      @default(HUESPED)
+  bio             String?  @db.Text
+  fechaRegistro   DateTime @default(now()) @map("fecha_registro")
+  ultimaActividad DateTime @default(now()) @map("ultima_actividad")
+  activo          Boolean  @default(true)
+
+  propiedades       Propiedad[]     @relation("Propietario")
+  reservasComoHuesped Reserva[]     @relation("Huesped")
+  resenasEscritas   Resena[]        @relation("AutorResena")
+  resenasRecibidas  Resena[]        @relation("AnfitrionResena")
+  metodosPago       MetodoPago[]
+  notificaciones    Notificacion[]
+  pagos             Pago[]
+
+  @@map("usuarios")
+}
+
+enum Rol {
+  HUESPED
+  ANFITRION
+  AMBOS
+  ADMIN
+}
+
+// =============================================
+// PROPIEDADES
+// =============================================
+
+model Propiedad {
+  id                String            @id @default(cuid())
+  titulo            String
+  descripcion       String            @db.Text
+  tipoPropiedad     TipoPropiedad     @map("tipo_propiedad")
+  precioPorNoche    Decimal           @map("precio_por_noche") @db.Decimal(10, 2)
+  moneda            Moneda            @default(USD)
+  capacidadMaxima   Int               @map("capacidad_maxima")
+  habitaciones      Int               @default(1)
+  banos             Int               @default(1)
+  camas             Int               @default(1)
+
+  direccion         String
+  ciudad            String
+  estado            String
+  zona              String?
+  latitud           Float?
+  longitud          Float?
+  codigoPostal      String?           @map("codigo_postal")
+
+  reglas            String?           @db.Text
+  politicaCancelacion PoliticaCancelacion @default(MODERADA) @map("politica_cancelacion")
+  horarioCheckIn    String?           @map("horario_checkin") @default("14:00")
+  horarioCheckOut   String?           @map("horario_checkout") @default("11:00")
+  estanciaMinima    Int               @default(1) @map("estancia_minima")
+  estanciaMaxima    Int?              @map("estancia_maxima")
+
+  estadoPublicacion EstadoPublicacion @default(BORRADOR) @map("estado_publicacion")
+  destacada         Boolean           @default(false)
+  fechaPublicacion  DateTime?         @map("fecha_publicacion")
+  fechaActualizacion DateTime         @default(now()) @updatedAt @map("fecha_actualizacion")
+
+  vistasTotales     Int               @default(0) @map("vistas_totales")
+  ratingPromedio    Float?            @map("rating_promedio")
+  totalResenas      Int               @default(0) @map("total_resenas")
+
+  propietarioId     String            @map("propietario_id")
+  propietario       Usuario           @relation("Propietario", fields: [propietarioId], references: [id])
+  imagenes          ImagenPropiedad[]
+  amenidades        PropiedadAmenidad[]
+  reservas          Reserva[]
+  resenas           Resena[]
+  fechasBloqueadas  FechaBloqueada[]
+  preciosEspeciales PrecioEspecial[]
+
+  @@index([ciudad])
+  @@index([estado])
+  @@index([estadoPublicacion])
+  @@index([precioPorNoche])
+  @@index([ratingPromedio])
+  @@map("propiedades")
+}
+
+enum TipoPropiedad {
+  APARTAMENTO
+  CASA
+  VILLA
+  CABANA
+  ESTUDIO
+  HABITACION
+  LOFT
+  PENTHOUSE
+  FINCA
+  OTRO
+}
+
+enum Moneda {
+  USD
+  VES
+}
+
+enum PoliticaCancelacion {
+  FLEXIBLE
+  MODERADA
+  ESTRICTA
+}
+
+enum EstadoPublicacion {
+  BORRADOR
+  PENDIENTE_REVISION
+  PUBLICADA
+  PAUSADA
+  SUSPENDIDA
+}
+
+// =============================================
+// IMAGENES DE PROPIEDADES
+// =============================================
+
+model ImagenPropiedad {
+  id          String    @id @default(cuid())
+  url         String
+  alt         String?
+  orden       Int       @default(0)
+  esPrincipal Boolean   @default(false) @map("es_principal")
+  propiedadId String    @map("propiedad_id")
+  propiedad   Propiedad @relation(fields: [propiedadId], references: [id], onDelete: Cascade)
+  fechaSubida DateTime  @default(now()) @map("fecha_subida")
+
+  @@map("imagenes_propiedad")
+}
+
+// =============================================
+// AMENIDADES
+// =============================================
+
+model Amenidad {
+  id          String              @id @default(cuid())
+  nombre      String              @unique
+  icono       String?
+  categoria   CategoriaAmenidad
+  propiedades PropiedadAmenidad[]
+
+  @@map("amenidades")
+}
+
+enum CategoriaAmenidad {
+  ESENCIALES
+  COMODIDADES
+  SEGURIDAD
+  ENTRETENIMIENTO
+  EXTERIOR
+  COCINA
+  BANO
+  SERVICIOS
+}
+
+model PropiedadAmenidad {
+  propiedadId String    @map("propiedad_id")
+  amenidadId  String    @map("amenidad_id")
+  propiedad   Propiedad @relation(fields: [propiedadId], references: [id], onDelete: Cascade)
+  amenidad    Amenidad  @relation(fields: [amenidadId], references: [id])
+
+  @@id([propiedadId, amenidadId])
+  @@map("propiedad_amenidades")
+}
+
+// =============================================
+// RESERVAS
+// =============================================
+
+model Reserva {
+  id                  String        @id @default(cuid())
+  codigo              String        @unique @default(cuid())
+
+  fechaEntrada        DateTime      @map("fecha_entrada")
+  fechaSalida         DateTime      @map("fecha_salida")
+  noches              Int
+
+  precioPorNoche      Decimal       @map("precio_por_noche") @db.Decimal(10, 2)
+  subtotal            Decimal       @db.Decimal(10, 2)
+  comisionPlataforma  Decimal       @map("comision_plataforma") @db.Decimal(10, 2)
+  comisionAnfitrion   Decimal?      @map("comision_anfitrion") @db.Decimal(10, 2)
+  total               Decimal       @db.Decimal(10, 2)
+  moneda              Moneda        @default(USD)
+
+  estado              EstadoReserva @default(PENDIENTE)
+  fechaCreacion       DateTime      @default(now()) @map("fecha_creacion")
+  fechaConfirmacion   DateTime?     @map("fecha_confirmacion")
+  fechaCancelacion    DateTime?     @map("fecha_cancelacion")
+
+  cantidadHuespedes   Int           @default(1) @map("cantidad_huespedes")
+  notasHuesped        String?       @map("notas_huesped") @db.Text
+  notasInternas       String?       @map("notas_internas") @db.Text
+
+  propiedadId         String        @map("propiedad_id")
+  propiedad           Propiedad     @relation(fields: [propiedadId], references: [id])
+  huespedId           String        @map("huesped_id")
+  huesped             Usuario       @relation("Huesped", fields: [huespedId], references: [id])
+  pagos               Pago[]
+  resena              Resena?
+
+  @@index([propiedadId, fechaEntrada, fechaSalida])
+  @@index([huespedId])
+  @@index([estado])
+  @@map("reservas")
+}
+
+enum EstadoReserva {
+  PENDIENTE
+  CONFIRMADA
+  EN_CURSO
+  COMPLETADA
+  CANCELADA_HUESPED
+  CANCELADA_ANFITRION
+  RECHAZADA
+}
+
+// =============================================
+// PAGOS
+// =============================================
+
+model Pago {
+  id                  String          @id @default(cuid())
+
+  monto               Decimal         @db.Decimal(10, 2)
+  moneda              Moneda          @default(USD)
+  montoEquivalente    Decimal?        @map("monto_equivalente") @db.Decimal(10, 2)
+  monedaEquivalente   String?         @map("moneda_equivalente")
+  tasaCambio          Decimal?        @map("tasa_cambio") @db.Decimal(12, 6)
+
+  metodoPago          MetodoPagoEnum  @map("metodo_pago")
+  referencia          String?
+  comprobante         String?
+
+  estado              EstadoPago      @default(PENDIENTE)
+  fechaCreacion       DateTime        @default(now()) @map("fecha_creacion")
+  fechaVerificacion   DateTime?       @map("fecha_verificacion")
+  fechaAcreditacion   DateTime?       @map("fecha_acreditacion")
+
+  verificadoPor       String?         @map("verificado_por")
+  notasVerificacion   String?         @map("notas_verificacion") @db.Text
+
+  reservaId           String          @map("reserva_id")
+  reserva             Reserva         @relation(fields: [reservaId], references: [id])
+  usuarioId           String          @map("usuario_id")
+  usuario             Usuario         @relation(fields: [usuarioId], references: [id])
+
+  @@index([estado])
+  @@index([reservaId])
+  @@map("pagos")
+}
+
+enum MetodoPagoEnum {
+  TRANSFERENCIA_BANCARIA
+  PAGO_MOVIL
+  ZELLE
+  EFECTIVO_FARMATODO
+  USDT
+  TARJETA_INTERNACIONAL
+  EFECTIVO
+}
+
+enum EstadoPago {
+  PENDIENTE
+  EN_VERIFICACION
+  VERIFICADO
+  ACREDITADO
+  RECHAZADO
+  REEMBOLSADO
+}
+
+// =============================================
+// METODOS DE PAGO DEL USUARIO
+// =============================================
+
+model MetodoPago {
+  id            String          @id @default(cuid())
+  tipo          MetodoPagoEnum
+  banco         String?
+  numeroCuenta  String?         @map("numero_cuenta")
+  titular       String?
+  cedula        String?
+  emailZelle    String?         @map("email_zelle")
+  direccionUSDT String?         @map("direccion_usdt")
+  activo        Boolean         @default(true)
+  principal     Boolean         @default(false)
+  usuarioId     String          @map("usuario_id")
+  usuario       Usuario         @relation(fields: [usuarioId], references: [id])
+
+  @@map("metodos_pago")
+}
+
+// =============================================
+// RESEÑAS
+// =============================================
+
+model Resena {
+  id            String    @id @default(cuid())
+  calificacion  Int
+  limpieza      Int?
+  comunicacion  Int?
+  ubicacion     Int?
+  valor         Int?
+  comentario    String    @db.Text
+  respuesta     String?   @db.Text
+  fechaCreacion DateTime  @default(now()) @map("fecha_creacion")
+  fechaRespuesta DateTime? @map("fecha_respuesta")
+
+  propiedadId   String    @map("propiedad_id")
+  propiedad     Propiedad @relation(fields: [propiedadId], references: [id])
+  autorId       String    @map("autor_id")
+  autor         Usuario   @relation("AutorResena", fields: [autorId], references: [id])
+  anfitrionId   String    @map("anfitrion_id")
+  anfitrion     Usuario   @relation("AnfitrionResena", fields: [anfitrionId], references: [id])
+  reservaId     String    @unique @map("reserva_id")
+  reserva       Reserva   @relation(fields: [reservaId], references: [id])
+
+  @@map("resenas")
+}
+
+// =============================================
+// FECHAS BLOQUEADAS Y PRECIOS ESPECIALES
+// =============================================
+
+model FechaBloqueada {
+  id          String    @id @default(cuid())
+  fechaInicio DateTime  @map("fecha_inicio")
+  fechaFin    DateTime  @map("fecha_fin")
+  motivo      String?
+  propiedadId String    @map("propiedad_id")
+  propiedad   Propiedad @relation(fields: [propiedadId], references: [id], onDelete: Cascade)
+
+  @@map("fechas_bloqueadas")
+}
+
+model PrecioEspecial {
+  id              String    @id @default(cuid())
+  nombre          String
+  fechaInicio     DateTime  @map("fecha_inicio")
+  fechaFin        DateTime  @map("fecha_fin")
+  precioPorNoche  Decimal   @map("precio_por_noche") @db.Decimal(10, 2)
+  propiedadId     String    @map("propiedad_id")
+  propiedad       Propiedad @relation(fields: [propiedadId], references: [id], onDelete: Cascade)
+
+  @@map("precios_especiales")
+}
+
+// =============================================
+// NOTIFICACIONES
+// =============================================
+
+model Notificacion {
+  id            String            @id @default(cuid())
+  tipo          TipoNotificacion
+  titulo        String
+  mensaje       String            @db.Text
+  leida         Boolean           @default(false)
+  urlAccion     String?           @map("url_accion")
+  fechaCreacion DateTime          @default(now()) @map("fecha_creacion")
+  usuarioId     String            @map("usuario_id")
+  usuario       Usuario           @relation(fields: [usuarioId], references: [id])
+
+  @@index([usuarioId, leida])
+  @@map("notificaciones")
+}
+
+enum TipoNotificacion {
+  NUEVA_RESERVA
+  RESERVA_CONFIRMADA
+  RESERVA_CANCELADA
+  NUEVA_RESENA
+  PAGO_RECIBIDO
+  PAGO_VERIFICADO
+  RECORDATORIO
+  SISTEMA
 }
