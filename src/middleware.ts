@@ -11,6 +11,7 @@ const RUTAS_PUBLICAS = [
   '/login',
   '/registro',
   '/recuperar-contrasena',
+  '/verificar-email',
 ]
 
 // Verifica si una ruta coincide con un patrón público
@@ -25,14 +26,21 @@ function esRutaPublica(pathname: string): boolean {
 }
 
 export async function middleware(request: NextRequest) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  // Si no hay credenciales de Supabase, permitir acceso sin autenticación
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.warn('[middleware] Supabase credentials not configured, skipping auth')
+    return NextResponse.next({ request })
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   })
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
+  try {
+    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
       cookies: {
         getAll() {
           return request.cookies.getAll()
@@ -47,24 +55,28 @@ export async function middleware(request: NextRequest) {
           )
         },
       },
+    })
+
+    // Refrescar la sesión del usuario
+    const { data: { user } } = await supabase.auth.getUser()
+
+    const { pathname } = request.nextUrl
+
+    // Redirigir usuarios autenticados lejos de páginas de auth
+    if (user && (pathname.startsWith('/login') || pathname.startsWith('/registro'))) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
     }
-  )
 
-  // Refrescar la sesión del usuario
-  const { data: { user } } = await supabase.auth.getUser()
-
-  const { pathname } = request.nextUrl
-
-  // Redirigir usuarios autenticados lejos de páginas de auth
-  if (user && (pathname.startsWith('/login') || pathname.startsWith('/registro'))) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
-  }
-
-  // Proteger rutas del panel y API
-  if (!user && !esRutaPublica(pathname) && !pathname.startsWith('/api/auth')) {
-    const redirectUrl = new URL('/login', request.url)
-    redirectUrl.searchParams.set('redirect', pathname)
-    return NextResponse.redirect(redirectUrl)
+    // Proteger rutas del panel y API
+    if (!user && !esRutaPublica(pathname) && !pathname.startsWith('/api/auth')) {
+      const redirectUrl = new URL('/login', request.url)
+      redirectUrl.searchParams.set('redirect', pathname)
+      return NextResponse.redirect(redirectUrl)
+    }
+  } catch (error) {
+    // Si hay cualquier error con Supabase, permitir acceso para no romper la app
+    console.error('[middleware] Error during auth check:', error)
+    return NextResponse.next({ request })
   }
 
   return supabaseResponse
