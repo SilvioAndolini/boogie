@@ -2,17 +2,33 @@
 import { SearchBar } from '@/components/busqueda/search-bar'
 import { PropertyFiltersWrapper } from './filters-wrapper'
 import { PropertyGrid } from '@/components/propiedades/property-grid'
+import { getPropiedadesPublicas } from '@/actions/propiedad.actions'
 import type { Metadata } from 'next'
+import type { PropiedadCard } from '@/components/propiedades/property-card'
 
 export const metadata: Metadata = {
   title: 'Explorar propiedades',
   description: 'Encuentra el alojamiento perfecto en Venezuela. Filtra por ubicación, precio, tipo de propiedad y más.',
 }
 
-// Datos de ejemplo para mostrar cuando no hay conexión a BD
-const PROPIEDADES_PLACEHOLDER: never[] = []
+export const dynamic = 'force-dynamic'
 
-export default function PropiedadesPage() {
+export default async function PropiedadesPage() {
+  const resultado = await getPropiedadesPublicas()
+
+  const propiedades: PropiedadCard[] = resultado.datos.map((p) => ({
+    id: p.id,
+    titulo: p.titulo,
+    tipoPropiedad: p.tipoPropiedad as PropiedadCard['tipoPropiedad'],
+    precioPorNoche: Number(p.precioPorNoche),
+    moneda: p.moneda as PropiedadCard['moneda'],
+    ciudad: p.ciudad,
+    estado: p.estado,
+    ratingPromedio: p.ratingPromedio ?? 0,
+    totalResenas: p.totalResenas,
+    imagenes: p.imagenes.map((img) => img.url),
+  }))
+
   return (
     <div className="min-h-screen bg-[#FEFCF9]">
       {/* Barra de búsqueda */}
@@ -39,10 +55,10 @@ export default function PropiedadesPage() {
                 Propiedades disponibles
               </h1>
               <span className="text-sm text-[#6B6560]">
-                {PROPIEDADES_PLACEHOLDER.length} resultados
+                {resultado.total} resultado{resultado.total !== 1 ? 's' : ''}
               </span>
             </div>
-            <PropertyGrid propiedades={PROPIEDADES_PLACEHOLDER} />
+            <PropertyGrid propiedades={propiedades} />
           </div>
         </div>
       </section>

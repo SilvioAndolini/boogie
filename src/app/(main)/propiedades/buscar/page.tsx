@@ -1,19 +1,20 @@
 // Página de resultados de búsqueda
 import { SearchBar } from '@/components/busqueda/search-bar'
 import { PropertyGrid } from '@/components/propiedades/property-grid'
+import { getPropiedadesPublicas } from '@/actions/propiedad.actions'
 import type { Metadata } from 'next'
+import type { PropiedadCard } from '@/components/propiedades/property-card'
 
 export const metadata: Metadata = {
   title: 'Buscar propiedades',
   description: 'Resultados de búsqueda de alojamientos en Venezuela.',
 }
 
-// Interfaz de parámetros de búsqueda
+export const dynamic = 'force-dynamic'
+
 interface BuscarPageProps {
   searchParams: Promise<{
     ubicacion?: string
-    fechaEntrada?: string
-    fechaSalida?: string
     huespedes?: string
     tipoPropiedad?: string
     precioMin?: string
@@ -24,8 +25,26 @@ interface BuscarPageProps {
 export default async function BuscarPage({ searchParams }: BuscarPageProps) {
   const filtros = await searchParams
 
-  // Datos placeholder — en producción se conectaría con la BD
-  const propiedades: never[] = []
+  const resultado = await getPropiedadesPublicas({
+    ubicacion: filtros.ubicacion,
+    precioMin: filtros.precioMin ? Number(filtros.precioMin) : undefined,
+    precioMax: filtros.precioMax ? Number(filtros.precioMax) : undefined,
+    huespedes: filtros.huespedes ? Number(filtros.huespedes) : undefined,
+    tipoPropiedad: filtros.tipoPropiedad,
+  })
+
+  const propiedades: PropiedadCard[] = resultado.datos.map((p) => ({
+    id: p.id,
+    titulo: p.titulo,
+    tipoPropiedad: p.tipoPropiedad as PropiedadCard['tipoPropiedad'],
+    precioPorNoche: Number(p.precioPorNoche),
+    moneda: p.moneda as PropiedadCard['moneda'],
+    ciudad: p.ciudad,
+    estado: p.estado,
+    ratingPromedio: p.ratingPromedio ?? 0,
+    totalResenas: p.totalResenas,
+    imagenes: p.imagenes.map((img) => img.url),
+  }))
 
   return (
     <div className="min-h-screen bg-[#FEFCF9]">
@@ -38,7 +57,6 @@ export default async function BuscarPage({ searchParams }: BuscarPageProps) {
 
       {/* Resultados */}
       <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Resumen de búsqueda */}
         <div className="mb-6">
           <h1 className="text-xl font-bold text-[#1A1A1A]">
             {filtros.ubicacion
@@ -51,11 +69,10 @@ export default async function BuscarPage({ searchParams }: BuscarPageProps) {
             </p>
           )}
           <p className="mt-1 text-sm text-[#6B6560]">
-            {propiedades.length} resultado{propiedades.length !== 1 ? 's' : ''}
+            {resultado.total} resultado{resultado.total !== 1 ? 's' : ''}
           </p>
         </div>
 
-        {/* Cuadrícula de resultados */}
         <PropertyGrid propiedades={propiedades} />
       </section>
     </div>
