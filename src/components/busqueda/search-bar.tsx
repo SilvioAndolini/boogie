@@ -32,6 +32,9 @@ const TIPO_ICON_MAP: Record<string, typeof Building2> = {
   Lugar: MapPin,
 }
 
+const MAX_GUESTS = 20
+const MIN_GUESTS = 1
+
 function getIconForTipo(tipo: string) {
   return TIPO_ICON_MAP[tipo] ?? MapPin
 }
@@ -102,11 +105,15 @@ const VENEZUELA_LOCATIONS: LocationResult[] = [
   { tipo: 'Zona', nombre: 'Altos de Pipe', detalle: 'Miranda' },
 ]
 
+const VENEZUELA_LOCATIONS_INDEX = VENEZUELA_LOCATIONS.map(loc => ({
+  ...loc,
+  nombreLower: loc.nombre.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''),
+}))
+
 function searchLocal(query: string): LocationResult[] {
   const lower = query.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-  return VENEZUELA_LOCATIONS.filter((loc) => {
-    const name = loc.nombre.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    return name.includes(lower)
+  return VENEZUELA_LOCATIONS_INDEX.filter((loc) => {
+    return loc.nombreLower.includes(lower)
   }).slice(0, 8)
 }
 
@@ -142,8 +149,8 @@ function GuestPickerPopup({
   const count = parseInt(guests) || 1
 
   const updateCount = (newCount: number) => {
-    if (newCount < 1) newCount = 1
-    if (newCount > 20) newCount = 20
+    if (newCount < MIN_GUESTS) newCount = MIN_GUESTS
+    if (newCount > MAX_GUESTS) newCount = MAX_GUESTS
     onGuestsChange(String(newCount))
   }
 
@@ -392,7 +399,13 @@ export function SearchBar() {
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current)
+        debounceRef.current = null
+      }
+    }
   }, [])
 
   const fetchResults = useCallback(async (query: string) => {

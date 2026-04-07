@@ -22,6 +22,14 @@ interface PropiedadMapa {
   totalResenas: number
 }
 
+interface MarkerElement extends HTMLDivElement {
+  _cleanupHandlers?: {
+    mouseenter: () => void
+    mouseleave: () => void
+    click: () => void
+  }
+}
+
 function buildPopupHTML(p: PropiedadMapa): string {
   const img = p.imagenUrl
     ? `<img src="${p.imagenUrl}" style="width:60px;height:60px;border-radius:10px;object-fit:cover;flex-shrink:0" />`
@@ -48,13 +56,14 @@ function buildPopupHTML(p: PropiedadMapa): string {
   )
 }
 
-export default function MapCanvas({ propiedades, centerLat, centerLng }: { 
+export default function MapCanvas({ propiedades, centerLat, centerLng }: {
   propiedades: PropiedadMapa[]
   centerLat?: number
   centerLng?: number
 }) {
   const mapElRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
+  const markersRef = useRef<maplibregl.Marker[]>([])
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [errorMsg, setErrorMsg] = useState('')
 
@@ -100,7 +109,7 @@ export default function MapCanvas({ propiedades, centerLat, centerLng }: {
       setStatus('ready')
 
       for (const p of propiedades) {
-        const pill = document.createElement('div')
+        const pill = document.createElement('div') as MarkerElement
         pill.className = 'map-marker'
         pill.textContent = formatPrecio(p.precioPorNoche, p.moneda as 'USD' | 'VES')
 
@@ -112,21 +121,33 @@ export default function MapCanvas({ propiedades, centerLat, centerLng }: {
           className: 'map-popup-container',
         }).setHTML(buildPopupHTML(p))
 
-        new maplibregl.Marker({ element: pill })
+        const marker = new maplibregl.Marker({ element: pill })
           .setLngLat([p.longitud, p.latitud])
           .addTo(map)
 
-        pill.addEventListener('mouseenter', () => {
+        markersRef.current.push(marker)
+
+        const handleMouseEnter = () => {
           popup.setLngLat([p.longitud, p.latitud]).addTo(map)
-        })
+        }
 
-        pill.addEventListener('mouseleave', () => {
+        const handleMouseLeave = () => {
           popup.remove()
-        })
+        }
 
-        pill.addEventListener('click', () => {
+        const handleClick = () => {
           window.location.href = `/propiedades/${p.id}`
-        })
+        }
+
+        pill.addEventListener('mouseenter', handleMouseEnter)
+        pill.addEventListener('mouseleave', handleMouseLeave)
+        pill.addEventListener('click', handleClick)
+
+        pill._cleanupHandlers = {
+          mouseenter: handleMouseEnter,
+          mouseleave: handleMouseLeave,
+          click: handleClick,
+        }
       }
 
       if (propiedades.length > 1) {
@@ -149,6 +170,17 @@ export default function MapCanvas({ propiedades, centerLat, centerLng }: {
     })
 
     return () => {
+      markersRef.current.forEach((marker) => {
+        const el = marker.getElement() as MarkerElement
+        if (el._cleanupHandlers) {
+          el.removeEventListener('mouseenter', el._cleanupHandlers.mouseenter)
+          el.removeEventListener('mouseleave', el._cleanupHandlers.mouseleave)
+          el.removeEventListener('click', el._cleanupHandlers.click)
+          delete el._cleanupHandlers
+        }
+        marker.remove()
+      })
+      markersRef.current = []
       map.remove()
       mapRef.current = null
     }

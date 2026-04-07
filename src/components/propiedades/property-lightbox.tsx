@@ -163,7 +163,7 @@ export function PropertyLightbox({
                     }`}
                     aria-label={`Ver imagen ${index + 1}`}
                   >
-                    <img
+                    <Image
                       src={imagen.url}
                       alt={imagen.alt || `Miniatura ${index + 1}`}
                       className="h-[60px] w-[80px] object-cover"

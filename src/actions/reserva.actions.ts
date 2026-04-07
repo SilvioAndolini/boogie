@@ -1,7 +1,6 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { crearReservaSchema } from '@/lib/validations'
 import { verificarDisponibilidad } from '@/lib/reservas/disponibilidad'
@@ -11,12 +10,7 @@ import { puedeTransicionar, sePuedeCancelar } from '@/lib/reservas/estados'
 import { calcularNoches } from '@/lib/format'
 import type { ResultadoAccion, ReservaConPropiedad } from '@/types/reserva'
 import type { EstadoReserva } from '@/types'
-
-async function getUsuarioAutenticado() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  return user
-}
+import { getUsuarioAutenticado } from '@/lib/auth'
 
 export async function crearReserva(rawData: {
   propiedadId: string

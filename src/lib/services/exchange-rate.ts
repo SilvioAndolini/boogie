@@ -1,11 +1,10 @@
+import { unstable_cache } from 'next/cache'
+
 export interface CotizacionEuro {
   tasa: number
   fuente: string
   ultimaActualizacion: Date
 }
-
-let cachedRate: { data: CotizacionEuro; timestamp: number } | null = null
-const CACHE_TTL = 3600 * 1000
 
 const FALLBACK_TASA = 78.39
 
@@ -45,11 +44,7 @@ async function fetchFromExchangerate(): Promise<CotizacionEuro | null> {
   }
 }
 
-export async function getCotizacionEuro(): Promise<CotizacionEuro> {
-  if (cachedRate && Date.now() - cachedRate.timestamp < CACHE_TTL) {
-    return cachedRate.data
-  }
-
+async function _getCotizacionEuro(): Promise<CotizacionEuro> {
   const cotizacion =
     (await fetchFromERApi()) ??
     (await fetchFromExchangerate()) ?? {
@@ -58,6 +53,11 @@ export async function getCotizacionEuro(): Promise<CotizacionEuro> {
       ultimaActualizacion: new Date(),
     }
 
-  cachedRate = { data: cotizacion, timestamp: Date.now() }
   return cotizacion
 }
+
+export const getCotizacionEuro = unstable_cache(
+  _getCotizacionEuro,
+  ['cotizacion-euro'],
+  { revalidate: 3600, tags: ['cotizacion'] }
+)

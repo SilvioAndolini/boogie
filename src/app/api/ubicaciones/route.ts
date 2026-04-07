@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { rateLimit, getClientIP } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
@@ -208,11 +209,35 @@ async function searchNominatim(q: string): Promise<LocationSuggestion[]> {
 }
 
 export async function GET(request: NextRequest) {
+  const ip = getClientIP(request)
+  const { success, remaining, resetIn } = rateLimit(`ubicaciones:${ip}`, {
+    windowMs: 60 * 1000,
+    maxRequests: 30,
+  })
+
+  if (!success) {
+    return NextResponse.json(
+      { error: 'Demasiadas solicitudes. Intenta más tarde.', resultados: [] },
+      {
+        status: 429,
+        headers: {
+          'Retry-After': String(Math.ceil(resetIn / 1000)),
+          'X-RateLimit-Remaining': String(remaining),
+        },
+      }
+    )
+  }
+
   const { searchParams } = new URL(request.url)
   const q = searchParams.get('q')?.trim()
 
   if (!q || q.length < 2) {
-    return NextResponse.json({ resultados: [] })
+    return NextResponse.json({ resultados: [] }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=1800, stale-while-revalidate=3600',
+        'Vary': 'Accept-Encoding',
+      },
+    })
   }
 
   try {
@@ -222,9 +247,17 @@ export async function GET(request: NextRequest) {
       resultados = await searchNominatim(q)
     }
 
-    return NextResponse.json({ resultados })
+    return NextResponse.json({ resultados }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=1800, stale-while-revalidate=3600',
+        'Vary': 'Accept-Encoding',
+      },
+    })
   } catch (error) {
     console.error('Ubicaciones API error:', error)
-    return NextResponse.json({ resultados: [] })
+    return NextResponse.json(
+      { error: 'Error al buscar ubicaciones', resultados: [] },
+      { status: 500 }
+    )
   }
 }

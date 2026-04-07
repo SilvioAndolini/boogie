@@ -7,18 +7,10 @@ import { Button } from '@/components/ui/button'
 export function CtaSection() {
   return (
     <section className="relative overflow-hidden bg-[#1B4332] py-20">
-      {/* Decorative background */}
+      {/* Decorative background - optimized with CSS animations */}
       <div className="absolute inset-0 opacity-10">
-        <motion.div
-          className="absolute top-0 right-0 h-96 w-96 rounded-full bg-[#52B788] blur-3xl"
-          animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
-          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-        />
-        <motion.div
-          className="absolute bottom-0 left-0 h-72 w-72 rounded-full bg-[#E76F51] blur-3xl"
-          animate={{ scale: [1, 1.15, 1], opacity: [0.2, 0.4, 0.2] }}
-          transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-        />
+        <div className="cta-blob-green" />
+        <div className="cta-blob-orange" />
       </div>
 
       <div className="relative mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
