@@ -1,14 +1,10 @@
-// Acciones del servidor para reseñas
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { prisma } from '@/lib/prisma'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { resenaSchema } from '@/lib/validations'
 import { getUsuarioAutenticado } from '@/lib/auth'
 
-/**
- * Crea una reseña para una reserva completada
- */
 export async function crearResena(formData: FormData) {
   const user = await getUsuarioAutenticado()
   if (!user) return { error: 'No autenticado' }
@@ -28,82 +24,97 @@ export async function crearResena(formData: FormData) {
   }
 
   const reservaId = formData.get('reservaId') as string
+  const supabase = createAdminClient()
 
-  // Verificar que la reserva existe, está completada y pertenece al usuario
-  const reserva = await prisma.reserva.findFirst({
-    where: {
-      id: reservaId,
-      huespedId: user!.id,
-      estado: 'COMPLETADA',
-    },
-  })
+  const { data: reserva } = await supabase
+    .from('reservas')
+    .select('id, propiedad_id')
+    .eq('id', reservaId)
+    .eq('huesped_id', user!.id)
+    .eq('estado', 'COMPLETADA')
+    .single()
 
   if (!reserva) return { error: 'No puedes reseñar esta reserva' }
 
-  // Verificar que no exista ya una reseña
-  const resenaExistente = await prisma.resena.findUnique({
-    where: { reservaId },
-  })
+  const { data: existing } = await supabase
+    .from('resenas')
+    .select('id')
+    .eq('reserva_id', reservaId)
+    .single()
 
-  if (resenaExistente) return { error: 'Ya escribiste una reseña para esta reserva' }
+  if (existing) return { error: 'Ya escribiste una reseña para esta reserva' }
 
-  // Crear la reseña
-  await prisma.resena.create({
-    data: {
+  const { data: propiedad } = await supabase
+    .from('propiedades')
+    .select('propietario_id')
+    .eq('id', reserva.propiedad_id)
+    .single()
+
+  const { error: insertError } = await supabase
+    .from('resenas')
+    .insert({
       calificacion: validacion.data.calificacion,
       limpieza: validacion.data.limpieza,
       comunicacion: validacion.data.comunicacion,
       ubicacion: validacion.data.ubicacion,
       valor: validacion.data.valor,
       comentario: validacion.data.comentario,
-      propiedadId: reserva.propiedadId,
-      autorId: user!.id,
-      anfitrionId: (await prisma.propiedad.findUnique({
-        where: { id: reserva.propiedadId },
-        select: { propietarioId: true },
-      }))!.propietarioId,
-      reservaId,
-    },
-  })
+      propiedad_id: reserva.propiedad_id,
+      autor_id: user!.id,
+      anfitrion_id: propiedad?.propietario_id,
+      reserva_id: reservaId,
+    })
 
-  // Actualizar rating promedio de la propiedad
-  const stats = await prisma.resena.aggregate({
-    where: { propiedadId: reserva.propiedadId },
-    _avg: { calificacion: true },
-    _count: true,
-  })
+  if (insertError) {
+    console.error('[crearResena] Error:', insertError)
+    return { error: 'Error al crear la reseña' }
+  }
 
-  await prisma.propiedad.update({
-    where: { id: reserva.propiedadId },
-    data: {
-      ratingPromedio: stats._avg.calificacion,
-      totalResenas: stats._count,
-    },
-  })
+  const { data: stats } = await supabase
+    .from('resenas')
+    .select('calificacion')
+    .eq('propiedad_id', reserva.propiedad_id)
 
-  revalidatePath(`/propiedades/${reserva.propiedadId}`)
+  if (stats && stats.length > 0) {
+    const avgRating = stats.reduce((sum: number, r: Record<string, unknown>) => sum + (r.calificacion as number), 0) / stats.length
+    await supabase
+      .from('propiedades')
+      .update({
+        rating_promedio: Math.round(avgRating * 10) / 10,
+        total_resenas: stats.length,
+      })
+      .eq('id', reserva.propiedad_id)
+  }
+
+  revalidatePath(`/propiedades/${reserva.propiedad_id}`)
   return { exito: true }
 }
 
-/**
- * Responde a una reseña (anfitrión)
- */
 export async function responderResena(resenaId: string, respuesta: string) {
   const user = await getUsuarioAutenticado()
   if (!user) return { error: 'No autenticado' }
 
-  const resena = await prisma.resena.findUnique({
-    where: { id: resenaId },
-  })
+  const supabase = createAdminClient()
+
+  const { data: resena } = await supabase
+    .from('resenas')
+    .select('id, anfitrion_id, propiedad_id')
+    .eq('id', resenaId)
+    .single()
 
   if (!resena) return { error: 'Reseña no encontrada' }
-  if (resena.anfitrionId !== user.id) return { error: 'Sin permisos' }
+  if ((resena as Record<string, unknown>).anfitrion_id !== user.id) return { error: 'Sin permisos' }
 
-  await prisma.resena.update({
-    where: { id: resenaId },
-    data: { respuesta, fechaRespuesta: new Date() },
-  })
+  const { error: updateError } = await supabase
+    .from('resenas')
+    .update({ respuesta, fecha_respuesta: new Date().toISOString() })
+    .eq('id', resenaId)
 
-  revalidatePath(`/propiedades/${resena.propiedadId}`)
+  if (updateError) {
+    console.error('[responderResena] Error:', updateError)
+    return { error: 'Error al responder' }
+  }
+
+  revalidatePath(`/propiedades/${(resena as Record<string, unknown>).propiedad_id}`)
   return { exito: true }
 }

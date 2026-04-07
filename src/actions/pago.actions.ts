@@ -1,14 +1,12 @@
-// Acciones del servidor para pagos
 'use server'
 
+ 
 import { revalidatePath } from 'next/cache'
-import { prisma } from '@/lib/prisma'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { pagoSchema } from '@/lib/validations'
 import { getUsuarioAutenticado } from '@/lib/auth'
 
-/**
- * Registra un pago para una reserva
- */
+ 
 export async function registrarPago(formData: FormData) {
   const user = await getUsuarioAutenticado()
   if (!user) return { error: 'No autenticado' }
@@ -16,7 +14,7 @@ export async function registrarPago(formData: FormData) {
   const datos = {
     reservaId: formData.get('reservaId') as string,
     metodoPago: formData.get('metodoPago') as string,
-    referencia: formData.get('referencia') as string || undefined,
+    referencia: (formData.get('referencia') as string) || undefined,
     monto: formData.get('monto') as string,
     moneda: (formData.get('moneda') as string) || 'USD',
   }
@@ -31,91 +29,110 @@ export async function registrarPago(formData: FormData) {
   }
 
   const data = validacion.data
+  const supabase = createAdminClient()
 
-  // Verificar que la reserva pertenece al usuario
-  const reserva = await prisma.reserva.findFirst({
-    where: { id: data.reservaId, huespedId: user!.id },
-  })
+  const { data: reserva } = await supabase
+    .from('reservas')
+    .select('id')
+    .eq('id', data.reservaId)
+    .eq('huesped_id', user!.id)
+    .single()
 
   if (!reserva) return { error: 'Reserva no encontrada' }
 
-  // Crear el pago
-  await prisma.pago.create({
-    data: {
-      reservaId: data.reservaId,
-      usuarioId: user!.id,
-      monto: data.monto,
-      moneda: data.moneda,
-      metodoPago: data.metodoPago,
-      referencia: data.referencia,
-      estado: 'PENDIENTE',
-    },
+  const { error: insertError } = await supabase.from('pagos').insert({
+    reserva_id: data.reservaId,
+    usuario_id: user!.id,
+    monto: data.monto,
+    moneda: data.moneda,
+    metodo_pago: data.metodoPago,
+    referencia: data.referencia,
+    estado: 'PENDIENTE',
   })
+
+  if (insertError) {
+    console.error('[registrarPago] Error:', insertError)
+    return { error: 'Error al registrar el pago' }
+  }
 
   revalidatePath('/dashboard/pagos')
   return { exito: true, mensaje: 'Pago registrado. Será verificado pronto.' }
 }
 
-/**
- * Verifica un pago (anfitrión o admin)
- */
+ 
 export async function verificarPago(pagoId: string, aprobado: boolean, notas?: string) {
   const user = await getUsuarioAutenticado()
   if (!user) return { error: 'No autenticado' }
 
-  const pago = await prisma.pago.findUnique({
-    where: { id: pagoId },
-    include: { reserva: { include: { propiedad: true } } },
-  })
+  const supabase = createAdminClient()
+
+  const { data: pago } = await supabase
+    .from('pagos')
+    .select('id, reserva_id')
+    .eq('id', pagoId)
+    .single()
 
   if (!pago) return { error: 'Pago no encontrado' }
 
-  // Verificar permisos: debe ser el anfitrión de la propiedad o admin
-  if (pago.reserva.propiedad.propietarioId !== user.id) {
+  const { data: reserva } = await supabase
+    .from('reservas')
+    .select('id, estado, propiedad_id')
+    .eq('id', pago.reserva_id)
+    .single()
+
+  if (!reserva) return { error: 'Reserva no encontrada' }
+
+  const { data: propiedad } = await supabase
+    .from('propiedades')
+    .select('propietario_id')
+    .eq('id', reserva.propiedad_id)
+    .single()
+
+  if (!propiedad || propiedad.propietario_id !== user.id) {
     return { error: 'Sin permisos para verificar este pago' }
   }
 
   const estado = aprobado ? 'VERIFICADO' : 'RECHAZADO'
 
-  await prisma.pago.update({
-    where: { id: pagoId },
-    data: {
+ 
+  const { error: updateError } = await supabase
+    .from('pagos')
+    .update({
       estado,
-      verificadoPor: user.id,
-      notasVerificacion: notas,
-      fechaVerificacion: new Date(),
-    },
-  })
-
-  // Si el pago fue verificado y la reserva estaba pendiente, confirmarla
-  if (aprobado && pago.reserva.estado === 'PENDIENTE') {
-    await prisma.reserva.update({
-      where: { id: pago.reservaId },
-      data: { estado: 'CONFIRMADA', fechaConfirmacion: new Date() },
+      verificado_por: user.id,
+      notas_verificacion: notas,
+      fecha_verificacion: new Date().toISOString(),
     })
+    .eq('id', pagoId)
+
+  if (updateError) {
+    console.error('[verificarPago] Error:', updateError)
+    return { error: 'Error al verificar el pago' }
+  }
+
+  if (aprobado && reserva.estado === 'PENDIENTE') {
+    await supabase
+      .from('reservas')
+      .update({ estado: 'CONFIRMADA', fecha_confirmacion: new Date().toISOString() })
+      .eq('id', reserva.id)
   }
 
   revalidatePath('/dashboard/reservas-recibidas')
   revalidatePath('/dashboard/pagos')
   return { exito: true }
 }
-
-/**
- * Obtiene el historial de pagos del usuario
- */
+ 
 export async function getMisPagos() {
   const user = await getUsuarioAutenticado()
   if (!user) return []
 
-  return prisma.pago.findMany({
-    where: { usuarioId: user!.id },
-    include: {
-      reserva: {
-        include: {
-          propiedad: { select: { titulo: true } },
-        },
-      },
-    },
-    orderBy: { fechaCreacion: 'desc' },
-  })
+  const supabase = createAdminClient()
+
+  const { data } = await supabase
+    .from('pagos')
+    .select('*, reserva:reservas(id, propiedad_id, propiedades!propiedad_id(titulo))')
+    .eq('usuario_id', user!.id)
+    .order('fecha_creacion', { ascending: false })
+
+  return data ?? []
 }

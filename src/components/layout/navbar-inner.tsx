@@ -83,6 +83,12 @@ export function NavbarInner({
           >
             Cómo funciona
           </Link>
+          <Link
+            href="/nosotros"
+            className="text-sm font-medium text-[#6B6560] transition-colors hover:text-[#1B4332]"
+          >
+            Nosotros
+          </Link>
         </nav>
 
         <div className="hidden items-center gap-3 sm:flex">
@@ -221,6 +227,13 @@ export function NavbarInner({
                 className="block rounded-lg px-3 py-2 text-sm font-medium text-[#1A1A1A] transition-colors hover:bg-[#F8F6F3]"
               >
                 Cómo funciona
+              </Link>
+              <Link
+                href="/nosotros"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block rounded-lg px-3 py-2 text-sm font-medium text-[#1A1A1A] transition-colors hover:bg-[#F8F6F3]"
+              >
+                Nosotros
               </Link>
               <Link
                 href="/dashboard/mis-propiedades/nueva"

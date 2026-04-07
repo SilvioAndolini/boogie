@@ -22,7 +22,7 @@ const menuItems = [
     icono: LayoutDashboard,
   },
   {
-    titulo: 'Mis propiedades',
+    titulo: 'Mis boogies',
     href: '/dashboard/mis-propiedades',
     icono: Home,
   },
@@ -80,7 +80,7 @@ export function Sidebar() {
       animate="visible"
     >
       {menuItems.map((item) => {
-        const activo = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
+        const activo = pathname === item.href
         return (
           <motion.div key={item.href} variants={itemVariants}>
             <Link

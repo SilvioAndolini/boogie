@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -21,8 +21,8 @@ import {
 } from '@/components/ui/select'
 import { propiedadSchema } from '@/lib/validations'
 import { ESTADOS_VENEZUELA, TIPOS_PROPIEDAD, POLITICAS_CANCELACION, MAX_IMAGENES_PROPIEDAD } from '@/lib/constants'
-import { crearPropiedad } from '@/actions/propiedad.actions'
-import { optimizeImage, formatFileSize } from '@/lib/image-optimize'
+import { actualizarPropiedad } from '@/actions/propiedad.actions'
+import { optimizeImage } from '@/lib/image-optimize'
 
 const PASOS = [
   { numero: 1, titulo: 'Información básica', icono: Home },
@@ -37,105 +37,50 @@ const AMENIDADES = [
   'Vista al mar', 'Acceso a playa', 'Pet friendly', 'Gimnasio',
 ]
 
-const STEP_KEY = 'boogie-nueva-paso'
-const FORM_KEY = 'boogie-nueva-form'
-const AMEN_KEY = 'boogie-nueva-amenidades'
-
-function clearFormStorage() {
-  sessionStorage.removeItem(STEP_KEY)
-  sessionStorage.removeItem(FORM_KEY)
-  sessionStorage.removeItem(AMEN_KEY)
-}
-
-export default function NuevaPropiedadPage() {
+export default function EditarBoogieClient({ boogie }: { boogie: Record<string, unknown> }) {
   const router = useRouter()
+  const boogieId = boogie.id as string
   const [pasoActual, setPasoActual] = useState(1)
   const [enviando, setEnviando] = useState(false)
-  const [amenidadesSeleccionadas, setAmenidadesSeleccionadas] = useState<string[]>([])
+  const [amenidadesSeleccionadas, setAmenidadesSeleccionadas] = useState<string[]>(
+    (boogie.amenidades as string[]) || []
+  )
   const [imagenes, setImagenes] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
   const [optimizando, setOptimizando] = useState(false)
+  const imagenesExistentes = (boogie.imagenes as { id: string; url: string; orden: number; es_principal: boolean }[]) || []
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const initializedRef = useRef(false)
-  const [initialized, setInitialized] = useState(false)
 
   const {
     register,
     setValue,
     trigger,
     getValues,
-    watch,
-    reset,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(propiedadSchema),
     defaultValues: {
-      titulo: '',
-      descripcion: '',
-      tipoPropiedad: 'APARTAMENTO',
-      precioPorNoche: 0,
-      moneda: 'USD',
-      capacidadMaxima: 1,
-      habitaciones: 1,
-      banos: 1,
-      camas: 1,
-      direccion: '',
-      ciudad: '',
-      estado: '',
-      zona: '',
-      amenidades: [] as string[],
-      reglas: '',
-      politicaCancelacion: 'MODERADA' as const,
-      horarioCheckIn: '14:00',
-      horarioCheckOut: '11:00',
-      estanciaMinima: 1,
+      titulo: (boogie.titulo as string) || '',
+      descripcion: (boogie.descripcion as string) || '',
+      tipoPropiedad: ((boogie.tipo_propiedad as string) || 'APARTAMENTO') as 'APARTAMENTO' | 'CASA' | 'VILLA' | 'CABANA' | 'ESTUDIO' | 'HABITACION' | 'LOFT' | 'PENTHOUSE' | 'FINCA' | 'OTRO',
+      precioPorNoche: (boogie.precio_por_noche as number) || 0,
+      moneda: ((boogie.moneda as string) || 'USD') as 'USD' | 'VES',
+      capacidadMaxima: (boogie.capacidad_maxima as number) || 1,
+      habitaciones: (boogie.habitaciones as number) || 1,
+      banos: (boogie.banos as number) || 1,
+      camas: (boogie.camas as number) || 1,
+      direccion: (boogie.direccion as string) || '',
+      ciudad: (boogie.ciudad as string) || '',
+      estado: (boogie.estado as string) || '',
+      zona: (boogie.zona as string) || '',
+      amenidades: (boogie.amenidades as string[]) || [],
+      reglas: (boogie.reglas as string) || '',
+      politicaCancelacion: ((boogie.politica_cancelacion as string) || 'MODERADA') as 'FLEXIBLE' | 'MODERADA' | 'ESTRICTA',
+      horarioCheckIn: (boogie.horario_checkin as string) || '14:00',
+      horarioCheckOut: (boogie.horario_checkout as string) || '11:00',
+      estanciaMinima: (boogie.estancia_minima as number) || 1,
     },
   })
-
-  useEffect(() => {
-    const sub = watch((values) => {
-      if (initializedRef.current) {
-        sessionStorage.setItem(FORM_KEY, JSON.stringify(values))
-      }
-    })
-
-    try {
-      const savedPaso = sessionStorage.getItem(STEP_KEY)
-      if (savedPaso) {
-        const paso = parseInt(savedPaso, 10)
-        if (paso >= 1 && paso <= PASOS.length) setPasoActual(paso)
-      }
-
-      const savedForm = sessionStorage.getItem(FORM_KEY)
-      if (savedForm) reset(JSON.parse(savedForm))
-
-      const savedAmenidades = sessionStorage.getItem(AMEN_KEY)
-      if (savedAmenidades) {
-        const parsed = JSON.parse(savedAmenidades)
-        setAmenidadesSeleccionadas(parsed)
-        setValue('amenidades', parsed)
-      }
-    } catch {}
-
-    initializedRef.current = true
-    setInitialized(true)
-    return () => sub.unsubscribe()
-  }, [])
-
-  useEffect(() => {
-    if (!initialized) return
-    sessionStorage.setItem(STEP_KEY, pasoActual.toString())
-  }, [pasoActual, initialized])
-
-  useEffect(() => {
-    if (!initialized) return
-    sessionStorage.setItem(AMEN_KEY, JSON.stringify(amenidadesSeleccionadas))
-    setValue('amenidades', amenidadesSeleccionadas)
-  }, [amenidadesSeleccionadas, setValue, initialized])
-
-  useEffect(() => {
-    return () => previews.forEach((url) => URL.revokeObjectURL(url))
-  }, [previews])
 
   const camposPorPaso: Record<number, string[]> = {
     1: ['titulo', 'descripcion', 'tipoPropiedad', 'precioPorNoche', 'capacidadMaxima', 'habitaciones', 'banos', 'camas'],
@@ -166,7 +111,7 @@ export default function NuevaPropiedadPage() {
 
   const handleImagenes = useCallback(async (files: FileList | null) => {
     if (!files) return
-    if (imagenes.length >= MAX_IMAGENES_PROPIEDAD) {
+    if (imagenesExistentes.length + imagenes.length >= MAX_IMAGENES_PROPIEDAD) {
       toast.error(`Máximo ${MAX_IMAGENES_PROPIEDAD} imágenes`)
       return
     }
@@ -174,7 +119,7 @@ export default function NuevaPropiedadPage() {
     setOptimizando(true)
     const nuevas: File[] = []
     const nuevasPreview: string[] = []
-    const filesArray = Array.from(files).slice(0, MAX_IMAGENES_PROPIEDAD - imagenes.length)
+    const filesArray = Array.from(files).slice(0, MAX_IMAGENES_PROPIEDAD - imagenesExistentes.length - imagenes.length)
 
     for (const file of filesArray) {
       if (!file.type.startsWith('image/')) continue
@@ -192,15 +137,15 @@ export default function NuevaPropiedadPage() {
     setImagenes((prev) => [...prev, ...nuevas])
     setPreviews((prev) => [...prev, ...nuevasPreview])
     setOptimizando(false)
-  }, [imagenes.length])
+  }, [imagenes.length, imagenesExistentes.length])
 
-  const removeImagen = (index: number) => {
+  const removeNuevaImagen = (index: number) => {
     URL.revokeObjectURL(previews[index])
     setImagenes((prev) => prev.filter((_, i) => i !== index))
     setPreviews((prev) => prev.filter((_, i) => i !== index))
   }
 
-  const handleCrearBoogie = async () => {
+  const handleGuardar = async () => {
     const esValido = await trigger()
     if (!esValido) {
       toast.error('Por favor completa todos los campos requeridos')
@@ -220,18 +165,17 @@ export default function NuevaPropiedadPage() {
       amenidadesSeleccionadas.forEach((a) => formData.append('amenidades', a))
       imagenes.forEach((file) => formData.append('imagenes', file))
 
-      const result = await crearPropiedad(formData)
+      const result = await actualizarPropiedad(boogieId, formData)
       if (result?.error) {
         toast.error(result.error)
         return
       }
 
-      clearFormStorage()
-      toast.success('Boogie creado correctamente')
+      toast.success('Boogie actualizado correctamente')
       router.push('/dashboard/mis-propiedades')
     } catch (error: any) {
-      toast.error('Error al crear el boogie')
-      console.error('Error al crear boogie:', error)
+      toast.error('Error al actualizar el boogie')
+      console.error('Error al actualizar boogie:', error)
     } finally {
       setEnviando(false)
     }
@@ -249,8 +193,8 @@ export default function NuevaPropiedadPage() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-[#1A1A1A]">Nuevo boogie</h1>
-          <p className="text-sm text-[#6B6560]">Publica tu alojamiento en Boogie</p>
+          <h1 className="text-2xl font-bold text-[#1A1A1A]">Editar boogie</h1>
+          <p className="text-sm text-[#6B6560]">Modifica los detalles de tu alojamiento</p>
         </div>
       </div>
 
@@ -280,12 +224,7 @@ export default function NuevaPropiedadPage() {
 
       <div>
         {pasoActual === 1 && (
-          <motion.div
-            key="paso1"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
+          <motion.div key="paso1" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
             <Card className="border-[#E8E4DF]">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
@@ -296,37 +235,24 @@ export default function NuevaPropiedadPage() {
               <CardContent className="space-y-5">
                 <div className="space-y-2">
                   <Label htmlFor="titulo">
-                    <span className="flex items-center gap-1.5">
-                      Título <span className="text-[#C1121F]">*</span>
-                    </span>
+                    <span className="flex items-center gap-1.5">Título <span className="text-[#C1121F]">*</span></span>
                   </Label>
-                  <Input
-                    id="titulo"
-                    placeholder="Ej: Apartamento moderno en Chacao"
-                    {...register('titulo')}
-                  />
+                  <Input id="titulo" placeholder="Ej: Apartamento moderno en Chacao" {...register('titulo')} />
                   {errors.titulo && <p className="text-xs text-[#C1121F]">{errors.titulo.message as string}</p>}
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="descripcion">
-                    <span className="flex items-center gap-1.5">
-                      Descripción <span className="text-[#C1121F]">*</span>
-                    </span>
+                    <span className="flex items-center gap-1.5">Descripción <span className="text-[#C1121F]">*</span></span>
                   </Label>
-                  <Textarea
-                    id="descripcion"
-                    placeholder="Describe tu boogie..."
-                    className="min-h-[100px]"
-                    {...register('descripcion')}
-                  />
+                  <Textarea id="descripcion" placeholder="Describe tu boogie..." className="min-h-[100px]" {...register('descripcion')} />
                   {errors.descripcion && <p className="text-xs text-[#C1121F]">{errors.descripcion.message as string}</p>}
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="tipoPropiedad">Tipo de boogie</Label>
-                    <Select onValueChange={(value) => setValue('tipoPropiedad', value as 'APARTAMENTO' | 'CASA' | 'VILLA' | 'CABANA' | 'ESTUDIO' | 'HABITACION' | 'LOFT' | 'PENTHOUSE' | 'FINCA' | 'OTRO')} defaultValue="APARTAMENTO">
+                    <Select onValueChange={(value) => setValue('tipoPropiedad', value as any)} defaultValue={boogie.tipo_propiedad as string}>
                       <SelectTrigger className="h-10 w-full rounded-lg border-[#E8E4DF] bg-white text-sm">
                         <SelectValue placeholder="Selecciona un tipo" />
                       </SelectTrigger>
@@ -337,19 +263,11 @@ export default function NuevaPropiedadPage() {
                       </SelectContent>
                     </Select>
                   </div>
-
                   <div className="space-y-2">
                     <Label htmlFor="precioPorNoche">
-                      <span className="flex items-center gap-1.5">
-                        Precio por noche <span className="text-[#C1121F]">*</span>
-                      </span>
+                      <span className="flex items-center gap-1.5">Precio por noche <span className="text-[#C1121F]">*</span></span>
                     </Label>
-                    <Input
-                      id="precioPorNoche"
-                      type="number"
-                      placeholder="0.00"
-                      {...register('precioPorNoche', { valueAsNumber: true })}
-                    />
+                    <Input id="precioPorNoche" type="number" placeholder="0.00" {...register('precioPorNoche', { valueAsNumber: true })} />
                     {errors.precioPorNoche && <p className="text-xs text-[#C1121F]">{errors.precioPorNoche.message as string}</p>}
                   </div>
                 </div>
@@ -378,12 +296,7 @@ export default function NuevaPropiedadPage() {
         )}
 
         {pasoActual === 2 && (
-          <motion.div
-            key="paso2"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
+          <motion.div key="paso2" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
             <Card className="border-[#E8E4DF]">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
@@ -394,9 +307,7 @@ export default function NuevaPropiedadPage() {
               <CardContent className="space-y-5">
                 <div className="space-y-2">
                   <Label htmlFor="direccion">
-                    <span className="flex items-center gap-1.5">
-                      Dirección <span className="text-[#C1121F]">*</span>
-                    </span>
+                    <span className="flex items-center gap-1.5">Dirección <span className="text-[#C1121F]">*</span></span>
                   </Label>
                   <Input id="direccion" placeholder="Calle, edificio, número" {...register('direccion')} />
                   {errors.direccion && <p className="text-xs text-[#C1121F]">{errors.direccion.message as string}</p>}
@@ -405,20 +316,16 @@ export default function NuevaPropiedadPage() {
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="ciudad">
-                      <span className="flex items-center gap-1.5">
-                        Ciudad <span className="text-[#C1121F]">*</span>
-                      </span>
+                      <span className="flex items-center gap-1.5">Ciudad <span className="text-[#C1121F]">*</span></span>
                     </Label>
                     <Input id="ciudad" placeholder="Ciudad" {...register('ciudad')} />
                     {errors.ciudad && <p className="text-xs text-[#C1121F]">{errors.ciudad.message as string}</p>}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="estado">
-                      <span className="flex items-center gap-1.5">
-                        Estado <span className="text-[#C1121F]">*</span>
-                      </span>
+                      <span className="flex items-center gap-1.5">Estado <span className="text-[#C1121F]">*</span></span>
                     </Label>
-                    <Select onValueChange={(value) => setValue('estado', value as string)}>
+                    <Select onValueChange={(value) => setValue('estado', value as string)} defaultValue={boogie.estado as string}>
                       <SelectTrigger className="h-10 w-full rounded-lg border-[#E8E4DF] bg-white text-sm">
                         <SelectValue placeholder="Selecciona un estado" />
                       </SelectTrigger>
@@ -442,12 +349,7 @@ export default function NuevaPropiedadPage() {
         )}
 
         {pasoActual === 3 && (
-          <motion.div
-            key="paso3"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
+          <motion.div key="paso3" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
             <Card className="border-[#E8E4DF]">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
@@ -458,7 +360,6 @@ export default function NuevaPropiedadPage() {
               <CardContent className="space-y-6">
                 <div>
                   <p className="mb-3 text-sm font-medium text-[#1A1A1A]">Amenidades</p>
-                  <p className="mb-3 text-sm text-[#6B6560]">Selecciona las amenidades disponibles</p>
                   <div className="flex flex-wrap gap-2">
                     {AMENIDADES.map((amenidad) => (
                       <button
@@ -480,6 +381,20 @@ export default function NuevaPropiedadPage() {
 
                 <div className="border-t border-[#E8E4DF] pt-5">
                   <p className="mb-3 text-sm font-medium text-[#1A1A1A]">Imágenes</p>
+                  {imagenesExistentes.length > 0 && (
+                    <div className="mb-4 grid grid-cols-3 gap-3 sm:grid-cols-4">
+                      {imagenesExistentes.map((img) => (
+                        <div key={img.id} className="group relative aspect-square overflow-hidden rounded-lg border border-[#E8E4DF]">
+                          <img src={img.url} alt="" className="h-full w-full object-cover" />
+                          {img.es_principal && (
+                            <span className="absolute bottom-1 left-1 rounded bg-[#1B4332] px-1.5 py-0.5 text-[10px] font-medium text-white">
+                              Principal
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   <div
                     onClick={() => !optimizando && fileInputRef.current?.click()}
                     onDragOver={(e) => { e.preventDefault(); e.stopPropagation() }}
@@ -516,14 +431,9 @@ export default function NuevaPropiedadPage() {
                       {previews.map((src, i) => (
                         <div key={src} className="group relative aspect-square overflow-hidden rounded-lg border border-[#E8E4DF]">
                           <img src={src} alt="" className="h-full w-full object-cover" />
-                          {i === 0 && (
-                            <span className="absolute bottom-1 left-1 rounded bg-[#1B4332] px-1.5 py-0.5 text-[10px] font-medium text-white">
-                              Principal
-                            </span>
-                          )}
                           <button
                             type="button"
-                            onClick={() => removeImagen(i)}
+                            onClick={() => removeNuevaImagen(i)}
                             className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition-opacity group-hover:opacity-100"
                           >
                             <X className="h-3.5 w-3.5" />
@@ -539,17 +449,13 @@ export default function NuevaPropiedadPage() {
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="reglas">Reglas del boogie</Label>
-                      <Textarea
-                        id="reglas"
-                        placeholder="Ej: No fumar, no mascotas, no fiestas..."
-                        {...register('reglas')}
-                      />
+                      <Textarea id="reglas" placeholder="Ej: No fumar, no mascotas, no fiestas..." {...register('reglas')} />
                     </div>
 
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <div className="space-y-2">
                         <Label htmlFor="politicaCancelacion">Política de cancelación</Label>
-                        <Select onValueChange={(value) => setValue('politicaCancelacion', value as 'FLEXIBLE' | 'MODERADA' | 'ESTRICTA')} defaultValue="MODERADA">
+                        <Select onValueChange={(value) => setValue('politicaCancelacion', value as 'FLEXIBLE' | 'MODERADA' | 'ESTRICTA')} defaultValue={(boogie.politica_cancelacion as string) || 'MODERADA'}>
                           <SelectTrigger className="h-10 w-full rounded-lg border-[#E8E4DF] bg-white text-sm">
                             <SelectValue placeholder="Selecciona una política" />
                           </SelectTrigger>
@@ -595,21 +501,12 @@ export default function NuevaPropiedadPage() {
           </Button>
 
           {pasoActual < PASOS.length ? (
-            <Button
-              type="button"
-              onClick={avanzarPaso}
-              className="bg-[#1B4332] text-white hover:bg-[#2D6A4F]"
-            >
+            <Button type="button" onClick={avanzarPaso} className="bg-[#1B4332] text-white hover:bg-[#2D6A4F]">
               Siguiente
             </Button>
           ) : (
-            <Button
-              type="button"
-              onClick={handleCrearBoogie}
-              disabled={enviando}
-              className="bg-[#1B4332] text-white hover:bg-[#2D6A4F]"
-            >
-              {enviando ? 'Creando...' : 'Crear Boogie'}
+            <Button type="button" onClick={handleGuardar} disabled={enviando} className="bg-[#1B4332] text-white hover:bg-[#2D6A4F]">
+              {enviando ? 'Guardando...' : 'Guardar cambios'}
             </Button>
           )}
         </div>

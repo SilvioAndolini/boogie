@@ -1,15 +1,12 @@
-// Acciones del servidor para propiedades
 'use server'
 
 import { revalidatePath, unstable_cache } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { prisma } from '@/lib/prisma'
 import { propiedadSchema } from '@/lib/validations'
 import { CACHE_TAGS, CACHE_TIMES, invalidatePropiedadCache } from '@/lib/cache'
 import { getUsuarioAutenticado } from '@/lib/auth'
-
-// --- Tipos de retorno para las queries públicas ---
+import { generarSlug } from '@/lib/slug'
 
 interface PropiedadPublica {
   id: string
@@ -64,9 +61,6 @@ interface PropiedadDetalle {
   resenas: { id: string; calificacion: number; comentario: string; fechaCreacion: string; autor: { nombre: string; apellido: string; avatar_url: string | null } }[]
 }
 
-/**
- * Crea una nueva propiedad
- */
 export async function crearPropiedad(formData: FormData) {
   const user = await getUsuarioAutenticado()
   if (!user) redirect('/login')
@@ -102,16 +96,22 @@ export async function crearPropiedad(formData: FormData) {
   }
 
   const data = validacion.data
+  const supabase = createAdminClient()
 
-  // Crear la propiedad
-  const propiedad = await prisma.propiedad.create({
-    data: {
+  const propiedadId = crypto.randomUUID()
+  const slug = generarSlug(data.titulo)
+
+  const { data: propiedad, error: insertError } = await supabase
+    .from('propiedades')
+    .insert({
+      id: propiedadId,
+      slug,
       titulo: data.titulo,
       descripcion: data.descripcion,
-      tipoPropiedad: data.tipoPropiedad,
-      precioPorNoche: data.precioPorNoche,
+      tipo_propiedad: data.tipoPropiedad,
+      precio_por_noche: data.precioPorNoche,
       moneda: data.moneda,
-      capacidadMaxima: data.capacidadMaxima,
+      capacidad_maxima: data.capacidadMaxima,
       habitaciones: data.habitaciones,
       banos: data.banos,
       camas: data.camas,
@@ -122,77 +122,371 @@ export async function crearPropiedad(formData: FormData) {
       latitud: data.latitud,
       longitud: data.longitud,
       reglas: data.reglas,
-      politicaCancelacion: data.politicaCancelacion,
-      horarioCheckIn: data.horarioCheckIn,
-      horarioCheckOut: data.horarioCheckOut,
-      estanciaMinima: data.estanciaMinima,
-      estanciaMaxima: data.estanciaMaxima,
-      propietarioId: user.id,
-      estadoPublicacion: 'BORRADOR',
-    },
-  })
+      politica_cancelacion: data.politicaCancelacion,
+      horario_checkin: data.horarioCheckIn,
+      horario_checkout: data.horarioCheckOut,
+      estancia_minima: data.estanciaMinima,
+      estancia_maxima: data.estanciaMaxima,
+      propietario_id: user.id,
+      estado_publicacion: 'PUBLICADA',
+      fecha_publicacion: new Date().toISOString(),
+    })
+    .select('id')
+    .single()
+
+  if (insertError || !propiedad) {
+    console.error('[crearPropiedad] Error:', insertError)
+    return { error: 'Error al crear el boogie' }
+  }
 
   if (data.amenidades.length > 0) {
     for (const nombre of data.amenidades) {
-      const amenidad = await prisma.amenidad.upsert({
-        where: { nombre },
-        update: {},
-        create: { nombre, categoria: 'ESENCIALES' },
-      })
-      await prisma.propiedadAmenidad.create({
-        data: { propiedadId: propiedad.id, amenidadId: amenidad.id },
-      })
+      const { data: amenidad } = await supabase
+        .from('amenidades')
+        .select('id')
+        .eq('nombre', nombre)
+        .single()
+
+      let amenidadId = amenidad?.id
+
+      if (!amenidadId) {
+        const { data: nueva, error: errAmen } = await supabase
+          .from('amenidades')
+          .insert({ nombre, categoria: 'ESENCIALES' })
+          .select('id')
+          .single()
+        if (errAmen || !nueva) continue
+        amenidadId = nueva.id
+      }
+
+      await supabase
+        .from('propiedad_amenidades')
+        .insert({ propiedad_id: propiedad.id, amenidad_id: amenidadId })
+    }
+  }
+
+  const archivos = formData.getAll('imagenes') as File[]
+  console.log('[crearPropiedad] Archivos recibidos:', archivos.length)
+  if (archivos.length > 0) {
+    for (let i = 0; i < archivos.length; i++) {
+      const archivo = archivos[i]
+      const path = `propiedades/${propiedad.id}/${Date.now()}-${i}.webp`
+
+      console.log('[crearPropiedad] Subiendo:', path, 'type:', archivo.type, 'size:', archivo.size)
+
+      const { error: uploadError } = await supabase.storage
+        .from('imagenes')
+        .upload(path, archivo, { contentType: 'image/webp', upsert: false })
+
+      if (uploadError) {
+        console.error('[crearPropiedad] Upload error:', uploadError)
+        continue
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('imagenes')
+        .getPublicUrl(path)
+
+      const { error: imgInsertError } = await supabase
+        .from('imagenes_propiedad')
+        .insert({
+          id: crypto.randomUUID(),
+          propiedad_id: propiedad.id,
+          url: urlData.publicUrl,
+          orden: i,
+          es_principal: i === 0,
+        })
+
+      if (imgInsertError) {
+        console.error('[crearPropiedad] Img insert error:', imgInsertError)
+      }
     }
   }
 
   await invalidatePropiedadCache(propiedad.id)
   revalidatePath('/dashboard/mis-propiedades')
-  redirect(`/dashboard/mis-propiedades`)
+
+  return { exito: true, id: propiedad.id }
 }
 
-/**
- * Actualiza el estado de publicación de una propiedad
- */
+export async function eliminarPropiedad(propiedadId: string) {
+  const user = await getUsuarioAutenticado()
+  if (!user) return { error: 'No autenticado' }
+
+  const supabase = createAdminClient()
+
+  const { data: propiedad } = await supabase
+    .from('propiedades')
+    .select('id')
+    .eq('id', propiedadId)
+    .eq('propietario_id', user.id)
+    .single()
+
+  if (!propiedad) return { error: 'Boogie no encontrado' }
+
+  const { data: imagenes } = await supabase
+    .from('imagenes_propiedad')
+    .select('url')
+    .eq('propiedad_id', propiedadId)
+
+  if (imagenes && imagenes.length > 0) {
+    const paths = imagenes.map((img: { url: string }) => {
+      const parts = img.url.split('/storage/v1/object/public/imagenes/')
+      return parts[1] || ''
+    }).filter(Boolean)
+
+    if (paths.length > 0) {
+      await supabase.storage.from('imagenes').remove(paths)
+    }
+  }
+
+  await supabase.from('propiedad_amenidades').delete().eq('propiedad_id', propiedadId)
+  await supabase.from('imagenes_propiedad').delete().eq('propiedad_id', propiedadId)
+  const { error: deleteError } = await supabase.from('propiedades').delete().eq('id', propiedadId)
+
+  if (deleteError) {
+    console.error('[eliminarPropiedad] Error:', deleteError)
+    return { error: 'Error al eliminar el boogie' }
+  }
+
+  await invalidatePropiedadCache(propiedadId)
+  revalidatePath('/dashboard/mis-propiedades')
+
+  return { exito: true }
+}
+
 export async function actualizarEstadoPropiedad(propiedadId: string, estado: string) {
   const user = await getUsuarioAutenticado()
   if (!user) return { error: 'No autenticado' }
 
-  const propiedad = await prisma.propiedad.findFirst({
-    where: { id: propiedadId, propietarioId: user.id },
-  })
+  const supabase = createAdminClient()
+
+  const { data: propiedad } = await supabase
+    .from('propiedades')
+    .select('id')
+    .eq('id', propiedadId)
+    .eq('propietario_id', user.id)
+    .single()
 
   if (!propiedad) return { error: 'Propiedad no encontrada' }
 
-  await prisma.propiedad.update({
-    where: { id: propiedadId },
-    data: {
-      estadoPublicacion: estado as 'PUBLICADA' | 'PAUSADA' | 'BORRADOR',
-      fechaPublicacion: estado === 'PUBLICADA' ? new Date() : undefined,
-    },
-  })
+  const updateData: Record<string, unknown> = { estado_publicacion: estado }
+  if (estado === 'PUBLICADA') {
+    updateData.fecha_publicacion = new Date().toISOString()
+  }
+
+  const { error: updateError } = await supabase
+    .from('propiedades')
+    .update(updateData)
+    .eq('id', propiedadId)
+
+  if (updateError) {
+    console.error('[actualizarEstadoPropiedad] Error:', updateError)
+    return { error: 'Error al actualizar' }
+  }
 
   await invalidatePropiedadCache(propiedadId)
   revalidatePath('/dashboard/mis-propiedades')
   return { exito: true }
 }
 
-/**
- * Obtiene las propiedades del usuario autenticado
- */
+export async function getBoogieParaEditar(propiedadId: string) {
+  const user = await getUsuarioAutenticado()
+  if (!user) return null
+
+  const supabase = createAdminClient()
+
+  const { data: propiedad } = await supabase
+    .from('propiedades')
+    .select('*')
+    .eq('id', propiedadId)
+    .eq('propietario_id', user.id)
+    .single()
+
+  if (!propiedad) return null
+
+  const { data: amenidadesRaw } = await supabase
+    .from('propiedad_amenidades')
+    .select('amenidad:amenidades(nombre)')
+    .eq('propiedad_id', propiedadId)
+
+  const { data: imagenes } = await supabase
+    .from('imagenes_propiedad')
+    .select('*')
+    .eq('propiedad_id', propiedadId)
+    .order('orden', { ascending: true })
+
+  return {
+    ...propiedad,
+    amenidades: (amenidadesRaw ?? []).map((a: Record<string, unknown>) => (a.amenidad as { nombre: string }).nombre),
+    imagenes: imagenes ?? [],
+  }
+}
+
+export async function actualizarPropiedad(propiedadId: string, formData: FormData) {
+  const user = await getUsuarioAutenticado()
+  if (!user) return { error: 'No autenticado' }
+
+  const supabase = createAdminClient()
+
+  const { data: propiedad } = await supabase
+    .from('propiedades')
+    .select('id')
+    .eq('id', propiedadId)
+    .eq('propietario_id', user.id)
+    .single()
+
+  if (!propiedad) return { error: 'Boogie no encontrado' }
+
+  const datos = {
+    titulo: formData.get('titulo') as string,
+    descripcion: formData.get('descripcion') as string,
+    tipoPropiedad: formData.get('tipoPropiedad') as string,
+    precioPorNoche: formData.get('precioPorNoche') as string,
+    moneda: (formData.get('moneda') as string) || 'USD',
+    capacidadMaxima: formData.get('capacidadMaxima') as string,
+    habitaciones: formData.get('habitaciones') as string,
+    banos: formData.get('banos') as string,
+    camas: formData.get('camas') as string,
+    direccion: formData.get('direccion') as string,
+    ciudad: formData.get('ciudad') as string,
+    estado: formData.get('estado') as string,
+    zona: formData.get('zona') as string || undefined,
+    latitud: formData.get('latitud') as string || undefined,
+    longitud: formData.get('longitud') as string || undefined,
+    reglas: formData.get('reglas') as string || undefined,
+    politicaCancelacion: (formData.get('politicaCancelacion') as string) || 'MODERADA',
+    horarioCheckIn: (formData.get('horarioCheckIn') as string) || '14:00',
+    horarioCheckOut: (formData.get('horarioCheckOut') as string) || '11:00',
+    estanciaMinima: formData.get('estanciaMinima') as string,
+    estanciaMaxima: formData.get('estanciaMaxima') as string || undefined,
+    amenidades: formData.getAll('amenidades') as string[],
+  }
+
+  const validacion = propiedadSchema.safeParse(datos)
+  if (!validacion.success) {
+    return { error: validacion.error.issues[0].message }
+  }
+
+  const data = validacion.data
+
+  const { error: updateError } = await supabase
+    .from('propiedades')
+    .update({
+      titulo: data.titulo,
+      descripcion: data.descripcion,
+      tipo_propiedad: data.tipoPropiedad,
+      precio_por_noche: data.precioPorNoche,
+      moneda: data.moneda,
+      capacidad_maxima: data.capacidadMaxima,
+      habitaciones: data.habitaciones,
+      banos: data.banos,
+      camas: data.camas,
+      direccion: data.direccion,
+      ciudad: data.ciudad,
+      estado: data.estado,
+      zona: data.zona,
+      latitud: data.latitud,
+      longitud: data.longitud,
+      reglas: data.reglas,
+      politica_cancelacion: data.politicaCancelacion,
+      horario_checkin: data.horarioCheckIn,
+      horario_checkout: data.horarioCheckOut,
+      estancia_minima: data.estanciaMinima,
+      estancia_maxima: data.estanciaMaxima,
+    })
+    .eq('id', propiedadId)
+
+  if (updateError) {
+    console.error('[actualizarPropiedad] Error:', updateError)
+    return { error: 'Error al actualizar el boogie' }
+  }
+
+  await supabase.from('propiedad_amenidades').delete().eq('propiedad_id', propiedadId)
+
+  if (data.amenidades.length > 0) {
+    for (const nombre of data.amenidades) {
+      const { data: amenidad } = await supabase
+        .from('amenidades')
+        .select('id')
+        .eq('nombre', nombre)
+        .single()
+
+      let amenidadId = amenidad?.id
+
+      if (!amenidadId) {
+        const { data: nueva } = await supabase
+          .from('amenidades')
+          .insert({ nombre, categoria: 'ESENCIALES' })
+          .select('id')
+          .single()
+        if (!nueva) continue
+        amenidadId = nueva.id
+      }
+
+      await supabase
+        .from('propiedad_amenidades')
+        .insert({ propiedad_id: propiedadId, amenidad_id: amenidadId })
+    }
+  }
+
+  const archivos = formData.getAll('imagenes') as File[]
+  if (archivos.length > 0) {
+    const { data: existentes } = await supabase
+      .from('imagenes_propiedad')
+      .select('orden')
+      .eq('propiedad_id', propiedadId)
+      .order('orden', { ascending: false })
+      .limit(1)
+
+    const ordenBase = (existentes?.[0]?.orden ?? -1) + 1
+
+    for (let i = 0; i < archivos.length; i++) {
+      const archivo = archivos[i]
+      const ext = archivo.name.split('.').pop() || 'jpg'
+      const path = `propiedades/${propiedadId}/${Date.now()}-${i}.${ext}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('imagenes')
+        .upload(path, archivo, { contentType: archivo.type, upsert: false })
+
+      if (uploadError) continue
+
+      const { data: urlData } = supabase.storage
+        .from('imagenes')
+        .getPublicUrl(path)
+
+      await supabase
+        .from('imagenes_propiedad')
+        .insert({
+          id: crypto.randomUUID(),
+          propiedad_id: propiedadId,
+          url: urlData.publicUrl,
+          orden: ordenBase + i,
+          es_principal: false,
+        })
+    }
+  }
+
+  await invalidatePropiedadCache(propiedadId)
+  revalidatePath('/dashboard/mis-propiedades')
+
+  return { exito: true }
+}
+
 export async function getMisPropiedades() {
   const user = await getUsuarioAutenticado()
   if (!user) return []
 
-  return prisma.propiedad.findMany({
-    where: { propietarioId: user.id },
-    include: {
-      imagenes: {
-        where: { esPrincipal: true },
-        take: 1,
-      },
-    },
-    orderBy: { fechaActualizacion: 'desc' },
-  })
+  const supabase = createAdminClient()
+
+  const { data } = await supabase
+    .from('propiedades')
+    .select('*, imagenes:imagenes_propiedad!propiedad_id(url, es_principal)')
+    .eq('propietario_id', user.id)
+    .order('fecha_actualizacion', { ascending: false })
+
+  return data ?? []
 }
 
 async function _getPropiedadesPublicasInternal(filtros?: {
@@ -282,8 +576,7 @@ async function _getPropiedadesPublicasInternal(filtros?: {
         Math.sin(dLat / 2) * Math.sin(dLat / 2) +
         Math.cos((centerLat * Math.PI) / 180) *
           Math.cos((lat * Math.PI) / 180) *
-          Math.sin(dLon / 2) *
-          Math.sin(dLon / 2)
+          Math.sin(dLon / 2) * Math.sin(dLon / 2)
       const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
       const dist = R * c
       ;(p as Record<string, unknown> & { _dist?: number })._dist = dist
@@ -352,32 +645,42 @@ export async function getPropiedadesPublicas(filtros?: {
   return _getPropiedadesPublicasCached(filtros)
 }
 
-async function _getPropiedadPorIdInternal(id: string): Promise<PropiedadDetalle | null> {
+async function _getPropiedadPorIdInternal(idOrSlug: string): Promise<PropiedadDetalle | null> {
   const supabase = createAdminClient()
 
-  const { data: propiedad } = await supabase
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug)
+
+  let query = supabase
     .from('propiedades')
     .select('*, propietario:usuarios!propietario_id(id, nombre, apellido, avatar_url, verificado)')
-    .eq('id', id)
-    .single()
+
+  if (isUUID) {
+    query = query.eq('id', idOrSlug)
+  } else {
+    query = query.eq('slug', idOrSlug)
+  }
+
+  const { data: propiedad } = await query.single()
 
   if (!propiedad) return null
+
+  const propiedadId = (propiedad as Record<string, unknown>).id as string
 
   const { data: imagenes } = await supabase
     .from('imagenes_propiedad')
     .select('*')
-    .eq('propiedad_id', id)
+    .eq('propiedad_id', propiedadId)
     .order('orden', { ascending: true })
 
   const { data: amenidadesRaw } = await supabase
     .from('propiedad_amenidades')
     .select('amenidad_id, amenidad:amenidades(id, nombre, icono, categoria)')
-    .eq('propiedad_id', id)
+    .eq('propiedad_id', propiedadId)
 
   const { data: resenasRaw } = await supabase
     .from('resenas')
     .select('id, calificacion, comentario, fecha_creacion, autor:usuarios!autor_id(nombre, apellido, avatar_url)')
-    .eq('propiedad_id', id)
+    .eq('propiedad_id', propiedadId)
     .order('fecha_creacion', { ascending: false })
     .limit(10)
 
