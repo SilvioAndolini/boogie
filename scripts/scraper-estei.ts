@@ -173,7 +173,7 @@ function parseCardToProperty(card: any): PropertyData {
         .replace(/-/g, ' ')
         .replace(/\s*\d+$/, '')  // Remover número final
         .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
         .join(' ')
         .trim()
     }
