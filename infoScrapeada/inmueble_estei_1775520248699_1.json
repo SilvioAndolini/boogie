@@ -1,0 +1,42 @@
+{
+  "id": "estei_1775520248699_1",
+  "titulo": "Guacuco Living Hostel And Coworking",
+  "descripcion": "Guacuco Living, hostel and cowo...PosadaNueva Esparta1 habitaciones, hasta 3 viajeros0.00(BCV) $60 / noche",
+  "tipoPropiedad": "HABITACION",
+  "precioPorNoche": 60,
+  "moneda": "USD",
+  "capacidadMaxima": 2,
+  "habitaciones": 1,
+  "banos": 1,
+  "camas": 1,
+  "direccion": "",
+  "ciudad": "Venezuela",
+  "estado": "Distrito Capital",
+  "zona": null,
+  "latitud": null,
+  "longitud": null,
+  "reglas": null,
+  "politicaCancelacion": "MODERADA",
+  "horarioCheckIn": "15:00",
+  "horarioCheckOut": "11:00",
+  "estanciaMinima": 1,
+  "estanciaMaxima": 30,
+  "estadoPublicacion": "PUBLICADA",
+  "imagenes": [
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/11he7wj1lp154AOS21nI51hP40L288Bl47510bVZ737lD049t5.jpg",
+      "alt": "guacuco-living-hostel-and-coworking-0",
+      "orden": 1,
+      "esPrincipal": true
+    }
+  ],
+  "amenidades": [
+    "wifi",
+    "aire_acondicionado"
+  ],
+  "fuenteScraping": {
+    "sitio": "estei.app",
+    "urlOriginal": "https://estei.app",
+    "fechaScraping": "2026-04-07T00:04:08.699Z"
+  }
+}

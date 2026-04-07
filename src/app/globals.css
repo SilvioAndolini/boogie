@@ -137,10 +137,70 @@
   100% { background-position: 200% 0; }
 }
 
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 .skeleton {
   background: linear-gradient(90deg, #f0ece4 25%, #e8e4df 50%, #f0ece4 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
+}
+
+@keyframes skeletonFadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Map markers — MapLibre */
+.map-marker {
+  background: #1B4332;
+  border: 2px solid #1B4332;
+  border-radius: 9999px;
+  padding: 5px 12px;
+  box-shadow: 0 2px 10px rgba(27,67,50,0.25);
+  cursor: pointer;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: white;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: transform 0.2s cubic-bezier(.4,0,.2,1), box-shadow 0.2s cubic-bezier(.4,0,.2,1), background-color 0.2s ease;
+  user-select: none;
+}
+.map-marker:hover {
+  transform: scale(1.12) translateY(-1px);
+  background: #2D6A4F;
+  border-color: #2D6A4F;
+  box-shadow: 0 6px 20px rgba(27,67,50,0.4);
+}
+.map-marker:active {
+  transform: scale(1.04);
+  box-shadow: 0 2px 8px rgba(27,67,50,0.3);
+}
+
+/* MapLibre popup overrides */
+.maplibregl-popup {
+  z-index: 20 !important;
+  pointer-events: none;
+}
+.map-popup-container .maplibregl-popup-content {
+  border-radius: 14px !important;
+  padding: 12px !important;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.12), 0 2px 10px rgba(0,0,0,0.06) !important;
+  border: 1px solid #E8E4DF;
+  overflow: hidden;
+  animation: popupSlideUp 0.22s cubic-bezier(.4,0,.2,1);
+}
+.map-popup-container .maplibregl-popup-tip {
+  display: none !important;
+}
+
+@keyframes popupSlideUp {
+  from { opacity: 0; transform: translateY(8px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 /* Scrollbar personalizado */

@@ -1,0 +1,84 @@
+{
+  "fuenteScraping": {
+    "sitio": "estei.app",
+    "urlOriginal": "https://estei.app/stay/17401675288982085946/profile?guests=1&arrival_date=2026-04-06&departure_date=2026-04-07",
+    "fechaScraping": "2026-04-07T00:02:11.368Z"
+  },
+  "titulo": "Sin título",
+  "descripcion": "Tasa BCV: 474.06 (Bs/USD)",
+  "imagenes": [
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/3l93ah23PW2y497Tcg1HAy7P7N791Qf7hWEC91rG01Y76ly05Z.jpeg",
+      "alt": "excelente-apartamento-con-todas-las-comodidades-0",
+      "orden": 1,
+      "esPrincipal": true
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/IU5uA09q12kle5x6S6v10Cf77ONYn0XiwB9hr0Hw7n98N90362.jpeg",
+      "alt": "excelente-apartamento-con-todas-las-comodidades-1",
+      "orden": 2,
+      "esPrincipal": false
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/57AHIqYy90mjIjYBq15h9U846LzNq719C22J6S473Qm5B5W7U3.jpeg",
+      "alt": "excelente-apartamento-con-todas-las-comodidades-2",
+      "orden": 3,
+      "esPrincipal": false
+    },
+    {
+      "url": "https://avilatek.sfo3.digitaloceanspaces.com/stg/32FsE959oQdh0ot64H5F9710V2008RZ49Cgr93ApSYmOarU52C.jpeg",
+      "alt": "excelente-apartamento-con-todas-las-comodidades-3",
+      "orden": 4,
+      "esPrincipal": false
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/S907Wn761LIE34Yze5p8d9JV258cgzZ7cZrySho0i744lpe2uB.jpeg",
+      "alt": "1760829149136242082",
+      "orden": 5,
+      "esPrincipal": false
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/9L6U90qwNB9v2c61031335V1SAzWl4O5w3D32rCds92US5b248.jpeg",
+      "alt": "1744569956443037660",
+      "orden": 6,
+      "esPrincipal": false
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/5t0dB69J4U4oEoud935DQ2HVLY59c4zw08w5n0wkuml4rME5z8.jpeg",
+      "alt": "1763366978112440024",
+      "orden": 7,
+      "esPrincipal": false
+    },
+    {
+      "url": "https://maps.googleapis.com/maps/api/js/StaticMapService.GetMapImage?1m2&1i658249&2i986953&2e1&3u13&4m2&1u763&2u400&5m5&1e0&5sen&6sus&10b1&12b1&7s7edde38eff5a9a6e&8e1&key=AIzaSyAa5WMuX86FJXjQroxwsXmBtPN4LpcX73o&token=34116",
+      "alt": null,
+      "orden": 8,
+      "esPrincipal": false
+    }
+  ],
+  "habitaciones": 0,
+  "banos": 1,
+  "camas": 1,
+  "capacidadMaxima": 0,
+  "tipoPropiedad": "APARTAMENTO",
+  "precioPorNoche": 50,
+  "moneda": "USD",
+  "ciudad": "Venezuela",
+  "estado": "Distrito Capital",
+  "direccion": "Venezuela, Distrito Capital",
+  "politicaCancelacion": "MODERADA",
+  "horarioCheckIn": "15:00",
+  "horarioCheckOut": "11:00",
+  "estanciaMinima": 1,
+  "estanciaMaxima": 30,
+  "estadoPublicacion": "PUBLICADA",
+  "zona": null,
+  "latitud": null,
+  "longitud": null,
+  "reglas": null,
+  "amenidades": [
+    "wifi",
+    "aire_acondicionado"
+  ],
+  "id": "scrapeado_1775520131370_4"
+}

@@ -27,10 +27,9 @@ function esRutaPublica(pathname: string): boolean {
 
 export async function middleware(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 
-  // Si no hay credenciales de Supabase, permitir acceso sin autenticación
-  if (!supabaseUrl || !supabaseAnonKey) {
+  if (!supabaseUrl || !supabaseKey) {
     console.warn('[middleware] Supabase credentials not configured, skipping auth')
     return NextResponse.next({ request })
   }
@@ -40,7 +39,7 @@ export async function middleware(request: NextRequest) {
   })
 
   try {
-    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+    const supabase = createServerClient(supabaseUrl, supabaseKey, {
       cookies: {
         getAll() {
           return request.cookies.getAll()
@@ -68,7 +67,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // Proteger rutas del panel y API
-    if (!user && !esRutaPublica(pathname) && !pathname.startsWith('/api/auth')) {
+    if (!user && !esRutaPublica(pathname) && !pathname.startsWith('/api/')) {
       const redirectUrl = new URL('/login', request.url)
       redirectUrl.searchParams.set('redirect', pathname)
       return NextResponse.redirect(redirectUrl)

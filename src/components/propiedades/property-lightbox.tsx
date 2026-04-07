@@ -10,7 +10,7 @@ interface ImagenPropiedad {
   url: string
   alt: string | null
   orden: number
-  esPrincipal: boolean
+  es_principal: boolean
 }
 
 interface PropertyLightboxProps {

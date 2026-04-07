@@ -1,0 +1,209 @@
+[
+  {
+    "linksFound": 20,
+    "imagesFound": 36,
+    "h2": "Novo Hotel",
+    "bodyClasses": "",
+    "testIds": [
+      {
+        "testId": "stay-card",
+        "tag": "A",
+        "text": "Novo HotelHotelDistrito Capital5 habitaciones disp"
+      },
+      {
+        "testId": "stay-card",
+        "tag": "A",
+        "text": "Habitación #1 con baño comparti...ApartamentoMiran"
+      },
+      {
+        "testId": "stay-card",
+        "tag": "A",
+        "text": "Anexo Remodelado en la Californ...ApartamentoMiran"
+      },
+      {
+        "testId": "stay-card",
+        "tag": "A",
+        "text": "Excelente apartamento con todas...ApartamentoDistr"
+      },
+      {
+        "testId": "stay-card",
+        "tag": "A",
+        "text": "Bello Apartamento Con Estaciona...ApartamentoMiran"
+      },
+      {
+        "testId": "stay-card",
+        "tag": "A",
+        "text": "Apartamento vacacional ApartamentoVargas1 habitaci"
+      },
+      {
+        "testId": "stay-card",
+        "tag": "A",
+        "text": "Habitacion Matrimonial ApartamentoDistrito Capital"
+      },
+      {
+        "testId": "stay-card",
+        "tag": "A",
+        "text": "Casa vacacional con piscina en ...CasaLa Guaira4 h"
+      },
+      {
+        "testId": "stay-card",
+        "tag": "A",
+        "text": "MODERNO APARTAMENTO EN EL ROSAL...ApartamentoMiran"
+      },
+      {
+        "testId": "stay-card",
+        "tag": "A",
+        "text": "OCEAN_VIEW 1 ApartamentoLa Guaira1 habitaciones, h"
+      },
+      {
+        "testId": "stay-card",
+        "tag": "A",
+        "text": "Lujo, Ubicación & Comodidad en ...ApartamentoMiran"
+      },
+      {
+        "testId": "stay-card",
+        "tag": "A",
+        "text": "Apartamento Boutique en CaracasApartamentoMiranda1"
+      }
+    ],
+    "cards": []
+  },
+  {
+    "linksFound": 20,
+    "imagesFound": 36,
+    "h2": "Apartamento Premium en Pampatar",
+    "bodyClasses": "",
+    "testIds": [
+      {
+        "testId": "stay-card",
+        "tag": "A",
+        "text": "Apartamento Premium en PampatarApartamentoNueva Es"
+      },
+      {
+        "testId": "stay-card",
+        "tag": "A",
+        "text": "LA MEJOR UBICACIÓN DE LA  ISLA ...CasaNueva Espart"
+      },
+      {
+        "testId": "stay-card",
+        "tag": "A",
+        "text": "Casa Rústica CasaNueva Esparta3 habitaciones, hast"
+      },
+      {
+        "testId": "stay-card",
+        "tag": "A",
+        "text": "Residencias Villas de Margarita...ApartamentoNueva"
+      },
+      {
+        "testId": "stay-card",
+        "tag": "A",
+        "text": "Monoambiente cabaña en Porlamar...CabañaNueva Espa"
+      },
+      {
+        "testId": "stay-card",
+        "tag": "A",
+        "text": "Habitaciones desde matrimoniale...PosadaNueva Espa"
+      },
+      {
+        "testId": "stay-card",
+        "tag": "A",
+        "text": "Apartamento vacacionalApartamentoNueva Esparta2 ha"
+      },
+      {
+        "testId": "stay-card",
+        "tag": "A",
+        "text": "Vientos y Mares Cabaña9 habitaciones disponibles0."
+      },
+      {
+        "testId": "stay-card",
+        "tag": "A",
+        "text": "1B2 PLAYA EL AGUA APARTAMENTO V...ApartamentoNueva"
+      },
+      {
+        "testId": "stay-card",
+        "tag": "A",
+        "text": "Townhouse Luna llena Town HouseNueva Esparta3 habi"
+      },
+      {
+        "testId": "stay-card",
+        "tag": "A",
+        "text": "Excelente Apartamento Vacaciona...ApartamentoNueva"
+      },
+      {
+        "testId": "stay-card",
+        "tag": "A",
+        "text": "Posada Boutique Villa TomasaPosadaNueva Esparta6 h"
+      }
+    ],
+    "cards": []
+  },
+  {
+    "linksFound": 20,
+    "imagesFound": 36,
+    "h2": "Acogedor y familiar  apartament...",
+    "bodyClasses": "",
+    "testIds": [
+      {
+        "testId": "stay-card",
+        "tag": "A",
+        "text": "Acogedor y familiar  apartament...ApartamentoMiran"
+      },
+      {
+        "testId": "stay-card",
+        "tag": "A",
+        "text": "Novo HotelHotelDistrito Capital5 habitaciones disp"
+      },
+      {
+        "testId": "stay-card",
+        "tag": "A",
+        "text": "Apartamento en los CoralesApartamentoLa Guaira2 ha"
+      },
+      {
+        "testId": "stay-card",
+        "tag": "A",
+        "text": "Apartamento 50 mts, 3 personas ...ApartamentoMiran"
+      },
+      {
+        "testId": "stay-card",
+        "tag": "A",
+        "text": "Habitación #1 con baño comparti...ApartamentoMiran"
+      },
+      {
+        "testId": "stay-card",
+        "tag": "A",
+        "text": "Escapate todos los díasCabañaCapital District1 hab"
+      },
+      {
+        "testId": "stay-card",
+        "tag": "A",
+        "text": "Apartamento vacacional ApartamentoVargas1 habitaci"
+      },
+      {
+        "testId": "stay-card",
+        "tag": "A",
+        "text": "Confort & Ubicación · Hermoso A...ApartamentoMiran"
+      },
+      {
+        "testId": "stay-card",
+        "tag": "A",
+        "text": "Suite Deluxe CaraballedaApartamentoLa Guaira1 habi"
+      },
+      {
+        "testId": "stay-card",
+        "tag": "A",
+        "text": "Apartamento Jardín Bello Campo ...ApartamentoMiran"
+      },
+      {
+        "testId": "stay-card",
+        "tag": "A",
+        "text": "Lujo, Ubicación & Comodidad en ...ApartamentoMiran"
+      },
+      {
+        "testId": "stay-card",
+        "tag": "A",
+        "text": "Apartamento Boutique en CaracasApartamentoMiranda1"
+      }
+    ],
+    "cards": []
+  }
+]

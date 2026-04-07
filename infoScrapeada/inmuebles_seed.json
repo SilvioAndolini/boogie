@@ -1,0 +1,348 @@
+[
+  {
+    "id": "boogie_seed_001",
+    "titulo": "Apartamento con vista al Ávila en Altamira",
+    "descripcion": "Espectacular apartamento de 3 habitaciones en el corazón de Altamira. Vista panorámica al Ávila, internet de fibra óptica, Smart TV 55', cocina totalmente equipped, y dos baños completos. Edificio con vigilancia 24/7,健身房 y área social.",
+    "tipoPropiedad": "APARTAMENTO",
+    "precioPorNoche": 120.00,
+    "moneda": "USD",
+    "capacidadMaxima": 6,
+    "habitaciones": 3,
+    "banos": 2,
+    "camas": 4,
+    "direccion": "Av. Francisco de Miranda, Torre Residencial Altamira",
+    "ciudad": "Caracas",
+    "estado": "Distrito Capital",
+    "zona": "Altamira",
+    "latitud": 10.4806,
+    "longitud": -66.8547,
+    "reglas": "No fumar\nNo mascotas\nCheck-in: 15:00\nCheck-out: 11:00\nSilencio después de las 10pm",
+    "politicaCancelacion": "FLEXIBLE",
+    "horarioCheckIn": "15:00",
+    "horarioCheckOut": "11:00",
+    "estanciaMinima": 2,
+    "estanciaMaxima": 90,
+    "estadoPublicacion": "PUBLICADA",
+    "imagenes": [
+      {
+        "url": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=1200",
+        "alt": "Sala moderna",
+        "orden": 1,
+        "esPrincipal": true
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=1200",
+        "alt": "Cocina equipped",
+        "orden": 2,
+        "esPrincipal": false
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1200",
+        "alt": "Vista ciudad",
+        "orden": 3,
+        "esPrincipal": false
+      }
+    ],
+    "amenidades": ["wifi", "aire_acondicionado", "tv", "lavadora", "cocina", "agua_caliente", "gimnasio", "seguridad_24h", "ascensor", "estacionamiento"],
+    "fuenteScraping": null
+  },
+  {
+    "id": "boogie_seed_002",
+    "titulo": "Casa tipo chalet en La Guaira con playa privada",
+    "descripcion": "Increíble casa frente al mar en La Guaira. 4 habitaciones, salón amplio, cocina tradicional,terraza con hamacas y acceso directo a playa. El lugar perfecto para descansar y disfrutar de la naturaleza.",
+    "tipoPropiedad": "CASA",
+    "precioPorNoche": 200.00,
+    "moneda": "USD",
+    "capacidadMaxima": 10,
+    "habitaciones": 4,
+    "banos": 3,
+    "camas": 6,
+    "direccion": "Carretera Vieja Caracas-La Guaira, Km 15",
+    "ciudad": "La Guaira",
+    "estado": "Vargas",
+    "zona": "Playa Verde",
+    "latitud": 10.5833,
+    "longitud": -66.9333,
+    "reglas": "No fumar en interiores\nMascotas permitidas con cargo extra\nCheck-in: 13:00\nCheck-out: 12:00\nUso responsable del agua",
+    "politicaCancelacion": "MODERADA",
+    "horarioCheckIn": "13:00",
+    "horarioCheckOut": "12:00",
+    "estanciaMinima": 3,
+    "estanciaMaxima": 30,
+    "estadoPublicacion": "PUBLICADA",
+    "imagenes": [
+      {
+        "url": "https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?w=1200",
+        "alt": "Fachada casa",
+        "orden": 1,
+        "esPrincipal": true
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1200",
+        "alt": "Terraza con vista al mar",
+        "orden": 2,
+        "esPrincipal": false
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200",
+        "alt": "Habitación con vista",
+        "orden": 3,
+        "esPrincipal": false
+      }
+    ],
+    "amenidades": ["wifi", "aire_acondicionado", "tv", "cocina", "agua_caliente", "estacionamiento", "playa_privada", "terraza", "mascotas"],
+    "fuenteScraping": null
+  },
+  {
+    "id": "boogie_seed_003",
+    "titulo": "Loft industrial en Las Mercedes",
+    "descripcion": "Moderno loft con diseño industrial, altura de 5 metros, iluminación natural, habitación en segundo nivel. Ubicado en zona bancaria de Las Mercedes, cerca de restaurants y vida nocturna.",
+    "tipoPropiedad": "LOFT",
+    "precioPorNoche": 95.00,
+    "moneda": "USD",
+    "capacidadMaxima": 2,
+    "habitaciones": 1,
+    "banos": 1,
+    "camas": 1,
+    "direccion": "Av. Principal de Las Mercedes, Edif. The Loft",
+    "ciudad": "Caracas",
+    "estado": "Distrito Capital",
+    "zona": "Las Mercedes",
+    "latitud": 10.4500,
+    "longitud": -66.8500,
+    "reglas": "No fumar\nNo mascotas\nCheck-in: 14:00\nCheck-out: 12:00",
+    "politicaCancelacion": "FLEXIBLE",
+    "horarioCheckIn": "14:00",
+    "horarioCheckOut": "12:00",
+    "estanciaMinima": 1,
+    "estanciaMaxima": 14,
+    "estadoPublicacion": "PUBLICADA",
+    "imagenes": [
+      {
+        "url": "https://images.unsplash.com/photo-1536376072261-38c75010e6c9?w=1200",
+        "alt": "Loft completo",
+        "orden": 1,
+        "esPrincipal": true
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1560185893-a55cbc8c57e8?w=1200",
+        "alt": "Área de trabajo",
+        "orden": 2,
+        "esPrincipal": false
+      }
+    ],
+    "amenidades": ["wifi", "aire_acondicionado", "tv", "lavadora", "cocina", "agua_caliente", "ascensor"],
+    "fuenteScraping": null
+  },
+  {
+    "id": "boogie_seed_004",
+    "titulo": "Penthouse de lujo en El血色",
+    "descripcion": "Espectacular penthouse de 400m² con terraza propia, jacuzzi privado, 4 habitaciones principales con baño privado, salón de eventos, cocina industrial. Vista 360° a Caracas.",
+    "tipoPropiedad": "PENTHOUSE",
+    "precioPorNoche": 450.00,
+    "moneda": "USD",
+    "capacidadMaxima": 12,
+    "habitaciones": 4,
+    "banos": 5,
+    "camas": 5,
+    "direccion": "Av. Libertador, Torre Residencial El血色",
+    "ciudad": "Caracas",
+    "estado": "Distrito Capital",
+    "zona": "El血色",
+    "latitud": 10.4600,
+    "longitud": -66.8600,
+    "reglas": "No fumar en interiores\nMascotas consultar\nFiestas hasta las 11pm\nCapacidad máxima 12 personas\nDepósito de garantía requerido",
+    "politicaCancelacion": "ESTRICTA",
+    "horarioCheckIn": "15:00",
+    "horarioCheckOut": "12:00",
+    "estanciaMinima": 2,
+    "estanciaMaxima": 30,
+    "estadoPublicacion": "PUBLICADA",
+    "imagenes": [
+      {
+        "url": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200",
+        "alt": "Terraza penthouse",
+        "orden": 1,
+        "esPrincipal": true
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1200",
+        "alt": "Sala principal",
+        "orden": 2,
+        "esPrincipal": false
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=1200",
+        "alt": "Jacuzzi",
+        "orden": 3,
+        "esPrincipal": false
+      }
+    ],
+    "amenidades": ["wifi", "aire_acondicionado", "tv", "lavadora", "cocina", "agua_caliente", "gimnasio", "seguridad_24h", "ascensor", "estacionamiento", "jacuzzi", "terraza", "lavavajillas"],
+    "fuenteScraping": null
+  },
+  {
+    "id": "boogie_seed_005",
+    "titulo": "Cabaña romántica en Colonia Tovar",
+    "descripcion": "Acogedora cabaña de madera en las montañas de Colonia Tovar. Chimenea, heater de leña, cocina a leña, y una habitación espaciosa. Ideal para parejas que buscan escape romántico.",
+    "tipoPropiedad": "CABANA",
+    "precioPorNoche": 110.00,
+    "moneda": "USD",
+    "capacidadMaxima": 2,
+    "habitaciones": 1,
+    "banos": 1,
+    "camas": 1,
+    "direccion": "Sector El Volcán, Colonia Tovar",
+    "ciudad": "Colonia Tovar",
+    "estado": "Aragua",
+    "zona": "El Volcán",
+    "latitud": 10.4167,
+    "longitud": -67.2833,
+    "reglas": "No fumar en interiores\nMascotas permitidas\nNo fiestas\nRespetar silencio 10pm-8am\nNo lanzar objetos al fuego",
+    "politicaCancelacion": "MODERADA",
+    "horarioCheckIn": "14:00",
+    "horarioCheckOut": "12:00",
+    "estanciaMinima": 2,
+    "estanciaMaxima": 7,
+    "estadoPublicacion": "PUBLICADA",
+    "imagenes": [
+      {
+        "url": "https://images.unsplash.com/photo-1449158743715-0a90ebb6d2d8?w=1200",
+        "alt": "Cabaña exterior",
+        "orden": 1,
+        "esPrincipal": true
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1518736114810-3f3bedfec66a?w=1200",
+        "alt": "Interior con chimenea",
+        "orden": 2,
+        "esPrincipal": false
+      }
+    ],
+    "amenidades": ["wifi", "chimenea", "cocina", "agua_caliente", "estacionamiento", "mascotas", "calefaccion"],
+    "fuenteScraping": null
+  },
+  {
+    "id": "boogie_seed_006",
+    "titulo": "Estudio moderno en Sabana Grande",
+    "descripcion": "Práctico estudio en Sabana Grande, cerca del metro. Cama Queen, Smart TV, cocina pequeña equipped, baño moderno. Perfecto para viajeros de negocios o estudiantes.",
+    "tipoPropiedad": "ESTUDIO",
+    "precioPorNoche": 45.00,
+    "moneda": "USD",
+    "capacidadMaxima": 2,
+    "habitaciones": 1,
+    "banos": 1,
+    "camas": 1,
+    "direccion": "Av. Mexico, Edif. Residencial Sabana",
+    "ciudad": "Caracas",
+    "estado": "Distrito Capital",
+    "zona": "Sabana Grande",
+    "latitud": 10.4950,
+    "longitud": -66.8620,
+    "reglas": "No fumar\nNo mascotas\nCheck-in: 15:00\nCheck-out: 11:00",
+    "politicaCancelacion": "FLEXIBLE",
+    "horarioCheckIn": "15:00",
+    "horarioCheckOut": "11:00",
+    "estanciaMinima": 1,
+    "estanciaMaxima": 30,
+    "estadoPublicacion": "PUBLICADA",
+    "imagenes": [
+      {
+        "url": "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=1200",
+        "alt": "Estudio completo",
+        "orden": 1,
+        "esPrincipal": true
+      }
+    ],
+    "amenidades": ["wifi", "aire_acondicionado", "tv", "cocina", "agua_caliente", "ascensor"],
+    "fuenteScraping": null
+  },
+  {
+    "id": "boogie_seed_007",
+    "titulo": "Casa de campo con piscina en Valencia",
+    "descripcion": "Hermosa casa de campo a las afueras de Valencia. 3 habitaciones, salón amplio con TV, cocina industrial, piscina, bbq, y amplio jardín. Espacio para hasta 8 personas.",
+    "tipoPropiedad": "FINCA",
+    "precioPorNoche": 180.00,
+    "moneda": "USD",
+    "capacidadMaxima": 8,
+    "habitaciones": 3,
+    "banos": 2,
+    "camas": 5,
+    "direccion": "Carretera nacional Valencia-San Diego, Km 3",
+    "ciudad": "Valencia",
+    "estado": "Carabobo",
+    "zona": "San Diego",
+    "latitud": 10.2167,
+    "longitud": -68.4167,
+    "reglas": "No fumar en interiores\nMascotas permitidas con supervisión\nCheck-in: 13:00\nCheck-out: 12:00\nUsar zapatillas en áreas comunes",
+    "politicaCancelacion": "MODERADA",
+    "horarioCheckIn": "13:00",
+    "horarioCheckOut": "12:00",
+    "estanciaMinima": 2,
+    "estanciaMaxima": 14,
+    "estadoPublicacion": "PUBLICADA",
+    "imagenes": [
+      {
+        "url": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1200",
+        "alt": "Casa exterior",
+        "orden": 1,
+        "esPrincipal": true
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200",
+        "alt": "Piscina",
+        "orden": 2,
+        "esPrincipal": false
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=1200",
+        "alt": "Área BBQ",
+        "orden": 3,
+        "esPrincipal": false
+      }
+    ],
+    "amenidades": ["wifi", "aire_acondicionado", "tv", "cocina", "agua_caliente", "estacionamiento", "piscina", "bbq", "jardin", "mascotas"],
+    "fuenteScraping": null
+  },
+  {
+    "id": "boogie_seed_008",
+    "titulo": "Apartamento frente al mar en Margarita",
+    "descripcion": "Agradable apartamento en el corazón de Playa El Agua. 2 habitaciones, salón con vista al mar, cocina abierta, terraza privada. Acceso directo a la playa y cercano a restaurants.",
+    "tipoPropiedad": "APARTAMENTO",
+    "precioPorNoche": 95.00,
+    "moneda": "USD",
+    "capacidadMaxima": 5,
+    "habitaciones": 2,
+    "banos": 2,
+    "camas": 3,
+    "direccion": "Calle Principal de El Agua, Edif. Costa Azul",
+    "ciudad": "Pampatar",
+    "estado": "Nueva Esparta",
+    "zona": "Playa El Agua",
+    "latitud": 10.9833,
+    "longitud": -63.8333,
+    "reglas": "No fumar en interiores\nNo mascotas\nCheck-in: 14:00\nCheck-out: 11:00",
+    "politicaCancelacion": "MODERADA",
+    "horarioCheckIn": "14:00",
+    "horarioCheckOut": "11:00",
+    "estanciaMinima": 3,
+    "estanciaMaxima": 21,
+    "estadoPublicacion": "PUBLICADA",
+    "imagenes": [
+      {
+        "url": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200",
+        "alt": "Vista al mar",
+        "orden": 1,
+        "esPrincipal": true
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=1200",
+        "alt": "Interior apartamento",
+        "orden": 2,
+        "esPrincipal": false
+      }
+    ],
+    "amenidades": ["wifi", "aire_acondicionado", "tv", "cocina", "agua_caliente", "estacionamiento", "playa_cercana", "terraza", "ascensor"],
+    "fuenteScraping": null
+  }
+]

@@ -1,0 +1,42 @@
+{
+  "id": "estei_1775520255894_0",
+  "titulo": "Novo Hotel",
+  "descripcion": "Novo HotelHotelDistrito Capital5 habitaciones disponibles0.00(BCV) $75 / noche",
+  "tipoPropiedad": "HABITACION",
+  "precioPorNoche": 75,
+  "moneda": "USD",
+  "capacidadMaxima": 2,
+  "habitaciones": 5,
+  "banos": 1,
+  "camas": 1,
+  "direccion": "",
+  "ciudad": "Venezuela",
+  "estado": "Distrito Capital",
+  "zona": null,
+  "latitud": null,
+  "longitud": null,
+  "reglas": null,
+  "politicaCancelacion": "MODERADA",
+  "horarioCheckIn": "15:00",
+  "horarioCheckOut": "11:00",
+  "estanciaMinima": 1,
+  "estanciaMaxima": 30,
+  "estadoPublicacion": "PUBLICADA",
+  "imagenes": [
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/65EnL1jqeb89I02955lY7B571v8dZM97d7qNeH2ymO8TG607r7.jpg",
+      "alt": "novo-hotel-0",
+      "orden": 1,
+      "esPrincipal": true
+    }
+  ],
+  "amenidades": [
+    "wifi",
+    "aire_acondicionado"
+  ],
+  "fuenteScraping": {
+    "sitio": "estei.app",
+    "urlOriginal": "https://estei.app",
+    "fechaScraping": "2026-04-07T00:04:15.894Z"
+  }
+}

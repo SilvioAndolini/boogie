@@ -1,0 +1,42 @@
+{
+  "id": "estei_1775520241433_1",
+  "titulo": "Apartamento 50 Mts 3 Personas 1b 1e",
+  "descripcion": "Apartamento 50 mts, 3 personas ...ApartamentoMiranda1 habitaciones, hasta 3 viajeros0.00(BCV) $100 / noche",
+  "tipoPropiedad": "HABITACION",
+  "precioPorNoche": 100,
+  "moneda": "USD",
+  "capacidadMaxima": 2,
+  "habitaciones": 1,
+  "banos": 1,
+  "camas": 1,
+  "direccion": "",
+  "ciudad": "Venezuela",
+  "estado": "Distrito Capital",
+  "zona": null,
+  "latitud": null,
+  "longitud": null,
+  "reglas": null,
+  "politicaCancelacion": "MODERADA",
+  "horarioCheckIn": "15:00",
+  "horarioCheckOut": "11:00",
+  "estanciaMinima": 1,
+  "estanciaMaxima": 30,
+  "estadoPublicacion": "PUBLICADA",
+  "imagenes": [
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/f028l4114qQTzUX385Bi0vTq9Y6Yl49EY7o8863rZAQDfCw1G9.jpeg",
+      "alt": "apartamento-50-mts-3-personas-1b-1e-0",
+      "orden": 1,
+      "esPrincipal": true
+    }
+  ],
+  "amenidades": [
+    "wifi",
+    "aire_acondicionado"
+  ],
+  "fuenteScraping": {
+    "sitio": "estei.app",
+    "urlOriginal": "https://estei.app",
+    "fechaScraping": "2026-04-07T00:04:01.433Z"
+  }
+}

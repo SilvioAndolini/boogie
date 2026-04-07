@@ -1,0 +1,42 @@
+{
+  "id": "estei_1775520248699_0",
+  "titulo": "Casa A 500 Mts De Playa Guacuco",
+  "descripcion": "Casa a 500 mts de Playa GuacucoCasaNueva Esparta3 habitaciones, hasta 6 viajeros0.00(BCV) $80 / noche",
+  "tipoPropiedad": "CASA",
+  "precioPorNoche": 80,
+  "moneda": "USD",
+  "capacidadMaxima": 2,
+  "habitaciones": 3,
+  "banos": 1,
+  "camas": 1,
+  "direccion": "",
+  "ciudad": "Venezuela",
+  "estado": "Distrito Capital",
+  "zona": null,
+  "latitud": null,
+  "longitud": null,
+  "reglas": null,
+  "politicaCancelacion": "MODERADA",
+  "horarioCheckIn": "15:00",
+  "horarioCheckOut": "11:00",
+  "estanciaMinima": 1,
+  "estanciaMaxima": 30,
+  "estadoPublicacion": "PUBLICADA",
+  "imagenes": [
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/N6U49aXFYcD8pT1Ko97o78DIZ7mSa6Sq39p528AyBcS9df2g0t.jpg",
+      "alt": "casa-a-500-mts-de-playa-guacuco-0",
+      "orden": 1,
+      "esPrincipal": true
+    }
+  ],
+  "amenidades": [
+    "wifi",
+    "aire_acondicionado"
+  ],
+  "fuenteScraping": {
+    "sitio": "estei.app",
+    "urlOriginal": "https://estei.app",
+    "fechaScraping": "2026-04-07T00:04:08.699Z"
+  }
+}

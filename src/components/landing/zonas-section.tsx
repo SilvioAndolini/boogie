@@ -2,23 +2,22 @@
 
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import {
-  Palmtree,
-  Mountain,
-  Waves,
-  Building2,
-  Tent,
-  ArrowRight,
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Waves, Building2, Clock } from 'lucide-react'
 
 const ZONAS_DESTACADAS = [
-  { nombre: 'Margarita', estado: 'Nueva Esparta', Icon: Palmtree, slug: 'nueva-esparta', color: 'from-[#E76F51]/20 to-[#F4A261]/20' },
-  { nombre: 'Los Roques', estado: 'Distrito Capital', Icon: Waves, slug: 'distrito-capital', color: 'from-[#52B788]/20 to-[#2D6A4F]/20' },
-  { nombre: 'Mérida', estado: 'Mérida', Icon: Mountain, slug: 'merida', color: 'from-[#1B4332]/20 to-[#52B788]/20' },
   { nombre: 'Caracas', estado: 'Distrito Capital', Icon: Building2, slug: 'distrito-capital', color: 'from-[#6B6560]/20 to-[#1A1A1A]/20' },
-  { nombre: 'Canaima', estado: 'Bolívar', Icon: Tent, slug: 'bolivar', color: 'from-[#D8F3DC] to-[#1B4332]/10' },
-  { nombre: 'Choroní', estado: 'Aragua', Icon: Waves, slug: 'aragua', color: 'from-[#E76F51]/10 to-[#52B788]/20' },
+  { nombre: 'Vargas', estado: 'Vargas', Icon: Waves, slug: 'vargas', color: 'from-[#52B788]/20 to-[#2D6A4F]/20' },
+]
+
+const PROXIMAMENTE = [
+  { nombre: 'Margarita', estado: 'Nueva Esparta' },
+  { nombre: 'Mérida', estado: 'Mérida' },
+  { nombre: 'Los Roques', estado: 'Distrito Capital' },
+  { nombre: 'Canaima', estado: 'Bolívar' },
+  { nombre: 'Choroní', estado: 'Aragua' },
+  { nombre: 'Colonia Tovar', estado: 'Aragua' },
+  { nombre: 'Los Llanos', estado: 'Barinas' },
+  { nombre: 'Parque Nacional', estado: 'Canaima' },
 ]
 
 const containerVariants = {
@@ -53,7 +52,7 @@ export function ZonasSection() {
         </motion.div>
 
         <motion.div
-          className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6"
+          className="mt-10 grid grid-cols-2 gap-4 max-w-xl mx-auto"
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
@@ -85,18 +84,29 @@ export function ZonasSection() {
         </motion.div>
 
         <motion.div
-          className="mt-8 text-center"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
+          className="mt-16"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-50px' }}
-          transition={{ duration: 0.4, delay: 0.3 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
         >
-          <Link href="/zonas">
-            <Button variant="outline" className="gap-2 border-[#1B4332] text-[#1B4332] hover:bg-[#D8F3DC]">
-              Ver todos los destinos
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </Link>
+          <div className="flex items-center justify-center gap-2 mb-8">
+            <Clock className="h-5 w-5 text-[#1B4332]" />
+            <h3 className="text-xl font-semibold text-[#1A1A1A]">Próximamente disponible</h3>
+          </div>
+          <p className="text-center text-[#6B6560] mb-8">Estamos trabajando para traerte más destinos en Venezuela</p>
+          
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl mx-auto">
+            {PROXIMAMENTE.map((zona) => (
+              <div
+                key={zona.nombre}
+                className="flex items-center gap-2 rounded-lg border border-dashed border-[#D0CBC4] bg-[#F8F6F3]/50 px-3 py-2.5"
+              >
+                <span className="text-sm text-[#6B6560]">{zona.nombre}</span>
+                <span className="text-xs text-[#A8A5A0]">({zona.estado})</span>
+              </div>
+            ))}
+          </div>
         </motion.div>
       </div>
     </section>

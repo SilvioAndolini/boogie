@@ -1,0 +1,42 @@
+{
+  "id": "estei_1775520241434_4",
+  "titulo": "Brand New Apt En La Campia 4 Personas",
+  "descripcion": "Brand new apt en la campiña / 4...ApartamentoDistrito Capital1 habitaciones, hasta 4 viajeros5.00(BCV) $60 / noche",
+  "tipoPropiedad": "HABITACION",
+  "precioPorNoche": 60,
+  "moneda": "USD",
+  "capacidadMaxima": 2,
+  "habitaciones": 1,
+  "banos": 1,
+  "camas": 1,
+  "direccion": "",
+  "ciudad": "Venezuela",
+  "estado": "Distrito Capital",
+  "zona": null,
+  "latitud": null,
+  "longitud": null,
+  "reglas": null,
+  "politicaCancelacion": "MODERADA",
+  "horarioCheckIn": "15:00",
+  "horarioCheckOut": "11:00",
+  "estanciaMinima": 1,
+  "estanciaMaxima": 30,
+  "estadoPublicacion": "PUBLICADA",
+  "imagenes": [
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/7kUOuh983YSb57v2yb5QIC80izd7j7hNbna90cX7RgT8h810wM.jpeg",
+      "alt": "brand-new-apt-en-la-campia-4-personas-0",
+      "orden": 1,
+      "esPrincipal": true
+    }
+  ],
+  "amenidades": [
+    "wifi",
+    "aire_acondicionado"
+  ],
+  "fuenteScraping": {
+    "sitio": "estei.app",
+    "urlOriginal": "https://estei.app",
+    "fechaScraping": "2026-04-07T00:04:01.434Z"
+  }
+}

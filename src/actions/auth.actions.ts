@@ -2,60 +2,65 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
+import { isRedirectError } from 'next/dist/client/components/redirect-error'
 import { registroSchema, loginSchema, recuperacionSchema } from '@/lib/validations'
-import { prisma } from '@/lib/prisma'
 
-/**
- * Registra un nuevo usuario en la plataforma
- */
 export async function registrarUsuario(formData: FormData) {
-  const datos = {
-    nombre: formData.get('nombre') as string,
-    apellido: formData.get('apellido') as string,
-    email: formData.get('email') as string,
-    password: formData.get('password') as string,
-    confirmPassword: formData.get('confirmPassword') as string,
-    telefono: formData.get('telefono') as string || undefined,
-  }
+  try {
+    const datos = {
+      nombre: formData.get('nombre') as string,
+      apellido: formData.get('apellido') as string,
+      email: formData.get('email') as string,
+      password: formData.get('password') as string,
+      confirmPassword: formData.get('confirmPassword') as string,
+      telefono: (formData.get('telefono') as string) || undefined,
+    }
 
-  const validacion = registroSchema.safeParse(datos)
-  if (!validacion.success) {
-    return { error: validacion.error.issues[0].message }
-  }
+    const validacion = registroSchema.safeParse(datos)
+    if (!validacion.success) {
+      return { error: validacion.error.issues[0].message }
+    }
 
-  const supabase = await createClient()
+    const supabase = await createClient()
 
-  const { data, error } = await supabase.auth.signUp({
-    email: datos.email,
-    password: datos.password,
-    options: {
-      data: {
-        nombre: datos.nombre,
-        apellido: datos.apellido,
-        telefono: datos.telefono,
+    const { data, error } = await supabase.auth.signUp({
+      email: datos.email,
+      password: datos.password,
+      options: {
+        data: {
+          nombre: datos.nombre,
+          apellido: datos.apellido,
+          telefono: datos.telefono,
+        },
       },
-    },
-  })
+    })
 
-  if (error) {
-    return { error: error.message }
-  }
+    if (error) {
+      return { error: error.message }
+    }
 
-  // Crear perfil en la tabla usuarios
-  if (data.user) {
-    await prisma.usuario.create({
-      data: {
+    if (data.user) {
+      const admin = createAdminClient()
+      const { error: perfilError } = await admin.from('usuarios').insert({
         id: data.user.id,
         email: datos.email,
         nombre: datos.nombre,
         apellido: datos.apellido,
         telefono: datos.telefono,
-      },
-    })
-  }
+      })
+      if (perfilError) {
+        console.error('[registro] Error creando perfil:', perfilError.message)
+      }
+    }
 
-  redirect('/verificar-email')
+    redirect('/verificar-email')
+  } catch (err) {
+    if (isRedirectError(err)) throw err
+    console.error('[registro] Error completo:', err)
+    return { error: 'Ocurrió un error inesperado. Intenta de nuevo.' }
+  }
 }
 
 /**

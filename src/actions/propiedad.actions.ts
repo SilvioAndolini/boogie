@@ -4,8 +4,64 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { prisma } from '@/lib/prisma'
 import { propiedadSchema } from '@/lib/validations'
+
+// --- Tipos de retorno para las queries públicas ---
+
+interface PropiedadPublica {
+  id: string
+  titulo: string
+  descripcion: string
+  tipoPropiedad: string
+  precioPorNoche: string | number
+  moneda: string
+  capacidadMaxima: number
+  habitaciones: number
+  banos: number
+  camas: number
+  direccion: string
+  ciudad: string
+  estado: string
+  zona: string | null
+  latitud: number | null
+  longitud: number | null
+  ratingPromedio: number | null
+  totalResenas: number
+  imagenes: { url: string; es_principal: boolean }[]
+}
+
+interface PropiedadDetalle {
+  id: string
+  titulo: string
+  descripcion: string
+  tipoPropiedad: string
+  precioPorNoche: string | number
+  moneda: string
+  capacidadMaxima: number
+  habitaciones: number
+  banos: number
+  camas: number
+  direccion: string
+  ciudad: string
+  estado: string
+  zona: string | null
+  latitud: number | null
+  longitud: number | null
+  reglas: string | null
+  politicaCancelacion: string
+  horarioCheckIn: string | null
+  horarioCheckOut: string | null
+  estanciaMinima: number
+  estanciaMaxima: number | null
+  ratingPromedio: number | null
+  totalResenas: number
+  propietario: { id: string; nombre: string; apellido: string; avatar_url: string | null; verificado: boolean } | null
+  imagenes: { id: string; url: string; alt: string | null; orden: number; es_principal: boolean }[]
+  amenidades: { amenidadId: string; amenidad: { id: string; nombre: string; icono: string | null; categoria: string } }[]
+  resenas: { id: string; calificacion: number; comentario: string; fechaCreacion: string; autor: { nombre: string; apellido: string; avatar_url: string | null } }[]
+}
 
 /**
  * Obtiene el usuario autenticado actual
@@ -143,62 +199,129 @@ export async function getMisPropiedades() {
 }
 
 /**
- * Obtiene propiedades públicas con filtros
+ * Obtiene propiedades públicas con filtros usando Supabase client
  */
 export async function getPropiedadesPublicas(filtros?: {
   ubicacion?: string
+  lat?: number
+  lng?: number
+  radio?: number
   precioMin?: number
   precioMax?: number
   huespedes?: number
   tipoPropiedad?: string
+  habitaciones?: number
+  banos?: number
+  ordenarPor?: string
   pagina?: number
 }) {
+  const supabase = createAdminClient()
   const pagina = filtros?.pagina || 1
-  const porPagina = 12
+  const porPagina = 20
 
-  const where: Record<string, unknown> = {
-    estadoPublicacion: 'PUBLICADA',
+  let query = supabase
+    .from('propiedades')
+    .select('*, imagenes:imagenes_propiedad!propiedad_id(url, es_principal)', { count: 'exact' })
+    .eq('estado_publicacion', 'PUBLICADA')
+
+  if (filtros?.ubicacion && !filtros?.lat) {
+    const ubicacion = filtros.ubicacion.trim()
+    query = query.or(`ciudad.ilike.%${ubicacion}%,estado.ilike.%${ubicacion}%,zona.ilike.%${ubicacion}%`)
   }
-
-  if (filtros?.ubicacion) {
-    where.OR = [
-      { ciudad: { contains: filtros.ubicacion, mode: 'insensitive' } },
-      { estado: { contains: filtros.ubicacion, mode: 'insensitive' } },
-      { zona: { contains: filtros.ubicacion, mode: 'insensitive' } },
-    ]
+  if (filtros?.precioMin) {
+    query = query.gte('precio_por_noche', filtros.precioMin)
   }
-
-  if (filtros?.precioMin || filtros?.precioMax) {
-    where.precioPorNoche = {
-      gte: filtros.precioMin,
-      lte: filtros.precioMax,
-    }
+  if (filtros?.precioMax) {
+    query = query.lte('precio_por_noche', filtros.precioMax)
   }
-
   if (filtros?.huespedes) {
-    where.capacidadMaxima = { gte: filtros.huespedes }
+    query = query.gte('capacidad_maxima', filtros.huespedes)
   }
-
   if (filtros?.tipoPropiedad) {
-    where.tipoPropiedad = filtros.tipoPropiedad
+    query = query.eq('tipo_propiedad', filtros.tipoPropiedad)
+  }
+  if (filtros?.habitaciones) {
+    query = query.gte('habitaciones', filtros.habitaciones)
   }
 
-  const [propiedades, total] = await Promise.all([
-    prisma.propiedad.findMany({
-      where,
-      include: {
-        imagenes: {
-          where: { esPrincipal: true },
-          take: 1,
-        },
-      },
-      skip: (pagina - 1) * porPagina,
-      take: porPagina,
-      orderBy: { fechaPublicacion: 'desc' },
-    }),
-    prisma.propiedad.count({ where }),
-  ])
+  const ordenarPor = filtros?.ordenarPor || 'recientes'
+  switch (ordenarPor) {
+    case 'precio_asc':
+      query = query.order('precio_por_noche', { ascending: true, nullsFirst: false })
+      break
+    case 'precio_desc':
+      query = query.order('precio_por_noche', { ascending: false, nullsFirst: false })
+      break
+    case 'rating':
+      query = query.order('rating_promedio', { ascending: false, nullsFirst: true })
+      break
+    default:
+      query = query.order('fecha_publicacion', { ascending: false, nullsFirst: false })
+  }
 
+  const useProximity = filtros?.lat != null && filtros?.lng != null
+  const radioKm = filtros?.radio ?? 25
+
+  if (!useProximity) {
+    query = query.range((pagina - 1) * porPagina, pagina * porPagina - 1)
+  }
+
+  const { data, count } = await query
+
+  let rawResults = (data ?? []) as Record<string, unknown>[]
+
+  if (useProximity) {
+    const centerLat = filtros!.lat!
+    const centerLng = filtros!.lng!
+    rawResults = rawResults.filter((p) => {
+      const lat = p.latitud as number | null
+      const lng = p.longitud as number | null
+      if (lat == null || lng == null) return false
+      const R = 6371
+      const dLat = ((lat - centerLat) * Math.PI) / 180
+      const dLon = ((lng - centerLng) * Math.PI) / 180
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos((centerLat * Math.PI) / 180) *
+          Math.cos((lat * Math.PI) / 180) *
+          Math.sin(dLon / 2) *
+          Math.sin(dLon / 2)
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+      const dist = R * c
+      ;(p as Record<string, unknown> & { _dist?: number })._dist = dist
+      return dist <= radioKm
+    })
+    rawResults.sort((a, b) => ((a as Record<string, unknown> & { _dist?: number })._dist ?? 0) - ((b as Record<string, unknown> & { _dist?: number })._dist ?? 0))
+  }
+
+  const totalCount = useProximity ? rawResults.length : (count ?? 0)
+  if (useProximity) {
+    rawResults = rawResults.slice((pagina - 1) * porPagina, pagina * porPagina)
+  }
+
+  const propiedades: PropiedadPublica[] = rawResults.map((p: Record<string, unknown>) => ({
+    id: p.id as string,
+    titulo: p.titulo as string,
+    descripcion: p.descripcion as string,
+    tipoPropiedad: p.tipo_propiedad as string,
+    precioPorNoche: p.precio_por_noche as string,
+    moneda: p.moneda as string,
+    capacidadMaxima: p.capacidad_maxima as number,
+    habitaciones: p.habitaciones as number,
+    banos: p.banos as number,
+    camas: p.camas as number,
+    direccion: p.direccion as string,
+    ciudad: p.ciudad as string,
+    estado: p.estado as string,
+    zona: p.zona as string | null,
+    latitud: p.latitud as number | null,
+    longitud: p.longitud as number | null,
+    ratingPromedio: p.rating_promedio as number | null,
+    totalResenas: (p.total_resenas as number) ?? 0,
+    imagenes: ((p.imagenes as Record<string, unknown>[]) ?? []).filter((img: Record<string, unknown>) => img.es_principal) as { url: string; es_principal: boolean }[],
+  }))
+
+  const total = totalCount
   return {
     datos: propiedades,
     total,
@@ -209,24 +332,80 @@ export async function getPropiedadesPublicas(filtros?: {
 }
 
 /**
- * Obtiene una propiedad por su ID
+ * Obtiene una propiedad por su ID usando Supabase client
  */
-export async function getPropiedadPorId(id: string) {
-  return prisma.propiedad.findUnique({
-    where: { id },
-    include: {
-      propietario: {
-        select: { id: true, nombre: true, apellido: true, avatarUrl: true, verificado: true },
-      },
-      imagenes: { orderBy: { orden: 'asc' } },
-      amenidades: { include: { amenidad: true } },
-      resenas: {
-        take: 10,
-        orderBy: { fechaCreacion: 'desc' },
-        include: {
-          autor: { select: { nombre: true, apellido: true, avatarUrl: true } },
-        },
-      },
-    },
-  })
+export async function getPropiedadPorId(id: string): Promise<PropiedadDetalle | null> {
+  const supabase = createAdminClient()
+
+  // Fetch propiedad con propietario e imágenes
+  const { data: propiedad } = await supabase
+    .from('propiedades')
+    .select('*, propietario:usuarios!propietario_id(id, nombre, apellido, avatar_url, verificado)')
+    .eq('id', id)
+    .single()
+
+  if (!propiedad) return null
+
+  // Fetch imágenes ordenadas
+  const { data: imagenes } = await supabase
+    .from('imagenes_propiedad')
+    .select('*')
+    .eq('propiedad_id', id)
+    .order('orden', { ascending: true })
+
+  // Fetch amenidades
+  const { data: amenidadesRaw } = await supabase
+    .from('propiedad_amenidades')
+    .select('amenidad_id, amenidad:amenidades(id, nombre, icono, categoria)')
+    .eq('propiedad_id', id)
+
+  // Fetch reseñas
+  const { data: resenasRaw } = await supabase
+    .from('resenas')
+    .select('id, calificacion, comentario, fecha_creacion, autor:usuarios!autor_id(nombre, apellido, avatar_url)')
+    .eq('propiedad_id', id)
+    .order('fecha_creacion', { ascending: false })
+    .limit(10)
+
+  const p = propiedad as Record<string, unknown>
+
+  return {
+    id: p.id as string,
+    titulo: p.titulo as string,
+    descripcion: p.descripcion as string,
+    tipoPropiedad: p.tipo_propiedad as string,
+    precioPorNoche: p.precio_por_noche as string,
+    moneda: p.moneda as string,
+    capacidadMaxima: p.capacidad_maxima as number,
+    habitaciones: p.habitaciones as number,
+    banos: p.banos as number,
+    camas: p.camas as number,
+    direccion: p.direccion as string,
+    ciudad: p.ciudad as string,
+    estado: p.estado as string,
+    zona: p.zona as string | null,
+    latitud: p.latitud as number | null,
+    longitud: p.longitud as number | null,
+    reglas: p.reglas as string | null,
+    politicaCancelacion: p.politica_cancelacion as string,
+    horarioCheckIn: p.horario_checkin as string | null,
+    horarioCheckOut: p.horario_checkout as string | null,
+    estanciaMinima: p.estancia_minima as number,
+    estanciaMaxima: p.estancia_maxima as number | null,
+    ratingPromedio: p.rating_promedio as number | null,
+    totalResenas: (p.total_resenas as number) ?? 0,
+    propietario: p.propietario as PropiedadDetalle['propietario'],
+    imagenes: (imagenes ?? []) as PropiedadDetalle['imagenes'],
+    amenidades: ((amenidadesRaw ?? []) as Record<string, unknown>[]).map((a) => ({
+      amenidadId: a.amenidad_id as string,
+      amenidad: a.amenidad as PropiedadDetalle['amenidades'][number]['amenidad'],
+    })),
+    resenas: ((resenasRaw ?? []) as Record<string, unknown>[]).map((r) => ({
+      id: r.id as string,
+      calificacion: r.calificacion as number,
+      comentario: r.comentario as string,
+      fechaCreacion: r.fecha_creacion as string,
+      autor: r.autor as PropiedadDetalle['resenas'][number]['autor'],
+    })),
+  }
 }

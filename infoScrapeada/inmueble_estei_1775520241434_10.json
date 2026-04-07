@@ -1,0 +1,35 @@
+{
+  "id": "estei_1775520241434_10",
+  "titulo": "Sin título",
+  "descripcion": "Habitacion Matrimonial ApartamentoDistrito Capital1 habitaciones disponibles0.00(BCV) $50 / noche",
+  "tipoPropiedad": "HABITACION",
+  "precioPorNoche": 50,
+  "moneda": "USD",
+  "capacidadMaxima": 2,
+  "habitaciones": 1,
+  "banos": 1,
+  "camas": 1,
+  "direccion": "",
+  "ciudad": "Venezuela",
+  "estado": "Distrito Capital",
+  "zona": null,
+  "latitud": null,
+  "longitud": null,
+  "reglas": null,
+  "politicaCancelacion": "MODERADA",
+  "horarioCheckIn": "15:00",
+  "horarioCheckOut": "11:00",
+  "estanciaMinima": 1,
+  "estanciaMaxima": 30,
+  "estadoPublicacion": "PUBLICADA",
+  "imagenes": [],
+  "amenidades": [
+    "wifi",
+    "aire_acondicionado"
+  ],
+  "fuenteScraping": {
+    "sitio": "estei.app",
+    "urlOriginal": "https://estei.app",
+    "fechaScraping": "2026-04-07T00:04:01.434Z"
+  }
+}

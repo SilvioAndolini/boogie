@@ -1,57 +1,22 @@
 // Página de Detalle de Zona - Propiedades en una zona específica
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { MapPin, Home, ArrowLeft, Search } from 'lucide-react'
+import { MapPin, Home, ArrowLeft, Search, Clock } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ESTADOS_VENEZUELA } from '@/lib/constants'
 
-// Interfaz para los parámetros de la página
-interface ZonaPageProps {
-  params: Promise<{ slug: string }>
+const ZONAS_ACTIVAS = ['distrito-capital', 'vargas']
+
+const NOMBRES_VISUALES: Record<string, string> = {
+  'distrito-capital': 'Distrito Capital',
+  'vargas': 'Vargas',
 }
 
-// Mapa inverso de slug a nombre de estado
-function resolverEstadoDesdeSlug(slug: string): string | undefined {
-  return ESTADOS_VENEZUELA.find(
-    (estado) =>
-      estado
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/\s+/g, '-') === slug
-  )
-}
-
-// Descripciones placeholder para cada estado
 const DESCRIPCIONES_ZONA: Record<string, string> = {
-  Amazonas: 'Explora la selva amazónica venezolana con sus ríos y biodiversidad única.',
-  'Anzoátegui': 'Disfruta de las playas del Caribe en la costa oriental de Venezuela.',
-  Apure: 'Descubre la vasta llanura venezolana y su rica fauna silvestre.',
-  Aragua: 'Playas, montañas y el Lago de Valencia en el corazón del país.',
-  Barinas: 'La puerta de entrada a Los Llanos y sus increíbles atardeceres.',
-  'Bolívar': 'La Gran Sabana, el Salto Ángel y el Parque Nacional Canaima te esperan.',
-  Carabobo: 'Historia, playas y la vibrante ciudad de Valencia.',
-  Cojedes: 'Tranquilidad llanera con paisajes naturales privilegiados.',
-  'Delta Amacuro': 'El majestuoso Delta del Orinoco y sus comunidades indígenas.',
-  'Distrito Capital': 'Caracas, la cosmopolita capital venezolana entre montañas.',
-  'Falcón': 'Península de Paraguaná, dunas de Coro y playas paradisíacas.',
-  'Guárico': 'Corazón llanero con extensas sabanas y tradiciones gauchas.',
-  Lara: 'Barquisimeto, la ciudad crepuscular, y el Parque Nacional Terepaima.',
-  'Mérida': 'Los Andes venezolanos, teleférico, nieve y aventura sin límites.',
-  Miranda: 'Playas de Barlovento, El Ávila y ciudades satélites de Caracas.',
-  Monagas: 'El Puente Angostura, el río Orinoco y la cálida Ciudad Bolívar.',
-  'Nueva Esparta': 'Isla de Margarita, el Caribe venezolano con playas y comercio.',
-  Portuguesa: 'Tierra de agricultura y tradiciones en el occidente llanero.',
-  Sucre: 'Península de Araya, Cumaná y las playas del oriente venezolano.',
-  'Táchira': 'Frontera andina con Colombia, montañas verdes y clima agradable.',
-  Trujillo: 'Paisajes andinos, la paz de Boconó y el monumento a la Paz.',
-  Vargas: 'La costa central con playas, el aeropuerto internacional y El Ávila.',
-  Yaracuy: 'El jardín de Venezuela con vegetación exuberante y montañas.',
-  Zulia: 'El Lago de Maracaibo, el calor caribeño y la cultura wayuu.',
+  'distrito-capital': 'Caracas, la cosmopolita capital venezolana entre montañas.',
+  'vargas': 'La costa central con playas, el aeropuerto internacional y El Ávila.',
 }
 
-// Datos de ejemplo vacíos para propiedades
 interface PropiedadZona {
   id: string
   titulo: string
@@ -62,16 +27,19 @@ interface PropiedadZona {
 
 const propiedadesZona: PropiedadZona[] = []
 
+interface ZonaPageProps {
+  params: Promise<{ slug: string }>
+}
+
 export default async function ZonaDetallePage({ params }: ZonaPageProps) {
   const { slug } = await params
-  const nombreEstado = resolverEstadoDesdeSlug(slug)
 
-  // Si el slug no corresponde a ningún estado, devolver 404
-  if (!nombreEstado) {
+  if (!ZONAS_ACTIVAS.includes(slug)) {
     notFound()
   }
 
-  const descripcion = DESCRIPCIONES_ZONA[nombreEstado] ?? `Descubre propiedades en ${nombreEstado}, Venezuela.`
+  const nombreEstado = NOMBRES_VISUALES[slug] || slug
+  const descripcion = DESCRIPCIONES_ZONA[slug] || `Descubre propiedades en ${nombreEstado}, Venezuela.`
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">

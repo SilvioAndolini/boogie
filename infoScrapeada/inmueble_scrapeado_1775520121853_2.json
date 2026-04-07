@@ -1,0 +1,96 @@
+{
+  "fuenteScraping": {
+    "sitio": "estei.app",
+    "urlOriginal": "https://estei.app/stay/17334605034372713645/profile?guests=1&arrival_date=2026-04-06&departure_date=2026-04-07",
+    "fechaScraping": "2026-04-07T00:02:01.851Z"
+  },
+  "titulo": "Sin título",
+  "descripcion": "Tasa BCV: 474.06 (Bs/USD)",
+  "imagenes": [
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/D6C55EMJR2tNb2R8yN09e33DOZ5A0Rx1mV63i09fTbQ3QhefKK.jpg",
+      "alt": "habitacin-1-con-bao-compartido-para-2-personas-0",
+      "orden": 1,
+      "esPrincipal": true
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/6k36Ss01MRi8rG5Bs1u75jbJbb19uVPOdZQ6T21A0Z629K9b82.jpg",
+      "alt": "habitacin-1-con-bao-compartido-para-2-personas-1",
+      "orden": 2,
+      "esPrincipal": false
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/Hb4b24WOG65O3695y70ob51X6w271Lf57x6R4FZve0hTC02a6T.jpg",
+      "alt": "habitacin-1-con-bao-compartido-para-2-personas-2",
+      "orden": 3,
+      "esPrincipal": false
+    },
+    {
+      "url": "https://avilatek.sfo3.digitaloceanspaces.com/stg/1S05q67Q3436wtQx927wsL47238vra3t1i80LalyH4R7i4Fy72.jpg",
+      "alt": "habitacin-1-con-bao-compartido-para-2-personas-3",
+      "orden": 4,
+      "esPrincipal": false
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/nFHr1TvbQ0RKa5oHm3KJ11r5zTxT4K4tCK4qNWs4Z20U86yAC8.jpg",
+      "alt": "1788014749221711880",
+      "orden": 5,
+      "esPrincipal": false
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/9wJP9J8Q1m6hCYad101GgAl6x6LTI9z89lfm3A8I6X4253wf1H.jpg",
+      "alt": "1775966146558824420",
+      "orden": 6,
+      "esPrincipal": false
+    },
+    {
+      "url": "https://mapsresources-pa.googleapis.com/v1/tiles?map_id=7edde38eff5a9a6e&version=sdk-2631637409042396118&pb=!1m5!1m4!1i13!2i2574!3i3856!4i256!2m3!1e0!2sm!3i774537476!3m13!2sen!3sUS!5e18!12m5!1e68!2m2!1sset!2sRoadmap!4e2!12m3!1e37!2m1!1ssmartmaps!4e0!5m1!1e3!23i46991212!23i47054750!23i47083502!23i56565656!26m2!1e2!1e3",
+      "alt": null,
+      "orden": 7,
+      "esPrincipal": false
+    },
+    {
+      "url": "https://mapsresources-pa.googleapis.com/v1/tiles?map_id=7edde38eff5a9a6e&version=sdk-2631637409042396118&pb=!1m5!1m4!1i13!2i2573!3i3856!4i256!2m3!1e0!2sm!3i774537476!3m13!2sen!3sUS!5e18!12m5!1e68!2m2!1sset!2sRoadmap!4e2!12m3!1e37!2m1!1ssmartmaps!4e0!5m1!1e3!23i46991212!23i47054750!23i47083502!23i56565656!26m2!1e2!1e3",
+      "alt": null,
+      "orden": 8,
+      "esPrincipal": false
+    },
+    {
+      "url": "https://mapsresources-pa.googleapis.com/v1/tiles?map_id=7edde38eff5a9a6e&version=sdk-2631637409042396118&pb=!1m5!1m4!1i13!2i2574!3i3855!4i256!2m3!1e0!2sm!3i774537476!3m13!2sen!3sUS!5e18!12m5!1e68!2m2!1sset!2sRoadmap!4e2!12m3!1e37!2m1!1ssmartmaps!4e0!5m1!1e3!23i46991212!23i47054750!23i47083502!23i56565656!26m2!1e2!1e3",
+      "alt": null,
+      "orden": 9,
+      "esPrincipal": false
+    },
+    {
+      "url": "https://mapsresources-pa.googleapis.com/v1/tiles?map_id=7edde38eff5a9a6e&version=sdk-2631637409042396118&pb=!1m5!1m4!1i13!2i2573!3i3855!4i256!2m3!1e0!2sm!3i774537476!3m13!2sen!3sUS!5e18!12m5!1e68!2m2!1sset!2sRoadmap!4e2!12m3!1e37!2m1!1ssmartmaps!4e0!5m1!1e3!23i46991212!23i47054750!23i47083502!23i56565656!26m2!1e2!1e3",
+      "alt": null,
+      "orden": 10,
+      "esPrincipal": false
+    }
+  ],
+  "habitaciones": 1,
+  "banos": 1,
+  "camas": 1,
+  "capacidadMaxima": 2,
+  "tipoPropiedad": "APARTAMENTO",
+  "precioPorNoche": 50,
+  "moneda": "USD",
+  "ciudad": "Venezuela",
+  "estado": "Distrito Capital",
+  "direccion": "Venezuela, Distrito Capital",
+  "politicaCancelacion": "MODERADA",
+  "horarioCheckIn": "15:00",
+  "horarioCheckOut": "11:00",
+  "estanciaMinima": 1,
+  "estanciaMaxima": 30,
+  "estadoPublicacion": "PUBLICADA",
+  "zona": null,
+  "latitud": null,
+  "longitud": null,
+  "reglas": null,
+  "amenidades": [
+    "wifi",
+    "aire_acondicionado"
+  ],
+  "id": "scrapeado_1775520121853_2"
+}

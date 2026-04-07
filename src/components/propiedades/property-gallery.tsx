@@ -9,7 +9,7 @@ interface ImagenPropiedad {
   url: string
   alt: string | null
   orden: number
-  esPrincipal: boolean
+  es_principal: boolean
 }
 
 interface PropertyGalleryProps {
@@ -29,14 +29,13 @@ export function PropertyGallery({ imagenes, onOpenLightbox }: PropertyGalleryPro
   }
 
   const sorted = [...imagenes].sort((a, b) => a.orden - b.orden)
-  const principal = sorted.find((img) => img.esPrincipal) ?? sorted[0]
+  const principal = sorted.find((img) => img.es_principal) ?? sorted[0]
   const secundarias = sorted.filter((img) => img.id !== principal.id)
   const desktopCells = secundarias.slice(0, 4)
   const extraCount = imagenes.length - 5
 
   return (
     <div className="relative w-full">
-      {/* Mobile: single hero image */}
       <div className="relative block aspect-[16/10] w-full overflow-hidden rounded-xl md:hidden">
         <Image
           src={principal.url}
@@ -59,70 +58,68 @@ export function PropertyGallery({ imagenes, onOpenLightbox }: PropertyGalleryPro
         </div>
       </div>
 
-      {/* Desktop: collage grid */}
-      <div className="hidden w-full grid-cols-5 grid-rows-2 gap-2 overflow-hidden rounded-xl md:grid">
-        {/* Main image - left column, spans both rows */}
-        <button
-          type="button"
-          className="group relative col-span-3 row-span-2 cursor-pointer"
-          onClick={() => onOpenLightbox(0)}
-        >
-          <Image
-            src={principal.url}
-            alt={principal.alt ?? 'Imagen principal'}
-            fill
-            sizes="(max-width: 1024px) 60vw, 60vw"
-            className="rounded-l-xl object-cover transition-all group-hover:brightness-95"
-            priority
-          />
-        </button>
+      <div className="hidden w-full md:block">
+        <div className="grid aspect-[16/10] w-full grid-cols-[3fr_2fr] grid-rows-2 gap-2 overflow-hidden rounded-xl">
+          <button
+            type="button"
+            className="group relative col-start-1 col-end-2 row-start-1 row-end-3 cursor-pointer overflow-hidden"
+            onClick={() => onOpenLightbox(0)}
+          >
+            <Image
+              src={principal.url}
+              alt={principal.alt ?? 'Imagen principal'}
+              fill
+              sizes="(max-width: 1024px) 60vw, 60vw"
+              className="object-cover transition-all group-hover:brightness-95"
+              priority
+            />
+          </button>
 
-        {/* Right column: up to 4 secondary images */}
-        {desktopCells.map((img, i) => {
-          const isTopRight = i === 1
-          const isBottomRight = i === 3 || (desktopCells.length < 4 && i === desktopCells.length - 1)
-          const isLastCell = i === desktopCells.length - 1 && extraCount > 0
+          {desktopCells.map((img, i) => {
+            const isTopRight = i === 0
+            const isBottomRight = i === 3 || (desktopCells.length < 4 && i === desktopCells.length - 1)
+            const isLastCell = i === desktopCells.length - 1 && extraCount > 0
 
-          let rounded = ''
-          if (isTopRight) rounded = 'rounded-tr-xl'
-          if (isBottomRight) rounded = 'rounded-br-xl'
+            let rounded = ''
+            if (isTopRight) rounded = 'rounded-tr-xl'
+            if (isBottomRight) rounded = 'rounded-br-xl'
 
-          return (
-            <button
-              key={img.id}
-              type="button"
-              className={`group relative col-span-2 cursor-pointer ${rounded}`}
-              onClick={() => onOpenLightbox(i + 1)}
+            return (
+              <button
+                key={img.id}
+                type="button"
+                className={`group relative cursor-pointer overflow-hidden ${rounded}`}
+                onClick={() => onOpenLightbox(i + 1)}
+              >
+                <Image
+                  src={img.url}
+                  alt={img.alt ?? `Imagen ${i + 2}`}
+                  fill
+                  sizes="40vw"
+                  className={`object-cover transition-all group-hover:brightness-95 ${rounded}`}
+                />
+                {isLastCell && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 transition-all group-hover:bg-black/50">
+                    <span className="text-lg font-semibold text-white">
+                      +{extraCount} fotos
+                    </span>
+                  </div>
+                )}
+              </button>
+            )
+          })}
+
+          {Array.from({ length: Math.max(0, 4 - desktopCells.length) }).map((_, i) => (
+            <div
+              key={`placeholder-${i}`}
+              className="relative overflow-hidden bg-gradient-to-br from-[#D8F3DC] to-[#F8F6F3]"
             >
-              <Image
-                src={img.url}
-                alt={img.alt ?? `Imagen ${i + 2}`}
-                fill
-                sizes="40vw"
-                className={`${rounded} object-cover transition-all group-hover:brightness-95`}
-              />
-              {/* Overlay for extra photos count */}
-              {isLastCell && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/40 transition-all group-hover:bg-black/50">
-                  <span className="text-lg font-semibold text-white">
-                    +{extraCount} fotos
-                  </span>
-                </div>
-              )}
-            </button>
-          )
-        })}
-
-        {/* Fill empty cells with placeholder if fewer than 4 secondary images */}
-        {Array.from({ length: Math.max(0, 4 - desktopCells.length) }).map((_, i) => (
-          <div
-            key={`placeholder-${i}`}
-            className="relative col-span-2 bg-gradient-to-br from-[#D8F3DC] to-[#F8F6F3]"
-          />
-        ))}
+              <Camera className="absolute inset-0 m-auto h-6 w-6 text-[#1B4332]/15" />
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* Desktop floating button */}
       <div className="absolute bottom-3 right-3 hidden md:block">
         <Button
           variant="outline"

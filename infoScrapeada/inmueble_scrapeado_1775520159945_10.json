@@ -1,0 +1,96 @@
+{
+  "fuenteScraping": {
+    "sitio": "estei.app",
+    "urlOriginal": "https://estei.app/stay/17253438058454955691/profile?guests=1&arrival_date=2026-04-06&departure_date=2026-04-07",
+    "fechaScraping": "2026-04-07T00:02:39.948Z"
+  },
+  "titulo": "Sin título",
+  "descripcion": "Tasa BCV: 474.06 (Bs/USD)",
+  "imagenes": [
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/ge838P179jkMI58JEn8A8X28j92uyl4g45O123V5444Mqi9782.jpeg",
+      "alt": "oceanview-1-0",
+      "orden": 1,
+      "esPrincipal": true
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/Dry85K5x14298366d4s82B86b2Ln8BSu93an95P8y9cq2CD164.jpeg",
+      "alt": "oceanview-1-1",
+      "orden": 2,
+      "esPrincipal": false
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/9f0820nZd74Jtq9J8QoOWgoc2VSN99YZ574KA1ggb55S2if07e.jpeg",
+      "alt": "oceanview-1-2",
+      "orden": 3,
+      "esPrincipal": false
+    },
+    {
+      "url": "https://avilatek.sfo3.digitaloceanspaces.com/stg/86Ln45D41l0M10Wa2prI2NfrOGp2082MZyp80mS64wO27XP64e.jpeg",
+      "alt": "oceanview-1-3",
+      "orden": 4,
+      "esPrincipal": false
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/3j65OE3IXQ15ece3t7y3IiOq28Zw400MY0f4Im4G8MN6Wsd2X4.jpeg",
+      "alt": "1749093469791764236",
+      "orden": 5,
+      "esPrincipal": false
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/7xAXo8JjX0i7656a47be7ytsh5ew9Fu754Yd6908taP3Z483Um.jpeg",
+      "alt": "1753357107728104222",
+      "orden": 6,
+      "esPrincipal": false
+    },
+    {
+      "url": "https://mapsresources-pa.googleapis.com/v1/tiles?map_id=7edde38eff5a9a6e&version=sdk-2631637409042396118&pb=!1m5!1m4!1i13!2i2576!3i3852!4i256!2m3!1e0!2sm!3i774537428!3m13!2sen!3sUS!5e18!12m5!1e68!2m2!1sset!2sRoadmap!4e2!12m3!1e37!2m1!1ssmartmaps!4e0!5m1!1e3!23i46991212!23i47054750!23i47083502!23i56565656!26m2!1e2!1e3",
+      "alt": null,
+      "orden": 7,
+      "esPrincipal": false
+    },
+    {
+      "url": "https://mapsresources-pa.googleapis.com/v1/tiles?map_id=7edde38eff5a9a6e&version=sdk-2631637409042396118&pb=!1m5!1m4!1i13!2i2574!3i3852!4i256!2m3!1e0!2sm!3i774537428!3m13!2sen!3sUS!5e18!12m5!1e68!2m2!1sset!2sRoadmap!4e2!12m3!1e37!2m1!1ssmartmaps!4e0!5m1!1e3!23i46991212!23i47054750!23i47083502!23i56565656!26m2!1e2!1e3",
+      "alt": null,
+      "orden": 8,
+      "esPrincipal": false
+    },
+    {
+      "url": "https://mapsresources-pa.googleapis.com/v1/tiles?map_id=7edde38eff5a9a6e&version=sdk-2631637409042396118&pb=!1m5!1m4!1i13!2i2575!3i3852!4i256!2m3!1e0!2sm!3i774537428!3m13!2sen!3sUS!5e18!12m5!1e68!2m2!1sset!2sRoadmap!4e2!12m3!1e37!2m1!1ssmartmaps!4e0!5m1!1e3!23i46991212!23i47054750!23i47083502!23i56565656!26m2!1e2!1e3",
+      "alt": null,
+      "orden": 9,
+      "esPrincipal": false
+    },
+    {
+      "url": "https://mapsresources-pa.googleapis.com/v1/tiles?map_id=7edde38eff5a9a6e&version=sdk-2631637409042396118&pb=!1m5!1m4!1i13!2i2574!3i3853!4i256!2m3!1e0!2sm!3i774537428!3m13!2sen!3sUS!5e18!12m5!1e68!2m2!1sset!2sRoadmap!4e2!12m3!1e37!2m1!1ssmartmaps!4e0!5m1!1e3!23i46991212!23i47054750!23i47083502!23i56565656!26m2!1e2!1e3",
+      "alt": null,
+      "orden": 10,
+      "esPrincipal": false
+    }
+  ],
+  "habitaciones": 1,
+  "banos": 1,
+  "camas": 1,
+  "capacidadMaxima": 2,
+  "tipoPropiedad": "APARTAMENTO",
+  "precioPorNoche": 50,
+  "moneda": "USD",
+  "ciudad": "Venezuela",
+  "estado": "Distrito Capital",
+  "direccion": "Venezuela, Distrito Capital",
+  "politicaCancelacion": "MODERADA",
+  "horarioCheckIn": "15:00",
+  "horarioCheckOut": "11:00",
+  "estanciaMinima": 1,
+  "estanciaMaxima": 30,
+  "estadoPublicacion": "PUBLICADA",
+  "zona": null,
+  "latitud": null,
+  "longitud": null,
+  "reglas": null,
+  "amenidades": [
+    "wifi",
+    "aire_acondicionado"
+  ],
+  "id": "scrapeado_1775520159945_10"
+}

@@ -1,0 +1,42 @@
+{
+  "id": "estei_1775520241434_5",
+  "titulo": "Impecable Y Centrico",
+  "descripcion": "Impecable y centricoApartamentoLa Guaira3 habitaciones, hasta 4 viajeros0.00(BCV) $85 / noche",
+  "tipoPropiedad": "HABITACION",
+  "precioPorNoche": 85,
+  "moneda": "USD",
+  "capacidadMaxima": 2,
+  "habitaciones": 3,
+  "banos": 1,
+  "camas": 1,
+  "direccion": "",
+  "ciudad": "Venezuela",
+  "estado": "Distrito Capital",
+  "zona": null,
+  "latitud": null,
+  "longitud": null,
+  "reglas": null,
+  "politicaCancelacion": "MODERADA",
+  "horarioCheckIn": "15:00",
+  "horarioCheckOut": "11:00",
+  "estanciaMinima": 1,
+  "estanciaMaxima": 30,
+  "estadoPublicacion": "PUBLICADA",
+  "imagenes": [
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/25rQ2MABVV9XKVJFw4Y1C0500327HtsE67o73OoDDq2bB3cWDg.jpg",
+      "alt": "impecable-y-centrico-0",
+      "orden": 1,
+      "esPrincipal": true
+    }
+  ],
+  "amenidades": [
+    "wifi",
+    "aire_acondicionado"
+  ],
+  "fuenteScraping": {
+    "sitio": "estei.app",
+    "urlOriginal": "https://estei.app",
+    "fechaScraping": "2026-04-07T00:04:01.434Z"
+  }
+}

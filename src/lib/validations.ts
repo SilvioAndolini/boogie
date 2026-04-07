@@ -54,16 +54,43 @@ export const propiedadSchema = z.object({
 })
 
 // === Reservas ===
-export const reservaSchema = z.object({
-  propiedadId: z.string(),
-  fechaEntrada: z.coerce.date(),
-  fechaSalida: z.coerce.date(),
-  cantidadHuespedes: z.coerce.number().min(1).max(20),
-  notasHuesped: z.string().optional(),
-}).refine((data) => data.fechaSalida > data.fechaEntrada, {
-  message: 'La fecha de salida debe ser posterior a la de entrada',
-  path: ['fechaSalida'],
+export const crearReservaSchema = z.object({
+  propiedadId: z.string().min(1, 'La propiedad es requerida'),
+  fechaEntrada: z.coerce.date({ error: 'Fecha de entrada inválida' }),
+  fechaSalida: z.coerce.date({ error: 'Fecha de salida inválida' }),
+  cantidadHuespedes: z.coerce
+    .number({ error: 'Número de huéspedes inválido' })
+    .int({ error: 'El número de huéspedes debe ser un entero' })
+    .min(1, 'Debe haber al menos 1 huésped')
+    .max(20, 'Máximo 20 huéspedes'),
+  notasHuesped: z.string().max(1000, 'Las notas no pueden exceder 1000 caracteres').optional(),
+}).refine(
+  (data) => data.fechaEntrada >= new Date(new Date().setHours(0, 0, 0, 0)),
+  { message: 'No se pueden reservar fechas pasadas', path: ['fechaEntrada'] }
+).refine(
+  (data) => data.fechaSalida > data.fechaEntrada,
+  { message: 'La fecha de salida debe ser posterior a la fecha de entrada', path: ['fechaSalida'] }
+).refine(
+  (data) => {
+    const diffTime = data.fechaSalida.getTime() - data.fechaEntrada.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    return diffDays >= 1 && diffDays <= 365
+  },
+  { message: 'La estancia debe ser entre 1 y 365 noches', path: ['fechaSalida'] }
+)
+
+export const cancelarReservaSchema = z.object({
+  reservaId: z.string().min(1),
+  motivo: z.string().max(500).optional(),
 })
+
+export const confirmarReservaSchema = z.object({
+  reservaId: z.string().min(1),
+  accion: z.enum(['confirmar', 'rechazar']),
+  motivo: z.string().max(500).optional(),
+})
+
+export const reservaSchema = crearReservaSchema
 
 // === Pagos ===
 export const pagoSchema = z.object({
