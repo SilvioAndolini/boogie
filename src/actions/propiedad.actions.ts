@@ -132,14 +132,17 @@ export async function crearPropiedad(formData: FormData) {
     },
   })
 
-  // Conectar amenidades
   if (data.amenidades.length > 0) {
-    await prisma.propiedadAmenidad.createMany({
-      data: data.amenidades.map((amenidadId) => ({
-        propiedadId: propiedad.id,
-        amenidadId,
-      })),
-    })
+    for (const nombre of data.amenidades) {
+      const amenidad = await prisma.amenidad.upsert({
+        where: { nombre },
+        update: {},
+        create: { nombre, categoria: 'ESENCIALES' },
+      })
+      await prisma.propiedadAmenidad.create({
+        data: { propiedadId: propiedad.id, amenidadId: amenidad.id },
+      })
+    }
   }
 
   await invalidatePropiedadCache(propiedad.id)

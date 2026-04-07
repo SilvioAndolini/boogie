@@ -12,6 +12,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { propiedadSchema } from '@/lib/validations'
 import { ESTADOS_VENEZUELA, TIPOS_PROPIEDAD, POLITICAS_CANCELACION } from '@/lib/constants'
 import { crearPropiedad } from '@/actions/propiedad.actions'
@@ -269,15 +276,16 @@ export default function NuevaPropiedadPage() {
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="tipoPropiedad">Tipo de propiedad</Label>
-                    <select
-                      id="tipoPropiedad"
-                      className="flex w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-                      {...register('tipoPropiedad')}
-                    >
-                      {Object.entries(TIPOS_PROPIEDAD).map(([key, label]) => (
-                        <option key={key} value={key}>{label}</option>
-                      ))}
-                    </select>
+                    <Select onValueChange={(value) => setValue('tipoPropiedad', value as 'APARTAMENTO' | 'CASA' | 'VILLA' | 'CABANA' | 'ESTUDIO' | 'HABITACION' | 'LOFT' | 'PENTHOUSE' | 'FINCA' | 'OTRO')} defaultValue="APARTAMENTO">
+                      <SelectTrigger className="h-10 w-full rounded-lg border-[#E8E4DF] bg-white text-sm">
+                        <SelectValue placeholder="Selecciona un tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(TIPOS_PROPIEDAD).map(([key, label]) => (
+                          <SelectItem key={key} value={key}>{label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="space-y-2">
@@ -360,12 +368,16 @@ export default function NuevaPropiedadPage() {
                         Estado <span className="text-[#C1121F]">*</span>
                       </span>
                     </Label>
-                    <select id="estado" className="flex w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50" {...register('estado')}>
-                      <option value="">Selecciona un estado</option>
-                      {ESTADOS_VENEZUELA.map((estado) => (
-                        <option key={estado} value={estado}>{estado}</option>
-                      ))}
-                    </select>
+                    <Select onValueChange={(value) => setValue('estado', value as string)}>
+                      <SelectTrigger className="h-10 w-full rounded-lg border-[#E8E4DF] bg-white text-sm">
+                        <SelectValue placeholder="Selecciona un estado" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ESTADOS_VENEZUELA.map((estado) => (
+                          <SelectItem key={estado} value={estado}>{estado}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     {errors.estado && <p className="text-xs text-[#C1121F]">{errors.estado.message as string}</p>}
                   </div>
                 </div>
@@ -444,11 +456,16 @@ export default function NuevaPropiedadPage() {
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="politicaCancelacion">Política de cancelación</Label>
-                    <select id="politicaCancelacion" className="flex w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50" {...register('politicaCancelacion')}>
-                      {Object.entries(POLITICAS_CANCELACION).map(([key, data]: [string, any]) => (
-                        <option key={key} value={key}>{data.nombre}</option>
-                      ))}
-                    </select>
+                    <Select onValueChange={(value) => setValue('politicaCancelacion', value as 'FLEXIBLE' | 'MODERADA' | 'ESTRICTA')} defaultValue="MODERADA">
+                      <SelectTrigger className="h-10 w-full rounded-lg border-[#E8E4DF] bg-white text-sm">
+                        <SelectValue placeholder="Selecciona una política" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(POLITICAS_CANCELACION).map(([key, data]) => (
+                          <SelectItem key={key} value={key}>{data.nombre}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="estanciaMinima">Estancia mínima (noches)</Label>
