@@ -606,7 +606,7 @@ export function SearchBar() {
         <Button
           size="icon"
           className="h-10 w-10 shrink-0 rounded-full bg-[#E76F51] hover:bg-[#D45D3E]"
-          aria-label="Buscar propiedades"
+          aria-label="Buscar Boogies"
           onClick={() => {
             setOpen(false)
             setDatePickerOpen(false)

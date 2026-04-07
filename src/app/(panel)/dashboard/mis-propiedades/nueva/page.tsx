@@ -370,7 +370,7 @@ export default function NuevaPropiedadPage() {
               disabled={enviando}
               className="bg-[#E76F51] text-white hover:bg-[#D45D3E]"
             >
-              {enviando ? 'Publicando...' : 'Publicar propiedad'}
+              {enviando ? 'Publicando...' : 'Publicar boogie'}
             </Button>
           )}
         </div>

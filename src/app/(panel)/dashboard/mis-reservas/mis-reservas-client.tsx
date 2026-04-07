@@ -121,7 +121,7 @@ export function MisReservasClient({ reservas }: MisReservasClientProps) {
               <Link href="/propiedades">
                 <Button variant="outline" className="mt-4 border-[#E8E4DF] text-[#1B4332] hover:bg-[#D8F3DC]">
                   <Home className="mr-1 h-4 w-4" />
-                  Explorar propiedades
+                  Explorar Boogies
                 </Button>
               </Link>
             )}

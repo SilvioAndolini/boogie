@@ -68,13 +68,13 @@ export default async function ZonaDetallePage({ params }: ZonaPageProps) {
         <p className="mt-4 max-w-2xl text-[#6B6560]">{descripcion}</p>
       </div>
 
-      {/* Propiedades en la zona */}
+      {/* Boogies en la zona */}
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-[#1A1A1A]">
-          Propiedades en {nombreEstado}
+          Boogies en {nombreEstado}
         </h2>
         <span className="text-sm text-[#9E9892]">
-          {propiedadesZona.length} {propiedadesZona.length === 1 ? 'resultado' : 'resultados'}
+          {propiedadesZona.length} Boogie{propiedadesZona.length !== 1 ? 's' : ''}
         </span>
       </div>
 
@@ -89,19 +89,19 @@ export default async function ZonaDetallePage({ params }: ZonaPageProps) {
               Próximamente
             </h3>
             <p className="mt-1 max-w-sm text-sm text-[#6B6560]">
-              Aún no hay alojamientos disponibles en {nombreEstado}. Sé el primero en publicar.
+              Aún no hay Boogies disponibles en {nombreEstado}. Sé el primero en publicar uno.
             </p>
             <Link href="/dashboard/mis-propiedades/nueva">
               <Button className="mt-6 bg-[#1B4332] text-white hover:bg-[#2D6A4F]">
                 <Home className="mr-1 h-4 w-4" />
-                Publicar propiedad en {nombreEstado}
+                Publicar boogie en {nombreEstado}
               </Button>
             </Link>
           </CardContent>
         </Card>
       )}
 
-      {/* Grid de propiedades */}
+      {/* Grid de Boogies */}
       {propiedadesZona.length > 0 && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {propiedadesZona.map((propiedad) => (

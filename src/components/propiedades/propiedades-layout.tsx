@@ -94,10 +94,10 @@ export function PropiedadesLayout({
                   Filtros
                 </motion.button>
                 <h1 className="text-sm font-bold text-[#1A1A1A]">
-                  Propiedades disponibles
+                  Boogies disponibles
                 </h1>
                 <span className="ml-2 text-xs text-[#6B6560]">
-                  {total} resultado{total !== 1 ? 's' : ''}
+                  {total} Boogie{total !== 1 ? 's' : ''}
                 </span>
               </div>
 
@@ -154,10 +154,10 @@ export function PropiedadesLayout({
       <div className="block xl:hidden">
         <div className="flex items-center border-b border-[#E8E4DF] bg-white px-4 py-2 sm:px-6">
           <h1 className="text-sm font-bold text-[#1A1A1A]">
-            Propiedades disponibles
+            Boogies disponibles
           </h1>
           <span className="ml-2 text-xs text-[#6B6560]">
-            {total} resultado{total !== 1 ? 's' : ''}
+            {total} Boogie{total !== 1 ? 's' : ''}
           </span>
           <div className="ml-auto">
             <motion.button

@@ -39,8 +39,9 @@ export function HeroSection() {
           transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
         >
           <h1 className="text-4xl font-extrabold tracking-tight text-[#1A1A1A] sm:text-5xl lg:text-6xl">
-            Tu hogar lejos de casa en{' '}
-            <span className="text-[#1B4332]">Venezuela</span>
+            Vayas donde vayas,{' '}
+            <span className="text-[#E76F51]">boogie</span>{' '}
+            nunca falla
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-lg text-[#6B6560]">
             Encuentra alojamientos increíbles en los destinos más hermosos del

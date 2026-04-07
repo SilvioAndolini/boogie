@@ -92,7 +92,7 @@ export default async function BuscarPage({ searchParams }: BuscarPageProps) {
                 </p>
               )}
               <p className="mt-1 text-sm text-[#6B6560]">
-                {resultado.total} resultado{resultado.total !== 1 ? 's' : ''}
+                {resultado.total} Boogie{resultado.total !== 1 ? 's' : ''}
               </p>
             </div>
             <PropertyGrid propiedades={propiedades} />

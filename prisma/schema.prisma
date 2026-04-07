@@ -141,14 +141,15 @@ enum EstadoPublicacion {
 // =============================================
 
 model ImagenPropiedad {
-  id          String    @id @default(cuid())
-  url         String
-  alt         String?
-  orden       Int       @default(0)
-  esPrincipal Boolean   @default(false) @map("es_principal")
-  propiedadId String    @map("propiedad_id")
-  propiedad   Propiedad @relation(fields: [propiedadId], references: [id], onDelete: Cascade)
-  fechaSubida DateTime  @default(now()) @map("fecha_subida")
+  id            String    @id @default(cuid())
+  url           String
+  thumbnailUrl  String?   @map("thumbnail_url")
+  alt           String?
+  orden         Int       @default(0)
+  esPrincipal   Boolean   @default(false) @map("es_principal")
+  propiedadId   String    @map("propiedad_id")
+  propiedad     Propiedad @relation(fields: [propiedadId], references: [id], onDelete: Cascade)
+  fechaSubida   DateTime  @default(now()) @map("fecha_subida")
 
   @@map("imagenes_propiedad")
 }

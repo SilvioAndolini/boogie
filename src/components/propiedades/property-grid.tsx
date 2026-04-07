@@ -32,7 +32,7 @@ export function PropertyGrid({ propiedades }: PropertyGridProps) {
     return (
       <EmptyState
         icono={Home}
-        titulo="No se encontraron propiedades"
+        titulo="No se encontraron Boogies"
         descripcion="Prueba ajustando los filtros de búsqueda o explora otras zonas de Venezuela."
       />
     )

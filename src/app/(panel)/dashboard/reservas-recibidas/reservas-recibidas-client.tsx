@@ -143,11 +143,11 @@ export function ReservasRecibidasClient({ reservas }: { reservas: ReservaConProp
             </div>
             <h3 className="text-lg font-semibold text-[#1A1A1A]">No tienes reservas recibidas</h3>
             <p className="mt-1 max-w-sm text-sm text-[#6B6560]">
-              Cuando tus propiedades reciban solicitudes de reserva, aparecerán aquí para que puedas confirmarlas o rechazarlas.
+              Cuando tus Boogies reciban solicitudes de reserva, aparecerán aquí para que puedas confirmarlas o rechazarlas.
             </p>
             <Link href="/dashboard/mis-propiedades/nueva">
               <Button className="mt-6 bg-[#1B4332] text-white hover:bg-[#2D6A4F]">
-                Publicar propiedad
+                Publicar boogie
               </Button>
             </Link>
           </CardContent>
