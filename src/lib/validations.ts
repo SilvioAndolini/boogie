@@ -9,10 +9,21 @@ export const registroSchema = z.object({
   email: z.string().email('Correo electrónico inválido'),
   password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
   confirmPassword: z.string(),
-  telefono: z.string().optional(),
+  tipoDocumento: z.enum(['CEDULA', 'PASAPORTE'], { error: 'Selecciona un tipo de documento' }),
+  numeroDocumento: z.string().min(4, 'Ingresa el número de documento'),
+  telefono: z.string().min(7, 'Ingresa un número de teléfono válido'),
+  codigoPais: z.string().min(1),
 }).refine((data) => data.password === data.confirmPassword, {
   message: 'Las contraseñas no coinciden',
   path: ['confirmPassword'],
+}).refine((data) => {
+  if (data.tipoDocumento === 'CEDULA') {
+    return /^[VEPGJ]\-\d{4,9}$/.test(data.numeroDocumento) || /^\d{4,9}$/.test(data.numeroDocumento)
+  }
+  return /^[A-Z0-9]{5,20}$/.test(data.numeroDocumento)
+}, {
+  message: 'Formato de documento inválido',
+  path: ['numeroDocumento'],
 })
 
 export const loginSchema = z.object({

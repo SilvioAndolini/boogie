@@ -1,10 +1,11 @@
-// Widget de reserva para la página de detalle de propiedad
 'use client'
 
-import { useState } from 'react'
-import { CalendarDays, Users, Shield } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Users, Shield, ArrowLeftRight, ChevronDown, ChevronUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { formatPrecio } from '@/lib/format'
+import { formatPrecio, formatFechaCorta } from '@/lib/format'
+import { BookingCalendar } from '@/components/reservas/booking-calendar'
+import { COMISION_PLATAFORMA_HUESPED } from '@/lib/constants'
 
 interface BookingWidgetProps {
   precioPorNoche: number
@@ -12,6 +13,7 @@ interface BookingWidgetProps {
   capacidadMaxima: number
   estanciaMinima: number
   propiedadId: string
+  tasaEuro: number
 }
 
 export function BookingWidget({
@@ -20,82 +22,170 @@ export function BookingWidget({
   capacidadMaxima,
   estanciaMinima,
   propiedadId,
+  tasaEuro,
 }: BookingWidgetProps) {
   const [fechaEntrada, setFechaEntrada] = useState<Date | undefined>()
   const [fechaSalida, setFechaSalida] = useState<Date | undefined>()
   const [huespedes, setHuespedes] = useState(1)
+  const [mostrarCalendario, setMostrarCalendario] = useState(false)
+  const [mostrarHuespedes, setMostrarHuespedes] = useState(false)
+  const [monedaDisplay, setMonedaDisplay] = useState<'USD' | 'VES'>(moneda)
 
-  // Calcular noches y total
+  useEffect(() => {
+    setMonedaDisplay(moneda)
+  }, [moneda])
+
   const noches = fechaEntrada && fechaSalida
     ? Math.ceil((fechaSalida.getTime() - fechaEntrada.getTime()) / (1000 * 60 * 60 * 24))
     : 0
-  const subtotal = noches * precioPorNoche
-  const comision = Math.round(subtotal * 0.06 * 100) / 100
+
+  const convertir = (monto: number, a: 'USD' | 'VES'): number => {
+    if (moneda === 'USD' && a === 'VES') return monto * tasaEuro
+    if (moneda === 'VES' && a === 'USD') return monto / tasaEuro
+    return monto
+  }
+
+  const precioDisplay = convertir(precioPorNoche, monedaDisplay)
+  const subtotal = noches * precioDisplay
+  const comision = Math.round(subtotal * COMISION_PLATAFORMA_HUESPED * 100) / 100
   const total = subtotal + comision
 
-  return (
-    <div className="rounded-xl border border-[#E8E4DF] bg-white p-6 shadow-lg">
-      {/* Precio */}
-      <div className="mb-4 flex items-baseline gap-1">
-        <span className="text-2xl font-bold text-[#1A1A1A]">
-          {formatPrecio(precioPorNoche, moneda)}
-        </span>
-        <span className="text-[#6B6560]">/ noche</span>
-      </div>
+  const toggleMoneda = () => {
+    setMonedaDisplay((prev) => prev === 'USD' ? 'VES' : 'USD')
+  }
 
-      {/* Selector de fechas y huéspedes */}
-      <div className="mb-4 overflow-hidden rounded-lg border border-[#E8E4DF]">
-        <div className="grid grid-cols-2">
-          <button className="border-b border-r border-[#E8E4DF] p-3 text-left">
-            <span className="block text-xs font-semibold text-[#1A1A1A]">Check-in</span>
-            <span className="text-sm text-[#6B6560]">
-              {fechaEntrada ? fechaEntrada.toLocaleDateString('es-VE') : 'Agregar fecha'}
-            </span>
-          </button>
-          <button className="border-b border-[#E8E4DF] p-3 text-left">
-            <span className="block text-xs font-semibold text-[#1A1A1A]">Check-out</span>
-            <span className="text-sm text-[#6B6560]">
-              {fechaSalida ? fechaSalida.toLocaleDateString('es-VE') : 'Agregar fecha'}
-            </span>
-          </button>
+  const handleReservar = () => {
+    if (!fechaEntrada || !fechaSalida) return
+    const params = new URLSearchParams({
+      entrada: fechaEntrada.toISOString(),
+      salida: fechaSalida.toISOString(),
+      huespedes: huespedes.toString(),
+    })
+    window.location.href = `/propiedades/${propiedadId}/reservar?${params.toString()}`
+  }
+
+  return (
+    <div className="sticky top-20 rounded-xl border border-[#E8E4DF] bg-white p-5 shadow-sm">
+      <div className="mb-4 flex items-baseline justify-between">
+        <div className="flex items-baseline gap-1">
+          <span className="text-2xl font-bold text-[#1B4332]">
+            {formatPrecio(precioDisplay, monedaDisplay)}
+          </span>
+          <span className="text-sm text-[#6B6560]">/ noche</span>
         </div>
-        <button className="flex w-full items-center gap-2 p-3 text-left">
-          <Users className="h-4 w-4 text-[#6B6560]" />
-          <span className="text-sm text-[#6B6560]">{huespedes} huésped{huespedes > 1 ? 'es' : ''}</span>
+        <button
+          onClick={toggleMoneda}
+          className="flex items-center gap-1 rounded-md border border-[#E8E4DF] px-2 py-1 text-xs font-medium text-[#6B6560] transition-colors hover:border-[#1B4332] hover:text-[#1B4332]"
+          title={`Cambiar a ${monedaDisplay === 'USD' ? 'Bolívares' : 'Dólares'}`}
+        >
+          <ArrowLeftRight className="h-3 w-3" />
+          {monedaDisplay === 'USD' ? 'USD' : 'VES'}
         </button>
       </div>
 
-      {/* Botón de reserva */}
+      <div className="mb-3 overflow-hidden rounded-lg border border-[#E8E4DF]">
+        <button
+          className="grid w-full grid-cols-2"
+          onClick={() => { setMostrarCalendario(!mostrarCalendario); setMostrarHuespedes(false) }}
+        >
+          <div className="border-r border-[#E8E4DF] p-3 text-left">
+            <span className="block text-[10px] font-semibold uppercase tracking-wide text-[#1A1A1A]">Check-in</span>
+            <span className="text-sm text-[#6B6560]">
+              {fechaEntrada ? formatFechaCorta(fechaEntrada) : 'Agregar fecha'}
+            </span>
+          </div>
+          <div className="p-3 text-left">
+            <span className="block text-[10px] font-semibold uppercase tracking-wide text-[#1A1A1A]">Check-out</span>
+            <span className="text-sm text-[#6B6560]">
+              {fechaSalida ? formatFechaCorta(fechaSalida) : 'Agregar fecha'}
+            </span>
+          </div>
+        </button>
+
+        <button
+          className="flex w-full items-center justify-between border-t border-[#E8E4DF] p-3 text-left"
+          onClick={() => { setMostrarHuespedes(!mostrarHuespedes); setMostrarCalendario(false) }}
+        >
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-[#6B6560]" />
+            <span className="text-sm text-[#1A1A1A]">
+              {huespedes} huésped{huespedes > 1 ? 'es' : ''}
+            </span>
+          </div>
+          {mostrarHuespedes ? <ChevronUp className="h-4 w-4 text-[#6B6560]" /> : <ChevronDown className="h-4 w-4 text-[#6B6560]" />}
+        </button>
+      </div>
+
+      {mostrarCalendario && (
+        <div className="mb-3 rounded-lg border border-[#E8E4DF] bg-white p-3">
+          <BookingCalendar
+            fechaEntrada={fechaEntrada}
+            fechaSalida={fechaSalida}
+            onFechaEntradaChange={setFechaEntrada}
+            onFechaSalidaChange={setFechaSalida}
+          />
+        </div>
+      )}
+
+      {mostrarHuespedes && (
+        <div className="mb-3 rounded-lg border border-[#E8E4DF] bg-white p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-[#1A1A1A]">Huéspedes</span>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setHuespedes(Math.max(1, huespedes - 1))}
+                disabled={huespedes <= 1}
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-[#E8E4DF] text-[#1A1A1A] transition-colors hover:border-[#1B4332] disabled:cursor-not-allowed disabled:opacity-30"
+              >
+                -
+              </button>
+              <span className="w-6 text-center text-sm font-semibold text-[#1A1A1A]">{huespedes}</span>
+              <button
+                onClick={() => setHuespedes(Math.min(capacidadMaxima, huespedes + 1))}
+                disabled={huespedes >= capacidadMaxima}
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-[#E8E4DF] text-[#1A1A1A] transition-colors hover:border-[#1B4332] disabled:cursor-not-allowed disabled:opacity-30"
+              >
+                +
+              </button>
+            </div>
+          </div>
+          <p className="mt-2 text-xs text-[#9E9892]">Máximo {capacidadMaxima} huéspedes</p>
+        </div>
+      )}
+
       <Button
+        onClick={handleReservar}
         className="w-full bg-[#1B4332] py-6 text-base font-semibold text-white hover:bg-[#2D6A4F]"
-        disabled={!fechaEntrada || !fechaSalida}
+        disabled={!fechaEntrada || !fechaSalida || (noches > 0 && noches < estanciaMinima)}
       >
-        {fechaEntrada && fechaSalida ? 'Reservar ahora' : 'Selecciona las fechas'}
+        {noches > 0 && noches < estanciaMinima
+          ? `Estancia mínima: ${estanciaMinima} noches`
+          : fechaEntrada && fechaSalida
+            ? 'Reservar ahora'
+            : 'Selecciona las fechas'}
       </Button>
 
-      {/* Desglose de precios */}
-      {noches > 0 && (
+      {noches >= estanciaMinima && (
         <div className="mt-4 space-y-2 border-t border-[#E8E4DF] pt-4">
           <div className="flex justify-between text-sm">
             <span className="text-[#6B6560]">
-              {formatPrecio(precioPorNoche, moneda)} x {noches} noche{noches > 1 ? 's' : ''}
+              {formatPrecio(precioDisplay, monedaDisplay)} x {noches} noche{noches > 1 ? 's' : ''}
             </span>
-            <span>{formatPrecio(subtotal, moneda)}</span>
+            <span className="text-[#1A1A1A]">{formatPrecio(subtotal, monedaDisplay)}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-[#6B6560]">Comisión de servicio</span>
-            <span>{formatPrecio(comision, moneda)}</span>
+            <span className="text-[#6B6560]">Comisión de servicio ({(COMISION_PLATAFORMA_HUESPED * 100).toFixed(0)}%)</span>
+            <span className="text-[#1A1A1A]">{formatPrecio(comision, monedaDisplay)}</span>
           </div>
           <div className="flex justify-between border-t border-[#E8E4DF] pt-2 font-semibold">
-            <span>Total</span>
-            <span>{formatPrecio(total, moneda)}</span>
+            <span className="text-[#1A1A1A]">Total</span>
+            <span className="text-[#1B4332]">{formatPrecio(total, monedaDisplay)}</span>
           </div>
         </div>
       )}
 
-      {/* Garantía */}
-      <div className="mt-4 flex items-center gap-2 text-xs text-[#6B6560]">
-        <Shield className="h-4 w-4" />
+      <div className="mt-3 flex items-center gap-2 text-xs text-[#6B6560]">
+        <Shield className="h-4 w-4 shrink-0" />
         <span>Pago seguro con verificación manual</span>
       </div>
     </div>

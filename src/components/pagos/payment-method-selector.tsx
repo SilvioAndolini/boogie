@@ -22,12 +22,21 @@ const METODO_ICONS: Record<MetodoPagoEnum, string> = {
   EFECTIVO: '💵',
 }
 
+const METODOS_DISPONIBLES: MetodoPagoEnum[] = [
+  'PAGO_MOVIL',
+  'EFECTIVO_FARMATODO',
+  'USDT',
+  'TARJETA_INTERNACIONAL',
+]
+
 export function PaymentMethodSelector({ onSelect, selected }: PaymentMethodSelectorProps) {
   return (
     <div className="space-y-2">
       <h3 className="text-sm font-semibold text-[#1A1A1A]">Selecciona tu método de pago</h3>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        {(Object.entries(METODOS_PAGO) as [MetodoPagoEnum, string][]).map(([key, label]) => (
+        {(Object.entries(METODOS_PAGO) as [MetodoPagoEnum, string][])
+          .filter(([key]) => METODOS_DISPONIBLES.includes(key))
+          .map(([key, label]) => (
           <button
             key={key}
             onClick={() => onSelect(key)}

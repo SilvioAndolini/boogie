@@ -1,4 +1,3 @@
-// Página de detalle de propiedad (Boogie)
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import {
@@ -10,15 +9,13 @@ import {
   Bath,
   DoorOpen,
   ShieldCheck,
-  Calendar,
-  CreditCard,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { getPropiedadPorId } from '@/actions/propiedad.actions'
 import { PropertyGalleryWrapper } from './gallery-wrapper'
+import { BookingWidget } from '@/components/reservas/booking-widget'
 import { TIPOS_PROPIEDAD, POLITICAS_CANCELACION } from '@/lib/constants'
-import { formatPrecio } from '@/lib/format'
+import { getCotizacionEuro } from '@/lib/services/exchange-rate'
 import type { Metadata } from 'next'
 
 type Props = { params: Promise<{ id: string }> }
@@ -26,7 +23,7 @@ type Props = { params: Promise<{ id: string }> }
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
   const propiedad = await getPropiedadPorId(id)
-  if (!propiedad) return { title: 'Propiedad no encontrada' }
+  if (!propiedad) return { title: 'Boogie no encontrado' }
   return {
     title: propiedad.titulo,
     description: propiedad.descripcion.slice(0, 160),
@@ -39,6 +36,8 @@ export default async function PropiedadDetallePage({ params }: Props) {
 
   if (!propiedad) notFound()
 
+  const cotizacion = await getCotizacionEuro()
+
   const reglas = propiedad.reglas
     ? propiedad.reglas.split('\n').filter(Boolean)
     : []
@@ -48,7 +47,6 @@ export default async function PropiedadDetallePage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-[#FEFCF9]">
-      {/* Navegación superior */}
       <div className="border-b border-[#E8E4DF] bg-white">
         <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
           <Link
@@ -56,22 +54,18 @@ export default async function PropiedadDetallePage({ params }: Props) {
             className="inline-flex items-center gap-1.5 text-sm font-medium text-[#6B6560] transition-colors hover:text-[#1B4332]"
           >
             <ArrowLeft className="h-4 w-4" />
-            Volver a propiedades
+            Volver a boogies
           </Link>
         </div>
       </div>
 
-      {/* Galería de imágenes */}
       <div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 lg:px-8">
         <PropertyGalleryWrapper imagenes={propiedad.imagenes} />
       </div>
 
-      {/* Contenido principal */}
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-8 lg:flex-row">
-          {/* Detalles (60%) */}
           <div className="flex-1 lg:max-w-[60%]">
-            {/* Encabezado */}
             <div className="mb-6">
               <div className="mb-2 flex flex-wrap items-center gap-2">
                 <Badge variant="secondary" className="bg-[#D8F3DC] text-xs font-medium text-[#1B4332]">
@@ -101,7 +95,6 @@ export default async function PropiedadDetallePage({ params }: Props) {
               </div>
             </div>
 
-            {/* Capacidad */}
             <div className="mb-6 flex flex-wrap gap-4 border-y border-[#E8E4DF] py-4">
               <div className="flex items-center gap-2 text-sm text-[#1A1A1A]">
                 <Users className="h-5 w-5 text-[#1B4332]" />
@@ -121,13 +114,11 @@ export default async function PropiedadDetallePage({ params }: Props) {
               </div>
             </div>
 
-            {/* Descripción */}
             <div className="mb-8">
               <h2 className="mb-3 text-lg font-semibold text-[#1A1A1A]">Descripción</h2>
               <p className="whitespace-pre-line leading-relaxed text-[#1A1A1A]">{propiedad.descripcion}</p>
             </div>
 
-            {/* Amenidades */}
             {propiedad.amenidades.length > 0 && (
               <div className="mb-8">
                 <h2 className="mb-3 text-lg font-semibold text-[#1A1A1A]">Amenidades</h2>
@@ -147,7 +138,6 @@ export default async function PropiedadDetallePage({ params }: Props) {
               </div>
             )}
 
-            {/* Reglas */}
             {reglas.length > 0 && (
               <div className="mb-8">
                 <h2 className="mb-3 text-lg font-semibold text-[#1A1A1A]">Reglas del alojamiento</h2>
@@ -162,7 +152,6 @@ export default async function PropiedadDetallePage({ params }: Props) {
               </div>
             )}
 
-            {/* Reseñas */}
             <div>
               <h2 className="mb-3 text-lg font-semibold text-[#1A1A1A]">Reseñas</h2>
               {propiedad.resenas.length > 0 ? (
@@ -198,69 +187,15 @@ export default async function PropiedadDetallePage({ params }: Props) {
             </div>
           </div>
 
-          {/* Widget de reserva (40%) */}
           <div className="lg:w-[40%]">
-            <div className="sticky top-20 rounded-xl border border-[#E8E4DF] bg-white p-5 shadow-sm">
-              {/* Precio */}
-              <div className="mb-4 flex items-baseline gap-1">
-                <span className="text-2xl font-bold text-[#1B4332]">
-                  {formatPrecio(Number(propiedad.precioPorNoche), propiedad.moneda as 'USD' | 'VES')}
-                </span>
-                <span className="text-sm text-[#6B6560]">/ noche</span>
-              </div>
-
-              {/* Selector de fechas placeholder */}
-              <div className="mb-3 space-y-2">
-                <div className="rounded-lg border border-[#E8E4DF] p-3">
-                  <div className="flex items-center gap-2 text-sm text-[#6B6560]">
-                    <Calendar className="h-4 w-4" />
-                    <span>Selecciona las fechas de tu viaje</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Selector de huéspedes placeholder */}
-              <div className="mb-4">
-                <div className="rounded-lg border border-[#E8E4DF] p-3">
-                  <div className="flex items-center gap-2 text-sm text-[#6B6560]">
-                    <Users className="h-4 w-4" />
-                    <span>1 huésped</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Desglose de precio */}
-              <div className="mb-4 space-y-2 border-t border-[#E8E4DF] pt-4">
-                <div className="flex justify-between text-sm">
-                  <span className="text-[#6B6560]">
-                    {formatPrecio(Number(propiedad.precioPorNoche), propiedad.moneda as 'USD' | 'VES')} x 5 noches
-                  </span>
-                  <span className="text-[#1A1A1A]">
-                    {formatPrecio(Number(propiedad.precioPorNoche) * 5, propiedad.moneda as 'USD' | 'VES')}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-[#6B6560]">Tarifa de servicio</span>
-                  <span className="text-[#1A1A1A]">$25</span>
-                </div>
-                <div className="flex justify-between border-t border-[#E8E4DF] pt-2 font-semibold">
-                  <span className="text-[#1A1A1A]">Total</span>
-                  <span className="text-[#1B4332]">
-                    {formatPrecio(Number(propiedad.precioPorNoche) * 5 + 25, propiedad.moneda as 'USD' | 'VES')}
-                  </span>
-                </div>
-              </div>
-
-              {/* Botón de reserva */}
-              <Button className="w-full bg-[#1B4332] text-base font-semibold hover:bg-[#2D6A4F]">
-                <CreditCard className="mr-2 h-4 w-4" />
-                Reservar ahora
-              </Button>
-
-              <p className="mt-3 text-center text-xs text-[#6B6560]">
-                No se te cobrará nada por ahora
-              </p>
-            </div>
+            <BookingWidget
+              precioPorNoche={Number(propiedad.precioPorNoche)}
+              moneda={propiedad.moneda as 'USD' | 'VES'}
+              capacidadMaxima={propiedad.capacidadMaxima}
+              estanciaMinima={propiedad.estanciaMinima}
+              propiedadId={propiedad.id}
+              tasaEuro={cotizacion.tasa}
+            />
           </div>
         </div>
       </div>
