@@ -212,7 +212,12 @@ export async function GET(request: NextRequest) {
   const q = searchParams.get('q')?.trim()
 
   if (!q || q.length < 2) {
-    return NextResponse.json({ resultados: [] })
+    return NextResponse.json({ resultados: [] }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=1800, stale-while-revalidate=3600',
+        'Vary': 'Accept-Encoding',
+      },
+    })
   }
 
   try {
@@ -222,7 +227,12 @@ export async function GET(request: NextRequest) {
       resultados = await searchNominatim(q)
     }
 
-    return NextResponse.json({ resultados })
+    return NextResponse.json({ resultados }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=1800, stale-while-revalidate=3600',
+        'Vary': 'Accept-Encoding',
+      },
+    })
   } catch (error) {
     console.error('Ubicaciones API error:', error)
     return NextResponse.json({ resultados: [] })

@@ -1,12 +1,13 @@
 // Acciones del servidor para propiedades
 'use server'
 
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, unstable_cache } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { prisma } from '@/lib/prisma'
 import { propiedadSchema } from '@/lib/validations'
+import { CACHE_TAGS, CACHE_TIMES, invalidatePropiedadCache } from '@/lib/cache'
 
 // --- Tipos de retorno para las queries públicas ---
 
@@ -150,6 +151,7 @@ export async function crearPropiedad(formData: FormData) {
     })
   }
 
+  await invalidatePropiedadCache(propiedad.id)
   revalidatePath('/dashboard/mis-propiedades')
   redirect(`/dashboard/mis-propiedades`)
 }
@@ -175,6 +177,7 @@ export async function actualizarEstadoPropiedad(propiedadId: string, estado: str
     },
   })
 
+  await invalidatePropiedadCache(propiedadId)
   revalidatePath('/dashboard/mis-propiedades')
   return { exito: true }
 }
@@ -198,10 +201,7 @@ export async function getMisPropiedades() {
   })
 }
 
-/**
- * Obtiene propiedades públicas con filtros usando Supabase client
- */
-export async function getPropiedadesPublicas(filtros?: {
+async function _getPropiedadesPublicasInternal(filtros?: {
   ubicacion?: string
   lat?: number
   lng?: number
@@ -331,13 +331,32 @@ export async function getPropiedadesPublicas(filtros?: {
   }
 }
 
-/**
- * Obtiene una propiedad por su ID usando Supabase client
- */
-export async function getPropiedadPorId(id: string): Promise<PropiedadDetalle | null> {
+const _getPropiedadesPublicasCached = unstable_cache(
+  _getPropiedadesPublicasInternal,
+  ['propiedades-publicas'],
+  { revalidate: CACHE_TIMES.PROPIEDADES_LIST, tags: [CACHE_TAGS.PROPIEDADES] }
+)
+
+export async function getPropiedadesPublicas(filtros?: {
+  ubicacion?: string
+  lat?: number
+  lng?: number
+  radio?: number
+  precioMin?: number
+  precioMax?: number
+  huespedes?: number
+  tipoPropiedad?: string
+  habitaciones?: number
+  banos?: number
+  ordenarPor?: string
+  pagina?: number
+}) {
+  return _getPropiedadesPublicasCached(filtros)
+}
+
+async function _getPropiedadPorIdInternal(id: string): Promise<PropiedadDetalle | null> {
   const supabase = createAdminClient()
 
-  // Fetch propiedad con propietario e imágenes
   const { data: propiedad } = await supabase
     .from('propiedades')
     .select('*, propietario:usuarios!propietario_id(id, nombre, apellido, avatar_url, verificado)')
@@ -346,20 +365,17 @@ export async function getPropiedadPorId(id: string): Promise<PropiedadDetalle | 
 
   if (!propiedad) return null
 
-  // Fetch imágenes ordenadas
   const { data: imagenes } = await supabase
     .from('imagenes_propiedad')
     .select('*')
     .eq('propiedad_id', id)
     .order('orden', { ascending: true })
 
-  // Fetch amenidades
   const { data: amenidadesRaw } = await supabase
     .from('propiedad_amenidades')
     .select('amenidad_id, amenidad:amenidades(id, nombre, icono, categoria)')
     .eq('propiedad_id', id)
 
-  // Fetch reseñas
   const { data: resenasRaw } = await supabase
     .from('resenas')
     .select('id, calificacion, comentario, fecha_creacion, autor:usuarios!autor_id(nombre, apellido, avatar_url)')
@@ -408,4 +424,14 @@ export async function getPropiedadPorId(id: string): Promise<PropiedadDetalle | 
       autor: r.autor as PropiedadDetalle['resenas'][number]['autor'],
     })),
   }
+}
+
+const _getPropiedadPorIdCached = unstable_cache(
+  _getPropiedadPorIdInternal,
+  ['propiedad-detalle'],
+  { revalidate: CACHE_TIMES.PROPIEDAD_DETALLE, tags: [CACHE_TAGS.PROPIEDADES] }
+)
+
+export async function getPropiedadPorId(id: string): Promise<PropiedadDetalle | null> {
+  return _getPropiedadPorIdCached(id)
 }
