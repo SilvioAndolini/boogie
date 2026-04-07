@@ -102,11 +102,15 @@ const VENEZUELA_LOCATIONS: LocationResult[] = [
   { tipo: 'Zona', nombre: 'Altos de Pipe', detalle: 'Miranda' },
 ]
 
+const VENEZUELA_LOCATIONS_INDEX = VENEZUELA_LOCATIONS.map(loc => ({
+  ...loc,
+  nombreLower: loc.nombre.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''),
+}))
+
 function searchLocal(query: string): LocationResult[] {
   const lower = query.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-  return VENEZUELA_LOCATIONS.filter((loc) => {
-    const name = loc.nombre.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    return name.includes(lower)
+  return VENEZUELA_LOCATIONS_INDEX.filter((loc) => {
+    return loc.nombreLower.includes(lower)
   }).slice(0, 8)
 }
 
