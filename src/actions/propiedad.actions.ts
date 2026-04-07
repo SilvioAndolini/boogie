@@ -226,7 +226,11 @@ async function _getPropiedadesPublicasInternal(filtros?: {
 
   if (filtros?.ubicacion && !filtros?.lat) {
     const ubicacion = filtros.ubicacion.trim()
-    query = query.or(`ciudad.ilike.%${ubicacion}%,estado.ilike.%${ubicacion}%,zona.ilike.%${ubicacion}%`)
+    const ubicacionSanitized = ubicacion
+      .replace(/\\/g, '\\\\')
+      .replace(/%/g, '\\%')
+      .replace(/_/g, '\\_')
+    query = query.or(`ciudad.ilike.%${ubicacionSanitized}%,estado.ilike.%${ubicacionSanitized}%,zona.ilike.%${ubicacionSanitized}%`)
   }
   if (filtros?.precioMin) {
     query = query.gte('precio_por_noche', filtros.precioMin)

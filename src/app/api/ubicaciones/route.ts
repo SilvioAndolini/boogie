@@ -235,6 +235,9 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Ubicaciones API error:', error)
-    return NextResponse.json({ resultados: [] })
+    return NextResponse.json(
+      { error: 'Error al buscar ubicaciones', resultados: [] },
+      { status: 500 }
+    )
   }
 }

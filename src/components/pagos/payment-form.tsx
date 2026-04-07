@@ -1,13 +1,13 @@
 // Formulario de pago dinámico según el método seleccionado
 'use client'
 
-import { useState } from 'react'
-import { Upload, CheckCircle, AlertCircle } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import type { MetodoPagoEnum } from '@/types'
+import type { PaymentData } from '@/lib/payment-data'
 
 interface PaymentFormProps {
   metodo: MetodoPagoEnum
@@ -16,35 +16,31 @@ interface PaymentFormProps {
   onSubmit: (data: FormData) => void
 }
 
-// Datos bancarios de ejemplo de la plataforma para recibir pagos
-const DATOS_BANCARIOS = {
-  TRANSFERENCIA_BANCARIA: {
-    banco: 'Banco de Venezuela',
-    cuenta: '0102-XXXX-XXXX-XXXX',
-    titular: 'Boogie C.A.',
-    cedula: 'J-XXXXXXXX',
-  },
-  PAGO_MOVIL: {
-    banco: 'Banco de Venezuela',
-    telefono: '0414-XXX-XXXX',
-    cedula: 'J-XXXXXXXX',
-  },
-  ZELLE: {
-    email: 'pagos@boogie.app',
-    nombre: 'Boogie CA',
-  },
-  USDT: {
-    red: 'TRC-20 (Tron)',
-    direccion: 'TJxXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-  },
-}
-
 export function PaymentForm({ metodo, monto, moneda, onSubmit }: PaymentFormProps) {
   const [referencia, setReferencia] = useState('')
   const [comprobante, setComprobante] = useState<File | null>(null)
   const [enviando, setEnviando] = useState(false)
+  const [datosPago, setDatosPago] = useState<PaymentData | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  const datosReceptor = DATOS_BANCARIOS[metodo as keyof typeof DATOS_BANCARIOS]
+  useEffect(() => {
+    async function fetchPaymentData() {
+      try {
+        const res = await fetch('/api/payment-data')
+        if (res.ok) {
+          const data = await res.json()
+          setDatosPago(data)
+        }
+      } catch (error) {
+        console.error('Error fetching payment data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchPaymentData()
+  }, [])
+
+  const datosReceptor = datosPago ? datosPago[metodo as keyof PaymentData] : null
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

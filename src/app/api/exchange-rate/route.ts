@@ -20,7 +20,12 @@ export async function GET() {
     )
   } catch {
     return NextResponse.json(
-      { tasa: 78.39, fuente: 'Ref.', ultimaActualizacion: new Date().toISOString() },
+      { 
+        tasa: 78.39, 
+        fuente: 'Ref.', 
+        ultimaActualizacion: new Date().toISOString(),
+        isFallback: true 
+      },
       {
         status: 200,
         headers: {
