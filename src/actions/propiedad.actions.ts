@@ -3,11 +3,11 @@
 
 import { revalidatePath, unstable_cache } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { prisma } from '@/lib/prisma'
 import { propiedadSchema } from '@/lib/validations'
 import { CACHE_TAGS, CACHE_TIMES, invalidatePropiedadCache } from '@/lib/cache'
+import { getUsuarioAutenticado } from '@/lib/auth'
 
 // --- Tipos de retorno para las queries públicas ---
 
@@ -62,15 +62,6 @@ interface PropiedadDetalle {
   imagenes: { id: string; url: string; alt: string | null; orden: number; es_principal: boolean }[]
   amenidades: { amenidadId: string; amenidad: { id: string; nombre: string; icono: string | null; categoria: string } }[]
   resenas: { id: string; calificacion: number; comentario: string; fechaCreacion: string; autor: { nombre: string; apellido: string; avatar_url: string | null } }[]
-}
-
-/**
- * Obtiene el usuario autenticado actual
- */
-async function getUsuarioAutenticado() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  return user
 }
 
 /**

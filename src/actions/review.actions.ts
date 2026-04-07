@@ -2,15 +2,9 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
 import { resenaSchema } from '@/lib/validations'
-
-async function getUsuarioAutenticado() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  return user
-}
+import { getUsuarioAutenticado } from '@/lib/auth'
 
 /**
  * Crea una reseña para una reserva completada

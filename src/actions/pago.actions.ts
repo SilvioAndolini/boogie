@@ -2,15 +2,9 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
 import { pagoSchema } from '@/lib/validations'
-
-async function getUsuarioAutenticado() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  return user
-}
+import { getUsuarioAutenticado } from '@/lib/auth'
 
 /**
  * Registra un pago para una reserva

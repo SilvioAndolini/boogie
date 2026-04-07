@@ -32,6 +32,9 @@ const TIPO_ICON_MAP: Record<string, typeof Building2> = {
   Lugar: MapPin,
 }
 
+const MAX_GUESTS = 20
+const MIN_GUESTS = 1
+
 function getIconForTipo(tipo: string) {
   return TIPO_ICON_MAP[tipo] ?? MapPin
 }
@@ -146,8 +149,8 @@ function GuestPickerPopup({
   const count = parseInt(guests) || 1
 
   const updateCount = (newCount: number) => {
-    if (newCount < 1) newCount = 1
-    if (newCount > 20) newCount = 20
+    if (newCount < MIN_GUESTS) newCount = MIN_GUESTS
+    if (newCount > MAX_GUESTS) newCount = MAX_GUESTS
     onGuestsChange(String(newCount))
   }
 
