@@ -447,7 +447,6 @@ function mapReservaConPropiedad(r: Record<string, unknown>): ReservaConPropiedad
     } : undefined,
   }
 }
-
 export async function confirmarReservaAction(formData: FormData) {
   const reservaId = formData.get('reservaId') as string
   await confirmarORechazarReserva(reservaId, 'confirmar')
@@ -456,4 +455,9 @@ export async function confirmarReservaAction(formData: FormData) {
 export async function rechazarReservaAction(formData: FormData) {
   const reservaId = formData.get('reservaId') as string
   await confirmarORechazarReserva(reservaId, 'rechazar')
+}
+
+export async function cancelarReservaAction(formData: FormData) {
+  const reservaId = formData.get('reservaId') as string
+  await cancelarReserva(reservaId)
 }
