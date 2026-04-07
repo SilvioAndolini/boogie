@@ -100,7 +100,7 @@ export function PropertyCard({ propiedad }: { propiedad: PropiedadCard }) {
           <Button
             variant="ghost"
             size="icon-sm"
-            className="absolute right-2.5 top-2.5 z-10 rounded-full bg-white/80 text-[#6B6560] backdrop-blur-md shadow-sm transition-all hover:bg-white hover:text-[#E76F51] hover:shadow-md"
+            className="absolute right-2.5 top-2.5 z-10 rounded-full bg-white/80 text-[#6B6560] backdrop-blur-md shadow-sm transition-all hover:bg-white hover:text-[#1B4332] hover:shadow-md"
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()

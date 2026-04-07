@@ -9,8 +9,8 @@ export function CtaSection() {
     <section className="relative overflow-hidden bg-[#1B4332] py-20">
       {/* Decorative background - optimized with CSS animations */}
       <div className="absolute inset-0 opacity-10">
-        <div className="cta-blob-green" />
-        <div className="cta-blob-orange" />
+          <div className="cta-blob-green" />
+          <div className="cta-blob-green-secondary" />
       </div>
 
       <div className="relative mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
@@ -40,7 +40,7 @@ export function CtaSection() {
           transition={{ duration: 0.5, delay: 0.2 }}
         >
           <Link href="/dashboard/mis-propiedades/nueva">
-            <Button className="bg-[#E76F51] px-8 text-white hover:bg-[#D45D3E]">
+            <Button className="bg-[#52B788] px-8 text-white hover:bg-[#40916c]">
               Publicar alojamiento
             </Button>
           </Link>

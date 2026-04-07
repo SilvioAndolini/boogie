@@ -11,7 +11,7 @@ export default function NotFound() {
       {/* Gradient background glow */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 left-1/4 h-[500px] w-[500px] rounded-full bg-[#D8F3DC]/30 blur-3xl" />
-        <div className="absolute -bottom-20 right-1/4 h-[400px] w-[400px] rounded-full bg-[#E76F51]/10 blur-3xl" />
+        <div className="absolute -bottom-20 right-1/4 h-[400px] w-[400px] rounded-full bg-[#1B4332]/10 blur-3xl" />
       </div>
 
       <div className="relative z-10 flex flex-col items-center gap-6">

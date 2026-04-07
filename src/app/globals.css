@@ -83,7 +83,7 @@
   --ring: #1B4332;
   --chart-1: #1B4332;
   --chart-2: #52B788;
-  --chart-3: #E76F51;
+  --chart-3: #1B4332;
   --chart-4: #F4A261;
   --chart-5: #457B9D;
   --radius: 0.75rem;
@@ -154,14 +154,14 @@
   animation: blobFloat 8s ease-in-out infinite;
 }
 
-.cta-blob-orange {
+.cta-blob-green-secondary {
   position: absolute;
   bottom: 0;
   left: 0;
   height: 18rem;
   width: 18rem;
   border-radius: 9999px;
-  background: #E76F51;
+  background: #1B4332;
   filter: blur(80px);
   animation: blobFloat 10s ease-in-out infinite reverse;
 }

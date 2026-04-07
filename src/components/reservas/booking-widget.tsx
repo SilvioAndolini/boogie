@@ -67,7 +67,7 @@ export function BookingWidget({
 
       {/* Botón de reserva */}
       <Button
-        className="w-full bg-[#E76F51] py-6 text-base font-semibold text-white hover:bg-[#D45D3E]"
+        className="w-full bg-[#1B4332] py-6 text-base font-semibold text-white hover:bg-[#2D6A4F]"
         disabled={!fechaEntrada || !fechaSalida}
       >
         {fechaEntrada && fechaSalida ? 'Reservar ahora' : 'Selecciona las fechas'}

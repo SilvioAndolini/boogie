@@ -512,7 +512,7 @@ export function SearchBar() {
     <div ref={containerRef} className="relative mx-auto w-full max-w-3xl">
       <div className="flex items-center gap-1 rounded-full border border-[#E8E4DF] bg-white px-2 py-1.5 shadow-md transition-shadow focus-within:shadow-lg sm:gap-2 sm:px-3 sm:py-2">
         <div className="flex flex-1 items-center gap-2 rounded-full px-3 py-2 transition-colors hover:bg-[#F8F6F3] focus-within:bg-[#F8F6F3]">
-          <MapPin className="h-4 w-4 shrink-0 text-[#E76F51]" />
+          <MapPin className="h-4 w-4 shrink-0 text-[#1B4332]" />
           <div className="flex flex-col">
             <span className="text-[10px] font-semibold uppercase tracking-wide text-[#6B6560]">
               ¿A dónde vas?
@@ -553,7 +553,7 @@ export function SearchBar() {
           }}
           className="hidden flex-1 cursor-pointer items-center gap-2 rounded-full px-3 py-2 transition-colors hover:bg-[#F8F6F3] sm:flex"
         >
-          <Calendar className="h-4 w-4 shrink-0 text-[#E76F51]" />
+          <Calendar className="h-4 w-4 shrink-0 text-[#1B4332]" />
           <div className="flex flex-col">
             <span className="text-[10px] font-semibold uppercase tracking-wide text-[#6B6560]">
               Fechas
@@ -580,7 +580,7 @@ export function SearchBar() {
           }}
           className="hidden flex-1 items-center gap-2 rounded-full px-3 py-2 transition-colors hover:bg-[#F8F6F3] sm:flex"
         >
-          <Users className="h-4 w-4 shrink-0 text-[#E76F51]" />
+          <Users className="h-4 w-4 shrink-0 text-[#1B4332]" />
           <div className="flex flex-col">
             <span className="text-[10px] font-semibold uppercase tracking-wide text-[#6B6560]">
               Huéspedes
@@ -602,7 +602,7 @@ export function SearchBar() {
           }}
           className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-colors ${
             ubicacion || dateRange.from || dateRange.to || huespedes !== '1'
-              ? 'border-[#E76F51] text-[#E76F51] hover:bg-[#E76F51]/10'
+              ? 'border-[#1B4332] text-[#1B4332] hover:bg-[#1B4332]/10'
               : 'border-[#E8E4DF] text-[#D0CBC4]'
           }`}
           aria-label="Limpiar filtros"
@@ -618,7 +618,7 @@ export function SearchBar() {
 
         <Button
           size="icon"
-          className="h-10 w-10 shrink-0 rounded-full bg-[#E76F51] hover:bg-[#D45D3E]"
+          className="h-10 w-10 shrink-0 rounded-full bg-[#1B4332] hover:bg-[#2D6A4F]"
           aria-label="Buscar Boogies"
           onClick={() => {
             setOpen(false)

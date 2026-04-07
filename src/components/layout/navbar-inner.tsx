@@ -142,7 +142,7 @@ export function NavbarInner({
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>
                   <form action={cerrarSesion} className="flex w-full">
-                    <button type="submit" className="flex w-full items-center gap-2 text-[#E76F51]">
+                    <button type="submit" className="flex w-full items-center gap-2 text-[#1B4332]">
                       <LogOut className="h-4 w-4" />
                       Cerrar sesión
                     </button>
@@ -284,7 +284,7 @@ export function NavbarInner({
                     <form action={cerrarSesion}>
                       <button
                         type="submit"
-                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-[#E76F51] transition-colors hover:bg-[#FEF2E8]"
+                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-[#1B4332] transition-colors hover:bg-[#D8F3DC]"
                       >
                         <LogOut className="h-4 w-4" />
                         Cerrar sesión

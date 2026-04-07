@@ -118,7 +118,7 @@ function FilterPanelInner({ onClose }: { onClose?: () => void }) {
           {activeCount > 0 && (
             <button
               onClick={clearAll}
-              className="text-[11px] font-medium text-[#E76F51] hover:underline"
+              className="text-[11px] font-medium text-[#1B4332] hover:underline"
             >
               Limpiar todo
             </button>

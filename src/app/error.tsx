@@ -16,7 +16,7 @@ export default function Error({
       {/* Gradient background glow */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-20 right-1/4 h-[400px] w-[400px] rounded-full bg-red-100/30 blur-3xl" />
-        <div className="absolute -bottom-20 left-1/4 h-[300px] w-[300px] rounded-full bg-[#E76F51]/10 blur-3xl" />
+        <div className="absolute -bottom-20 left-1/4 h-[300px] w-[300px] rounded-full bg-[#1B4332]/10 blur-3xl" />
       </div>
 
       <div className="relative z-10 flex flex-col items-center gap-6">
@@ -32,7 +32,7 @@ export default function Error({
             delay: 0.1,
           }}
         >
-          <AlertTriangle className="h-10 w-10 text-[#E76F51]" />
+          <AlertTriangle className="h-10 w-10 text-[#1B4332]" />
         </motion.div>
 
         <motion.h2

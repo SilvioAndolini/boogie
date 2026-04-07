@@ -123,7 +123,7 @@ export default function ReservarPage() {
 
           <Button
             onClick={() => setPaso('pago')}
-            className="w-full bg-[#E76F51] py-6 text-base font-semibold text-white hover:bg-[#D45D3E]"
+            className="w-full bg-[#1B4332] py-6 text-base font-semibold text-white hover:bg-[#2D6A4F]"
           >
             Continuar al pago
           </Button>

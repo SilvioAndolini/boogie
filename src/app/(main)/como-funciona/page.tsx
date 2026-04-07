@@ -211,7 +211,7 @@ function TarjetaPaso({
   return (
     <div className="relative rounded-xl border border-[#E8E4DF] bg-white p-6 transition-shadow hover:shadow-md">
       {/* Número de paso */}
-      <div className="absolute -top-3 -left-3 flex h-8 w-8 items-center justify-center rounded-full bg-[#E76F51] text-sm font-bold text-white">
+        <div className="absolute -top-3 -left-3 flex h-8 w-8 items-center justify-center rounded-full bg-[#1B4332] text-sm font-bold text-white">
         {numero}
       </div>
 

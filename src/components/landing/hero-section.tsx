@@ -27,7 +27,7 @@ export function HeroSection() {
       {/* Decorative background glow */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 left-1/2 h-[500px] w-[700px] -translate-x-1/2 rounded-full bg-[#D8F3DC]/40 blur-3xl" />
-        <div className="absolute -bottom-20 right-0 h-[300px] w-[400px] rounded-full bg-[#E76F51]/10 blur-3xl" />
+        <div className="absolute -bottom-20 right-0 h-[300px] w-[400px] rounded-full bg-[#1B4332]/10 blur-3xl" />
       </div>
 
       <div className="relative mx-auto max-w-7xl px-4 pb-20 pt-16 sm:px-6 sm:pb-28 sm:pt-24 lg:px-8">
@@ -40,7 +40,7 @@ export function HeroSection() {
         >
           <h1 className="text-4xl font-extrabold tracking-tight text-[#1A1A1A] sm:text-5xl lg:text-6xl">
             Vayas donde vayas,{' '}
-            <span className="text-[#E76F51]">boogie</span>{' '}
+            <span className="text-[#1B4332]">boogie</span>{' '}
             nunca falla
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-lg text-[#6B6560]">

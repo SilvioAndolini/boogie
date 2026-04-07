@@ -154,7 +154,7 @@ export default async function PropiedadDetallePage({ params }: Props) {
                 <ul className="space-y-2">
                   {reglas.map((regla, i) => (
                     <li key={i} className="flex items-start gap-2 text-sm text-[#1A1A1A]">
-                      <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[#E76F51]" />
+                      <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[#1B4332]" />
                       {regla}
                     </li>
                   ))}
@@ -252,7 +252,7 @@ export default async function PropiedadDetallePage({ params }: Props) {
               </div>
 
               {/* Botón de reserva */}
-              <Button className="w-full bg-[#E76F51] text-base font-semibold hover:bg-[#D45D3E]">
+              <Button className="w-full bg-[#1B4332] text-base font-semibold hover:bg-[#2D6A4F]">
                 <CreditCard className="mr-2 h-4 w-4" />
                 Reservar ahora
               </Button>

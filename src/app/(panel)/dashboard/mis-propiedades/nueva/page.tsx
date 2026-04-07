@@ -368,7 +368,7 @@ export default function NuevaPropiedadPage() {
             <Button
               type="submit"
               disabled={enviando}
-              className="bg-[#E76F51] text-white hover:bg-[#D45D3E]"
+              className="bg-[#1B4332] text-white hover:bg-[#2D6A4F]"
             >
               {enviando ? 'Publicando...' : 'Publicar boogie'}
             </Button>
