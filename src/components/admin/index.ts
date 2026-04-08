@@ -1,0 +1,8 @@
+export { AdminHeader } from './admin-header'
+export { AdminStatCard } from './admin-stat-card'
+export { AdminFilterBar } from './admin-filter-bar'
+export { AdminConfirmDialog } from './admin-confirm-dialog'
+export { AdminEmptyState } from './admin-empty-state'
+export { AdminBadgeCount } from './admin-badge-count'
+export { AdminSidebarDesktop, AdminSidebarMobile } from './admin-sidebar'
+export { RegistrarUsuarioModal } from './admin-registrar-usuario-modal'

@@ -141,34 +141,24 @@
   to { transform: rotate(360deg); }
 }
 
-/* CTA Section optimized blobs */
-.cta-blob-green {
-  position: absolute;
-  top: 0;
-  right: 0;
-  height: 24rem;
-  width: 24rem;
-  border-radius: 9999px;
-  background: #52B788;
-  filter: blur(80px);
-  animation: blobFloat 8s ease-in-out infinite;
+@keyframes glowFloatA {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-6px) scale(1.02); }
 }
 
-.cta-blob-green-secondary {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  height: 18rem;
-  width: 18rem;
-  border-radius: 9999px;
-  background: #1B4332;
-  filter: blur(80px);
-  animation: blobFloat 10s ease-in-out infinite reverse;
+@keyframes glowFloatB {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(5px) scale(1.015); }
 }
 
-@keyframes blobFloat {
-  0%, 100% { transform: scale(1) translate(0, 0); opacity: 0.3; }
-  50% { transform: scale(1.1) translate(10px, -10px); opacity: 0.5; }
+.glow-float-a {
+  animation: glowFloatA 16s ease-in-out infinite;
+  will-change: transform;
+}
+
+.glow-float-b {
+  animation: glowFloatB 20s ease-in-out infinite;
+  will-change: transform;
 }
 
 .skeleton {

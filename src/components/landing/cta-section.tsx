@@ -6,11 +6,10 @@ import { Button } from '@/components/ui/button'
 
 export function CtaSection() {
   return (
-    <section className="relative overflow-hidden bg-[#1B4332] py-20">
-      {/* Decorative background - optimized with CSS animations */}
-      <div className="absolute inset-0 opacity-10">
-          <div className="cta-blob-green" />
-          <div className="cta-blob-green-secondary" />
+<section className="relative bg-[#1B4332] py-20">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="glow-float-a absolute top-0 right-0 h-96 w-96 translate-x-1/3 rounded-full bg-[#52B788] opacity-15 blur-3xl" />
+        <div className="glow-float-b absolute bottom-0 left-0 h-72 w-72 -translate-x-1/3 rounded-full bg-[#1B4332] opacity-20 blur-3xl" style={{ animationDelay: '-6s' }} />
       </div>
 
       <div className="relative mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">

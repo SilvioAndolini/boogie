@@ -23,13 +23,7 @@ const ZONAS_DESTACADAS = [
 
 export function HeroSection() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-[#FEFCF9] to-white">
-      {/* Decorative background glow */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-[500px] w-[700px] -translate-x-1/2 rounded-full bg-[#D8F3DC]/40 blur-3xl" />
-        <div className="absolute -bottom-20 right-0 h-[300px] w-[400px] rounded-full bg-[#1B4332]/10 blur-3xl" />
-      </div>
-
+    <section className="relative">
       <div className="relative mx-auto max-w-7xl px-4 pb-20 pt-16 sm:px-6 sm:pb-28 sm:pt-24 lg:px-8">
         {/* Hero text */}
         <motion.div

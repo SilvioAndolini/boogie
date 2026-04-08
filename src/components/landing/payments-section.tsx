@@ -30,8 +30,8 @@ const itemVariants = {
 
 export function PaymentsSection() {
   return (
-    <section className="bg-[#FEFCF9] py-20">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <section className="relative py-20">
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <motion.div
           className="overflow-hidden rounded-2xl border border-[#E8E4DF] bg-white"
           initial={{ opacity: 0, y: 20 }}

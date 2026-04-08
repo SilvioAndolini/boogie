@@ -9,6 +9,7 @@ const RUTAS_PUBLICAS = [
   '/login',
   '/registro',
   '/recuperar-contrasena',
+  '/admin-login',
 ]
 
 function esRutaPublica(pathname: string): boolean {
@@ -55,17 +56,43 @@ export async function middleware(request: NextRequest) {
 
     const { pathname } = request.nextUrl
 
+    if (user && pathname.startsWith('/admin-login')) {
+      const secretKey = process.env.SUPABASE_SECRET_KEY || supabaseKey
+      const adminClient = createServerClient(supabaseUrl, secretKey, {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll()
+          },
+          setAll() {},
+        },
+      })
+
+      const { data: usuario } = await adminClient
+        .from('usuarios')
+        .select('rol')
+        .eq('id', user.id)
+        .single()
+
+      if (usuario && usuario.rol === 'ADMIN') {
+        return NextResponse.redirect(new URL('/admin', request.url))
+      }
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+
     if (user && (pathname.startsWith('/login') || pathname.startsWith('/registro'))) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
 
     if (!user && !esRutaPublica(pathname) && !pathname.startsWith('/api/')) {
+      if (pathname.startsWith('/admin')) {
+        return NextResponse.redirect(new URL('/admin-login', request.url))
+      }
       const redirectUrl = new URL('/login', request.url)
       redirectUrl.searchParams.set('redirect', pathname)
       return NextResponse.redirect(redirectUrl)
     }
 
-    if (user && pathname.startsWith('/admin')) {
+    if (user && pathname.startsWith('/admin') && !pathname.startsWith('/admin-login')) {
       const secretKey = process.env.SUPABASE_SECRET_KEY || supabaseKey
       const adminClient = createServerClient(supabaseUrl, secretKey, {
         cookies: {

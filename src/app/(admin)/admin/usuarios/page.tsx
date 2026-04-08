@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
-  Users as UsersIcon, Search, Loader2, Shield, Eye, EyeOff, ChevronDown, ChevronUp,
+  Users as UsersIcon, Search, Loader2, Shield, Eye, EyeOff, ChevronDown, ChevronUp, UserPlus,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { getUsuariosAdmin, actualizarRolUsuario } from '@/actions/verificacion.actions'
+import { RegistrarUsuarioModal } from '@/components/admin'
 
 interface Usuario {
   id: string
@@ -52,6 +53,7 @@ export default function AdminUsuariosPage() {
   const [filtroRol, setFiltroRol] = useState<string>('TODOS')
   const [expandido, setExpandido] = useState<string | null>(null)
   const [actualizando, setActualizando] = useState<string | null>(null)
+  const [modalRegistroAbierto, setModalRegistroAbierto] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -67,6 +69,15 @@ export default function AdminUsuariosPage() {
     return () => { cancelled = true }
   }, [])
 
+  const cargarUsuarios = async () => {
+    const res = await getUsuariosAdmin()
+    if (res.error) {
+      toast.error(res.error)
+    } else if (res.usuarios) {
+      setUsuarios(res.usuarios as Usuario[])
+    }
+  }
+
   const handleActualizarRol = async (usuarioId: string, rol: string) => {
     setActualizando(usuarioId)
     const formData = new FormData()
@@ -78,8 +89,7 @@ export default function AdminUsuariosPage() {
       toast.error(res.error)
     } else {
       toast.success('Rol actualizado')
-      const res2 = await getUsuariosAdmin()
-      if (res2.usuarios) setUsuarios(res2.usuarios as Usuario[])
+      await cargarUsuarios()
     }
     setActualizando(null)
   }
@@ -95,8 +105,7 @@ export default function AdminUsuariosPage() {
       toast.error(res.error)
     } else {
       toast.success(activoActual ? 'Usuario suspendido' : 'Usuario reactivado')
-      const res2 = await getUsuariosAdmin()
-      if (res2.usuarios) setUsuarios(res2.usuarios as Usuario[])
+      await cargarUsuarios()
     }
     setActualizando(null)
   }
@@ -145,8 +154,17 @@ export default function AdminUsuariosPage() {
             className="border-[#E8E4DF] pl-10"
           />
         </div>
-        <div className="flex gap-2">
-          {['TODOS', 'HUESPED', 'ANFITRION', 'AMBOS', 'ADMIN'].map((r) => (
+        <Button
+          onClick={() => setModalRegistroAbierto(true)}
+          className="bg-[#1B4332] text-white hover:bg-[#2D6A4F]"
+        >
+          <UserPlus className="mr-2 h-4 w-4" />
+          Registrar usuario
+        </Button>
+      </div>
+
+      <div className="mb-6 flex flex-wrap gap-2">
+        {['TODOS', 'HUESPED', 'ANFITRION', 'AMBOS', 'ADMIN'].map((r) => (
             <Button
               key={r}
               variant={filtroRol === r ? 'default' : 'outline'}
@@ -157,7 +175,6 @@ export default function AdminUsuariosPage() {
               {r === 'TODOS' ? 'Todos' : ROL_LABELS[r]}
             </Button>
           ))}
-        </div>
       </div>
 
       <div className="space-y-3">
@@ -281,6 +298,12 @@ export default function AdminUsuariosPage() {
           )
         })}
       </div>
+
+      <RegistrarUsuarioModal
+        abierto={modalRegistroAbierto}
+        onCerrar={() => setModalRegistroAbierto(false)}
+        onRegistrado={cargarUsuarios}
+      />
     </div>
   )
 }

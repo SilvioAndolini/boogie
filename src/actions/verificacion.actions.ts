@@ -2,6 +2,8 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getUsuarioAutenticado } from '@/lib/auth'
+import { requireAdmin, logAdminAction } from '@/lib/admin-auth'
+import { adminRevisarVerificacionSchema, adminActualizarRolSchema } from '@/lib/admin-validations'
 import { revalidatePath } from 'next/cache'
 
 export async function getVerificacionUsuario() {
@@ -138,20 +140,10 @@ export async function subirDocumentoManual(formData: FormData) {
 }
 
 export async function getVerificacionesPendientes() {
-  const user = await getUsuarioAutenticado()
-  if (!user) return { error: 'No autenticado' }
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
 
   const admin = createAdminClient()
-  const { data: usuario } = await admin
-    .from('usuarios')
-    .select('rol')
-    .eq('id', user.id)
-    .single()
-
-  if (!usuario || usuario.rol !== 'ADMIN') {
-    return { error: 'Sin permisos de administrador' }
-  }
-
   const { data, error } = await admin
     .from('verificaciones_documento')
     .select(`
@@ -171,35 +163,28 @@ export async function getVerificacionesPendientes() {
 }
 
 export async function revisarVerificacion(formData: FormData) {
-  const user = await getUsuarioAutenticado()
-  if (!user) return { error: 'No autenticado' }
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
+  const raw = {
+    verificacionId: formData.get('verificacionId') as string,
+    accion: formData.get('accion') as string,
+    motivoRechazo: (formData.get('motivoRechazo') as string) || undefined,
+  }
+
+  const parsed = adminRevisarVerificacionSchema.safeParse(raw)
+  if (!parsed.success) {
+    const firstError = parsed.error.issues[0]?.message || 'Datos inválidos'
+    return { error: firstError }
+  }
+
+  const { verificacionId, accion, motivoRechazo } = parsed.data
 
   const admin = createAdminClient()
-  const { data: usuario } = await admin
-    .from('usuarios')
-    .select('rol')
-    .eq('id', user.id)
-    .single()
-
-  if (!usuario || usuario.rol !== 'ADMIN') {
-    return { error: 'Sin permisos de administrador' }
-  }
-
-  const verificacionId = formData.get('verificacionId') as string
-  const accion = formData.get('accion') as 'APROBADA' | 'RECHAZADA'
-  const motivoRechazo = formData.get('motivoRechazo') as string | null
-
-  if (!verificacionId || !accion) {
-    return { error: 'Datos incompletos' }
-  }
-
-  if (accion === 'RECHAZADA' && !motivoRechazo) {
-    return { error: 'Debes indicar el motivo del rechazo' }
-  }
 
   const updateData: Record<string, unknown> = {
     estado: accion,
-    revisado_por: user.id,
+    revisado_por: auth.userId,
     fecha_revision: new Date().toISOString(),
     fecha_actualizacion: new Date().toISOString(),
   }
@@ -207,6 +192,12 @@ export async function revisarVerificacion(formData: FormData) {
   if (accion === 'RECHAZADA') {
     updateData.motivo_rechazo = motivoRechazo
   }
+
+  const { data: verifBefore } = await admin
+    .from('verificaciones_documento')
+    .select('usuario_id')
+    .eq('id', verificacionId)
+    .single()
 
   const { error } = await admin
     .from('verificaciones_documento')
@@ -218,40 +209,29 @@ export async function revisarVerificacion(formData: FormData) {
     return { error: 'Error al actualizar verificación' }
   }
 
-  if (accion === 'APROBADA') {
-    const { data: verificacion } = await admin
-      .from('verificaciones_documento')
-      .select('usuario_id')
-      .eq('id', verificacionId)
-      .single()
-
-    if (verificacion) {
-      await admin
-        .from('usuarios')
-        .update({ verificado: true })
-        .eq('id', verificacion.usuario_id)
-    }
+  if (accion === 'APROBADA' && verifBefore) {
+    await admin
+      .from('usuarios')
+      .update({ verificado: true })
+      .eq('id', verifBefore.usuario_id)
   }
+
+  await logAdminAction({
+    accion: `VERIFICACION_${accion}`,
+    entidad: 'verificacion',
+    entidadId: verificacionId,
+    detalles: { usuarioVerificado: verifBefore?.usuario_id, motivoRechazo },
+  })
 
   revalidatePath('/admin/verificaciones')
   return { exito: true }
 }
 
 export async function getUsuariosAdmin() {
-  const user = await getUsuarioAutenticado()
-  if (!user) return { error: 'No autenticado' }
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
 
   const admin = createAdminClient()
-  const { data: usuario } = await admin
-    .from('usuarios')
-    .select('rol')
-    .eq('id', user.id)
-    .single()
-
-  if (!usuario || usuario.rol !== 'ADMIN') {
-    return { error: 'Sin permisos de administrador' }
-  }
-
   const { data, error } = await admin
     .from('usuarios')
     .select('*')
@@ -266,29 +246,37 @@ export async function getUsuariosAdmin() {
 }
 
 export async function actualizarRolUsuario(formData: FormData) {
-  const user = await getUsuarioAutenticado()
-  if (!user) return { error: 'No autenticado' }
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
 
-  const admin = createAdminClient()
-  const { data: usuario } = await admin
-    .from('usuarios')
-    .select('rol')
-    .eq('id', user.id)
-    .single()
-
-  if (!usuario || usuario.rol !== 'ADMIN') {
-    return { error: 'Sin permisos de administrador' }
+  const raw = {
+    usuarioId: formData.get('usuarioId') as string,
+    rol: (formData.get('rol') as string) || undefined,
+    activo: (formData.get('activo') as string) || undefined,
   }
 
-  const usuarioId = formData.get('usuarioId') as string
-  const nuevoRol = formData.get('rol') as string
-  const activo = formData.get('activo') as string | null
+  const parsed = adminActualizarRolSchema.safeParse(raw)
+  if (!parsed.success) {
+    const firstError = parsed.error.issues[0]?.message || 'Datos inválidos'
+    return { error: firstError }
+  }
 
-  if (!usuarioId) return { error: 'ID de usuario requerido' }
+  const { usuarioId, rol, activo } = parsed.data
+
+  if (usuarioId === auth.userId && rol && rol !== 'ADMIN') {
+    return { error: 'No puedes quitarte tu propio rol de administrador' }
+  }
+
+  const admin = createAdminClient()
+  const { data: before } = await admin
+    .from('usuarios')
+    .select('rol, activo')
+    .eq('id', usuarioId)
+    .single()
 
   const updateData: Record<string, unknown> = {}
-  if (nuevoRol) updateData.rol = nuevoRol
-  if (activo !== null) updateData.activo = activo === 'true'
+  if (rol) updateData.rol = rol
+  if (activo !== undefined) updateData.activo = activo === 'true'
 
   const { error } = await admin
     .from('usuarios')
@@ -300,6 +288,36 @@ export async function actualizarRolUsuario(formData: FormData) {
     return { error: 'Error al actualizar usuario' }
   }
 
+  const accionDesc = []
+  if (rol && rol !== before?.rol) accionDesc.push(`ROL:${before?.rol}→${rol}`)
+  if (activo !== undefined) accionDesc.push(activo === 'true' ? 'REACTIVADO' : 'SUSPENDIDO')
+
+  await logAdminAction({
+    accion: accionDesc.join(', '),
+    entidad: 'usuario',
+    entidadId: usuarioId,
+    detalles: { antes: before, despues: updateData },
+  })
+
   revalidatePath('/admin/usuarios')
   return { exito: true }
+}
+
+export async function getAdminCounts() {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
+  const admin = createAdminClient()
+
+  const [verifPendientes, reservasPendientes, pagosPendientes] = await Promise.all([
+    admin.from('verificaciones_documento').select('id', { count: 'exact', head: true }).eq('estado', 'PENDIENTE'),
+    admin.from('reservas').select('id', { count: 'exact', head: true }).eq('estado', 'PENDIENTE'),
+    admin.from('pagos').select('id', { count: 'exact', head: true }).eq('estado', 'PENDIENTE'),
+  ])
+
+  return {
+    verificacionesPendientes: verifPendientes.count ?? 0,
+    reservasPendientes: reservasPendientes.count ?? 0,
+    pagosPendientes: pagosPendientes.count ?? 0,
+  }
 }

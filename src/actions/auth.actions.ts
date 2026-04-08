@@ -192,6 +192,43 @@ export async function iniciarSesion(formData: FormData) {
   redirect('/dashboard')
 }
 
+export async function iniciarSesionAdmin(formData: FormData) {
+  const datos = {
+    email: formData.get('email') as string,
+    password: formData.get('password') as string,
+  }
+
+  const validacion = loginSchema.safeParse(datos)
+  if (!validacion.success) {
+    return { error: validacion.error.issues[0].message }
+  }
+
+  const supabase = await createClient()
+
+  const { error } = await supabase.auth.signInWithPassword({
+    email: datos.email,
+    password: datos.password,
+  })
+
+  if (error) {
+    return { error: 'Credenciales inválidas. Verifica tu correo y contraseña.' }
+  }
+
+  const admin = createAdminClient()
+  const { data: usuario } = await admin
+    .from('usuarios')
+    .select('rol')
+    .eq('email', datos.email)
+    .single()
+
+  if (!usuario || usuario.rol !== 'ADMIN') {
+    await supabase.auth.signOut()
+    return { error: 'No tienes permisos de administrador.' }
+  }
+
+  redirect('/admin')
+}
+
 export async function cerrarSesion() {
   const supabase = await createClient()
   await supabase.auth.signOut()
