@@ -229,7 +229,10 @@ export async function revisarVerificacion(formData: FormData) {
 
 export async function getUsuariosAdmin() {
   const auth = await requireAdmin()
-  if (auth.error) return { error: auth.error }
+  if (auth.error) {
+    console.error('[getUsuariosAdmin] Auth error:', auth.error)
+    return { error: auth.error }
+  }
 
   const admin = createAdminClient()
   const { data, error } = await admin
@@ -242,6 +245,7 @@ export async function getUsuariosAdmin() {
     return { error: 'Error al cargar usuarios' }
   }
 
+  console.log('[getUsuariosAdmin] Usuarios encontrados:', data?.length ?? 0)
   return { usuarios: data }
 }
 

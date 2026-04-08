@@ -92,13 +92,11 @@ export async function verificarOtpYRegistrar(formData: FormData) {
       return { error: 'Error de verificación. Intenta de nuevo.' }
     }
 
-    const admin = createAdminClient()
     const telefonoCompleto = `${datos.codigoPais}${datos.telefono.replace(/\D/g, '')}`
 
-    const { error: updateError } = await admin.auth.admin.updateUserById(userId, {
+    const { error: updateError } = await supabase.auth.updateUser({
       password: datos.password,
-      email_confirm: true,
-      user_metadata: {
+      data: {
         nombre: datos.nombre,
         apellido: datos.apellido,
         telefono: telefonoCompleto,
@@ -107,8 +105,10 @@ export async function verificarOtpYRegistrar(formData: FormData) {
 
     if (updateError) {
       console.error('[registro] updateError:', updateError.message)
-      return { error: updateError.message }
+      return { error: 'No se pudo establecer la contraseña. Intenta de nuevo.' }
     }
+
+    const admin = createAdminClient()
 
     /*
      * ⚠️ DEV_PHONE_EXCEPTION — ELIMINAR ANTES DE PRODUCCIÓN

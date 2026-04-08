@@ -59,11 +59,16 @@ export default function AdminUsuariosPage() {
     let cancelled = false
     getUsuariosAdmin().then((res) => {
       if (cancelled) return
+      console.log('[AdminUsuarios] Respuesta:', res)
       if (res.error) {
         toast.error(res.error)
       } else if (res.usuarios) {
         setUsuarios(res.usuarios as Usuario[])
       }
+      setCargando(false)
+    }).catch((err) => {
+      console.error('[AdminUsuarios] Error cargando usuarios:', err)
+      toast.error('Error inesperado cargando usuarios')
       setCargando(false)
     })
     return () => { cancelled = true }
