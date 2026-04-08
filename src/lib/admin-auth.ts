@@ -3,6 +3,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getUsuarioAutenticado } from '@/lib/auth'
 import { headers } from 'next/headers'
+import { isCeoEmail } from '@/lib/admin-constants'
 
 export type EntidadAuditable =
   | 'usuario'
@@ -17,21 +18,21 @@ export type EntidadAuditable =
 
 export async function requireAdmin() {
   const user = await getUsuarioAutenticado()
-  if (!user) return { error: 'No autenticado', userId: null } as const
+  if (!user) return { error: 'No autenticado', userId: null, isCeo: false } as const
 
   const admin = createAdminClient()
   const { data: usuario } = await admin
     .from('usuarios')
-    .select('rol')
+    .select('rol, email')
     .eq('id', user.id)
     .single()
 
   if (!usuario || usuario.rol !== 'ADMIN') {
     console.warn(`[requireAdmin] Intento de acceso no autorizado: ${user.email}`)
-    return { error: 'Sin permisos de administrador', userId: null } as const
+    return { error: 'Sin permisos de administrador', userId: null, isCeo: false } as const
   }
 
-  return { userId: user.id, error: null } as const
+  return { userId: user.id, error: null, isCeo: isCeoEmail(usuario.email) } as const
 }
 
 export async function logAdminAction(params: {

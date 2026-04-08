@@ -3,6 +3,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getUsuarioAutenticado } from '@/lib/auth'
 import { requireAdmin, logAdminAction } from '@/lib/admin-auth'
+import { isCeoEmail } from '@/lib/admin-constants'
 import { adminRevisarVerificacionSchema, adminActualizarRolSchema } from '@/lib/admin-validations'
 import { revalidatePath } from 'next/cache'
 
@@ -319,7 +320,7 @@ export async function getUsuariosAdmin() {
   }
 
   console.log('[getUsuariosAdmin] Usuarios finales:', perfilesFinales?.length ?? 0)
-  return { usuarios: perfilesFinales }
+  return { usuarios: perfilesFinales, isCeo: auth.isCeo }
 }
 
 export async function actualizarRolUsuario(formData: FormData) {
@@ -347,9 +348,17 @@ export async function actualizarRolUsuario(formData: FormData) {
   const admin = createAdminClient()
   const { data: before } = await admin
     .from('usuarios')
-    .select('rol, activo')
+    .select('rol, activo, email')
     .eq('id', usuarioId)
     .single()
+
+  if (isCeoEmail(before?.email)) {
+    return { error: 'No puedes modificar al CEO' }
+  }
+
+  if (before?.rol === 'ADMIN' && !auth.isCeo) {
+    return { error: 'Solo el CEO puede modificar otros administradores' }
+  }
 
   const updateData: Record<string, unknown> = {}
   if (rol) updateData.rol = rol
@@ -398,6 +407,14 @@ export async function eliminarUsuarioAdmin(formData: FormData) {
     .select('email, nombre, apellido, rol')
     .eq('id', usuarioId)
     .single()
+
+  if (isCeoEmail(perfil?.email)) {
+    return { error: 'No puedes eliminar al CEO' }
+  }
+
+  if (perfil?.rol === 'ADMIN' && !auth.isCeo) {
+    return { error: 'Solo el CEO puede eliminar otros administradores' }
+  }
 
   const { error: perfilError } = await admin
     .from('usuarios')

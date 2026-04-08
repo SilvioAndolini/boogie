@@ -18,6 +18,7 @@ import {
 import { toast } from 'sonner'
 import { getUsuariosAdmin, actualizarRolUsuario, eliminarUsuarioAdmin } from '@/actions/verificacion.actions'
 import { RegistrarUsuarioModal } from '@/components/admin'
+import { CEO_EMAIL } from '@/lib/admin-constants'
 
 interface Usuario {
   id: string
@@ -54,20 +55,20 @@ export default function AdminUsuariosPage() {
   const [expandido, setExpandido] = useState<string | null>(null)
   const [actualizando, setActualizando] = useState<string | null>(null)
   const [modalRegistroAbierto, setModalRegistroAbierto] = useState(false)
+  const [isCeo, setIsCeo] = useState(false)
 
   useEffect(() => {
     let cancelled = false
     getUsuariosAdmin().then((res) => {
       if (cancelled) return
-      console.log('[AdminUsuarios] Respuesta:', res)
       if (res.error) {
         toast.error(res.error)
       } else if (res.usuarios) {
         setUsuarios(res.usuarios as Usuario[])
+        setIsCeo(res.isCeo ?? false)
       }
       setCargando(false)
-    }).catch((err) => {
-      console.error('[AdminUsuarios] Error cargando usuarios:', err)
+    }).catch(() => {
       toast.error('Error inesperado cargando usuarios')
       setCargando(false)
     })
@@ -80,6 +81,7 @@ export default function AdminUsuariosPage() {
       toast.error(res.error)
     } else if (res.usuarios) {
       setUsuarios(res.usuarios as Usuario[])
+      setIsCeo(res.isCeo ?? false)
     }
   }
 
@@ -200,6 +202,9 @@ export default function AdminUsuariosPage() {
       <div className="space-y-3">
         {filtrados.map((u) => {
           const expandidoCurrent = expandido === u.id
+          const esCeo = u.email === CEO_EMAIL
+          const esAdmin = u.rol === 'ADMIN'
+          const puedeModificar = esCeo ? false : (esAdmin ? isCeo : true)
           return (
             <motion.div
               key={u.id}
@@ -231,9 +236,21 @@ export default function AdminUsuariosPage() {
                       {u.verificado && (
                         <Shield className="h-4 w-4 text-[#1B4332]" />
                       )}
-                      <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${ROL_COLORS[u.rol]}`}>
-                        {ROL_LABELS[u.rol]}
-                      </span>
+                      {esCeo ? (
+                        <span className="rounded-full px-2.5 py-0.5 text-xs font-bold tracking-wide" style={{
+                          background: 'linear-gradient(135deg, #D4A017 0%, #F5D060 25%, #D4A017 50%, #AA8A15 75%, #F5D060 100%)',
+                          color: '#3D2E00',
+                          textShadow: '0 1px 0 rgba(255,255,255,0.3)',
+                          boxShadow: '0 1px 3px rgba(212,160,23,0.4), inset 0 1px 0 rgba(255,255,255,0.3)',
+                          border: '1px solid rgba(212,160,23,0.5)',
+                        }}>
+                          CEO
+                        </span>
+                      ) : (
+                        <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${ROL_COLORS[u.rol]}`}>
+                          {ROL_LABELS[u.rol]}
+                        </span>
+                      )}
                       {expandidoCurrent ? (
                         <ChevronUp className="h-4 w-4 text-[#9E9892]" />
                       ) : (
@@ -272,58 +289,66 @@ export default function AdminUsuariosPage() {
                       </div>
 
                       <div className="flex flex-wrap items-end gap-3 border-t border-[#E8E4DF] pt-4">
-                        <div className="space-y-1">
-                          <p className="text-xs font-medium text-[#9E9892]">Cambiar rol:</p>
-                          <Select
-                            defaultValue={u.rol}
-                            onValueChange={(value) => handleActualizarRol(u.id, value!)}
-                            disabled={actualizando === u.id}
-                          >
-                            <SelectTrigger className="h-9 w-32 border-[#E8E4DF] text-sm">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {Object.entries(ROL_LABELS).map(([key, label]) => (
-                                <SelectItem key={key} value={key}>{label}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
+                        {puedeModificar ? (
+                          <>
+                            <div className="space-y-1">
+                              <p className="text-xs font-medium text-[#9E9892]">Cambiar rol:</p>
+                              <Select
+                                defaultValue={u.rol}
+                                onValueChange={(value) => handleActualizarRol(u.id, value!)}
+                                disabled={actualizando === u.id}
+                              >
+                                <SelectTrigger className="h-9 w-32 border-[#E8E4DF] text-sm">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {Object.entries(ROL_LABELS).map(([key, label]) => (
+                                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
 
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className={u.activo
-                            ? 'border-[#C1121F] text-[#C1121F] hover:bg-[#FEE2E2]'
-                            : 'border-[#1B4332] text-[#1B4332] hover:bg-[#D8F3DC]'
-                          }
-                          disabled={actualizando === u.id}
-                          onClick={() => handleToggleActivo(u.id, u.activo)}
-                        >
-                          {actualizando === u.id ? (
-                            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                          ) : u.activo ? (
-                            <EyeOff className="mr-1 h-3 w-3" />
-                          ) : (
-                            <Eye className="mr-1 h-3 w-3" />
-                          )}
-                          {u.activo ? 'Suspender' : 'Reactivar'}
-                        </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className={u.activo
+                                ? 'border-[#C1121F] text-[#C1121F] hover:bg-[#FEE2E2]'
+                                : 'border-[#1B4332] text-[#1B4332] hover:bg-[#D8F3DC]'
+                              }
+                              disabled={actualizando === u.id}
+                              onClick={() => handleToggleActivo(u.id, u.activo)}
+                            >
+                              {actualizando === u.id ? (
+                                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                              ) : u.activo ? (
+                                <EyeOff className="mr-1 h-3 w-3" />
+                              ) : (
+                                <Eye className="mr-1 h-3 w-3" />
+                              )}
+                              {u.activo ? 'Suspender' : 'Reactivar'}
+                            </Button>
 
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="border-[#C1121F] text-[#C1121F] hover:bg-[#FEE2E2]"
-                          disabled={actualizando === u.id}
-                          onClick={() => {
-                            if (confirm(`¿Eliminar a ${u.nombre} ${u.apellido}? Esta acción es irreversible.`)) {
-                              handleEliminar(u.id)
-                            }
-                          }}
-                        >
-                          <Trash2 className="mr-1 h-3 w-3" />
-                          Eliminar
-                        </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="border-[#C1121F] text-[#C1121F] hover:bg-[#FEE2E2]"
+                              disabled={actualizando === u.id}
+                              onClick={() => {
+                                if (confirm(`¿Eliminar a ${u.nombre} ${u.apellido}? Esta acción es irreversible.`)) {
+                                  handleEliminar(u.id)
+                                }
+                              }}
+                            >
+                              <Trash2 className="mr-1 h-3 w-3" />
+                              Eliminar
+                            </Button>
+                          </>
+                        ) : esCeo ? (
+                          <p className="text-xs text-[#9E9892] italic">Cuenta protegida — solo modificable desde Supabase</p>
+                        ) : (
+                          <p className="text-xs text-[#9E9892] italic">Solo el CEO puede modificar otros administradores</p>
+                        )}
                       </div>
                     </motion.div>
                   )}
