@@ -235,7 +235,8 @@ export async function getUsuariosAdmin() {
   }
 
   const admin = createAdminClient()
-  const { data, error } = await admin
+
+  const { data: perfiles, error } = await admin
     .from('usuarios')
     .select('*')
     .order('fecha_registro', { ascending: false })
@@ -245,8 +246,80 @@ export async function getUsuariosAdmin() {
     return { error: 'Error al cargar usuarios' }
   }
 
-  console.log('[getUsuariosAdmin] Usuarios encontrados:', data?.length ?? 0)
-  return { usuarios: data }
+  const perfilIds = new Set((perfiles || []).map((p) => p.id))
+
+  let page = 1
+  let allAuthUsers: { id: string; email?: string; user_metadata?: { nombre?: string; apellido?: string; telefono?: string } }[] = []
+  let hasMore = true
+  while (hasMore) {
+    const { data: pageData } = await admin.auth.admin.listUsers({ page, perPage: 100 })
+    const users = pageData?.users || []
+    allAuthUsers = allAuthUsers.concat(users)
+    hasMore = users.length === 100
+    page++
+  }
+
+  const huerfanosAuth = allAuthUsers.filter((u) => !perfilIds.has(u.id) && u.id !== auth.userId)
+
+  if (huerfanosAuth.length > 0) {
+    console.log('[getUsuariosAdmin] Recuperando perfiles huérfanos de Auth:', huerfanosAuth.map((u) => u.email))
+
+    for (const authUser of huerfanosAuth) {
+      const { error: insertError } = await admin.from('usuarios').insert({
+        id: authUser.id,
+        email: authUser.email || '',
+        nombre: authUser.user_metadata?.nombre || 'Sin',
+        apellido: authUser.user_metadata?.apellido || 'nombre',
+        telefono: authUser.user_metadata?.telefono || null,
+        cedula: null,
+        verificado: false,
+        rol: 'HUESPED',
+      }).select()
+
+      if (insertError) {
+        console.error('[getUsuariosAdmin] Error recuperando perfil:', authUser.email, insertError.message)
+      }
+    }
+
+    if (huerfanosAuth.some((u) => !perfilIds.has(u.id))) {
+      await logAdminAction({
+        accion: 'RECUPERAR_PERFILES_AUTH',
+        entidad: 'usuario',
+        detalles: { recuperados: huerfanosAuth.map((u) => ({ id: u.id, email: u.email })) },
+      })
+    }
+  }
+
+  const perfilSinAuth = (perfiles || []).filter((p) => !allAuthUsers.some((au) => au.id === p.id))
+
+  if (perfilSinAuth.length > 0) {
+    console.log('[getUsuariosAdmin] Eliminando perfiles sin Auth:', perfilSinAuth.map((p) => p.email))
+
+    const { error: deleteError } = await admin
+      .from('usuarios')
+      .delete()
+      .in('id', perfilSinAuth.map((p) => p.id))
+
+    if (!deleteError) {
+      await logAdminAction({
+        accion: 'LIMPIEZA_HUERFANOS',
+        entidad: 'usuario',
+        detalles: { eliminados: perfilSinAuth.map((p) => ({ id: p.id, email: p.email })) },
+      })
+    }
+  }
+
+  const { data: perfilesFinales, error: errorFinal } = await admin
+    .from('usuarios')
+    .select('*')
+    .order('fecha_registro', { ascending: false })
+
+  if (errorFinal) {
+    return { error: 'Error al cargar usuarios' }
+  }
+
+  console.log('[getUsuariosAdmin] Usuarios finales:', perfilesFinales?.length ?? 0)
+  return { usuarios: perfilesFinales }
 }
 
 export async function actualizarRolUsuario(formData: FormData) {
@@ -301,6 +374,57 @@ export async function actualizarRolUsuario(formData: FormData) {
     entidad: 'usuario',
     entidadId: usuarioId,
     detalles: { antes: before, despues: updateData },
+  })
+
+  revalidatePath('/admin/usuarios')
+  return { exito: true }
+}
+
+export async function eliminarUsuarioAdmin(formData: FormData) {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
+  const usuarioId = formData.get('usuarioId') as string
+  if (!usuarioId) return { error: 'ID de usuario requerido' }
+
+  if (usuarioId === auth.userId) {
+    return { error: 'No puedes eliminar tu propia cuenta' }
+  }
+
+  const admin = createAdminClient()
+
+  const { data: perfil } = await admin
+    .from('usuarios')
+    .select('email, nombre, apellido, rol')
+    .eq('id', usuarioId)
+    .single()
+
+  const { error: perfilError } = await admin
+    .from('usuarios')
+    .delete()
+    .eq('id', usuarioId)
+
+  if (perfilError) {
+    console.error('[eliminarUsuarioAdmin] Error eliminando perfil:', perfilError.message)
+    return { error: 'Error al eliminar el perfil' }
+  }
+
+  const { error: authError } = await admin.auth.admin.deleteUser(usuarioId)
+
+  if (authError) {
+    console.error('[eliminarUsuarioAdmin] Error eliminando auth user:', authError.message)
+  }
+
+  await logAdminAction({
+    accion: 'ELIMINAR_USUARIO',
+    entidad: 'usuario',
+    entidadId: usuarioId,
+    detalles: {
+      email: perfil?.email,
+      nombre: perfil ? `${perfil.nombre} ${perfil.apellido}` : null,
+      rol: perfil?.rol,
+      authEliminado: !authError,
+    },
   })
 
   revalidatePath('/admin/usuarios')

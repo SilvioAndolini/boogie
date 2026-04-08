@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
-  Users as UsersIcon, Search, Loader2, Shield, Eye, EyeOff, ChevronDown, ChevronUp, UserPlus,
+  Users as UsersIcon, Search, Loader2, Shield, Eye, EyeOff, ChevronDown, ChevronUp, UserPlus, Trash2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from 'sonner'
-import { getUsuariosAdmin, actualizarRolUsuario } from '@/actions/verificacion.actions'
+import { getUsuariosAdmin, actualizarRolUsuario, eliminarUsuarioAdmin } from '@/actions/verificacion.actions'
 import { RegistrarUsuarioModal } from '@/components/admin'
 
 interface Usuario {
@@ -110,6 +110,21 @@ export default function AdminUsuariosPage() {
       toast.error(res.error)
     } else {
       toast.success(activoActual ? 'Usuario suspendido' : 'Usuario reactivado')
+      await cargarUsuarios()
+    }
+    setActualizando(null)
+  }
+
+  const handleEliminar = async (usuarioId: string) => {
+    setActualizando(usuarioId)
+    const formData = new FormData()
+    formData.append('usuarioId', usuarioId)
+
+    const res = await eliminarUsuarioAdmin(formData)
+    if (res.error) {
+      toast.error(res.error)
+    } else {
+      toast.success('Usuario eliminado')
       await cargarUsuarios()
     }
     setActualizando(null)
@@ -293,6 +308,21 @@ export default function AdminUsuariosPage() {
                             <Eye className="mr-1 h-3 w-3" />
                           )}
                           {u.activo ? 'Suspender' : 'Reactivar'}
+                        </Button>
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-[#C1121F] text-[#C1121F] hover:bg-[#FEE2E2]"
+                          disabled={actualizando === u.id}
+                          onClick={() => {
+                            if (confirm(`¿Eliminar a ${u.nombre} ${u.apellido}? Esta acción es irreversible.`)) {
+                              handleEliminar(u.id)
+                            }
+                          }}
+                        >
+                          <Trash2 className="mr-1 h-3 w-3" />
+                          Eliminar
                         </Button>
                       </div>
                     </motion.div>
