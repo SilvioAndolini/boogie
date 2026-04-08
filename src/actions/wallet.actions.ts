@@ -3,6 +3,59 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getUsuarioAutenticado } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
+import { getCotizacionEuro } from '@/lib/services/exchange-rate'
+
+export async function getTasaBCV() {
+  const cotizacion = await getCotizacionEuro()
+  return { tasa: cotizacion.tasa, fuente: cotizacion.fuente }
+}
+
+export async function crearRecargaWallet(datos: {
+  monto_usd: number
+  metodo: string
+  datos_pago: Record<string, string>
+}) {
+  const user = await getUsuarioAutenticado()
+  if (!user) return { error: 'No autenticado' }
+
+  if (!datos.monto_usd || datos.monto_usd <= 0) {
+    return { error: 'Monto inválido' }
+  }
+
+  const supabase = createAdminClient()
+
+  const { data: wallet } = await supabase
+    .from('wallets')
+    .select('id')
+    .eq('usuario_id', user.id)
+    .maybeSingle()
+
+  if (!wallet) return { error: 'No tienes una wallet activa' }
+
+  const descripcion = `Recarga ${datos.metodo.replace(/_/g, ' ')} - Ref: ${datos.datos_pago.referencia || 'Pendiente'}`
+
+  const { data, error } = await supabase
+    .from('wallet_transacciones')
+    .insert({
+      id: crypto.randomUUID(),
+      wallet_id: wallet.id,
+      tipo: 'RECARGA',
+      monto_usd: datos.monto_usd,
+      descripcion,
+      referencia_id: datos.datos_pago.referencia || null,
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error('[crearRecargaWallet] Error:', error.message)
+    return { error: 'Error al registrar la recarga' }
+  }
+
+  revalidatePath('/dashboard/pagos/configuracion')
+  revalidatePath('/dashboard/pagos/configuracion/wallet')
+  return { transaccion: data }
+}
 
 export async function getWallet() {
   const user = await getUsuarioAutenticado()
