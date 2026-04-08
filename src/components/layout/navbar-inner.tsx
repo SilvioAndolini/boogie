@@ -207,15 +207,6 @@ export function NavbarInner({
             className="overflow-hidden border-t border-[#E8E4DF] bg-white sm:hidden"
           >
             <nav className="mx-auto max-w-7xl space-y-1 px-4 py-4 sm:px-6 lg:px-8">
-              {cotizacionEuro && tasaFormateada && (
-                <div className="mb-2 flex items-center gap-1 rounded-full border border-[#D8F3DC] bg-[#D8F3DC]/40 px-3 py-1.5 text-[11px] text-[#1B4332]">
-                  <TrendingUp className="h-3 w-3 text-[#2D6A4F]" />
-                  <span className="font-medium">1 EUR</span>
-                  <span className="text-[#6B6560]">=</span>
-                  <span className="font-semibold">Bs. {tasaFormateada}</span>
-                  <span className="text-[#6B6560]">({cotizacionEuro.fuente})</span>
-                </div>
-              )}
               <Link
                 href="/propiedades"
                 onClick={() => setMobileMenuOpen(false)}
