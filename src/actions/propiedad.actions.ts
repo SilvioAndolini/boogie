@@ -139,6 +139,20 @@ export async function crearPropiedad(formData: FormData) {
     return { error: 'Error al crear el boogie' }
   }
 
+  const { data: usuarioActual } = await supabase
+    .from('usuarios')
+    .select('rol')
+    .eq('id', user.id)
+    .single()
+
+  if (usuarioActual?.rol === 'BOOGER') {
+    await supabase
+      .from('usuarios')
+      .update({ rol: 'AMBOS' })
+      .eq('id', user.id)
+    console.log('[crearPropiedad] Usuario upgraded: BOOGER → AMBOS')
+  }
+
   if (data.amenidades.length > 0) {
     for (const nombre of data.amenidades) {
       const { data: amenidad } = await supabase

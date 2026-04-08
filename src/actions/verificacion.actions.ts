@@ -274,7 +274,7 @@ export async function getUsuariosAdmin() {
         telefono: authUser.user_metadata?.telefono || null,
         cedula: null,
         verificado: false,
-        rol: 'HUESPED',
+        rol: 'BOOGER',
       }).select()
 
       if (insertError) {

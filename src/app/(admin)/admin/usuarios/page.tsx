@@ -30,20 +30,20 @@ interface Usuario {
   telefono: string | null
   cedula: string | null
   verificado: boolean
-  rol: 'HUESPED' | 'ANFITRION' | 'AMBOS' | 'ADMIN'
+  rol: 'BOOGER' | 'ANFITRION' | 'AMBOS' | 'ADMIN'
   activo: boolean
   fecha_registro: string
 }
 
 const ROL_LABELS: Record<string, string> = {
-  HUESPED: 'Huésped',
+  BOOGER: 'Booger',
   ANFITRION: 'Anfitrión',
   AMBOS: 'Ambos',
   ADMIN: 'Admin',
 }
 
 const ROL_COLORS: Record<string, string> = {
-  HUESPED: 'bg-[#E0F2FE] text-[#0369A1]',
+  BOOGER: 'bg-[#E0F2FE] text-[#0369A1]',
   ANFITRION: 'bg-[#D8F3DC] text-[#1B4332]',
   AMBOS: 'bg-[#FEF9E7] text-[#B8860B]',
   ADMIN: 'bg-[#F3E8FF] text-[#7C3AED]',
@@ -67,7 +67,7 @@ export default function AdminUsuariosPage() {
   const [enviando, setEnviando] = useState(false)
   const [tipoDocumento, setTipoDocumento] = useState<'CEDULA' | 'PASAPORTE'>('CEDULA')
   const [codigoPais, setCodigoPais] = useState('+58')
-  const [rol, setRol] = useState<string>('HUESPED')
+  const [rol, setRol] = useState<string>('BOOGER')
   const registroRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -164,8 +164,8 @@ export default function AdminUsuariosPage() {
   })
 
   const cuentasPorRol = {
-    HUESPED: usuarios.filter((u) => u.rol === 'HUESPED').length,
-    ANFITRION: usuarios.filter((u) => u.rol === 'ANFITRION').length,
+    BOOGER: usuarios.filter((u) => u.rol === 'BOOGER' || u.rol === 'AMBOS').length,
+    ANFITRION: usuarios.filter((u) => u.rol === 'ANFITRION' || u.rol === 'AMBOS').length,
     ADMIN: usuarios.filter((u) => u.rol === 'ADMIN').length,
   }
 
@@ -199,7 +199,7 @@ export default function AdminUsuariosPage() {
         <div className="border-t border-white/10 grid grid-cols-2 sm:grid-cols-4">
           {[
             { label: 'Total', value: usuarios.length, icon: UsersIcon },
-            { label: 'Huéspedes', value: cuentasPorRol.HUESPED, icon: UsersIcon },
+            { label: 'Boogers', value: cuentasPorRol.BOOGER, icon: UsersIcon },
             { label: 'Anfitriones', value: cuentasPorRol.ANFITRION, icon: UsersIcon },
             { label: 'Admins', value: cuentasPorRol.ADMIN, icon: Shield },
           ].map((item) => (
@@ -238,7 +238,7 @@ export default function AdminUsuariosPage() {
 
       {/* ====== FILTROS ROL ====== */}
       <motion.div variants={fadeUp} className="mb-6 flex gap-1 rounded-xl border border-[#E8E4DF] bg-white p-1">
-        {['TODOS', 'HUESPED', 'ANFITRION', 'AMBOS', 'ADMIN'].map((r) => (
+        {['TODOS', 'BOOGER', 'ANFITRION', 'AMBOS', 'ADMIN'].map((r) => (
           <button
             key={r}
             onClick={() => setFiltroRol(r)}
@@ -357,7 +357,7 @@ export default function AdminUsuariosPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="HUESPED">Huésped</SelectItem>
+                        <SelectItem value="BOOGER">Booger</SelectItem>
                         <SelectItem value="ANFITRION">Anfitrión</SelectItem>
                         <SelectItem value="AMBOS">Ambos</SelectItem>
                         <SelectItem value="ADMIN">Admin</SelectItem>
@@ -442,6 +442,11 @@ export default function AdminUsuariosPage() {
                       }}>
                         CEO
                       </span>
+                    ) : u.rol === 'AMBOS' ? (
+                      <div className="flex gap-1">
+                        <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide bg-[#E0F2FE] text-[#0369A1]">Booger</span>
+                        <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide bg-[#D8F3DC] text-[#1B4332]">Anfitrión</span>
+                      </div>
                     ) : (
                       <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold tracking-wide ${ROL_COLORS[u.rol]}`}>
                         {ROL_LABELS[u.rol]}

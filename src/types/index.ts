@@ -1,6 +1,6 @@
 // Tipos globales de la aplicación Boogie
 
-export type Rol = 'HUESPED' | 'ANFITRION' | 'AMBOS' | 'ADMIN'
+export type Rol = 'BOOGER' | 'ANFITRION' | 'AMBOS' | 'ADMIN'
 export type TipoPropiedad = 'APARTAMENTO' | 'CASA' | 'VILLA' | 'CABANA' | 'ESTUDIO' | 'HABITACION' | 'LOFT' | 'PENTHOUSE' | 'FINCA' | 'OTRO'
 export type Moneda = 'USD' | 'VES'
 export type PoliticaCancelacion = 'FLEXIBLE' | 'MODERADA' | 'ESTRICTA'

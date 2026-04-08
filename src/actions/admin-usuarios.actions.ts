@@ -24,7 +24,7 @@ export async function registrarUsuarioAdmin(formData: FormData) {
     numeroDocumento: formData.get('numeroDocumento') as string,
     telefono: formData.get('telefono') as string,
     codigoPais: (formData.get('codigoPais') as string) || '+58',
-    rol: formData.get('rol') as 'HUESPED' | 'ANFITRION' | 'AMBOS' | 'ADMIN',
+    rol: formData.get('rol') as 'BOOGER' | 'ANFITRION' | 'AMBOS' | 'ADMIN',
   }
 
   const validacion = adminRegistroUsuarioSchema.safeParse(datos)

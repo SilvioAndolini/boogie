@@ -23,7 +23,7 @@ model Usuario {
   avatarUrl       String?  @map("avatar_url")
   cedula          String?  @unique
   verificado      Boolean  @default(false)
-  rol             Rol      @default(HUESPED)
+  rol             Rol      @default(BOOGER)
   bio             String?  @db.Text
   fechaRegistro   DateTime @default(now()) @map("fecha_registro")
   ultimaActividad DateTime @default(now()) @map("ultima_actividad")
@@ -41,7 +41,7 @@ model Usuario {
 }
 
 enum Rol {
-  HUESPED
+  BOOGER
   ANFITRION
   AMBOS
   ADMIN

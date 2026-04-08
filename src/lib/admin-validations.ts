@@ -11,7 +11,7 @@ export const adminRevisarVerificacionSchema = z.object({
 
 export const adminActualizarRolSchema = z.object({
   usuarioId: z.string().min(1, 'ID de usuario requerido'),
-  rol: z.enum(['HUESPED', 'ANFITRION', 'AMBOS', 'ADMIN'], { error: 'Rol inválido' }).optional(),
+  rol: z.enum(['BOOGER', 'ANFITRION', 'AMBOS', 'ADMIN'], { error: 'Rol inválido' }).optional(),
   activo: z.enum(['true', 'false'], { error: 'Valor inválido' }).optional(),
 }).refine(
   (data) => data.rol !== undefined || data.activo !== undefined,
@@ -66,7 +66,7 @@ export const adminRegistroUsuarioSchema = z.object({
   numeroDocumento: z.string().min(4, 'Ingresa el número de documento'),
   telefono: z.string().min(7, 'Ingresa un número de teléfono válido'),
   codigoPais: z.string().min(1),
-  rol: z.enum(['HUESPED', 'ANFITRION', 'AMBOS', 'ADMIN'], { error: 'Selecciona un rol' }).default('HUESPED'),
+  rol: z.enum(['BOOGER', 'ANFITRION', 'AMBOS', 'ADMIN'], { error: 'Selecciona un rol' }).default('BOOGER'),
 }).refine((data) => data.password === data.confirmPassword, {
   message: 'Las contraseñas no coinciden',
   path: ['confirmPassword'],
