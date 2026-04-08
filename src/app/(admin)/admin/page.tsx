@@ -247,7 +247,7 @@ export default function AdminDashboardPage() {
             />
             <AdminStatCard
               icon={Building2}
-              label="Propiedades publicadas"
+              label="Boogies publicados"
               value={stats?.propiedades.publicadas ?? 0}
               color="orange"
             />
@@ -259,7 +259,7 @@ export default function AdminDashboardPage() {
       <motion.div variants={fadeUp} className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           { label: 'Usuarios totales', value: stats?.usuarios.total, icon: Users, href: '/admin/usuarios' },
-          { label: 'Propiedades', value: stats?.propiedades.total, icon: Building2, href: '/admin/propiedades' },
+          { label: 'Boogies', value: stats?.propiedades.total, icon: Building2, href: '/admin/propiedades' },
           { label: 'Reservas totales', value: stats?.reservas.total, icon: Receipt, href: '/admin/reservas' },
           { label: 'Reservas pendientes', value: stats?.reservas.pendientes, icon: Clock, href: '/admin/reservas', highlight: true },
         ].map((item) => {
@@ -424,8 +424,8 @@ export default function AdminDashboardPage() {
           </CollapsibleSection>
 
           <CollapsibleSection
-            title="Propiedades por ciudad"
-            subtitle="Propiedades publicadas"
+            title="Boogies por ciudad"
+            subtitle="Boogies publicados"
             defaultOpen={false}
           >
             <div className="p-6 pt-4">
@@ -439,7 +439,7 @@ export default function AdminDashboardPage() {
                         <CartesianGrid strokeDasharray="3 3" stroke="#F4F1EC" horizontal={false} />
                         <XAxis type="number" tick={{ fontSize: 11, fill: '#9E9892' }} axisLine={false} tickLine={false} allowDecimals={false} />
                         <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#6B6560' }} axisLine={false} tickLine={false} width={90} />
-                        <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #E8E4DF', fontSize: 12 }} formatter={(value: any) => [value, 'Propiedades']} />
+                        <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #E8E4DF', fontSize: 12 }} formatter={(value: any) => [value, 'Boogies']} />
                         <Bar dataKey="value" fill="#52B788" radius={[0, 4, 4, 0]} barSize={20} />
                       </BarChart>
                     </ResponsiveContainer>

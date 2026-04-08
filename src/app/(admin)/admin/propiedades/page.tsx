@@ -137,7 +137,7 @@ export default function AdminPropiedadesPage() {
     formData.append('destacada', String(!destacada))
     const res = await actualizarPropiedadAdmin(formData)
     if (res.error) toast.error(res.error)
-    else { toast.success(destacada ? 'Destacada removida' : 'Propiedad destacada'); load() }
+    else { toast.success(destacada ? 'Destacada removida' : 'Boogie destacado'); load() }
     setActionLoading(null)
   }
 
@@ -147,7 +147,7 @@ export default function AdminPropiedadesPage() {
     formData.append('propiedadId', deleteDialog.id)
     const res = await eliminarPropiedadAdmin(formData)
     if (res.error) toast.error(res.error)
-    else { toast.success('Propiedad eliminada'); setDeleteDialog({ open: false, id: '', titulo: '' }); load() }
+    else { toast.success('Boogie eliminado'); setDeleteDialog({ open: false, id: '', titulo: '' }); load() }
     setActionLoading(null)
   }
 
@@ -155,8 +155,8 @@ export default function AdminPropiedadesPage() {
     <div>
       <AdminHeader
         icon={Building2}
-        titulo="Propiedades"
-        subtitulo={`${total} propiedades registradas`}
+        titulo="Boogies"
+        subtitulo={`${total} Boogies registrados`}
       />
 
       <AdminFilterBar
@@ -194,7 +194,7 @@ export default function AdminPropiedadesPage() {
           ))}
         </div>
       ) : propiedades.length === 0 ? (
-        <AdminEmptyState icon={Building2} titulo="Sin propiedades" descripcion={busqueda || filtroEstado !== 'TODAS' ? 'Intenta ajustar los filtros' : 'No hay propiedades registradas'} />
+        <AdminEmptyState icon={Building2} titulo="Sin Boogies" descripcion={busqueda || filtroEstado !== 'TODAS' ? 'Intenta ajustar los filtros' : 'No hay Boogies registrados'} />
       ) : (
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -335,7 +335,7 @@ export default function AdminPropiedadesPage() {
       <Dialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog({ open, id: deleteDialog.id, titulo: deleteDialog.titulo })}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Eliminar propiedad</DialogTitle>
+            <DialogTitle>Eliminar Boogie</DialogTitle>
             <DialogDescription>
               Se eliminará permanentemente <strong>{deleteDialog.titulo}</strong> junto con todas sus imágenes, reservas y datos asociados. Esta acción es irreversible.
             </DialogDescription>

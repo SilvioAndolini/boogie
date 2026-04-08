@@ -103,7 +103,7 @@ export default function AdminPropiedadDetallePage() {
       if (res && 'propiedad' in res) {
         setData(res as { propiedad: Record<string, unknown>; reservas: Record<string, unknown>[] })
       } else {
-        toast.error('Propiedad no encontrada')
+        toast.error('Boogie no encontrado')
         router.push('/admin/propiedades')
       }
       setLoading(false)
@@ -164,7 +164,7 @@ export default function AdminPropiedadDetallePage() {
     const res = await actualizarPropiedadAdmin(formData)
     if (res.error) toast.error(res.error)
     else {
-      toast.success(p.destacada ? 'Destacada removida' : 'Propiedad destacada')
+      toast.success(p.destacada ? 'Destacada removida' : 'Boogie destacado')
       const updated = await getPropiedadDetalleAdmin(id)
       if (updated && 'propiedad' in updated) setData(updated as typeof data)
     }
@@ -177,7 +177,7 @@ export default function AdminPropiedadDetallePage() {
     formData.append('propiedadId', id)
     const res = await eliminarPropiedadAdmin(formData)
     if (res.error) { toast.error(res.error); setActionLoading(false) }
-    else { toast.success('Propiedad eliminada'); router.push('/admin/propiedades') }
+    else { toast.success('Boogie eliminado'); router.push('/admin/propiedades') }
   }
 
   return (
@@ -188,7 +188,7 @@ export default function AdminPropiedadDetallePage() {
           onClick={() => router.push('/admin/propiedades')}
           className="mb-4 flex items-center gap-1.5 text-sm text-[#6B6560] transition-colors hover:text-[#1B4332]"
         >
-          <ArrowLeft className="h-4 w-4" /> Volver a propiedades
+          <ArrowLeft className="h-4 w-4" /> Volver a Boogies
         </button>
       </motion.div>
 
@@ -613,7 +613,7 @@ export default function AdminPropiedadDetallePage() {
       <AdminConfirmDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
-        titulo="Eliminar propiedad"
+        titulo="Eliminar Boogie"
         descripcion={`Se eliminará permanentemente "${p.titulo as string}" junto con todas sus imágenes y datos. Esta acción es irreversible.`}
         onConfirm={handleEliminar}
         destructive

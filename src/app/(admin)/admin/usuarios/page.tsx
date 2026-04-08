@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Users as UsersIcon, Search, Loader2, Shield, Eye, EyeOff, ChevronDown, ChevronUp, UserPlus, Trash2, X,
+  Users as UsersIcon, Search, Loader2, Shield, EyeOff, UserPlus, Trash2, X,
+  CreditCard, Phone, CalendarDays, BadgeCheck, Ban, ArrowRightLeft,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -399,7 +400,7 @@ export default function AdminUsuariosPage() {
       </AnimatePresence>
 
       {/* ====== LISTA USUARIOS ====== */}
-      <motion.div variants={stagger} className="space-y-3">
+      <motion.div variants={stagger} className="space-y-2">
         {filtrados.map((u) => {
           const expandidoCurrent = expandido === u.id
           const esCeo = u.email === CEO_EMAIL
@@ -407,157 +408,152 @@ export default function AdminUsuariosPage() {
           const puedeModificar = esCeo ? false : (esAdmin ? isCeo : true)
           return (
             <motion.div key={u.id} variants={fadeUp}>
-              <Card className={`border-[#E8E4DF] overflow-hidden transition-all ${!u.activo ? 'opacity-60' : ''}`}>
-                <CardContent className="p-0">
-                  <div
-                    className="flex cursor-pointer items-center justify-between p-4"
-                    onClick={() => setExpandido(expandidoCurrent ? null : u.id)}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F8F6F3] text-sm font-bold text-[#1A1A1A]">
-                        {u.nombre.charAt(0)}{u.apellido.charAt(0)}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium text-[#1A1A1A]">{u.nombre} {u.apellido}</p>
-                          {!u.activo && (
-                            <span className="rounded-full bg-[#FEE2E2] px-2 py-0.5 text-[10px] font-bold text-[#991B1B]">SUSPENDIDO</span>
-                          )}
-                        </div>
-                        <p className="text-xs text-[#6B6560]">{u.email}</p>
-                      </div>
+              <div className={`group rounded-2xl border border-[#E8E4DF] bg-white overflow-hidden transition-all ${!u.activo ? 'opacity-50' : ''}`}>
+                <button
+                  className="w-full flex items-center justify-between px-5 py-4 text-left"
+                  onClick={() => setExpandido(expandidoCurrent ? null : u.id)}
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#1B4332] to-[#40916C] text-xs font-bold text-white">
+                      {u.nombre.charAt(0)}{u.apellido.charAt(0)}
                     </div>
-                    <div className="flex items-center gap-2">
-                      {u.verificado && (
-                        <Shield className="h-4 w-4 text-[#1B4332]" />
-                      )}
-                      {esCeo ? (
-                        <span className="rounded-full px-2.5 py-0.5 text-xs font-bold tracking-wide" style={{
-                          background: 'linear-gradient(135deg, #D4A017 0%, #F5D060 25%, #D4A017 50%, #AA8A15 75%, #F5D060 100%)',
-                          color: '#3D2E00',
-                          textShadow: '0 1px 0 rgba(255,255,255,0.3)',
-                          boxShadow: '0 1px 3px rgba(212,160,23,0.4), inset 0 1px 0 rgba(255,255,255,0.3)',
-                          border: '1px solid rgba(212,160,23,0.5)',
-                        }}>
-                          CEO
-                        </span>
-                      ) : (
-                        <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${ROL_COLORS[u.rol]}`}>
-                          {ROL_LABELS[u.rol]}
-                        </span>
-                      )}
-                      {expandidoCurrent ? (
-                        <ChevronUp className="h-4 w-4 text-[#9E9892]" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4 text-[#9E9892]" />
-                      )}
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-[#1A1A1A] truncate">{u.nombre} {u.apellido}</p>
+                        {!u.activo && (
+                          <span className="shrink-0 rounded-full bg-[#FEE2E2] px-2 py-0.5 text-[10px] font-bold text-[#991B1B]">Suspendido</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-[#9E9892] truncate">{u.email}</p>
                     </div>
                   </div>
 
-                  <AnimatePresence>
-                    {expandidoCurrent && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                        className="overflow-hidden"
-                      >
-                        <div className="border-t border-[#E8E4DF] bg-[#FDFCFA] px-4 py-4 space-y-4">
-                          <div className="grid grid-cols-2 gap-3 text-sm">
-                            <div className="rounded-xl bg-white border border-[#E8E4DF] px-3 py-2.5">
-                              <p className="text-[10px] font-medium uppercase tracking-wider text-[#9E9892]">Cédula</p>
-                              <p className="font-medium text-[#1A1A1A]">{u.cedula || 'N/A'}</p>
+                  <div className="flex items-center gap-2.5 shrink-0 ml-3">
+                    {u.verificado && (
+                      <BadgeCheck className="h-4 w-4 text-[#1B4332]" />
+                    )}
+                    {esCeo ? (
+                      <span className="rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-wider" style={{
+                        background: 'linear-gradient(135deg, #D4A017 0%, #F5D060 25%, #D4A017 50%, #AA8A15 75%, #F5D060 100%)',
+                        color: '#3D2E00',
+                        textShadow: '0 1px 0 rgba(255,255,255,0.3)',
+                        boxShadow: '0 1px 3px rgba(212,160,23,0.4), inset 0 1px 0 rgba(255,255,255,0.3)',
+                        border: '1px solid rgba(212,160,23,0.5)',
+                      }}>
+                        CEO
+                      </span>
+                    ) : (
+                      <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold tracking-wide ${ROL_COLORS[u.rol]}`}>
+                        {ROL_LABELS[u.rol]}
+                      </span>
+                    )}
+                    <svg className={`h-4 w-4 text-[#9E9892] transition-transform duration-300 ${expandidoCurrent ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </button>
+
+                <AnimatePresence>
+                  {expandidoCurrent && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <div className="border-t border-[#E8E4DF]">
+                        <div className="px-5 py-4">
+                          <div className="flex flex-col gap-2.5">
+                            <div className="flex items-center gap-2.5 text-sm">
+                              <CreditCard className="h-3.5 w-3.5 text-[#9E9892] shrink-0" />
+                              <span className="text-[#9E9892]">Documento</span>
+                              <span className="flex-1 border-b border-dotted border-[#E8E4DF] min-w-[12px]" />
+                              <span className="font-medium text-[#1A1A1A]">{u.cedula || '—'}</span>
                             </div>
-                            <div className="rounded-xl bg-white border border-[#E8E4DF] px-3 py-2.5">
-                              <p className="text-[10px] font-medium uppercase tracking-wider text-[#9E9892]">Teléfono</p>
-                              <p className="font-medium text-[#1A1A1A]">{u.telefono || 'N/A'}</p>
+                            <div className="flex items-center gap-2.5 text-sm">
+                              <Phone className="h-3.5 w-3.5 text-[#9E9892] shrink-0" />
+                              <span className="text-[#9E9892]">Teléfono</span>
+                              <span className="flex-1 border-b border-dotted border-[#E8E4DF] min-w-[12px]" />
+                              <span className="font-medium text-[#1A1A1A]">{u.telefono || '—'}</span>
                             </div>
-                            <div className="rounded-xl bg-white border border-[#E8E4DF] px-3 py-2.5">
-                              <p className="text-[10px] font-medium uppercase tracking-wider text-[#9E9892]">Verificado</p>
-                              <p className={`font-medium ${u.verificado ? 'text-[#1B4332]' : 'text-[#C1121F]'}`}>
-                                {u.verificado ? 'Sí' : 'No'}
-                              </p>
+                            <div className="flex items-center gap-2.5 text-sm">
+                              <BadgeCheck className="h-3.5 w-3.5 text-[#9E9892] shrink-0" />
+                              <span className="text-[#9E9892]">Verificado</span>
+                              <span className="flex-1 border-b border-dotted border-[#E8E4DF] min-w-[12px]" />
+                              <span className={`font-medium ${u.verificado ? 'text-[#1B4332]' : 'text-[#C1121F]'}`}>{u.verificado ? 'Sí' : 'No'}</span>
                             </div>
-                            <div className="rounded-xl bg-white border border-[#E8E4DF] px-3 py-2.5">
-                              <p className="text-[10px] font-medium uppercase tracking-wider text-[#9E9892]">Registro</p>
-                              <p className="font-medium text-[#1A1A1A]">{new Date(u.fecha_registro).toLocaleDateString('es-VE')}</p>
+                            <div className="flex items-center gap-2.5 text-sm">
+                              <CalendarDays className="h-3.5 w-3.5 text-[#9E9892] shrink-0" />
+                              <span className="text-[#9E9892]">Registro</span>
+                              <span className="flex-1 border-b border-dotted border-[#E8E4DF] min-w-[12px]" />
+                              <span className="font-medium text-[#1A1A1A]">{new Date(u.fecha_registro).toLocaleDateString('es-VE')}</span>
                             </div>
                           </div>
-
-                          {puedeModificar ? (
-                            <div className="flex flex-wrap items-end gap-3 border-t border-[#E8E4DF] pt-4">
-                              <div className="space-y-1.5">
-                                <p className="text-[10px] font-medium uppercase tracking-wider text-[#9E9892]">Cambiar rol</p>
-                                <Select
-                                  defaultValue={u.rol}
-                                  onValueChange={(value) => handleActualizarRol(u.id, value!)}
-                                  disabled={actualizando === u.id}
-                                >
-                                  <SelectTrigger className="h-9 w-36 border-[#E8E4DF] bg-white rounded-xl text-sm">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {Object.entries(ROL_LABELS).map(([key, label]) => (
-                                      <SelectItem key={key} value={key}>{label}</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-
-                              <button
-                                className={`flex h-9 items-center gap-1.5 rounded-xl border px-4 text-sm font-medium transition-all ${
-                                  u.activo
-                                    ? 'border-[#C1121F]/30 text-[#C1121F] hover:bg-[#FEE2E2]'
-                                    : 'border-[#1B4332]/30 text-[#1B4332] hover:bg-[#D8F3DC]'
-                                }`}
-                                disabled={actualizando === u.id}
-                                onClick={() => handleToggleActivo(u.id, u.activo)}
-                              >
-                                {actualizando === u.id ? (
-                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                ) : u.activo ? (
-                                  <EyeOff className="h-3.5 w-3.5" />
-                                ) : (
-                                  <Eye className="h-3.5 w-3.5" />
-                                )}
-                                {u.activo ? 'Suspender' : 'Reactivar'}
-                              </button>
-
-                              <button
-                                className="flex h-9 items-center gap-1.5 rounded-xl border border-[#C1121F]/30 px-4 text-sm font-medium text-[#C1121F] transition-all hover:bg-[#FEE2E2]"
-                                disabled={actualizando === u.id}
-                                onClick={() => {
-                                  if (confirm(`¿Eliminar a ${u.nombre} ${u.apellido}? Esta acción es irreversible.`)) {
-                                    handleEliminar(u.id)
-                                  }
-                                }}
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                                Eliminar
-                              </button>
-                            </div>
-                          ) : esCeo ? (
-                            <div className="border-t border-[#E8E4DF] pt-4">
-                              <div className="flex items-center gap-2 rounded-xl bg-[#FEF9E7] border border-[#F5D060]/30 px-4 py-3 text-xs text-[#B8860B]">
-                                <Shield className="h-4 w-4 shrink-0" />
-                                <span className="font-medium">Cuenta protegida — solo modificable desde Supabase</span>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="border-t border-[#E8E4DF] pt-4">
-                              <div className="flex items-center gap-2 rounded-xl bg-[#F3E8FF] border border-[#7C3AED]/20 px-4 py-3 text-xs text-[#7C3AED]">
-                                <Shield className="h-4 w-4 shrink-0" />
-                                <span className="font-medium">Solo el CEO puede modificar otros administradores</span>
-                              </div>
-                            </div>
-                          )}
                         </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </CardContent>
-              </Card>
+
+                        {puedeModificar ? (
+                          <div className="flex items-center gap-2 border-t border-[#E8E4DF] px-5 py-3 bg-[#FDFCFA]">
+                            <div className="flex items-center gap-2 mr-auto">
+                              <ArrowRightLeft className="h-3.5 w-3.5 text-[#9E9892]" />
+                              <Select
+                                defaultValue={u.rol}
+                                onValueChange={(value) => handleActualizarRol(u.id, value!)}
+                                disabled={actualizando === u.id}
+                              >
+                                <SelectTrigger className="h-8 w-28 border-transparent bg-white shadow-sm rounded-lg text-xs font-medium text-[#1A1A1A] hover:border-[#E8E4DF]">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {Object.entries(ROL_LABELS).map(([key, label]) => (
+                                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <button
+                              title={u.activo ? 'Suspender usuario' : 'Reactivar usuario'}
+                              disabled={actualizando === u.id}
+                              onClick={() => handleToggleActivo(u.id, u.activo)}
+                              className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all ${
+                                u.activo
+                                  ? 'text-[#9E9892] hover:bg-[#FEE2E2] hover:text-[#C1121F]'
+                                  : 'text-[#9E9892] hover:bg-[#D8F3DC] hover:text-[#1B4332]'
+                              }`}
+                            >
+                              {actualizando === u.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : (u.activo ? <Ban className="h-3.5 w-3.5" /> : <BadgeCheck className="h-3.5 w-3.5" />)}
+                            </button>
+
+                            <button
+                              title="Eliminar usuario"
+                              disabled={actualizando === u.id}
+                              onClick={() => {
+                                if (confirm(`¿Eliminar a ${u.nombre} ${u.apellido}? Esta acción es irreversible.`)) {
+                                  handleEliminar(u.id)
+                                }
+                              }}
+                              className="flex h-8 w-8 items-center justify-center rounded-lg text-[#9E9892] transition-all hover:bg-[#FEE2E2] hover:text-[#C1121F]"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        ) : esCeo ? (
+                          <div className="flex items-center gap-2 border-t border-[#E8E4DF] px-5 py-3 bg-[#FEF9E7]">
+                            <Shield className="h-3.5 w-3.5 text-[#D4A017] shrink-0" />
+                            <span className="text-[11px] font-medium text-[#B8860B]">Cuenta protegida — solo modificable desde Supabase</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 border-t border-[#E8E4DF] px-5 py-3 bg-[#F8F6F3]">
+                            <Shield className="h-3.5 w-3.5 text-[#9E9892] shrink-0" />
+                            <span className="text-[11px] font-medium text-[#9E9892]">Solo el CEO puede modificar otros administradores</span>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </motion.div>
           )
         })}
