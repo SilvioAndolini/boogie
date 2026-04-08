@@ -4,6 +4,28 @@ export const APP_NAME = 'Boogie'
 export const APP_DESCRIPTION = 'Tu hogar lejos de casa en Venezuela'
 export const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
+/*
+ * ============================================================================
+ * ⚠️  EXCEPCIÓN DE DESARROLLO — ELIMINAR ANTES DE PRODUCCIÓN
+ * ============================================================================
+ * El siguiente teléfono se usa para testing durante desarrollo.
+ * Permite que este número se registre múltiples veces con distintos emails,
+ * saltando las restricciones de unicidad de teléfono en Supabase Auth.
+ *
+ * PARA PRODUCCIÓN:
+ *   1. Eliminar esta constante y todas sus referencias
+ *   2. Buscar "DEV_PHONE_EXCEPTION" en el código y eliminar cada bloque
+ *   3. El teléfono DEBE ser único por cuenta Auth en producción
+ * ============================================================================
+ */
+export const DEV_PHONE_EXCEPTION = '04241543664'
+export function isDevPhone(phone: string): boolean {
+  if (!DEV_PHONE_EXCEPTION) return false
+  const clean = phone.replace(/\D/g, '')
+  const exception = DEV_PHONE_EXCEPTION.replace(/\D/g, '')
+  return clean === exception
+}
+
 // Comisiones de la plataforma
 export const COMISION_PLATAFORMA_HUESPED = Number(process.env.COMISION_PLATAFORMA_HUESPED) || 0.06
 export const COMISION_PLATAFORMA_ANFITRION = Number(process.env.COMISION_PLATAFORMA_ANFITRION) || 0.03

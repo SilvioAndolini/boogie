@@ -16,6 +16,7 @@ import { PropertyGalleryWrapper } from './gallery-wrapper'
 import { BookingWidget } from '@/components/reservas/booking-widget'
 import { TIPOS_PROPIEDAD, POLITICAS_CANCELACION } from '@/lib/constants'
 import { getCotizacionEuro } from '@/lib/services/exchange-rate'
+import { LocationViewMap } from '@/components/propiedades/location-view'
 import type { Metadata } from 'next'
 
 type Props = { params: Promise<{ id: string }> }
@@ -135,6 +136,20 @@ export default async function PropiedadDetallePage({ params }: Props) {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {propiedad.latitud != null && propiedad.longitud != null && (
+              <div className="mb-8">
+                <h2 className="mb-3 text-lg font-semibold text-[#1A1A1A]">Ubicación</h2>
+                <LocationViewMap
+                  latitud={propiedad.latitud}
+                  longitud={propiedad.longitud}
+                  titulo={propiedad.titulo}
+                />
+                <p className="mt-2 text-sm text-[#6B6560]">
+                  {propiedad.direccion}{propiedad.direccion ? ', ' : ''}{propiedad.ciudad}, {propiedad.estado}
+                </p>
               </div>
             )}
 

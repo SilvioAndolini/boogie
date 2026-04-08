@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Users, Shield, ArrowLeftRight, ChevronDown, ChevronUp } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { formatPrecio, formatFechaCorta } from '@/lib/format'
 import { BookingCalendar } from '@/components/reservas/booking-calendar'
@@ -68,19 +69,44 @@ export function BookingWidget({
     <div className="sticky top-20 rounded-xl border border-[#E8E4DF] bg-white p-5 shadow-sm">
       <div className="mb-4 flex items-baseline justify-between">
         <div className="flex items-baseline gap-1">
-          <span className="text-2xl font-bold text-[#1B4332]">
-            {formatPrecio(precioDisplay, monedaDisplay)}
-          </span>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.span
+              key={monedaDisplay}
+              initial={{ opacity: 0, y: -8, filter: 'blur(4px)' }}
+              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, y: 8, filter: 'blur(4px)' }}
+              transition={{ duration: 0.2 }}
+              className="text-2xl font-bold text-[#1B4332]"
+            >
+              {formatPrecio(precioDisplay, monedaDisplay)}
+            </motion.span>
+          </AnimatePresence>
           <span className="text-sm text-[#6B6560]">/ noche</span>
         </div>
-        <button
+        <motion.button
           onClick={toggleMoneda}
-          className="flex items-center gap-1 rounded-md border border-[#E8E4DF] px-2 py-1 text-xs font-medium text-[#6B6560] transition-colors hover:border-[#1B4332] hover:text-[#1B4332]"
+          animate={{
+            backgroundColor: monedaDisplay === 'USD' ? '#D8F3DC' : 'transparent',
+            borderColor: monedaDisplay === 'USD' ? '#52B788' : '#E8E4DF',
+            color: monedaDisplay === 'USD' ? '#1B4332' : '#6B6560',
+          }}
+          transition={{ duration: 0.25, ease: 'easeInOut' }}
+          className="flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium"
           title={`Cambiar a ${monedaDisplay === 'USD' ? 'Bolívares' : 'Dólares'}`}
         >
           <ArrowLeftRight className="h-3 w-3" />
-          {monedaDisplay === 'USD' ? 'USD' : 'VES'}
-        </button>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.span
+              key={monedaDisplay}
+              initial={{ opacity: 0, x: -6 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 6 }}
+              transition={{ duration: 0.15 }}
+            >
+              {monedaDisplay === 'USD' ? 'USD' : 'VES'}
+            </motion.span>
+          </AnimatePresence>
+        </motion.button>
       </div>
 
       <div className="mb-3 overflow-hidden rounded-lg border border-[#E8E4DF]">
@@ -116,42 +142,62 @@ export function BookingWidget({
         </button>
       </div>
 
-      {mostrarCalendario && (
-        <div className="mb-3 rounded-lg border border-[#E8E4DF] bg-white p-3">
-          <BookingCalendar
-            fechaEntrada={fechaEntrada}
-            fechaSalida={fechaSalida}
-            onFechaEntradaChange={setFechaEntrada}
-            onFechaSalidaChange={setFechaSalida}
-          />
-        </div>
-      )}
-
-      {mostrarHuespedes && (
-        <div className="mb-3 rounded-lg border border-[#E8E4DF] bg-white p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-[#1A1A1A]">Huéspedes</span>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setHuespedes(Math.max(1, huespedes - 1))}
-                disabled={huespedes <= 1}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-[#E8E4DF] text-[#1A1A1A] transition-colors hover:border-[#1B4332] disabled:cursor-not-allowed disabled:opacity-30"
-              >
-                -
-              </button>
-              <span className="w-6 text-center text-sm font-semibold text-[#1A1A1A]">{huespedes}</span>
-              <button
-                onClick={() => setHuespedes(Math.min(capacidadMaxima, huespedes + 1))}
-                disabled={huespedes >= capacidadMaxima}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-[#E8E4DF] text-[#1A1A1A] transition-colors hover:border-[#1B4332] disabled:cursor-not-allowed disabled:opacity-30"
-              >
-                +
-              </button>
+      <AnimatePresence>
+        {mostrarCalendario && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: 'easeInOut' }}
+            className="mb-3 overflow-hidden rounded-lg border border-[#E8E4DF] bg-white"
+          >
+            <div className="p-3">
+              <BookingCalendar
+                fechaEntrada={fechaEntrada}
+                fechaSalida={fechaSalida}
+                onFechaEntradaChange={setFechaEntrada}
+                onFechaSalidaChange={setFechaSalida}
+              />
             </div>
-          </div>
-          <p className="mt-2 text-xs text-[#9E9892]">Máximo {capacidadMaxima} huéspedes</p>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {mostrarHuespedes && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: 'easeInOut' }}
+            className="mb-3 overflow-hidden rounded-lg border border-[#E8E4DF] bg-white"
+          >
+            <div className="p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-[#1A1A1A]">Huéspedes</span>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setHuespedes(Math.max(1, huespedes - 1))}
+                    disabled={huespedes <= 1}
+                    className="flex h-8 w-8 items-center justify-center rounded-full border border-[#E8E4DF] text-[#1A1A1A] transition-colors hover:border-[#1B4332] disabled:cursor-not-allowed disabled:opacity-30"
+                  >
+                    -
+                  </button>
+                  <span className="w-6 text-center text-sm font-semibold text-[#1A1A1A]">{huespedes}</span>
+                  <button
+                    onClick={() => setHuespedes(Math.min(capacidadMaxima, huespedes + 1))}
+                    disabled={huespedes >= capacidadMaxima}
+                    className="flex h-8 w-8 items-center justify-center rounded-full border border-[#E8E4DF] text-[#1A1A1A] transition-colors hover:border-[#1B4332] disabled:cursor-not-allowed disabled:opacity-30"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+              <p className="mt-2 text-xs text-[#9E9892]">Máximo {capacidadMaxima} huéspedes</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <Button
         onClick={handleReservar}
@@ -165,24 +211,45 @@ export function BookingWidget({
             : 'Selecciona las fechas'}
       </Button>
 
-      {noches >= estanciaMinima && (
-        <div className="mt-4 space-y-2 border-t border-[#E8E4DF] pt-4">
-          <div className="flex justify-between text-sm">
-            <span className="text-[#6B6560]">
-              {formatPrecio(precioDisplay, monedaDisplay)} x {noches} noche{noches > 1 ? 's' : ''}
-            </span>
-            <span className="text-[#1A1A1A]">{formatPrecio(subtotal, monedaDisplay)}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-[#6B6560]">Comisión de servicio ({(COMISION_PLATAFORMA_HUESPED * 100).toFixed(0)}%)</span>
-            <span className="text-[#1A1A1A]">{formatPrecio(comision, monedaDisplay)}</span>
-          </div>
-          <div className="flex justify-between border-t border-[#E8E4DF] pt-2 font-semibold">
-            <span className="text-[#1A1A1A]">Total</span>
-            <span className="text-[#1B4332]">{formatPrecio(total, monedaDisplay)}</span>
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {noches >= estanciaMinima && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: 'easeInOut' }}
+            className="mt-4 overflow-hidden"
+          >
+            <div className="space-y-2 border-t border-[#E8E4DF] pt-4">
+              <div className="flex justify-between text-sm">
+                <span className="text-[#6B6560]">
+                  {formatPrecio(precioDisplay, monedaDisplay)} x {noches} noche{noches > 1 ? 's' : ''}
+                </span>
+                <span className="text-[#1A1A1A]">{formatPrecio(subtotal, monedaDisplay)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-[#6B6560]">Comisión de servicio ({(COMISION_PLATAFORMA_HUESPED * 100).toFixed(0)}%)</span>
+                <span className="text-[#1A1A1A]">{formatPrecio(comision, monedaDisplay)}</span>
+              </div>
+              <div className="flex justify-between border-t border-[#E8E4DF] pt-2 font-semibold">
+                <span className="text-[#1A1A1A]">Total</span>
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.span
+                    key={monedaDisplay}
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 4 }}
+                    transition={{ duration: 0.2 }}
+                    className="text-[#1B4332]"
+                  >
+                    {formatPrecio(total, monedaDisplay)}
+                  </motion.span>
+                </AnimatePresence>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="mt-3 flex items-center gap-2 text-xs text-[#6B6560]">
         <Shield className="h-4 w-4 shrink-0" />

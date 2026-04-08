@@ -1,6 +1,3 @@
-// Datos de pago para mostrar al usuario
-// Server-side only - estos datos nunca deben exponerse al cliente directamente
-
 export interface PaymentData {
   TRANSFERENCIA_BANCARIA: {
     banco: string
@@ -17,9 +14,15 @@ export interface PaymentData {
     email: string
     nombre: string
   }
+  EFECTIVO_FARMATODO: {
+    instrucciones: string
+  }
   USDT: {
     red: string
     direccion: string
+  }
+  TARJETA_INTERNACIONAL: {
+    instrucciones: string
   }
 }
 
@@ -40,9 +43,15 @@ function getPaymentData(): PaymentData {
       email: process.env.PAYMENT_ZELLE_EMAIL || 'pagos@boogie.app',
       nombre: process.env.PAYMENT_ZELLE_NOMBRE || 'Boogie CA',
     },
+    EFECTIVO_FARMATODO: {
+      instrucciones: process.env.PAYMENT_FARMATODO_INSTRUCCIONES || 'Realiza el pago en cualquier farmacia Farmatodo indicando el número de referencia que se te asignará al confirmar.',
+    },
     USDT: {
       red: process.env.PAYMENT_USDT_RED || 'TRC-20 (Tron)',
       direccion: process.env.PAYMENT_USDT_DIRECCION || 'TXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+    },
+    TARJETA_INTERNACIONAL: {
+      instrucciones: process.env.PAYMENT_TARJETA_INSTRUCCIONES || 'El pago será procesado de forma segura. Se te redirigirá al portal de pago al confirmar.',
     },
   }
 }

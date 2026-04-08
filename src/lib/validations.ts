@@ -131,6 +131,11 @@ export const perfilSchema = z.object({
   apellido: z.string().min(2),
   telefono: z.string().optional(),
   bio: z.string().max(500).optional(),
+  metodoPagoPreferido: z.enum([
+    'PAGO_MOVIL', 'EFECTIVO_FARMATODO', 'USDT', 'TARJETA_INTERNACIONAL',
+  ]).optional(),
+  tiktok: z.string().max(50).optional(),
+  instagram: z.string().max(50).optional(),
 })
 
 // Tipos inferidos de los esquemas

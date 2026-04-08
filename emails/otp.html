@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Boogie — Código de verificación</title>
+</head>
+<body style="margin:0;padding:0;background-color:#F8F6F3;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#F8F6F3;">
+    <tr>
+      <td align="center" style="padding:40px 16px;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:480px;">
+          <!-- Logo -->
+          <tr>
+            <td align="center" style="padding-bottom:32px;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                <tr>
+                  <td style="background-color:#1B4332;border-radius:12px;width:48px;height:48px;text-align:center;vertical-align:middle;">
+                    <span style="color:#FFFFFF;font-size:24px;font-weight:700;line-height:48px;">B</span>
+                  </td>
+                  <td style="padding-left:10px;">
+                    <span style="color:#1A1A1A;font-size:22px;font-weight:700;letter-spacing:-0.5px;">Boogie</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Card -->
+          <tr>
+            <td style="background-color:#FFFFFF;border-radius:16px;border:1px solid #E8E4DF;overflow:hidden;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                <!-- Header bar -->
+                <tr>
+                  <td style="background-color:#1B4332;padding:24px 32px;">
+                    <h1 style="margin:0;color:#FFFFFF;font-size:18px;font-weight:600;line-height:1.4;">Verifica tu cuenta</h1>
+                  </td>
+                </tr>
+
+                <!-- Body -->
+                <tr>
+                  <td style="padding:32px;">
+                    <p style="margin:0 0 8px;color:#1A1A1A;font-size:16px;font-weight:600;">Hola,</p>
+                    <p style="margin:0 0 24px;color:#6B6560;font-size:14px;line-height:1.6;">
+                      Usa el siguiente código para completar tu registro en Boogie. Este código expira en breve.
+                    </p>
+
+                    <!-- OTP Code -->
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                      <tr>
+                        <td align="center" style="padding:20px 0;">
+                          <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="background-color:#F8F6F3;border-radius:12px;border:1px dashed #1B4332;">
+                            <tr>
+                              <td style="padding:16px 40px;letter-spacing:8px;font-size:32px;font-weight:700;color:#1B4332;font-family:'Courier New',Courier,monospace;text-align:center;">
+                                {{ .Token }}
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <p style="margin:24px 0 0;color:#6B6560;font-size:13px;line-height:1.6;">
+                      Si no solicitaste este código, puedes ignorar este correo de forma segura. Nadie podrá acceder a tu cuenta sin este código.
+                    </p>
+                  </td>
+                </tr>
+
+                <!-- Divider -->
+                <tr>
+                  <td style="padding:0 32px;">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                      <tr>
+                        <td style="border-top:1px solid #E8E4DF;"></td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- Footer inside card -->
+                <tr>
+                  <td style="padding:20px 32px 24px;">
+                    <p style="margin:0;color:#9E9892;font-size:12px;line-height:1.5;text-align:center;">
+                      Este es un correo automático de Boogie. Por favor no respondas a este mensaje.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Bottom link -->
+          <tr>
+            <td align="center" style="padding-top:24px;">
+              <a href="{{ .SiteURL }}" style="color:#1B4332;font-size:13px;font-weight:500;text-decoration:none;">Ir a Boogie →</a>
+            </td>
+          </tr>
+
+          <!-- Legal -->
+          <tr>
+            <td align="center" style="padding-top:16px;">
+              <p style="margin:0;color:#D0CBC4;font-size:11px;line-height:1.5;">
+                © 2025 Boogie. Todos los derechos reservados.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

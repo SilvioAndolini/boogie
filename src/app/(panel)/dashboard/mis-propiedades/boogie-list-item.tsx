@@ -2,9 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { MapPin, MoreVertical, Pencil, Pause, Trash2, Loader2 } from 'lucide-react'
+import { MapPin, MoreVertical, Pencil, Pause, Trash2, Loader2, BedDouble, Bath, Users } from 'lucide-react'
 import { toast } from 'sonner'
-import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -35,7 +34,7 @@ function formatearPrecio(precio: number, moneda: 'USD' | 'VES'): string {
   return `Bs. ${precio.toLocaleString('es-VE')}`
 }
 
-export default function BoogieCard({ boogie }: { boogie: Record<string, unknown> }) {
+export default function BoogieListItem({ boogie }: { boogie: Record<string, unknown> }) {
   const router = useRouter()
   const id = boogie.id as string
   const estadoPublicacion = (boogie.estado_publicacion as string) || 'BORRADOR'
@@ -88,61 +87,82 @@ export default function BoogieCard({ boogie }: { boogie: Record<string, unknown>
 
   return (
     <>
-      <Card className="cursor-pointer overflow-hidden border-[#E8E4DF] transition-shadow hover:shadow-md" onClick={() => router.push(`/dashboard/mis-propiedades/${id}`)}>
-        <div className="mx-3 mt-3 overflow-hidden rounded-xl">
-          <div className="relative aspect-[4/3] bg-gradient-to-br from-[#D8F3DC] to-[#F8F6F3]">
-            {imagenPrincipal ? (
-              <img src={imagenPrincipal} alt="" className="h-full w-full object-cover" />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center">
-                <span className="text-5xl font-bold text-[#1B4332]/20">B</span>
-              </div>
-            )}
-            <div className="absolute left-3 top-3">
-              <Badge className={config.className}>{config.etiqueta}</Badge>
+      <div
+        className="group flex cursor-pointer items-center gap-4 rounded-xl border border-[#E8E4DF] bg-white px-4 py-3 transition-shadow hover:shadow-md"
+        onClick={() => router.push(`/dashboard/mis-propiedades/${id}`)}
+      >
+        {/* Thumbnail */}
+        <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-[#D8F3DC] to-[#F8F6F3]">
+          {imagenPrincipal ? (
+            <img src={imagenPrincipal} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center">
+              <span className="text-lg font-bold text-[#1B4332]/20">B</span>
             </div>
-            <div className="absolute right-3 top-3" onClick={(e) => e.stopPropagation()}>
-              <DropdownMenu>
-                <DropdownMenuTrigger className="flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-[#6B6560] backdrop-blur-sm transition-colors hover:bg-white">
-                  {pausando ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreVertical className="h-4 w-4" />}
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => router.push(`/dashboard/mis-propiedades/${id}/editar`)}>
-                    <Pencil className="h-4 w-4" />
-                    Editar boogie
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handlePausar} disabled={pausando}>
-                    <Pause className="h-4 w-4" />
-                    {estadoPublicacion === 'PAUSADA' ? 'Reanudar boogie' : 'Pausar boogie'}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem variant="destructive" onClick={() => setDialogOpen(true)}>
-                    <Trash2 className="h-4 w-4" />
-                    Eliminar boogie
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+          )}
+        </div>
+
+        {/* Info */}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <h3 className="truncate text-sm font-semibold text-[#1A1A1A]">
+              {boogie.titulo as string}
+            </h3>
+            <Badge className={`shrink-0 text-[10px] ${config.className}`}>{config.etiqueta}</Badge>
+          </div>
+          <div className="mt-0.5 flex items-center gap-1 text-xs text-[#6B6560]">
+            <MapPin className="h-3 w-3 shrink-0" />
+            <span className="truncate">{boogie.ciudad as string}, {boogie.estado as string}</span>
           </div>
         </div>
 
-        <CardContent className="space-y-2 px-5 pb-5 pt-3">
-          <h3 className="line-clamp-1 font-semibold text-[#1A1A1A]">
-            {boogie.titulo as string}
-          </h3>
-          <div className="flex items-center gap-1 text-sm text-[#6B6560]">
-            <MapPin className="h-3.5 w-3.5 shrink-0" />
-            <span className="line-clamp-1">
-              {boogie.ciudad as string}, {boogie.estado as string}
-            </span>
+        {/* Stats */}
+        <div className="hidden items-center gap-4 text-xs text-[#6B6560] sm:flex">
+          <div className="flex items-center gap-1">
+            <Users className="h-3.5 w-3.5" />
+            <span>{boogie.capacidad_maxima as number}</span>
           </div>
-          <div className="flex items-center justify-between pt-1">
-            <span className="text-sm font-bold text-[#1B4332]">
-              {formatearPrecio(boogie.precio_por_noche as number, (boogie.moneda as 'USD' | 'VES') || 'USD')}
-            </span>
-            <span className="text-xs text-[#9E9892]">por noche</span>
+          <div className="flex items-center gap-1">
+            <BedDouble className="h-3.5 w-3.5" />
+            <span>{boogie.habitaciones as number}</span>
           </div>
-        </CardContent>
-      </Card>
+          <div className="flex items-center gap-1">
+            <Bath className="h-3.5 w-3.5" />
+            <span>{boogie.banos as number}</span>
+          </div>
+        </div>
+
+        {/* Price */}
+        <div className="shrink-0 text-right">
+          <span className="text-sm font-bold text-[#1B4332]">
+            {formatearPrecio(boogie.precio_por_noche as number, (boogie.moneda as 'USD' | 'VES') || 'USD')}
+          </span>
+          <p className="text-[10px] text-[#9E9892]">por noche</p>
+        </div>
+
+        {/* Actions */}
+        <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex h-8 w-8 items-center justify-center rounded-lg text-[#6B6560] transition-colors hover:bg-[#F8F6F3]">
+              {pausando ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreVertical className="h-4 w-4" />}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => router.push(`/dashboard/mis-propiedades/${id}/editar`)}>
+                <Pencil className="h-4 w-4" />
+                Editar boogie
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handlePausar} disabled={pausando}>
+                <Pause className="h-4 w-4" />
+                {estadoPublicacion === 'PAUSADA' ? 'Reanudar boogie' : 'Pausar boogie'}
+              </DropdownMenuItem>
+              <DropdownMenuItem variant="destructive" onClick={() => setDialogOpen(true)}>
+                <Trash2 className="h-4 w-4" />
+                Eliminar boogie
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
 
       <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) setConfirmText('') }}>
         <DialogContent>

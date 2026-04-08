@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { LayoutDashboard, Home, CalendarCheck, Wallet, Plus } from 'lucide-react'
+import { LayoutDashboard, Home, CalendarCheck, Wallet, Plus, Shield } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 
@@ -24,6 +24,15 @@ const ACCESOS_RAPIDOS = [
     descripcion: 'Consulta tu historial de pagos',
     href: '/dashboard/pagos',
     icon: Wallet,
+  },
+]
+
+const ACCIONES_RAPIDAS = [
+  {
+    titulo: 'Verificar identidad',
+    descripcion: 'Verifica tu identidad para reservar',
+    href: '/dashboard/verificar-identidad',
+    icon: Shield,
   },
 ]
 
@@ -104,6 +113,32 @@ export default function DashboardPage() {
                 </Card>
               </Link>
             </motion.div>
+          )
+        })}
+      </motion.div>
+
+      <motion.div
+        className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-1"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+      >
+        {ACCIONES_RAPIDAS.map((acceso) => {
+          const Icon = acceso.icon
+          return (
+            <Link key={acceso.href} href={acceso.href}>
+              <Card className="border-[#E8E4DF] transition-all hover:border-[#52B788] hover:shadow-md">
+                <CardContent className="flex items-start gap-4 p-5">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#FEF9E7]">
+                    <Icon className="h-5 w-5 text-[#B8860B]" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-[#1A1A1A]">{acceso.titulo}</h3>
+                    <p className="mt-0.5 text-sm text-[#6B6560]">{acceso.descripcion}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
           )
         })}
       </motion.div>

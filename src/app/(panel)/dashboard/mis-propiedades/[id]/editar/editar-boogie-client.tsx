@@ -23,6 +23,7 @@ import { propiedadSchema } from '@/lib/validations'
 import { ESTADOS_VENEZUELA, TIPOS_PROPIEDAD, POLITICAS_CANCELACION, MAX_IMAGENES_PROPIEDAD } from '@/lib/constants'
 import { actualizarPropiedad } from '@/actions/propiedad.actions'
 import { optimizeImage } from '@/lib/image-optimize'
+import { LocationPickerMap, type AddressData } from '@/components/propiedades/location-picker'
 
 const PASOS = [
   { numero: 1, titulo: 'Información básica', icono: Home },
@@ -48,6 +49,13 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
   const [imagenes, setImagenes] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
   const [optimizando, setOptimizando] = useState(false)
+  const [latitud, setLatitud] = useState<number | null>(
+    (boogie.latitud as number) ?? null
+  )
+  const [longitud, setLongitud] = useState<number | null>(
+    (boogie.longitud as number) ?? null
+  )
+  const [addressData, setAddressData] = useState<AddressData | null>(null)
   const imagenesExistentes = (boogie.imagenes as { id: string; url: string; orden: number; es_principal: boolean }[]) || []
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -73,6 +81,8 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
       ciudad: (boogie.ciudad as string) || '',
       estado: (boogie.estado as string) || '',
       zona: (boogie.zona as string) || '',
+      latitud: (boogie.latitud as number) ?? undefined,
+      longitud: (boogie.longitud as number) ?? undefined,
       amenidades: (boogie.amenidades as string[]) || [],
       reglas: (boogie.reglas as string) || '',
       politicaCancelacion: ((boogie.politica_cancelacion as string) || 'MODERADA') as 'FLEXIBLE' | 'MODERADA' | 'ESTRICTA',
@@ -107,6 +117,21 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
         ? prev.filter((a) => a !== amenidad)
         : [...prev, amenidad]
     )
+  }
+
+  const handleLocationSelect = (lat: number, lng: number) => {
+    setLatitud(lat)
+    setLongitud(lng)
+    setValue('latitud', lat)
+    setValue('longitud', lng)
+  }
+
+  const handleAddressChange = (data: AddressData) => {
+    setAddressData(data)
+    if (data.direccion) setValue('direccion', data.direccion)
+    if (data.ciudad) setValue('ciudad', data.ciudad)
+    if (data.estado) setValue('estado', data.estado)
+    if (data.zona) setValue('zona', data.zona)
   }
 
   const handleImagenes = useCallback(async (files: FileList | null) => {
@@ -253,7 +278,7 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
                   <div className="space-y-2">
                     <Label htmlFor="tipoPropiedad">Tipo de boogie</Label>
                     <Select onValueChange={(value) => setValue('tipoPropiedad', value as any)} defaultValue={boogie.tipo_propiedad as string}>
-                      <SelectTrigger className="h-10 w-full rounded-lg border-[#E8E4DF] bg-white text-sm">
+                          <SelectTrigger className="h-11 border-[#E8E4DF] bg-[#FDFCFA] text-sm focus:ring-[#1B4332]/20">
                         <SelectValue placeholder="Selecciona un tipo" />
                       </SelectTrigger>
                       <SelectContent>
@@ -305,44 +330,59 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-5">
-                <div className="space-y-2">
-                  <Label htmlFor="direccion">
-                    <span className="flex items-center gap-1.5">Dirección <span className="text-[#C1121F]">*</span></span>
-                  </Label>
-                  <Input id="direccion" placeholder="Calle, edificio, número" {...register('direccion')} />
-                  {errors.direccion && <p className="text-xs text-[#C1121F]">{errors.direccion.message as string}</p>}
-                </div>
+                 <div className="space-y-2">
+                   <Label>Ubicación en el mapa</Label>
+                   <p className="text-xs text-[#6B6560]">Busca una dirección o haz clic en el mapa para marcar la ubicación exacta</p>
+                   <LocationPickerMap
+                     latitud={latitud}
+                     longitud={longitud}
+                     onLocationSelect={handleLocationSelect}
+                     onAddressChange={handleAddressChange}
+                   />
+                   {latitud !== null && longitud !== null && (
+                     <p className="text-xs text-[#52B788]">
+                       Coordenadas: {latitud.toFixed(6)}, {longitud.toFixed(6)}
+                     </p>
+                   )}
+                 </div>
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="ciudad">
-                      <span className="flex items-center gap-1.5">Ciudad <span className="text-[#C1121F]">*</span></span>
-                    </Label>
-                    <Input id="ciudad" placeholder="Ciudad" {...register('ciudad')} />
-                    {errors.ciudad && <p className="text-xs text-[#C1121F]">{errors.ciudad.message as string}</p>}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="estado">
-                      <span className="flex items-center gap-1.5">Estado <span className="text-[#C1121F]">*</span></span>
-                    </Label>
-                    <Select onValueChange={(value) => setValue('estado', value as string)} defaultValue={boogie.estado as string}>
-                      <SelectTrigger className="h-10 w-full rounded-lg border-[#E8E4DF] bg-white text-sm">
-                        <SelectValue placeholder="Selecciona un estado" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {ESTADOS_VENEZUELA.map((estado) => (
-                          <SelectItem key={estado} value={estado}>{estado}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.estado && <p className="text-xs text-[#C1121F]">{errors.estado.message as string}</p>}
-                  </div>
-                </div>
+                 <div className="space-y-3">
+                   <div className="flex items-center gap-2">
+                     <MapPin className="h-4 w-4 text-[#1B4332]" />
+                     <span className="text-sm font-medium text-[#1A1A1A]">Dirección detectada</span>
+                   </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="zona">Zona (opcional)</Label>
-                  <Input id="zona" placeholder="Barrio, urbanización" {...register('zona')} />
-                </div>
+                   <div className="rounded-xl border border-[#E8E4DF] bg-[#FDFCFA] p-4">
+                     <div className="space-y-3">
+                       <div>
+                         <span className="text-[10px] font-semibold uppercase tracking-wide text-[#9E9892]">Dirección</span>
+                         <p className="text-sm text-[#1A1A1A]">{addressData?.direccion || (boogie.direccion as string) || '—'}</p>
+                       </div>
+                       <div className="grid grid-cols-2 gap-3">
+                         <div>
+                           <span className="text-[10px] font-semibold uppercase tracking-wide text-[#9E9892]">Ciudad</span>
+                           <p className="text-sm text-[#1A1A1A]">{addressData?.ciudad || (boogie.ciudad as string) || '—'}</p>
+                         </div>
+                         <div>
+                           <span className="text-[10px] font-semibold uppercase tracking-wide text-[#9E9892]">Estado</span>
+                           <p className="text-sm text-[#1A1A1A]">{addressData?.estado || (boogie.estado as string) || '—'}</p>
+                         </div>
+                       </div>
+                       <div>
+                         <span className="text-[10px] font-semibold uppercase tracking-wide text-[#9E9892]">Zona</span>
+                         <p className="text-sm text-[#1A1A1A]">{addressData?.zona || (boogie.zona as string) || '—'}</p>
+                       </div>
+                     </div>
+                   </div>
+
+                   <input type="hidden" {...register('direccion')} />
+                   <input type="hidden" {...register('ciudad')} />
+                   <input type="hidden" {...register('estado')} />
+                   <input type="hidden" {...register('zona')} />
+                   {errors.direccion && <p className="text-xs text-[#C1121F]">{errors.direccion.message as string}</p>}
+                   {errors.ciudad && <p className="text-xs text-[#C1121F]">{errors.ciudad.message as string}</p>}
+                   {errors.estado && <p className="text-xs text-[#C1121F]">{errors.estado.message as string}</p>}
+                 </div>
               </CardContent>
             </Card>
           </motion.div>
@@ -456,7 +496,7 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
                       <div className="space-y-2">
                         <Label htmlFor="politicaCancelacion">Política de cancelación</Label>
                         <Select onValueChange={(value) => setValue('politicaCancelacion', value as 'FLEXIBLE' | 'MODERADA' | 'ESTRICTA')} defaultValue={(boogie.politica_cancelacion as string) || 'MODERADA'}>
-                          <SelectTrigger className="h-10 w-full rounded-lg border-[#E8E4DF] bg-white text-sm">
+                      <SelectTrigger className="h-11 border-[#E8E4DF] bg-[#FDFCFA] text-sm focus:ring-[#1B4332]/20">
                             <SelectValue placeholder="Selecciona una política" />
                           </SelectTrigger>
                           <SelectContent>

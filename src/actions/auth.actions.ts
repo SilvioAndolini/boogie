@@ -1,11 +1,10 @@
-// Acciones del servidor para autenticación
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
-import { isRedirectError } from 'next/dist/client/components/redirect-error'
 import { registroSchema, loginSchema, recuperacionSchema } from '@/lib/validations'
+import { isDevPhone } from '@/lib/constants'
 
 function normalizarCedula(valor: string): string {
   const limpio = valor.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
@@ -13,8 +12,28 @@ function normalizarCedula(valor: string): string {
   return 'V-' + limpio
 }
 
+export async function enviarOtpEmail(email: string) {
+  console.log('[enviarOtpEmail] Enviando OTP a:', email)
+
+  const supabase = await createClient()
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+  })
+
+  if (error) {
+    console.error('[enviarOtpEmail] Error:', JSON.stringify({ message: error.message, status: error.status }))
+    return { error: `No pudimos enviar el código (${error.message}). Verifica tu correo e intenta de nuevo.` }
+  }
+
+  console.log('[enviarOtpEmail] OTP enviado exitosamente a:', email)
+  return { exito: true }
+}
+
 export async function enviarOtpSms(telefono: string, codigoPais: string) {
-  const telefonoCompleto = `${codigoPais}${telefono.replace(/\D/g, '')}`
+  const telefonoLimpio = telefono.replace(/\D/g, '')
+  const telefonoCompleto = `${codigoPais}${telefonoLimpio}`
+
+  console.log('[enviarOtpSms] Enviando OTP a:', telefonoCompleto)
 
   const supabase = await createClient()
   const { error } = await supabase.auth.signInWithOtp({
@@ -22,10 +41,11 @@ export async function enviarOtpSms(telefono: string, codigoPais: string) {
   })
 
   if (error) {
-    console.error('[enviarOtpSms] Error:', error.message)
-    return { error: 'No pudimos enviar el código SMS. Verifica el número e intenta de nuevo.' }
+    console.error('[enviarOtpSms] Error completo:', JSON.stringify({ message: error.message, status: error.status, name: error.name }))
+    return { error: `No pudimos enviar el código SMS (${error.message}). Verifica el número e intenta de nuevo.` }
   }
 
+  console.log('[enviarOtpSms] OTP enviado exitosamente a:', telefonoCompleto)
   return { exito: true }
 }
 
@@ -50,46 +70,74 @@ export async function verificarOtpYRegistrar(formData: FormData) {
 
     const otp = formData.get('otp') as string
     if (!otp || otp.length < 6) {
-      return { error: 'Ingresa el código de verificación SMS' }
+      return { error: 'Ingresa el código de verificación' }
     }
 
-    const telefonoCompleto = `${datos.codigoPais}${datos.telefono.replace(/\D/g, '')}`
-
     const supabase = await createClient()
-    const { error: otpError } = await supabase.auth.verifyOtp({
-      phone: telefonoCompleto,
+
+    const { data: otpData, error: otpError } = await supabase.auth.verifyOtp({
+      email: datos.email,
       token: otp,
-      type: 'sms',
+      type: 'email',
     })
 
     if (otpError) {
+      console.error('[registro] OTP error:', otpError.message)
       return { error: 'Código de verificación inválido. Intenta de nuevo.' }
     }
 
-    const { data, error } = await supabase.auth.signUp({
-      email: datos.email,
+    const userId = otpData.user?.id
+    if (!userId) {
+      console.error('[registro] No se obtuvo user ID del OTP')
+      return { error: 'Error de verificación. Intenta de nuevo.' }
+    }
+
+    const admin = createAdminClient()
+    const telefonoCompleto = `${datos.codigoPais}${datos.telefono.replace(/\D/g, '')}`
+
+    const { error: updateError } = await admin.auth.admin.updateUserById(userId, {
       password: datos.password,
-      options: {
-        data: {
-          nombre: datos.nombre,
-          apellido: datos.apellido,
-          telefono: telefonoCompleto,
-        },
+      email_confirm: true,
+      user_metadata: {
+        nombre: datos.nombre,
+        apellido: datos.apellido,
+        telefono: telefonoCompleto,
       },
     })
 
-    if (error) {
-      return { error: error.message }
+    if (updateError) {
+      console.error('[registro] updateError:', updateError.message)
+      return { error: updateError.message }
     }
 
-    if (data.user) {
-      const documento = datos.tipoDocumento === 'CEDULA'
-        ? normalizarCedula(datos.numeroDocumento)
-        : datos.numeroDocumento.toUpperCase()
+    /*
+     * ⚠️ DEV_PHONE_EXCEPTION — ELIMINAR ANTES DE PRODUCCIÓN
+     */
+    const devException = isDevPhone(datos.telefono)
+    const documento = datos.tipoDocumento === 'CEDULA'
+      ? normalizarCedula(datos.numeroDocumento)
+      : datos.numeroDocumento.toUpperCase()
 
-      const admin = createAdminClient()
+    if (devException) {
+      const { data: existingCedula } = await admin
+        .from('usuarios')
+        .select('id')
+        .eq('cedula', documento)
+        .maybeSingle()
+
       const { error: perfilError } = await admin.from('usuarios').insert({
-        id: data.user.id,
+        id: userId,
+        email: datos.email,
+        nombre: datos.nombre,
+        apellido: datos.apellido,
+        telefono: telefonoCompleto,
+        cedula: existingCedula ? null : documento,
+        verificado: false,
+      })
+      if (perfilError) console.error('[registro] Error creando perfil (dev):', perfilError.message)
+    } else {
+      const { error: perfilError } = await admin.from('usuarios').insert({
+        id: userId,
         email: datos.email,
         nombre: datos.nombre,
         apellido: datos.apellido,
@@ -97,22 +145,28 @@ export async function verificarOtpYRegistrar(formData: FormData) {
         cedula: documento,
         verificado: false,
       })
-      if (perfilError) {
-        console.error('[registro] Error creando perfil:', perfilError.message)
-      }
+      if (perfilError) console.error('[registro] Error creando perfil:', perfilError.message)
     }
 
-    redirect('/verificar-email')
+    await supabase.auth.signOut()
+
+    const { error: loginError } = await supabase.auth.signInWithPassword({
+      email: datos.email,
+      password: datos.password,
+    })
+
+    if (loginError) {
+      console.error('[registro] Auto-login error:', loginError.message)
+      return { exito: true, requiereLogin: true }
+    }
+
+    return { exito: true }
   } catch (err) {
-    if (isRedirectError(err)) throw err
     console.error('[registro] Error completo:', err)
     return { error: 'Ocurrió un error inesperado. Intenta de nuevo.' }
   }
 }
 
-/**
- * Inicia sesión con email y contraseña
- */
 export async function iniciarSesion(formData: FormData) {
   const datos = {
     email: formData.get('email') as string,
@@ -138,18 +192,12 @@ export async function iniciarSesion(formData: FormData) {
   redirect('/dashboard')
 }
 
-/**
- * Cierra la sesión del usuario
- */
 export async function cerrarSesion() {
   const supabase = await createClient()
   await supabase.auth.signOut()
   redirect('/')
 }
 
-/**
- * Envía correo de recuperación de contraseña
- */
 export async function recuperarContrasena(formData: FormData) {
   const datos = {
     email: formData.get('email') as string,

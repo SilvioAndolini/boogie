@@ -64,6 +64,15 @@ export function NavbarInner({
           <span className="text-xl font-bold text-[#1A1A1A]">Boogie</span>
         </Link>
 
+        {cotizacionEuro && tasaFormateada && (
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1 rounded-full border border-[#D8F3DC] bg-[#D8F3DC]/40 px-2 py-0.5 text-[10px] text-[#1B4332] sm:hidden">
+            <TrendingUp className="h-2.5 w-2.5 text-[#2D6A4F]" />
+            <span className="font-medium">1 EUR</span>
+            <span className="text-[#6B6560]">=</span>
+            <span className="font-semibold">Bs. {tasaFormateada}</span>
+          </div>
+        )}
+
         <nav className="hidden items-center gap-6 sm:flex">
           <Link
             href="/propiedades"

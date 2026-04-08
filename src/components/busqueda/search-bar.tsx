@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Search, MapPin, Calendar, Users, Building2, TreePine, Navigation, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, MapPin, Calendar, Users, Building2, TreePine, Navigation, X, ChevronLeft, ChevronRight, ChevronUp, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -369,6 +369,207 @@ function DatePickerPopup({
   )
 }
 
+function MobileGuestPicker({
+  guests,
+  onGuestsChange,
+  onClose,
+}: {
+  guests: string
+  onGuestsChange: (value: string) => void
+  onClose: () => void
+}) {
+  const count = parseInt(guests) || 1
+
+  const updateCount = (newCount: number) => {
+    if (newCount < MIN_GUESTS) newCount = MIN_GUESTS
+    if (newCount > MAX_GUESTS) newCount = MAX_GUESTS
+    onGuestsChange(String(newCount))
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-[#1A1A1A]">Huéspedes</p>
+          <p className="text-xs text-[#6B6560]">Máximo 20</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => updateCount(count - 1)}
+            disabled={count <= 1}
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-[#E8E4DF] text-[#1A1A1A] transition-colors hover:bg-[#F8F6F3] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span className="text-lg font-medium">-</span>
+          </button>
+          <span className="w-8 text-center text-lg font-semibold text-[#1A1A1A]">{count}</span>
+          <button
+            type="button"
+            onClick={() => updateCount(count + 1)}
+            disabled={count >= 20}
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-[#E8E4DF] text-[#1A1A1A] transition-colors hover:bg-[#F8F6F3] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span className="text-lg font-medium">+</span>
+          </button>
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={onClose}
+        className="mt-4 w-full rounded-lg bg-[#1B4332] py-2 text-sm font-medium text-white transition-colors hover:bg-[#2D6A4F]"
+      >
+        Listo
+      </button>
+    </div>
+  )
+}
+
+function MobileDatePicker({
+  dateRange,
+  onDateChange,
+  onClose,
+}: {
+  dateRange: DateRange
+  onDateChange: (range: DateRange) => void
+  onClose: () => void
+}) {
+  const [viewMonth, setViewMonth] = useState(new Date())
+  const [selecting, setSelecting] = useState<'from' | 'to'>('from')
+
+  const año = viewMonth.getFullYear()
+  const mes = viewMonth.getMonth()
+
+  const primerDia = new Date(año, mes, 1).getDay()
+  const ajustePrimerDia = primerDia === 0 ? 6 : primerDia - 1
+  const diasEnMes = new Date(año, mes + 1, 0).getDate()
+
+  const diasCompletos = []
+  for (let i = 0; i < ajustePrimerDia; i++) {
+    diasCompletos.push(null)
+  }
+  for (let i = 1; i <= diasEnMes; i++) {
+    diasCompletos.push(i)
+  }
+
+  const handleDayClick = (dia: number) => {
+    const clickedDate = new Date(año, mes, dia)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    if (clickedDate < today) return
+
+    if (selecting === 'from') {
+      onDateChange({ from: clickedDate, to: undefined })
+      setSelecting('to')
+    } else {
+      if (dateRange.from && clickedDate > dateRange.from) {
+        onDateChange({ from: dateRange.from, to: clickedDate })
+        setSelecting('from')
+        onClose()
+      } else {
+        onDateChange({ from: clickedDate, to: undefined })
+        setSelecting('from')
+      }
+    }
+  }
+
+  const isSelected = (dia: number | null) => {
+    if (!dia) return false
+    const date = new Date(año, mes, dia)
+    if (dateRange.from && date.getTime() === dateRange.from.getTime()) return true
+    if (dateRange.to && date.getTime() === dateRange.to.getTime()) return true
+    return false
+  }
+
+  const isInRange = (dia: number | null) => {
+    if (!dia) return false
+    const date = new Date(año, mes, dia)
+    if (!dateRange.from || !dateRange.to) return false
+    return date > dateRange.from && date < dateRange.to
+  }
+
+  const isDisabled = (dia: number | null) => {
+    if (!dia) return true
+    const date = new Date(año, mes, dia)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return date < today
+  }
+
+  const isToday = (dia: number | null) => {
+    if (!dia) return false
+    const date = new Date(año, mes, dia)
+    const today = new Date()
+    return date.getDate() === today.getDate() && 
+           date.getMonth() === today.getMonth() && 
+           date.getFullYear() === today.getFullYear()
+  }
+
+  return (
+    <div>
+      <div className="mb-3 flex items-center justify-between">
+        <button
+          onClick={() => setViewMonth(new Date(año, mes - 1, 1))}
+          className="flex h-7 w-7 items-center justify-center rounded-lg hover:bg-[#F8F6F3]"
+        >
+          <ChevronLeft className="h-4 w-4 text-[#6B6560]" />
+        </button>
+        <span className="text-sm font-semibold text-[#1A1A1A]">
+          {MESES[mes]} {año}
+        </span>
+        <button
+          onClick={() => setViewMonth(new Date(año, mes + 1, 1))}
+          className="flex h-7 w-7 items-center justify-center rounded-lg hover:bg-[#F8F6F3]"
+        >
+          <ChevronRight className="h-4 w-4 text-[#6B6560]" />
+        </button>
+      </div>
+
+      <div className="mb-2 grid grid-cols-7 gap-1 text-center">
+        {DIAS_SEMANA.map((dia) => (
+          <span key={dia} className="text-[10px] font-medium text-[#6B6560]">
+            {dia}
+          </span>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-7 gap-1">
+        {diasCompletos.map((dia, idx) => (
+          <button
+            key={idx}
+            disabled={dia === null || isDisabled(dia)}
+            onClick={() => dia && handleDayClick(dia)}
+            className={`
+              flex h-8 w-8 items-center justify-center rounded-lg text-sm transition-colors
+              ${dia === null ? 'invisible' : ''}
+              ${isDisabled(dia) ? 'text-[#D0CBC4] cursor-not-allowed' : 'hover:bg-[#F8F6F3] cursor-pointer'}
+              ${isToday(dia) ? 'border border-[#1B4332]' : ''}
+              ${isSelected(dia) ? 'bg-[#1B4332] text-white hover:bg-[#1B4332]' : ''}
+              ${isInRange(dia) ? 'bg-[#1B4332]/10 text-[#1B4332]' : ''}
+            `}
+          >
+            {dia}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-3 flex items-center justify-between border-t border-[#E8E4DF] pt-3">
+        <div className="flex flex-col">
+          <span className="text-[10px] font-medium text-[#6B6560]">Entrada</span>
+          <span className="text-xs text-[#1A1A1A]">
+            {dateRange.from ? `${dateRange.from.getDate()} ${MESES[dateRange.from.getMonth()]}` : 'Selecciona'}
+          </span>
+        </div>
+        <div className="flex flex-col text-right">
+          <span className="text-[10px] font-medium text-[#6B6560]">Salida</span>
+          <span className="text-xs text-[#1A1A1A]">
+            {dateRange.to ? `${dateRange.to.getDate()} ${MESES[dateRange.to.getMonth()]}` : 'Selecciona'}
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function SearchBar() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -385,6 +586,7 @@ export function SearchBar() {
   const [selected, setSelected] = useState(-1)
   const [loading, setLoading] = useState(false)
   const [selectedLocation, setSelectedLocation] = useState<LocationResult | null>(null)
+  const [mobileExpanded, setMobileExpanded] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const datesButtonRef = useRef<HTMLButtonElement>(null)
   const guestsButtonRef = useRef<HTMLButtonElement>(null)
@@ -396,6 +598,7 @@ export function SearchBar() {
         setOpen(false)
         setDatePickerOpen(false)
         setGuestPickerOpen(false)
+        setMobileExpanded(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -510,10 +713,11 @@ export function SearchBar() {
 
   return (
     <div ref={containerRef} className="relative mx-auto w-full max-w-3xl">
-      <div className="flex items-center gap-1 rounded-full border border-[#E8E4DF] bg-white px-2 py-1.5 shadow-md transition-shadow focus-within:shadow-lg sm:gap-2 sm:px-3 sm:py-2">
+      {/* Desktop pill */}
+      <div className="hidden items-center gap-1 rounded-full border border-[#E8E4DF] bg-white px-2 py-1.5 shadow-md transition-shadow focus-within:shadow-lg sm:flex sm:gap-2 sm:px-3 sm:py-2">
         <div className="flex flex-1 items-center gap-2 rounded-full px-3 py-2 transition-colors hover:bg-[#F8F6F3] focus-within:bg-[#F8F6F3]">
           <MapPin className="h-4 w-4 shrink-0 text-[#1B4332]" />
-          <div className="flex flex-col">
+          <div className="flex flex-col min-w-0">
             <span className="text-[10px] font-semibold uppercase tracking-wide text-[#6B6560]">
               ¿A dónde vas?
             </span>
@@ -532,7 +736,7 @@ export function SearchBar() {
                 }
               }}
               placeholder="Busca un destino en Venezuela"
-              className="w-full border-none bg-transparent text-sm text-[#1A1A1A] outline-none placeholder:text-[#6B6560]"
+              className="w-full min-w-0 border-none bg-transparent text-sm text-[#1A1A1A] outline-none placeholder:text-[#6B6560]"
               autoComplete="off"
               role="combobox"
               aria-expanded={showDropdown}
@@ -541,7 +745,7 @@ export function SearchBar() {
           </div>
         </div>
 
-        <div className="hidden h-8 w-px bg-[#E8E4DF] sm:block" />
+        <div className="h-8 w-px bg-[#E8E4DF]" />
 
         <button
           ref={datesButtonRef}
@@ -551,13 +755,11 @@ export function SearchBar() {
             setOpen(false)
             setGuestPickerOpen(false)
           }}
-          className="hidden flex-1 cursor-pointer items-center gap-2 rounded-full px-3 py-2 transition-colors hover:bg-[#F8F6F3] sm:flex"
+          className="flex-1 cursor-pointer items-center gap-2 rounded-full px-3 py-2 transition-colors hover:bg-[#F8F6F3] flex"
         >
           <Calendar className="h-4 w-4 shrink-0 text-[#1B4332]" />
           <div className="flex flex-col">
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-[#6B6560]">
-              Fechas
-            </span>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-[#6B6560]">Fechas</span>
             <span className="text-sm text-[#1A1A1A]">
               {dateRange.from && dateRange.to
                 ? `${dateRange.from.getDate()}/${dateRange.from.getMonth() + 1} - ${dateRange.to.getDate()}/${dateRange.to.getMonth() + 1}`
@@ -568,7 +770,7 @@ export function SearchBar() {
           </div>
         </button>
 
-        <div className="hidden h-8 w-px bg-[#E8E4DF] sm:block" />
+        <div className="h-8 w-px bg-[#E8E4DF]" />
 
         <button
           ref={guestsButtonRef}
@@ -578,13 +780,11 @@ export function SearchBar() {
             setOpen(false)
             setDatePickerOpen(false)
           }}
-          className="hidden flex-1 items-center gap-2 rounded-full px-3 py-2 transition-colors hover:bg-[#F8F6F3] sm:flex"
+          className="flex flex-1 items-center gap-2 rounded-full px-3 py-2 transition-colors hover:bg-[#F8F6F3]"
         >
           <Users className="h-4 w-4 shrink-0 text-[#1B4332]" />
           <div className="flex flex-col">
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-[#6B6560]">
-              Huéspedes
-            </span>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-[#6B6560]">Huéspedes</span>
             <span className="text-sm text-[#1A1A1A]">
               {huespedes === '1' ? '1 huésped' : `${huespedes} huéspedes`}
             </span>
@@ -631,8 +831,242 @@ export function SearchBar() {
         </Button>
       </div>
 
+      {/* Mobile: compact pill / expanded card */}
+      <div className="sm:hidden">
+        <AnimatePresence mode="wait">
+          {!mobileExpanded ? (
+            <motion.button
+              key="pill"
+              type="button"
+              onClick={() => setMobileExpanded(true)}
+              className="flex w-full items-center gap-3 rounded-full border border-[#E8E4DF] bg-white px-4 py-3 shadow-md"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96, y: -4 }}
+              transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+              whileTap={{ scale: 0.97 }}
+            >
+              <Search className="h-4 w-4 shrink-0 text-[#1B4332]" />
+              <span className="text-sm text-[#6B6560]">Busca un destino en Venezuela</span>
+            </motion.button>
+          ) : (
+            <motion.div
+              key="card"
+              initial={{ opacity: 0, y: -6, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -8, scale: 0.98 }}
+              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              className="overflow-hidden rounded-2xl border border-[#E8E4DF] bg-white shadow-lg"
+            >
+            <div className="space-y-0">
+              {/* Destino */}
+              <motion.div
+                initial={{ opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
+                className="flex items-center gap-3 px-4 py-3"
+              >
+                <MapPin className="h-5 w-5 shrink-0 text-[#1B4332]" />
+                <div className="flex flex-1 flex-col min-w-0">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-[#6B6560]">¿A dónde vas?</span>
+                  <input
+                    type="text"
+                    value={ubicacion}
+                    onChange={(e) => handleChange(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    autoFocus
+                    placeholder="Busca un destino en Venezuela"
+                    className="w-full min-w-0 border-none bg-transparent text-sm text-[#1A1A1A] outline-none placeholder:text-[#6B6560] placeholder:text-xs"
+                    autoComplete="off"
+                    role="combobox"
+                    aria-expanded={showDropdown}
+                    aria-haspopup="listbox"
+                  />
+                </div>
+              </motion.div>
+
+              <div className="mx-4 h-px bg-[#E8E4DF]" />
+
+              {/* Fechas */}
+              <motion.div
+                initial={{ opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDatePickerOpen(!datePickerOpen)
+                    setGuestPickerOpen(false)
+                  }}
+                  className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-[#F8F6F3]"
+                >
+                  <Calendar className="h-5 w-5 shrink-0 text-[#1B4332]" />
+                  <div className="flex flex-1 flex-col">
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-[#6B6560]">Fechas</span>
+                    <span className="text-sm text-[#1A1A1A]">
+                      {dateRange.from && dateRange.to
+                        ? `${dateRange.from.getDate()}/${dateRange.from.getMonth() + 1} - ${dateRange.to.getDate()}/${dateRange.to.getMonth() + 1}`
+                        : dateRange.from
+                          ? `${dateRange.from.getDate()}/${dateRange.from.getMonth() + 1} - ...`
+                          : '¿Cuándo viajas?'}
+                    </span>
+                  </div>
+                  {datePickerOpen ? <ChevronUp className="h-4 w-4 text-[#6B6560]" /> : <ChevronDown className="h-4 w-4 text-[#6B6560]" />}
+                </button>
+                <AnimatePresence>
+                  {datePickerOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <div className="border-t border-[#E8E4DF] bg-[#FDFCFA] px-4 py-4">
+                        <MobileDatePicker
+                          dateRange={dateRange}
+                          onDateChange={setDateRange}
+                          onClose={() => setDatePickerOpen(false)}
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+
+              <div className="mx-4 h-px bg-[#E8E4DF]" />
+
+              {/* Huéspedes */}
+              <motion.div
+                initial={{ opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGuestPickerOpen(!guestPickerOpen)
+                    setDatePickerOpen(false)
+                  }}
+                  className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-[#F8F6F3]"
+                >
+                  <Users className="h-5 w-5 shrink-0 text-[#1B4332]" />
+                  <div className="flex flex-1 flex-col">
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-[#6B6560]">Huéspedes</span>
+                    <span className="text-sm text-[#1A1A1A]">
+                      {huespedes === '1' ? '1 huésped' : `${huespedes} huéspedes`}
+                    </span>
+                  </div>
+                  {guestPickerOpen ? <ChevronUp className="h-4 w-4 text-[#6B6560]" /> : <ChevronDown className="h-4 w-4 text-[#6B6560]" />}
+                </button>
+                <AnimatePresence>
+                  {guestPickerOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <div className="border-t border-[#E8E4DF] bg-[#FDFCFA] px-4 py-4">
+                        <MobileGuestPicker
+                          guests={huespedes}
+                          onGuestsChange={setHuespedes}
+                          onClose={() => setGuestPickerOpen(false)}
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+
+              {/* Search button */}
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                className="border-t border-[#E8E4DF] px-4 py-3"
+              >
+                <Button
+                  className="w-full bg-[#1B4332] py-6 text-base font-semibold text-white hover:bg-[#2D6A4F]"
+                  onClick={() => {
+                    setOpen(false)
+                    setDatePickerOpen(false)
+                    setGuestPickerOpen(false)
+                    setMobileExpanded(false)
+                    doSearch()
+                  }}
+                >
+                  <Search className="mr-2 h-4 w-4" />
+                  Buscar
+                </Button>
+              </motion.div>
+            </div>
+          </motion.div>
+        )}
+        </AnimatePresence>
+
+        {/* Mobile location dropdown */}
+        {mobileExpanded && showDropdown && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.15 }}
+            className="mt-2 overflow-hidden rounded-2xl border border-[#E8E4DF] bg-white shadow-2xl"
+          >
+            <div className="border-b border-[#E8E4DF] px-4 py-2.5">
+              <span className="text-xs font-semibold text-[#1A1A1A]">Destinos en Venezuela</span>
+            </div>
+            <ul role="listbox" className="max-h-60 overflow-y-auto py-1">
+              {loading && resultados.length === 0 && (
+                <li className="flex items-center gap-2 px-4 py-3 text-sm text-[#6B6560]">
+                  <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Buscando destinos...
+                </li>
+              )}
+              {resultados.map((item, idx) => {
+                const Icon = getIconForTipo(item.tipo)
+                const isHighlighted = idx === selected
+                return (
+                  <li key={item.id ?? `${item.tipo}-${item.nombre}-${idx}`} role="option" aria-selected={isHighlighted}>
+                    <button
+                      onClick={() => handleSelect(item)}
+                      onMouseEnter={() => setSelected(idx)}
+                      className={`flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors ${
+                        isHighlighted ? 'bg-[#F8F6F3]' : 'hover:bg-[#F8F6F3]'
+                      }`}
+                    >
+                      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+                        isHighlighted ? 'bg-[#1B4332]/10' : 'bg-[#F0EDE8]'
+                      }`}>
+                        <Icon className={`h-4 w-4 ${isHighlighted ? 'text-[#1B4332]' : 'text-[#6B6560]'}`} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-[#1A1A1A]">{item.nombre}</p>
+                        <p className="truncate text-[11px] text-[#6B6560]">{item.tipo}{item.detalle ? ` · ${item.detalle}` : ''}</p>
+                      </div>
+                    </button>
+                  </li>
+                )
+              })}
+              {!loading && resultados.length === 0 && ubicacion.length >= 2 && (
+                <li className="px-4 py-3 text-sm text-[#6B6560]">
+                  No encontramos destinos para &quot;{ubicacion}&quot;
+                </li>
+              )}
+            </ul>
+          </motion.div>
+        )}
+      </div>
+
+      {/* Desktop location dropdown */}
       {showDropdown && (
-        <div className="absolute left-0 right-0 top-full z-[100] mt-3 overflow-hidden rounded-2xl border border-[#E8E4DF] bg-white shadow-2xl">
+        <div className="absolute left-0 right-0 top-full z-[100] mt-3 hidden overflow-hidden rounded-2xl border border-[#E8E4DF] bg-white shadow-2xl sm:block">
           <div className="border-b border-[#E8E4DF] px-4 py-2.5">
             <span className="text-xs font-semibold text-[#1A1A1A]">Destinos en Venezuela</span>
           </div>
@@ -664,12 +1098,8 @@ export function SearchBar() {
                       <Icon className={`h-4 w-4 ${isHighlighted ? 'text-[#1B4332]' : 'text-[#6B6560]'}`} />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-[#1A1A1A]">
-                        {item.nombre}
-                      </p>
-                      <p className="truncate text-[11px] text-[#6B6560]">
-                        {item.tipo}{item.detalle ? ` · ${item.detalle}` : ''}
-                      </p>
+                      <p className="truncate text-sm font-medium text-[#1A1A1A]">{item.nombre}</p>
+                      <p className="truncate text-[11px] text-[#6B6560]">{item.tipo}{item.detalle ? ` · ${item.detalle}` : ''}</p>
                     </div>
                   </button>
                 </li>
@@ -684,27 +1114,30 @@ export function SearchBar() {
         </div>
       )}
 
-      <AnimatePresence>
-        {datePickerOpen && (
-          <DatePickerPopup
-            buttonRef={datesButtonRef}
-            dateRange={dateRange}
-            onDateChange={setDateRange}
-            onClose={() => setDatePickerOpen(false)}
-          />
-        )}
-      </AnimatePresence>
+      {/* Desktop popups */}
+      <div className="hidden sm:block">
+        <AnimatePresence>
+          {datePickerOpen && (
+            <DatePickerPopup
+              buttonRef={datesButtonRef}
+              dateRange={dateRange}
+              onDateChange={setDateRange}
+              onClose={() => setDatePickerOpen(false)}
+            />
+          )}
+        </AnimatePresence>
 
-      <AnimatePresence>
-        {guestPickerOpen && (
-          <GuestPickerPopup
-            buttonRef={guestsButtonRef}
-            guests={huespedes}
-            onGuestsChange={setHuespedes}
-            onClose={() => setGuestPickerOpen(false)}
-          />
-        )}
-      </AnimatePresence>
+        <AnimatePresence>
+          {guestPickerOpen && (
+            <GuestPickerPopup
+              buttonRef={guestsButtonRef}
+              guests={huespedes}
+              onGuestsChange={setHuespedes}
+              onClose={() => setGuestPickerOpen(false)}
+            />
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   )
 }

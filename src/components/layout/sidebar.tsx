@@ -12,6 +12,7 @@ import {
   CreditCard,
   User,
   Settings,
+  Shield,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -45,6 +46,11 @@ const menuItems = [
     titulo: 'Mi perfil',
     href: '/dashboard/perfil',
     icono: User,
+  },
+  {
+    titulo: 'Verificar identidad',
+    href: '/dashboard/verificar-identidad',
+    icono: Shield,
   },
   {
     titulo: 'Configuración',

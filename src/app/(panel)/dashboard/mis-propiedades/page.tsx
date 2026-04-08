@@ -3,7 +3,7 @@ import { Plus, Home } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { getMisPropiedades } from '@/actions/propiedad.actions'
-import BoogieCard from './boogie-card'
+import { BoogieListClient } from './boogie-list-client'
 
 export default async function MisPropiedadesPage() {
   const propiedades = await getMisPropiedades()
@@ -50,11 +50,7 @@ export default async function MisPropiedadesPage() {
       )}
 
       {hayPropiedades && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {propiedades.map((propiedad: Record<string, unknown>) => (
-            <BoogieCard key={propiedad.id as string} boogie={propiedad} />
-          ))}
-        </div>
+        <BoogieListClient propiedades={propiedades as Record<string, unknown>[]} />
       )}
     </div>
   )

@@ -4,14 +4,13 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { motion } from 'framer-motion'
-import { ArrowLeft, Home, MapPin, Sparkles, Check, Upload, X, Loader2 } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { ArrowLeft, Home, MapPin, Sparkles, Check, Upload, X, Loader2, DollarSign, Clock, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -22,13 +21,8 @@ import {
 import { propiedadSchema } from '@/lib/validations'
 import { ESTADOS_VENEZUELA, TIPOS_PROPIEDAD, POLITICAS_CANCELACION, MAX_IMAGENES_PROPIEDAD } from '@/lib/constants'
 import { crearPropiedad } from '@/actions/propiedad.actions'
-import { optimizeImage, formatFileSize } from '@/lib/image-optimize'
-
-const PASOS = [
-  { numero: 1, titulo: 'Información básica', icono: Home },
-  { numero: 2, titulo: 'Ubicación', icono: MapPin },
-  { numero: 3, titulo: 'Detalles finales', icono: Sparkles },
-]
+import { optimizeImage } from '@/lib/image-optimize'
+import { LocationPickerMap, type AddressData } from '@/components/propiedades/location-picker'
 
 const AMENIDADES = [
   'Wi-Fi', 'Aire acondicionado', 'Piscina', 'Estacionamiento',
@@ -36,6 +30,16 @@ const AMENIDADES = [
   'Seguridad 24h', 'Jardín', 'Parrilla', 'Balcón',
   'Vista al mar', 'Acceso a playa', 'Pet friendly', 'Gimnasio',
 ]
+
+const SECCIONES = [
+  { id: 'info', label: 'Información básica', icon: Home },
+  { id: 'ubicacion', label: 'Ubicación', icon: MapPin },
+  { id: 'precios', label: 'Precios y capacidad', icon: DollarSign },
+  { id: 'politicas', label: 'Políticas y reglas', icon: Clock },
+  { id: 'amenidades', label: 'Amenidades', icon: Sparkles },
+] as const
+
+type SeccionId = (typeof SECCIONES)[number]['id']
 
 const STEP_KEY = 'boogie-nueva-paso'
 const FORM_KEY = 'boogie-nueva-form'
@@ -47,14 +51,23 @@ function clearFormStorage() {
   sessionStorage.removeItem(AMEN_KEY)
 }
 
+const stagger = { hidden: {}, visible: { transition: { staggerChildren: 0.05 } } }
+const fadeUp = {
+  hidden: { opacity: 0, y: 12, filter: 'blur(3px)' },
+  visible: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
+}
+
 export default function NuevaPropiedadPage() {
   const router = useRouter()
-  const [pasoActual, setPasoActual] = useState(1)
   const [enviando, setEnviando] = useState(false)
   const [amenidadesSeleccionadas, setAmenidadesSeleccionadas] = useState<string[]>([])
   const [imagenes, setImagenes] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
   const [optimizando, setOptimizando] = useState(false)
+  const [latitud, setLatitud] = useState<number | null>(null)
+  const [longitud, setLongitud] = useState<number | null>(null)
+  const [addressData, setAddressData] = useState<AddressData | null>(null)
+  const [seccionExpandida, setSeccionExpandida] = useState<SeccionId>('info')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const initializedRef = useRef(false)
   const [initialized, setInitialized] = useState(false)
@@ -72,9 +85,9 @@ export default function NuevaPropiedadPage() {
     defaultValues: {
       titulo: '',
       descripcion: '',
-      tipoPropiedad: 'APARTAMENTO',
+      tipoPropiedad: 'APARTAMENTO' as const,
       precioPorNoche: 0,
-      moneda: 'USD',
+      moneda: 'USD' as const,
       capacidadMaxima: 1,
       habitaciones: 1,
       banos: 1,
@@ -83,6 +96,8 @@ export default function NuevaPropiedadPage() {
       ciudad: '',
       estado: '',
       zona: '',
+      latitud: undefined as unknown as number,
+      longitud: undefined as unknown as number,
       amenidades: [] as string[],
       reglas: '',
       politicaCancelacion: 'MODERADA' as const,
@@ -100,12 +115,6 @@ export default function NuevaPropiedadPage() {
     })
 
     try {
-      const savedPaso = sessionStorage.getItem(STEP_KEY)
-      if (savedPaso) {
-        const paso = parseInt(savedPaso, 10)
-        if (paso >= 1 && paso <= PASOS.length) setPasoActual(paso)
-      }
-
       const savedForm = sessionStorage.getItem(FORM_KEY)
       if (savedForm) reset(JSON.parse(savedForm))
 
@@ -124,11 +133,6 @@ export default function NuevaPropiedadPage() {
 
   useEffect(() => {
     if (!initialized) return
-    sessionStorage.setItem(STEP_KEY, pasoActual.toString())
-  }, [pasoActual, initialized])
-
-  useEffect(() => {
-    if (!initialized) return
     sessionStorage.setItem(AMEN_KEY, JSON.stringify(amenidadesSeleccionadas))
     setValue('amenidades', amenidadesSeleccionadas)
   }, [amenidadesSeleccionadas, setValue, initialized])
@@ -136,25 +140,6 @@ export default function NuevaPropiedadPage() {
   useEffect(() => {
     return () => previews.forEach((url) => URL.revokeObjectURL(url))
   }, [previews])
-
-  const camposPorPaso: Record<number, string[]> = {
-    1: ['titulo', 'descripcion', 'tipoPropiedad', 'precioPorNoche', 'capacidadMaxima', 'habitaciones', 'banos', 'camas'],
-    2: ['direccion', 'ciudad', 'estado'],
-    3: [],
-  }
-
-  const avanzarPaso = async () => {
-    const campos = camposPorPaso[pasoActual]
-    if (campos.length > 0) {
-      const esValido = await trigger(campos as any)
-      if (!esValido) return
-    }
-    setPasoActual((prev) => Math.min(prev + 1, PASOS.length))
-  }
-
-  const retrocederPaso = () => {
-    setPasoActual((prev) => Math.max(prev - 1, 1))
-  }
 
   const toggleAmenidad = (amenidad: string) => {
     setAmenidadesSeleccionadas((prev) =>
@@ -164,21 +149,33 @@ export default function NuevaPropiedadPage() {
     )
   }
 
+  const handleLocationSelect = (lat: number, lng: number) => {
+    setLatitud(lat)
+    setLongitud(lng)
+    setValue('latitud', lat)
+    setValue('longitud', lng)
+  }
+
+  const handleAddressChange = (data: AddressData) => {
+    setAddressData(data)
+    if (data.direccion) setValue('direccion', data.direccion)
+    if (data.ciudad) setValue('ciudad', data.ciudad)
+    if (data.estado) setValue('estado', data.estado)
+    if (data.zona) setValue('zona', data.zona)
+  }
+
   const handleImagenes = useCallback(async (files: FileList | null) => {
     if (!files) return
     if (imagenes.length >= MAX_IMAGENES_PROPIEDAD) {
       toast.error(`Máximo ${MAX_IMAGENES_PROPIEDAD} imágenes`)
       return
     }
-
     setOptimizando(true)
     const nuevas: File[] = []
     const nuevasPreview: string[] = []
     const filesArray = Array.from(files).slice(0, MAX_IMAGENES_PROPIEDAD - imagenes.length)
-
     for (const file of filesArray) {
       if (!file.type.startsWith('image/')) continue
-
       try {
         const optimized = await optimizeImage(file)
         nuevas.push(optimized)
@@ -188,7 +185,6 @@ export default function NuevaPropiedadPage() {
         console.error(err)
       }
     }
-
     setImagenes((prev) => [...prev, ...nuevas])
     setPreviews((prev) => [...prev, ...nuevasPreview])
     setOptimizando(false)
@@ -203,6 +199,18 @@ export default function NuevaPropiedadPage() {
   const handleCrearBoogie = async () => {
     const esValido = await trigger()
     if (!esValido) {
+      const firstError = Object.keys(errors)[0]
+      if (firstError) {
+        const seccionMap: Record<string, SeccionId> = {
+          titulo: 'info', descripcion: 'info', tipoPropiedad: 'info',
+          precioPorNoche: 'precios', moneda: 'precios',
+          capacidadMaxima: 'precios', habitaciones: 'precios', banos: 'precios', camas: 'precios',
+          direccion: 'ubicacion', ciudad: 'ubicacion', estado: 'ubicacion', zona: 'ubicacion',
+          reglas: 'politicas', politicaCancelacion: 'politicas',
+          horarioCheckIn: 'politicas', horarioCheckOut: 'politicas', estanciaMinima: 'politicas',
+        }
+        setSeccionExpandida(seccionMap[firstError] || 'info')
+      }
       toast.error('Por favor completa todos los campos requeridos')
       return
     }
@@ -237,383 +245,310 @@ export default function NuevaPropiedadPage() {
     }
   }
 
+  const ic = "h-11 border-[#E8E4DF] bg-[#FDFCFA] text-sm focus-visible:border-[#1B4332] focus-visible:ring-[#1B4332]/20"
+
   return (
-    <div className="mx-auto max-w-3xl">
-      <div className="mb-8 flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => router.back()}
-          className="text-[#6B6560]"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold text-[#1A1A1A]">Nuevo boogie</h1>
-          <p className="text-sm text-[#6B6560]">Publica tu alojamiento en Boogie</p>
+    <motion.div variants={stagger} initial="hidden" animate="visible" className="mx-auto max-w-3xl">
+
+      {/* ====== HERO HEADER ====== */}
+      <motion.div variants={fadeUp} className="relative mb-6 overflow-hidden rounded-3xl bg-gradient-to-br from-[#1B4332] via-[#2D6A4F] to-[#40916C] p-6 sm:p-8">
+        <div className="absolute -right-12 -top-12 h-48 w-48 rounded-full bg-white/5" />
+        <div className="absolute -bottom-8 -left-8 h-36 w-36 rounded-full bg-white/5" />
+
+        <div className="relative flex items-center gap-4">
+          <button
+            onClick={() => router.push('/dashboard/mis-propiedades')}
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white backdrop-blur-sm transition-all hover:bg-white/20"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <div className="flex-1">
+            <h1 className="text-2xl font-bold tracking-tight text-white">Nuevo boogie</h1>
+            <p className="text-sm text-white/60">Completa la información para publicar tu alojamiento</p>
+          </div>
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10">
+            <Pencil className="h-5 w-5 text-white/70" />
+          </div>
         </div>
-      </div>
 
-      <div className="mb-8 flex items-center justify-between">
-        {PASOS.map((paso, index) => {
-          const Icono = paso.icono
-          const activo = paso.numero === pasoActual
-          const completado = paso.numero < pasoActual
-          return (
-            <div key={paso.numero} className="flex items-center">
-              <div className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                activo ? 'bg-[#1B4332] text-white' :
-                completado ? 'bg-[#D8F3DC] text-[#1B4332]' :
-                'bg-[#F8F6F3] text-[#9E9892]'
+        <div className="mt-5 flex items-center gap-2">
+          {SECCIONES.map((sec, i) => (
+            <div key={sec.id} className="flex items-center gap-2">
+              <div className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-bold tracking-wide ${
+                seccionExpandida === sec.id ? 'bg-white text-[#1B4332]' : 'bg-white/10 text-white/50'
               }`}>
-                <Icono className="h-4 w-4" />
-                <span className="hidden sm:inline">{paso.titulo}</span>
-                <span className="sm:hidden">{paso.numero}</span>
+                <sec.icon className="h-3 w-3" />
+                <span className="hidden sm:inline">{sec.label}</span>
               </div>
-              {index < PASOS.length - 1 && (
-                <div className={`mx-2 h-px w-8 ${completado ? 'bg-[#52B788]' : 'bg-[#E8E4DF]'}`} />
-              )}
+              {i < SECCIONES.length - 1 && <div className="h-px w-3 bg-white/15" />}
             </div>
-          )
-        })}
-      </div>
+          ))}
+        </div>
+      </motion.div>
 
-      <div>
-        {pasoActual === 1 && (
-          <motion.div
-            key="paso1"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <Card className="border-[#E8E4DF]">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Home className="h-5 w-5 text-[#52B788]" />
-                  Información básica
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                <div className="space-y-2">
-                  <Label htmlFor="titulo">
-                    <span className="flex items-center gap-1.5">
-                      Título <span className="text-[#C1121F]">*</span>
-                    </span>
-                  </Label>
-                  <Input
-                    id="titulo"
-                    placeholder="Ej: Apartamento moderno en Chacao"
-                    {...register('titulo')}
-                  />
-                  {errors.titulo && <p className="text-xs text-[#C1121F]">{errors.titulo.message as string}</p>}
-                </div>
+      {/* ====== FORM ====== */}
+      <motion.div variants={fadeUp} className="rounded-2xl border border-[#E8E4DF] bg-gradient-to-b from-[#1B4332]/5 via-white to-white overflow-hidden">
 
-                <div className="space-y-2">
-                  <Label htmlFor="descripcion">
-                    <span className="flex items-center gap-1.5">
-                      Descripción <span className="text-[#C1121F]">*</span>
-                    </span>
-                  </Label>
-                  <Textarea
-                    id="descripcion"
-                    placeholder="Describe tu boogie..."
-                    className="min-h-[100px]"
-                    {...register('descripcion')}
-                  />
-                  {errors.descripcion && <p className="text-xs text-[#C1121F]">{errors.descripcion.message as string}</p>}
-                </div>
+        {SECCIONES.map((sec) => (
+          <div key={sec.id} className="border-b border-[#E8E4DF] last:border-b-0">
+            <button
+              type="button"
+              onClick={() => setSeccionExpandida(seccionExpandida === sec.id ? '' as SeccionId : sec.id)}
+              className="flex w-full items-center gap-3 px-5 py-4 text-left hover:bg-[#FDFCFA] transition-colors"
+            >
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#D8F3DC]">
+                <sec.icon className="h-4 w-4 text-[#1B4332]" />
+              </div>
+              <span className="flex-1 text-sm font-semibold text-[#1A1A1A]">{sec.label}</span>
+              <span className="text-lg text-[#D4CFC9]">{seccionExpandida === sec.id ? '−' : '+'}</span>
+            </button>
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="tipoPropiedad">Tipo de boogie</Label>
-                    <Select onValueChange={(value) => setValue('tipoPropiedad', value as 'APARTAMENTO' | 'CASA' | 'VILLA' | 'CABANA' | 'ESTUDIO' | 'HABITACION' | 'LOFT' | 'PENTHOUSE' | 'FINCA' | 'OTRO')} defaultValue="APARTAMENTO">
-                      <SelectTrigger className="h-10 w-full rounded-lg border-[#E8E4DF] bg-white text-sm">
-                        <SelectValue placeholder="Selecciona un tipo" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(TIPOS_PROPIEDAD).map(([key, label]) => (
-                          <SelectItem key={key} value={key}>{label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+            <AnimatePresence>
+              {seccionExpandida === sec.id && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.25 }}
+                  className="overflow-hidden"
+                >
+                  <div className="border-t border-[#F4F1EC] px-5 py-5 space-y-4">
 
-                  <div className="space-y-2">
-                    <Label htmlFor="precioPorNoche">
-                      <span className="flex items-center gap-1.5">
-                        Precio por noche <span className="text-[#C1121F]">*</span>
-                      </span>
-                    </Label>
-                    <Input
-                      id="precioPorNoche"
-                      type="number"
-                      placeholder="0.00"
-                      {...register('precioPorNoche', { valueAsNumber: true })}
-                    />
-                    {errors.precioPorNoche && <p className="text-xs text-[#C1121F]">{errors.precioPorNoche.message as string}</p>}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="capacidadMaxima">Huéspedes</Label>
-                    <Input id="capacidadMaxima" type="number" min={1} {...register('capacidadMaxima', { valueAsNumber: true })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="habitaciones">Habitaciones</Label>
-                    <Input id="habitaciones" type="number" min={0} {...register('habitaciones', { valueAsNumber: true })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="banos">Baños</Label>
-                    <Input id="banos" type="number" min={0} {...register('banos', { valueAsNumber: true })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="camas">Camas</Label>
-                    <Input id="camas" type="number" min={0} {...register('camas', { valueAsNumber: true })} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-
-        {pasoActual === 2 && (
-          <motion.div
-            key="paso2"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <Card className="border-[#E8E4DF]">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <MapPin className="h-5 w-5 text-[#52B788]" />
-                  Ubicación
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                <div className="space-y-2">
-                  <Label htmlFor="direccion">
-                    <span className="flex items-center gap-1.5">
-                      Dirección <span className="text-[#C1121F]">*</span>
-                    </span>
-                  </Label>
-                  <Input id="direccion" placeholder="Calle, edificio, número" {...register('direccion')} />
-                  {errors.direccion && <p className="text-xs text-[#C1121F]">{errors.direccion.message as string}</p>}
-                </div>
-
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="ciudad">
-                      <span className="flex items-center gap-1.5">
-                        Ciudad <span className="text-[#C1121F]">*</span>
-                      </span>
-                    </Label>
-                    <Input id="ciudad" placeholder="Ciudad" {...register('ciudad')} />
-                    {errors.ciudad && <p className="text-xs text-[#C1121F]">{errors.ciudad.message as string}</p>}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="estado">
-                      <span className="flex items-center gap-1.5">
-                        Estado <span className="text-[#C1121F]">*</span>
-                      </span>
-                    </Label>
-                    <Select onValueChange={(value) => setValue('estado', value as string)}>
-                      <SelectTrigger className="h-10 w-full rounded-lg border-[#E8E4DF] bg-white text-sm">
-                        <SelectValue placeholder="Selecciona un estado" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {ESTADOS_VENEZUELA.map((estado) => (
-                          <SelectItem key={estado} value={estado}>{estado}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.estado && <p className="text-xs text-[#C1121F]">{errors.estado.message as string}</p>}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="zona">Zona (opcional)</Label>
-                  <Input id="zona" placeholder="Barrio, urbanización" {...register('zona')} />
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-
-        {pasoActual === 3 && (
-          <motion.div
-            key="paso3"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <Card className="border-[#E8E4DF]">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Sparkles className="h-5 w-5 text-[#52B788]" />
-                  Detalles finales
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div>
-                  <p className="mb-3 text-sm font-medium text-[#1A1A1A]">Amenidades</p>
-                  <p className="mb-3 text-sm text-[#6B6560]">Selecciona las amenidades disponibles</p>
-                  <div className="flex flex-wrap gap-2">
-                    {AMENIDADES.map((amenidad) => (
-                      <button
-                        key={amenidad}
-                        type="button"
-                        onClick={() => toggleAmenidad(amenidad)}
-                        className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
-                          amenidadesSeleccionadas.includes(amenidad)
-                            ? 'border-[#1B4332] bg-[#D8F3DC] text-[#1B4332]'
-                            : 'border-[#E8E4DF] text-[#6B6560] hover:border-[#52B788] hover:bg-[#F8F6F3]'
-                        }`}
-                      >
-                        {amenidadesSeleccionadas.includes(amenidad) && <Check className="mr-1 inline h-3 w-3" />}
-                        {amenidad}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="border-t border-[#E8E4DF] pt-5">
-                  <p className="mb-3 text-sm font-medium text-[#1A1A1A]">Imágenes</p>
-                  <div
-                    onClick={() => !optimizando && fileInputRef.current?.click()}
-                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation() }}
-                    onDrop={(e) => { e.preventDefault(); e.stopPropagation(); !optimizando && handleImagenes(e.dataTransfer.files) }}
-                    className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed bg-[#FDFCFA] p-8 transition-colors ${
-                      optimizando 
-                        ? 'border-[#52B788] cursor-wait opacity-60' 
-                        : 'border-[#E8E4DF] hover:border-[#52B788] hover:bg-[#F8F6F3]'
-                    }`}
-                  >
-                    {optimizando ? (
-                      <>
-                        <Loader2 className="mb-2 h-8 w-8 animate-spin text-[#52B788]" />
-                        <p className="text-sm font-medium text-[#6B6560]">Optimizando imágenes...</p>
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="mb-2 h-8 w-8 text-[#9E9892]" />
-                        <p className="text-sm font-medium text-[#6B6560]">Arrastra imágenes aquí o haz clic para seleccionar</p>
-                        <p className="mt-1 text-xs text-[#9E9892]">Se optimizarán automáticamente (máx. {MAX_IMAGENES_PROPIEDAD} imágenes)</p>
-                      </>
-                    )}
-                  </div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={(e) => handleImagenes(e.target.files)}
-                  />
-                  {previews.length > 0 && (
-                    <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4">
-                      {previews.map((src, i) => (
-                        <div key={src} className="group relative aspect-square overflow-hidden rounded-lg border border-[#E8E4DF]">
-                          <img src={src} alt="" className="h-full w-full object-cover" />
-                          {i === 0 && (
-                            <span className="absolute bottom-1 left-1 rounded bg-[#1B4332] px-1.5 py-0.5 text-[10px] font-medium text-white">
-                              Principal
-                            </span>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => removeImagen(i)}
-                            className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition-opacity group-hover:opacity-100"
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </button>
+                    {sec.id === 'info' && (<>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-[#6B6560]">Título</label>
+                        <Input placeholder="Ej: Apartamento moderno en Chacao" {...register('titulo')} className={ic} />
+                        {errors.titulo && <p className="text-xs text-[#C1121F]">{errors.titulo.message as string}</p>}
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-[#6B6560]">Descripción</label>
+                        <Textarea placeholder="Describe tu boogie..." rows={4} {...register('descripcion')} className="border-[#E8E4DF] bg-[#FDFCFA] text-sm" />
+                        {errors.descripcion && <p className="text-xs text-[#C1121F]">{errors.descripcion.message as string}</p>}
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                         <div className="space-y-1.5">
+                           <Label className="text-xs font-semibold text-[#6B6560]">Tipo de boogie</Label>
+                           <Select onValueChange={(v) => setValue('tipoPropiedad', v as any)} defaultValue="APARTAMENTO">
+                             <SelectTrigger className="h-11 border-[#E8E4DF] bg-[#FDFCFA] text-sm focus:ring-[#1B4332]/20">
+                               <SelectValue />
+                             </SelectTrigger>
+                             <SelectContent>
+                               {Object.entries(TIPOS_PROPIEDAD).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                             </SelectContent>
+                           </Select>
+                         </div>
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-[#6B6560]">Capacidad máxima</label>
+                          <Input type="number" min={1} {...register('capacidadMaxima', { valueAsNumber: true })} className={ic} />
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-[#6B6560]">Habitaciones</label>
+                          <Input type="number" min={0} {...register('habitaciones', { valueAsNumber: true })} className={ic} />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-[#6B6560]">Baños</label>
+                          <Input type="number" min={1} {...register('banos', { valueAsNumber: true })} className={ic} />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-[#6B6560]">Camas</label>
+                          <Input type="number" min={1} {...register('camas', { valueAsNumber: true })} className={ic} />
+                        </div>
+                      </div>
+                    </>)}
 
-                <div className="border-t border-[#E8E4DF] pt-5">
-                  <p className="mb-3 text-sm font-medium text-[#1A1A1A]">Reglas y políticas</p>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="reglas">Reglas del boogie</Label>
-                      <Textarea
-                        id="reglas"
-                        placeholder="Ej: No fumar, no mascotas, no fiestas..."
-                        {...register('reglas')}
-                      />
-                    </div>
+                    {sec.id === 'ubicacion' && (<>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-[#6B6560]">Ubicación en el mapa</label>
+                        <p className="text-[10px] text-[#9E9892]">Busca una dirección o haz clic en el mapa para marcar la ubicación exacta</p>
+                        <LocationPickerMap
+                          latitud={latitud}
+                          longitud={longitud}
+                          onLocationSelect={handleLocationSelect}
+                          onAddressChange={handleAddressChange}
+                        />
+                        {latitud !== null && longitud !== null && (
+                          <p className="text-[10px] text-[#1B4332] font-medium">Coordenadas: {latitud.toFixed(6)}, {longitud.toFixed(6)}</p>
+                        )}
+                      </div>
+                      <div className="rounded-xl border border-[#E8E4DF] bg-[#FDFCFA] p-4 space-y-3">
+                        <div className="flex items-center gap-2 mb-1">
+                          <MapPin className="h-3.5 w-3.5 text-[#1B4332]" />
+                          <span className="text-xs font-semibold text-[#1A1A1A]">Dirección detectada</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9E9892]">Dirección</span>
+                          <p className="text-sm text-[#1A1A1A]">{addressData?.direccion || watch('direccion') || '—'}</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9E9892]">Ciudad</span>
+                            <p className="text-sm text-[#1A1A1A]">{addressData?.ciudad || watch('ciudad') || '—'}</p>
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9E9892]">Estado</span>
+                            <p className="text-sm text-[#1A1A1A]">{addressData?.estado || watch('estado') || '—'}</p>
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9E9892]">Zona</span>
+                          <p className="text-sm text-[#1A1A1A]">{addressData?.zona || watch('zona') || '—'}</p>
+                        </div>
+                      </div>
+                      <input type="hidden" {...register('direccion')} />
+                      <input type="hidden" {...register('ciudad')} />
+                      <input type="hidden" {...register('estado')} />
+                      <input type="hidden" {...register('zona')} />
+                      {(errors.direccion || errors.ciudad || errors.estado) && (
+                        <p className="text-xs text-[#C1121F]">Selecciona una ubicación en el mapa</p>
+                      )}
+                    </>)}
 
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="politicaCancelacion">Política de cancelación</Label>
-                        <Select onValueChange={(value) => setValue('politicaCancelacion', value as 'FLEXIBLE' | 'MODERADA' | 'ESTRICTA')} defaultValue="MODERADA">
-                          <SelectTrigger className="h-10 w-full rounded-lg border-[#E8E4DF] bg-white text-sm">
-                            <SelectValue placeholder="Selecciona una política" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(POLITICAS_CANCELACION).map(([key, data]) => (
-                              <SelectItem key={key} value={key}>{data.nombre}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                    {sec.id === 'precios' && (<>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-[#6B6560]">Precio por noche</label>
+                          <Input type="number" step="0.01" min={1} placeholder="0.00" {...register('precioPorNoche', { valueAsNumber: true })} className={ic} />
+                          {errors.precioPorNoche && <p className="text-xs text-[#C1121F]">{errors.precioPorNoche.message as string}</p>}
+                        </div>
+                         <div className="space-y-1.5">
+                           <Label className="text-xs font-semibold text-[#6B6560]">Moneda</Label>
+                           <Select onValueChange={(v) => setValue('moneda', v as 'USD' | 'VES')} defaultValue="USD">
+                             <SelectTrigger className="h-11 border-[#E8E4DF] bg-[#FDFCFA] text-sm focus:ring-[#1B4332]/20">
+                               <SelectValue />
+                             </SelectTrigger>
+                             <SelectContent>
+                               <SelectItem value="USD">USD ($)</SelectItem>
+                               <SelectItem value="VES">VES (Bs.)</SelectItem>
+                             </SelectContent>
+                           </Select>
+                         </div>
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="estanciaMinima">Estancia mínima (noches)</Label>
-                        <Input id="estanciaMinima" type="number" min={1} {...register('estanciaMinima', { valueAsNumber: true })} />
-                      </div>
-                    </div>
+                    </>)}
 
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="horarioCheckIn">Horario Check-in</Label>
-                        <Input id="horarioCheckIn" type="time" {...register('horarioCheckIn')} />
+                    {sec.id === 'politicas' && (<>
+                       <div className="space-y-1.5">
+                         <Label className="text-xs font-semibold text-[#6B6560]">Política de cancelación</Label>
+                         <Select onValueChange={(v) => setValue('politicaCancelacion', v as any)} defaultValue="MODERADA">
+                           <SelectTrigger className="h-11 border-[#E8E4DF] bg-[#FDFCFA] text-sm focus:ring-[#1B4332]/20">
+                             <SelectValue />
+                           </SelectTrigger>
+                           <SelectContent>
+                             {Object.entries(POLITICAS_CANCELACION).map(([k, v]) => <SelectItem key={k} value={k}>{v.nombre}</SelectItem>)}
+                           </SelectContent>
+                         </Select>
+                       </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-[#6B6560]">Check-in</label>
+                          <Input type="time" {...register('horarioCheckIn')} className={ic} />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-[#6B6560]">Check-out</label>
+                          <Input type="time" {...register('horarioCheckOut')} className={ic} />
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="horarioCheckOut">Horario Check-out</Label>
-                        <Input id="horarioCheckOut" type="time" {...register('horarioCheckOut')} />
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-[#6B6560]">Estancia mínima (noches)</label>
+                        <Input type="number" min={1} {...register('estanciaMinima', { valueAsNumber: true })} className={ic} />
                       </div>
-                    </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-[#6B6560]">Reglas del boogie</label>
+                        <Textarea placeholder="Ej: No fumar, no mascotas, no fiestas..." rows={3} {...register('reglas')} className="border-[#E8E4DF] bg-[#FDFCFA] text-sm" />
+                      </div>
+                    </>)}
+
+                    {sec.id === 'amenidades' && (<>
+                      <div className="flex flex-wrap gap-2">
+                        {AMENIDADES.map((a) => (
+                          <button
+                            key={a}
+                            type="button"
+                            onClick={() => toggleAmenidad(a)}
+                            className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                              amenidadesSeleccionadas.includes(a)
+                                ? 'bg-[#1B4332] text-white'
+                                : 'bg-[#F4F1EC] text-[#6B6560] hover:bg-[#E8E4DF]'
+                            }`}
+                          >
+                            {amenidadesSeleccionadas.includes(a) && <Check className="mr-1 inline h-3 w-3" />}
+                            {a}
+                          </button>
+                        ))}
+                      </div>
+                    </>)}
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        ))}
 
-        <div className="mt-6 flex items-center justify-between">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={retrocederPaso}
-            disabled={pasoActual === 1}
-            className="border-[#E8E4DF] text-[#6B6560]"
+        {/* ====== IMÁGENES ====== */}
+        <div className="border-t border-[#E8E4DF] px-5 py-5">
+          <h3 className="text-sm font-semibold text-[#1A1A1A] mb-3">Imágenes</h3>
+          <div
+            onClick={() => !optimizando && fileInputRef.current?.click()}
+            onDragOver={(e) => { e.preventDefault(); e.stopPropagation() }}
+            onDrop={(e) => { e.preventDefault(); e.stopPropagation(); !optimizando && handleImagenes(e.dataTransfer.files) }}
+            className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 transition-colors ${
+              optimizando
+                ? 'border-[#1B4332] cursor-wait opacity-60 bg-[#D8F3DC]/30'
+                : 'border-[#E8E4DF] bg-[#FDFCFA] hover:border-[#1B4332] hover:bg-[#F8F6F3]'
+            }`}
           >
-            Anterior
-          </Button>
-
-          {pasoActual < PASOS.length ? (
-            <Button
-              type="button"
-              onClick={avanzarPaso}
-              className="bg-[#1B4332] text-white hover:bg-[#2D6A4F]"
-            >
-              Siguiente
-            </Button>
-          ) : (
-            <Button
-              type="button"
-              onClick={handleCrearBoogie}
-              disabled={enviando}
-              className="bg-[#1B4332] text-white hover:bg-[#2D6A4F]"
-            >
-              {enviando ? 'Creando...' : 'Crear Boogie'}
-            </Button>
+            {optimizando ? (
+              <>
+                <Loader2 className="mb-2 h-8 w-8 animate-spin text-[#1B4332]" />
+                <p className="text-sm font-medium text-[#6B6560]">Optimizando imágenes...</p>
+              </>
+            ) : (
+              <>
+                <Upload className="mb-2 h-8 w-8 text-[#9E9892]" />
+                <p className="text-sm font-medium text-[#6B6560]">Arrastra imágenes aquí o haz clic para seleccionar</p>
+                <p className="mt-1 text-[10px] text-[#9E9892]">Se optimizarán automáticamente (máx. {MAX_IMAGENES_PROPIEDAD})</p>
+              </>
+            )}
+          </div>
+          <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleImagenes(e.target.files)} />
+          {previews.length > 0 && (
+            <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4">
+              {previews.map((src, i) => (
+                <div key={src} className="group relative aspect-square overflow-hidden rounded-lg border border-[#E8E4DF]">
+                  <img src={src} alt="" className="h-full w-full object-cover" />
+                  {i === 0 && (
+                    <span className="absolute bottom-1 left-1 rounded bg-[#1B4332] px-1.5 py-0.5 text-[10px] font-medium text-white">Principal</span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => removeImagen(i)}
+                    className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
           )}
         </div>
-      </div>
-    </div>
+      </motion.div>
+
+      {/* ====== SUBMIT ====== */}
+      <motion.div variants={fadeUp} className="mt-6">
+        <Button
+          type="button"
+          onClick={handleCrearBoogie}
+          disabled={enviando}
+          className="h-12 w-full bg-[#1B4332] text-base text-white hover:bg-[#2D6A4F]"
+        >
+          {enviando ? (
+            <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creando boogie...</>
+          ) : (
+            <><Check className="mr-2 h-4 w-4" />Crear boogie</>
+          )}
+        </Button>
+      </motion.div>
+    </motion.div>
   )
 }

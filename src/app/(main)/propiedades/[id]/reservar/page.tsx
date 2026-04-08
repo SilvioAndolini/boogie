@@ -1,43 +1,133 @@
-// Página de reserva de una propiedad (flujo de pago)
 'use client'
 
-import { useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Shield, CalendarDays, Users } from 'lucide-react'
+import { useState, useEffect, Suspense } from 'react'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
+import { ArrowLeft, Shield, CalendarDays, Users, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PaymentMethodSelector } from '@/components/pagos/payment-method-selector'
 import { PaymentForm } from '@/components/pagos/payment-form'
 import { formatPrecio, formatFecha } from '@/lib/format'
+import { COMISION_PLATAFORMA_HUESPED } from '@/lib/constants'
+import { crearReserva } from '@/actions/reserva.actions'
+import { toast } from 'sonner'
 import type { MetodoPagoEnum } from '@/types'
 
-export default function ReservarPage() {
+interface PropiedadReserva {
+  id: string
+  titulo: string
+  ciudad: string
+  estado: string
+  precioPorNoche: number
+  moneda: 'USD' | 'VES'
+  imagenes: { url: string; es_principal: boolean }[]
+}
+
+function ReservarContent() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [paso, setPaso] = useState<'resumen' | 'pago' | 'confirmacion'>('resumen')
   const [metodoPago, setMetodoPago] = useState<MetodoPagoEnum | undefined>()
+  const [propiedad, setPropiedad] = useState<PropiedadReserva | null>(null)
+  const [cargando, setCargando] = useState(true)
+  const [creandoReserva, setCreandoReserva] = useState(false)
 
-  // Datos placeholder de la propiedad y reserva
-  const propiedad = {
-    titulo: 'Apartamento con vista al mar',
-    ciudad: 'Porlamar',
-    estado: 'Nueva Esparta',
-    precioPorNoche: 45,
-    moneda: 'USD' as const,
+  const propiedadId = params.id as string
+
+  const entradaStr = searchParams.get('entrada') || ''
+  const salidaStr = searchParams.get('salida') || ''
+  const huespedes = parseInt(searchParams.get('huespedes') || '1', 10)
+
+  const fechaEntrada = entradaStr ? new Date(entradaStr) : new Date()
+  const fechaSalida = salidaStr ? new Date(salidaStr) : new Date()
+
+  useEffect(() => {
+    if (!entradaStr || !salidaStr) {
+      toast.error('Faltan datos de la reserva')
+      router.back()
+      return
+    }
+
+    const fetchPropiedad = async () => {
+      try {
+        const { getPropiedadPorId } = await import('@/actions/propiedad.actions')
+        const data = await getPropiedadPorId(propiedadId)
+        if (!data) {
+          toast.error('No se pudo cargar la propiedad')
+          router.back()
+          return
+        }
+        setPropiedad({
+          id: data.id,
+          titulo: data.titulo,
+          ciudad: data.ciudad,
+          estado: data.estado,
+          precioPorNoche: parseFloat(String(data.precioPorNoche)),
+          moneda: data.moneda as 'USD' | 'VES',
+          imagenes: (data.imagenes || []).map((img: Record<string, unknown>) => ({
+            url: img.url as string,
+            es_principal: img.es_principal as boolean,
+          })),
+        })
+      } catch {
+        toast.error('Error al cargar la propiedad')
+        router.back()
+      } finally {
+        setCargando(false)
+      }
+    }
+
+    fetchPropiedad()
+  }, [propiedadId, entradaStr, salidaStr, router])
+
+  const noches = Math.ceil(
+    (fechaSalida.getTime() - fechaEntrada.getTime()) / (1000 * 60 * 60 * 24)
+  )
+
+  const precioPorNoche = propiedad?.precioPorNoche || 0
+  const subtotal = noches * precioPorNoche
+  const comision = Math.round(subtotal * COMISION_PLATAFORMA_HUESPED * 100) / 100
+  const total = subtotal + comision
+
+  const handlePaymentSubmit = async (paymentFormData: FormData) => {
+    if (!propiedad || !metodoPago) return
+
+    setCreandoReserva(true)
+    try {
+      const result = await crearReserva({
+        propiedadId: propiedad.id,
+        fechaEntrada: fechaEntrada.toISOString(),
+        fechaSalida: fechaSalida.toISOString(),
+        cantidadHuespedes: huespedes,
+      })
+
+      if (result.exito) {
+        const referencia = paymentFormData.get('referencia') as string
+        console.log('[reserva] Pago referencia:', referencia, 'metodo:', metodoPago)
+        setPaso('confirmacion')
+      } else if (result.error) {
+        toast.error(result.error.mensaje)
+      }
+    } catch {
+      toast.error('Error al crear la reserva')
+    } finally {
+      setCreandoReserva(false)
+    }
   }
 
-  const reserva = {
-    fechaEntrada: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-    fechaSalida: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
-    noches: 3,
-    huespedes: 2,
-    subtotal: 135,
-    comision: 8.10,
-    total: 143.10,
+  if (cargando || !propiedad) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-[#52B788]" />
+      </div>
+    )
   }
+
+  const imagenPrincipal = propiedad.imagenes?.find((i) => i.es_principal)?.url
+    || propiedad.imagenes?.[0]?.url
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      {/* Encabezado */}
       <button
         onClick={() => router.back()}
         className="mb-6 flex items-center gap-2 text-sm text-[#6B6560] hover:text-[#1B4332]"
@@ -52,7 +142,6 @@ export default function ReservarPage() {
         {paso === 'confirmacion' && '¡Reserva confirmada!'}
       </h1>
 
-      {/* Indicador de pasos */}
       <div className="mb-8 flex items-center gap-2">
         {['resumen', 'pago', 'confirmacion'].map((p, i) => (
           <div key={p} className="flex items-center gap-2">
@@ -72,13 +161,19 @@ export default function ReservarPage() {
         ))}
       </div>
 
-      {/* Paso 1: Resumen */}
       {paso === 'resumen' && (
         <div className="space-y-6">
-          {/* Detalle de la propiedad */}
           <div className="rounded-xl border border-[#E8E4DF] p-4">
             <div className="flex gap-4">
-              <div className="h-24 w-24 flex-shrink-0 rounded-lg bg-[#F8F6F3]" />
+              {imagenPrincipal ? (
+                <img
+                  src={imagenPrincipal}
+                  alt={propiedad.titulo}
+                  className="h-24 w-24 flex-shrink-0 rounded-lg object-cover"
+                />
+              ) : (
+                <div className="h-24 w-24 flex-shrink-0 rounded-lg bg-[#F8F6F3]" />
+              )}
               <div>
                 <h3 className="font-semibold text-[#1A1A1A]">{propiedad.titulo}</h3>
                 <p className="text-sm text-[#6B6560]">{propiedad.ciudad}, {propiedad.estado}</p>
@@ -86,38 +181,36 @@ export default function ReservarPage() {
             </div>
           </div>
 
-          {/* Detalle de la reserva */}
           <div className="rounded-xl border border-[#E8E4DF] p-4 space-y-3">
             <div className="flex items-center gap-3">
               <CalendarDays className="h-5 w-5 text-[#1B4332]" />
               <div>
                 <p className="text-sm font-medium text-[#1A1A1A]">
-                  {formatFecha(reserva.fechaEntrada)} → {formatFecha(reserva.fechaSalida)}
+                  {formatFecha(fechaEntrada)} → {formatFecha(fechaSalida)}
                 </p>
-                <p className="text-xs text-[#6B6560]">{reserva.noches} noches</p>
+                <p className="text-xs text-[#6B6560]">{noches} noche{noches > 1 ? 's' : ''}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <Users className="h-5 w-5 text-[#1B4332]" />
-              <p className="text-sm text-[#1A1A1A]">{reserva.huespedes} huésped{reserva.huespedes > 1 ? 'es' : ''}</p>
+              <p className="text-sm text-[#1A1A1A]">{huespedes} huésped{huespedes > 1 ? 'es' : ''}</p>
             </div>
           </div>
 
-          {/* Desglose de precios */}
           <div className="rounded-xl border border-[#E8E4DF] p-4 space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-[#6B6560]">
-                {formatPrecio(propiedad.precioPorNoche)} x {reserva.noches} noches
+                {formatPrecio(precioPorNoche)} x {noches} noche{noches > 1 ? 's' : ''}
               </span>
-              <span>{formatPrecio(reserva.subtotal)}</span>
+              <span>{formatPrecio(subtotal)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-[#6B6560]">Comisión de servicio</span>
-              <span>{formatPrecio(reserva.comision)}</span>
+              <span className="text-[#6B6560]">Comisión de servicio ({(COMISION_PLATAFORMA_HUESPED * 100).toFixed(0)}%)</span>
+              <span>{formatPrecio(comision)}</span>
             </div>
             <div className="flex justify-between border-t border-[#E8E4DF] pt-2 font-semibold">
               <span>Total</span>
-              <span>{formatPrecio(reserva.total)}</span>
+              <span>{formatPrecio(total)}</span>
             </div>
           </div>
 
@@ -130,12 +223,11 @@ export default function ReservarPage() {
         </div>
       )}
 
-      {/* Paso 2: Pago */}
       {paso === 'pago' && (
         <div className="space-y-6">
           <div className="rounded-xl bg-[#FEF9E7] p-4">
             <p className="text-sm font-semibold text-[#1A1A1A]">
-              Total a pagar: {formatPrecio(reserva.total)}
+              Total a pagar: {formatPrecio(total)}
             </p>
           </div>
 
@@ -147,15 +239,14 @@ export default function ReservarPage() {
           {metodoPago && (
             <PaymentForm
               metodo={metodoPago}
-              monto={reserva.total}
+              monto={total}
               moneda={propiedad.moneda}
-              onSubmit={() => setPaso('confirmacion')}
+              onSubmit={handlePaymentSubmit}
             />
           )}
         </div>
       )}
 
-      {/* Paso 3: Confirmación */}
       {paso === 'confirmacion' && (
         <div className="flex flex-col items-center gap-4 py-8 text-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#D8F3DC]">
@@ -176,5 +267,19 @@ export default function ReservarPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function ReservarPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-[#52B788]" />
+        </div>
+      }
+    >
+      <ReservarContent />
+    </Suspense>
   )
 }

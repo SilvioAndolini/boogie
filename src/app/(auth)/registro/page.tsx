@@ -1,10 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Eye, EyeOff, Smartphone, ArrowLeft } from 'lucide-react'
+import { Eye, EyeOff, Mail, ArrowLeft } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
 
@@ -20,7 +21,7 @@ import {
   CardDescription,
 } from '@/components/ui/card'
 import { registroSchema, type RegistroInput } from '@/lib/validations'
-import { enviarOtpSms, verificarOtpYRegistrar } from '@/actions/auth.actions'
+import { enviarOtpEmail, verificarOtpYRegistrar } from '@/actions/auth.actions'
 
 const CODIGOS_PAIS = [
   { codigo: '+58', label: 'VE +58' },
@@ -46,12 +47,12 @@ const CODIGOS_PAIS = [
 ]
 
 export default function RegistroPage() {
-  const [paso, setPaso] = useState<'datos' | 'sms'>('datos')
+  const router = useRouter()
+  const [paso, setPaso] = useState<'datos' | 'email'>('datos')
   const [mostrarContrasena, setMostrarContrasena] = useState(false)
   const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false)
   const [cargando, setCargando] = useState(false)
   const [errorForm, setErrorForm] = useState<string | null>(null)
-  const [otpEnviado, setOtpEnviado] = useState(false)
   const [reenviando, setReenviando] = useState(false)
   const [otp, setOtp] = useState('')
   const [segundosReenvio, setSegundosReenvio] = useState(0)
@@ -81,18 +82,18 @@ export default function RegistroPage() {
   const tipoDocumento = watch('tipoDocumento')
   const telefono = watch('telefono')
   const codigoPais = watch('codigoPais')
+  const email = watch('email')
 
   const handleEnviarOtp = async (datos: RegistroInput) => {
     setCargando(true)
     setErrorForm(null)
     try {
-      const result = await enviarOtpSms(datos.telefono, datos.codigoPais)
+      const result = await enviarOtpEmail(datos.email)
       if (result?.error) {
         setErrorForm(result.error)
         return
       }
-      setOtpEnviado(true)
-      setPaso('sms')
+      setPaso('email')
       setSegundosReenvio(60)
       const intervalo = setInterval(() => {
         setSegundosReenvio((prev) => {
@@ -104,7 +105,7 @@ export default function RegistroPage() {
         })
       }, 1000)
     } catch {
-      setErrorForm('Error al enviar el código SMS')
+      setErrorForm('Error al enviar el código de verificación')
     } finally {
       setCargando(false)
     }
@@ -114,7 +115,7 @@ export default function RegistroPage() {
     if (segundosReenvio > 0) return
     setReenviando(true)
     try {
-      const result = await enviarOtpSms(telefono, codigoPais)
+      const result = await enviarOtpEmail(email)
       if (result?.error) {
         toast.error(result.error)
         return
@@ -139,7 +140,7 @@ export default function RegistroPage() {
 
   const handleVerificarYRegistrar = async () => {
     if (otp.length < 6) {
-      setErrorForm('Ingresa el código completo de 6 dígitos')
+      setErrorForm('Ingresa el código completo')
       return
     }
 
@@ -162,6 +163,10 @@ export default function RegistroPage() {
       const result = await verificarOtpYRegistrar(formData)
       if (result?.error) {
         setErrorForm(result.error)
+      } else if (result?.requiereLogin) {
+        router.push('/login')
+      } else {
+        window.location.href = '/'
       }
     } catch {
       setErrorForm('Ocurrió un error inesperado. Intenta de nuevo.')
@@ -185,12 +190,12 @@ export default function RegistroPage() {
             <span className="text-2xl font-bold text-[#1B4332]">Boogie</span>
           </div>
           <CardTitle className="text-xl font-semibold text-[#1A1A1A]">
-            {paso === 'datos' ? 'Crea tu cuenta' : 'Verifica tu teléfono'}
+            {paso === 'datos' ? 'Crea tu cuenta' : 'Verifica tu correo'}
           </CardTitle>
           <CardDescription className="text-[#6B6560]">
             {paso === 'datos'
               ? 'Regístrate para encontrar tu alojamiento ideal en Venezuela'
-              : `Enviamos un código a ${codigoPais} ${telefono}`}
+              : `Enviamos un código a ${email}`}
           </CardDescription>
         </CardHeader>
 
@@ -342,7 +347,7 @@ export default function RegistroPage() {
                 disabled={cargando}
                 className="mt-2 h-11 w-full bg-[#1B4332] text-white hover:bg-[#2D6A4F] disabled:opacity-50"
               >
-                {cargando ? 'Enviando código...' : 'Verificar teléfono'}
+                {cargando ? 'Enviando código...' : 'Verificar correo'}
               </Button>
             </form>
           ) : (
@@ -355,10 +360,10 @@ export default function RegistroPage() {
 
               <div className="flex flex-col items-center gap-3 py-4">
                 <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#D8F3DC]">
-                  <Smartphone className="h-7 w-7 text-[#1B4332]" />
+                  <Mail className="h-7 w-7 text-[#1B4332]" />
                 </div>
                 <p className="text-center text-sm text-[#6B6560]">
-                  Ingresa el código de 6 dígitos que enviamos a <strong className="text-[#1A1A1A]">{codigoPais} {telefono}</strong>
+                  Ingresa el código que enviamos a <strong className="text-[#1A1A1A]">{email}</strong>
                 </p>
               </div>
 
@@ -368,11 +373,11 @@ export default function RegistroPage() {
                   id="otp"
                   type="text"
                   inputMode="numeric"
-                  maxLength={6}
+                  maxLength={8}
                   value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 8))}
                   className="h-14 border-[#E8E4DF] bg-[#FEFCF9] text-center text-2xl font-bold tracking-[0.5em] placeholder:text-[#9E9892] focus-visible:border-[#1B4332] focus-visible:ring-[#1B4332]/20"
-                  placeholder="------"
+                  placeholder="--------"
                   autoFocus
                 />
               </div>
