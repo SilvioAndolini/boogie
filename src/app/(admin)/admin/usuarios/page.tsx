@@ -1,13 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { useState, useEffect, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Users as UsersIcon, Search, Loader2, Shield, Eye, EyeOff, ChevronDown, ChevronUp, UserPlus, Trash2,
+  Users as UsersIcon, Search, Loader2, Shield, Eye, EyeOff, ChevronDown, ChevronUp, UserPlus, Trash2, X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -17,7 +18,7 @@ import {
 } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { getUsuariosAdmin, actualizarRolUsuario, eliminarUsuarioAdmin } from '@/actions/verificacion.actions'
-import { RegistrarUsuarioModal } from '@/components/admin'
+import { registrarUsuarioAdmin } from '@/actions/admin-usuarios.actions'
 import { CEO_EMAIL } from '@/lib/admin-constants'
 
 interface Usuario {
@@ -47,6 +48,12 @@ const ROL_COLORS: Record<string, string> = {
   ADMIN: 'bg-[#F3E8FF] text-[#7C3AED]',
 }
 
+const stagger = { hidden: {}, visible: { transition: { staggerChildren: 0.04 } } }
+const fadeUp = {
+  hidden: { opacity: 0, y: 12, filter: 'blur(3px)' },
+  visible: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
+}
+
 export default function AdminUsuariosPage() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
   const [cargando, setCargando] = useState(true)
@@ -54,8 +61,13 @@ export default function AdminUsuariosPage() {
   const [filtroRol, setFiltroRol] = useState<string>('TODOS')
   const [expandido, setExpandido] = useState<string | null>(null)
   const [actualizando, setActualizando] = useState<string | null>(null)
-  const [modalRegistroAbierto, setModalRegistroAbierto] = useState(false)
   const [isCeo, setIsCeo] = useState(false)
+  const [mostrarRegistro, setMostrarRegistro] = useState(false)
+  const [enviando, setEnviando] = useState(false)
+  const [tipoDocumento, setTipoDocumento] = useState<'CEDULA' | 'PASAPORTE'>('CEDULA')
+  const [codigoPais, setCodigoPais] = useState('+58')
+  const [rol, setRol] = useState<string>('HUESPED')
+  const registroRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -85,19 +97,14 @@ export default function AdminUsuariosPage() {
     }
   }
 
-  const handleActualizarRol = async (usuarioId: string, rol: string) => {
+  const handleActualizarRol = async (usuarioId: string, nuevoRol: string) => {
     setActualizando(usuarioId)
     const formData = new FormData()
     formData.append('usuarioId', usuarioId)
-    formData.append('rol', rol)
-
+    formData.append('rol', nuevoRol)
     const res = await actualizarRolUsuario(formData)
-    if (res.error) {
-      toast.error(res.error)
-    } else {
-      toast.success('Rol actualizado')
-      await cargarUsuarios()
-    }
+    if (res.error) toast.error(res.error)
+    else { toast.success('Rol actualizado'); await cargarUsuarios() }
     setActualizando(null)
   }
 
@@ -106,14 +113,9 @@ export default function AdminUsuariosPage() {
     const formData = new FormData()
     formData.append('usuarioId', usuarioId)
     formData.append('activo', String(!activoActual))
-
     const res = await actualizarRolUsuario(formData)
-    if (res.error) {
-      toast.error(res.error)
-    } else {
-      toast.success(activoActual ? 'Usuario suspendido' : 'Usuario reactivado')
-      await cargarUsuarios()
-    }
+    if (res.error) toast.error(res.error)
+    else { toast.success(activoActual ? 'Usuario suspendido' : 'Usuario reactivado'); await cargarUsuarios() }
     setActualizando(null)
   }
 
@@ -121,15 +123,29 @@ export default function AdminUsuariosPage() {
     setActualizando(usuarioId)
     const formData = new FormData()
     formData.append('usuarioId', usuarioId)
-
     const res = await eliminarUsuarioAdmin(formData)
+    if (res.error) toast.error(res.error)
+    else { toast.success('Usuario eliminado'); await cargarUsuarios() }
+    setActualizando(null)
+  }
+
+  const handleRegistro = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setEnviando(true)
+    const formData = new FormData(e.currentTarget)
+    formData.set('tipoDocumento', tipoDocumento)
+    formData.set('codigoPais', codigoPais)
+    formData.set('rol', rol)
+    const res = await registrarUsuarioAdmin(formData)
     if (res.error) {
       toast.error(res.error)
-    } else {
-      toast.success('Usuario eliminado')
-      await cargarUsuarios()
+      setEnviando(false)
+      return
     }
-    setActualizando(null)
+    toast.success('Usuario registrado exitosamente')
+    setEnviando(false)
+    setMostrarRegistro(false)
+    await cargarUsuarios()
   }
 
   const filtrados = usuarios.filter((u) => {
@@ -146,6 +162,12 @@ export default function AdminUsuariosPage() {
     return true
   })
 
+  const cuentasPorRol = {
+    HUESPED: usuarios.filter((u) => u.rol === 'HUESPED').length,
+    ANFITRION: usuarios.filter((u) => u.rol === 'ANFITRION').length,
+    ADMIN: usuarios.filter((u) => u.rol === 'ADMIN').length,
+  }
+
   if (cargando) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -155,80 +177,253 @@ export default function AdminUsuariosPage() {
   }
 
   return (
-    <div>
-      <div className="mb-8 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#D8F3DC]">
-          <UsersIcon className="h-5 w-5 text-[#1B4332]" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-[#1A1A1A]">Gestión de usuarios</h1>
-          <p className="text-sm text-[#6B6560]">{usuarios.length} usuarios registrados</p>
-        </div>
-      </div>
+    <motion.div variants={stagger} initial="hidden" animate="visible" className="mx-auto max-w-5xl">
 
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row">
+      {/* ====== HERO HEADER ====== */}
+      <motion.div variants={fadeUp} className="relative mb-6 overflow-hidden rounded-3xl bg-gradient-to-br from-[#1B4332] via-[#2D6A4F] to-[#40916C]">
+        <div className="absolute -right-12 -top-12 h-48 w-48 rounded-full bg-white/5" />
+        <div className="absolute -bottom-8 -left-8 h-36 w-36 rounded-full bg-white/5" />
+        <div className="absolute right-20 bottom-4 h-20 w-20 rounded-full bg-white/[0.03]" />
+
+        <div className="relative flex items-center gap-5 p-6 sm:p-8">
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/20">
+            <UsersIcon className="h-8 w-8 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl font-bold tracking-tight text-white sm:text-2xl">Gestión de Usuarios</h1>
+            <p className="text-sm text-white/60 mt-0.5">Administra roles, permisos y accesos del sistema</p>
+          </div>
+        </div>
+
+        <div className="border-t border-white/10 grid grid-cols-2 sm:grid-cols-4">
+          {[
+            { label: 'Total', value: usuarios.length, icon: UsersIcon },
+            { label: 'Huéspedes', value: cuentasPorRol.HUESPED, icon: UsersIcon },
+            { label: 'Anfitriones', value: cuentasPorRol.ANFITRION, icon: UsersIcon },
+            { label: 'Admins', value: cuentasPorRol.ADMIN, icon: Shield },
+          ].map((item) => (
+            <div key={item.label} className="flex items-center gap-3 px-5 py-3.5 border-r border-white/10 last:border-r-0">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10">
+                <item.icon className="h-3.5 w-3.5 text-white/60" />
+              </div>
+              <div>
+                <p className="text-[10px] font-medium uppercase tracking-wider text-white/40">{item.label}</p>
+                <p className="text-sm font-bold text-white tabular-nums">{item.value}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </motion.div>
+
+      {/* ====== TOOLBAR ====== */}
+      <motion.div variants={fadeUp} className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9E9892]" />
           <Input
             placeholder="Buscar por nombre, email o cédula..."
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="border-[#E8E4DF] pl-10"
+            className="border-[#E8E4DF] bg-white pl-10 h-11 rounded-xl"
           />
         </div>
-        <Button
-          onClick={() => setModalRegistroAbierto(true)}
-          className="bg-[#1B4332] text-white hover:bg-[#2D6A4F]"
+        <button
+          onClick={() => setMostrarRegistro(!mostrarRegistro)}
+          className="flex h-11 items-center gap-2 rounded-xl bg-[#1B4332] px-5 text-sm font-medium text-white transition-all hover:bg-[#2D6A4F] shrink-0"
         >
-          <UserPlus className="mr-2 h-4 w-4" />
-          Registrar usuario
-        </Button>
-      </div>
+          {mostrarRegistro ? <X className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
+          {mostrarRegistro ? 'Cancelar' : 'Registrar usuario'}
+        </button>
+      </motion.div>
 
-      <div className="mb-6 flex flex-wrap gap-2">
+      {/* ====== FILTROS ROL ====== */}
+      <motion.div variants={fadeUp} className="mb-6 flex gap-1 rounded-xl border border-[#E8E4DF] bg-white p-1">
         {['TODOS', 'HUESPED', 'ANFITRION', 'AMBOS', 'ADMIN'].map((r) => (
-            <Button
-              key={r}
-              variant={filtroRol === r ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setFiltroRol(r)}
-              className={filtroRol === r ? 'bg-[#1B4332] text-white hover:bg-[#2D6A4F]' : 'border-[#E8E4DF] text-[#6B6560]'}
-            >
-              {r === 'TODOS' ? 'Todos' : ROL_LABELS[r]}
-            </Button>
-          ))}
-      </div>
+          <button
+            key={r}
+            onClick={() => setFiltroRol(r)}
+            className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              filtroRol === r ? 'bg-[#1B4332] text-white' : 'text-[#6B6560] hover:bg-[#F8F6F3]'
+            }`}
+          >
+            {r === 'TODOS' ? 'Todos' : ROL_LABELS[r]}
+          </button>
+        ))}
+      </motion.div>
 
-      <div className="space-y-3">
+      {/* ====== FORMULARIO REGISTRO ====== */}
+      <AnimatePresence>
+        {mostrarRegistro && (
+          <motion.div
+            ref={registroRef}
+            initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+            animate={{ opacity: 1, height: 'auto', marginBottom: 24 }}
+            exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="relative overflow-hidden rounded-3xl border border-[#E8E4DF] bg-gradient-to-br from-white to-[#F8F6F3]">
+              <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-[#1B4332]/[0.03]" />
+              <div className="absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-[#1B4332]/[0.03]" />
+
+              <div className="relative p-6 sm:p-8">
+                <div className="mb-6 flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#D8F3DC]">
+                    <UserPlus className="h-5 w-5 text-[#1B4332]" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-[#1A1A1A]">Nuevo usuario</h2>
+                    <p className="text-xs text-[#6B6560]">Registro directo sin verificación OTP</p>
+                  </div>
+                </div>
+
+                <form onSubmit={handleRegistro} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold uppercase tracking-wider text-[#6B6560]">Nombre</Label>
+                      <Input name="nombre" placeholder="María" required minLength={2} disabled={enviando} className="border-[#E8E4DF] bg-white h-10 rounded-xl" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold uppercase tracking-wider text-[#6B6560]">Apellido</Label>
+                      <Input name="apellido" placeholder="García" required minLength={2} disabled={enviando} className="border-[#E8E4DF] bg-white h-10 rounded-xl" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-[#6B6560]">Correo electrónico</Label>
+                    <Input name="email" type="email" placeholder="maria@ejemplo.com" required disabled={enviando} className="border-[#E8E4DF] bg-white h-10 rounded-xl" />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold uppercase tracking-wider text-[#6B6560]">Contraseña</Label>
+                      <Input name="password" type="password" placeholder="Mínimo 8 caracteres" required minLength={8} disabled={enviando} className="border-[#E8E4DF] bg-white h-10 rounded-xl" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold uppercase tracking-wider text-[#6B6560]">Confirmar</Label>
+                      <Input name="confirmPassword" type="password" placeholder="Repetir contraseña" required minLength={8} disabled={enviando} className="border-[#E8E4DF] bg-white h-10 rounded-xl" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold uppercase tracking-wider text-[#6B6560]">Tipo documento</Label>
+                      <Select value={tipoDocumento} onValueChange={(v) => { if (v) setTipoDocumento(v as 'CEDULA' | 'PASAPORTE') }} disabled={enviando}>
+                        <SelectTrigger className="border-[#E8E4DF] bg-white h-10 rounded-xl">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="CEDULA">Cédula</SelectItem>
+                          <SelectItem value="PASAPORTE">Pasaporte</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold uppercase tracking-wider text-[#6B6560]">{tipoDocumento === 'CEDULA' ? 'Número de cédula' : 'Número de pasaporte'}</Label>
+                      <Input name="numeroDocumento" placeholder={tipoDocumento === 'CEDULA' ? 'V-12345678' : 'A12345678'} required minLength={4} disabled={enviando} className="border-[#E8E4DF] bg-white h-10 rounded-xl" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold uppercase tracking-wider text-[#6B6560]">Código país</Label>
+                      <Select value={codigoPais} onValueChange={(v) => { if (v) setCodigoPais(v) }} disabled={enviando}>
+                        <SelectTrigger className="border-[#E8E4DF] bg-white h-10 rounded-xl">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="+58">+58 (Venezuela)</SelectItem>
+                          <SelectItem value="+1">+1 (EE.UU.)</SelectItem>
+                          <SelectItem value="+57">+57 (Colombia)</SelectItem>
+                          <SelectItem value="+53">+53 (Cuba)</SelectItem>
+                          <SelectItem value="+52">+52 (México)</SelectItem>
+                          <SelectItem value="+54">+54 (Argentina)</SelectItem>
+                          <SelectItem value="+56">+56 (Chile)</SelectItem>
+                          <SelectItem value="+51">+51 (Perú)</SelectItem>
+                          <SelectItem value="+34">+34 (España)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold uppercase tracking-wider text-[#6B6560]">Teléfono</Label>
+                      <Input name="telefono" type="tel" placeholder="4121234567" required minLength={7} disabled={enviando} className="border-[#E8E4DF] bg-white h-10 rounded-xl" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-[#6B6560]">Rol del usuario</Label>
+                    <Select value={rol} onValueChange={(v) => { if (v) setRol(v) }} disabled={enviando}>
+                      <SelectTrigger className="border-[#E8E4DF] bg-white h-10 rounded-xl">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="HUESPED">Huésped</SelectItem>
+                        <SelectItem value="ANFITRION">Anfitrión</SelectItem>
+                        <SelectItem value="AMBOS">Ambos</SelectItem>
+                        <SelectItem value="ADMIN">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setMostrarRegistro(false)}
+                      disabled={enviando}
+                      className="flex-1 flex h-11 items-center justify-center rounded-xl border border-[#E8E4DF] text-sm font-medium text-[#6B6560] transition-colors hover:bg-[#F8F6F3]"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={enviando}
+                      className="flex-1 flex h-11 items-center justify-center gap-2 rounded-xl bg-[#1B4332] text-sm font-medium text-white transition-all hover:bg-[#2D6A4F] disabled:opacity-60"
+                    >
+                      {enviando ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Registrando...
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="h-4 w-4" />
+                          Registrar usuario
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ====== LISTA USUARIOS ====== */}
+      <motion.div variants={stagger} className="space-y-3">
         {filtrados.map((u) => {
           const expandidoCurrent = expandido === u.id
           const esCeo = u.email === CEO_EMAIL
           const esAdmin = u.rol === 'ADMIN'
           const puedeModificar = esCeo ? false : (esAdmin ? isCeo : true)
           return (
-            <motion.div
-              key={u.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              <Card className={`border-[#E8E4DF] ${!u.activo ? 'opacity-60' : ''}`}>
-                <CardContent className="p-4">
+            <motion.div key={u.id} variants={fadeUp}>
+              <Card className={`border-[#E8E4DF] overflow-hidden transition-all ${!u.activo ? 'opacity-60' : ''}`}>
+                <CardContent className="p-0">
                   <div
-                    className="flex cursor-pointer items-center justify-between"
+                    className="flex cursor-pointer items-center justify-between p-4"
                     onClick={() => setExpandido(expandidoCurrent ? null : u.id)}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F8F6F3] text-sm font-semibold text-[#1A1A1A]">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F8F6F3] text-sm font-bold text-[#1A1A1A]">
                         {u.nombre.charAt(0)}{u.apellido.charAt(0)}
                       </div>
                       <div>
-                        <p className="font-medium text-[#1A1A1A]">
-                          {u.nombre} {u.apellido}
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-[#1A1A1A]">{u.nombre} {u.apellido}</p>
                           {!u.activo && (
-                            <span className="ml-2 text-xs text-[#C1121F]">Suspendido</span>
+                            <span className="rounded-full bg-[#FEE2E2] px-2 py-0.5 text-[10px] font-bold text-[#991B1B]">SUSPENDIDO</span>
                           )}
-                        </p>
+                        </div>
                         <p className="text-xs text-[#6B6560]">{u.email}</p>
                       </div>
                     </div>
@@ -259,111 +454,122 @@ export default function AdminUsuariosPage() {
                     </div>
                   </div>
 
-                  {expandidoCurrent && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      className="mt-4 space-y-4 border-t border-[#E8E4DF] pt-4"
-                    >
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div>
-                          <span className="text-[#9E9892]">Cédula:</span>{' '}
-                          <span className="text-[#1A1A1A]">{u.cedula || 'N/A'}</span>
-                        </div>
-                        <div>
-                          <span className="text-[#9E9892]">Teléfono:</span>{' '}
-                          <span className="text-[#1A1A1A]">{u.telefono || 'N/A'}</span>
-                        </div>
-                        <div>
-                          <span className="text-[#9E9892]">Verificado:</span>{' '}
-                          <span className={u.verificado ? 'text-[#1B4332]' : 'text-[#C1121F]'}>
-                            {u.verificado ? 'Sí' : 'No'}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-[#9E9892]">Registro:</span>{' '}
-                          <span className="text-[#1A1A1A]">
-                            {new Date(u.fecha_registro).toLocaleDateString('es-VE')}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap items-end gap-3 border-t border-[#E8E4DF] pt-4">
-                        {puedeModificar ? (
-                          <>
-                            <div className="space-y-1">
-                              <p className="text-xs font-medium text-[#9E9892]">Cambiar rol:</p>
-                              <Select
-                                defaultValue={u.rol}
-                                onValueChange={(value) => handleActualizarRol(u.id, value!)}
-                                disabled={actualizando === u.id}
-                              >
-                                <SelectTrigger className="h-9 w-32 border-[#E8E4DF] text-sm">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {Object.entries(ROL_LABELS).map(([key, label]) => (
-                                    <SelectItem key={key} value={key}>{label}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                  <AnimatePresence>
+                    {expandidoCurrent && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                        className="overflow-hidden"
+                      >
+                        <div className="border-t border-[#E8E4DF] bg-[#FDFCFA] px-4 py-4 space-y-4">
+                          <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div className="rounded-xl bg-white border border-[#E8E4DF] px-3 py-2.5">
+                              <p className="text-[10px] font-medium uppercase tracking-wider text-[#9E9892]">Cédula</p>
+                              <p className="font-medium text-[#1A1A1A]">{u.cedula || 'N/A'}</p>
                             </div>
+                            <div className="rounded-xl bg-white border border-[#E8E4DF] px-3 py-2.5">
+                              <p className="text-[10px] font-medium uppercase tracking-wider text-[#9E9892]">Teléfono</p>
+                              <p className="font-medium text-[#1A1A1A]">{u.telefono || 'N/A'}</p>
+                            </div>
+                            <div className="rounded-xl bg-white border border-[#E8E4DF] px-3 py-2.5">
+                              <p className="text-[10px] font-medium uppercase tracking-wider text-[#9E9892]">Verificado</p>
+                              <p className={`font-medium ${u.verificado ? 'text-[#1B4332]' : 'text-[#C1121F]'}`}>
+                                {u.verificado ? 'Sí' : 'No'}
+                              </p>
+                            </div>
+                            <div className="rounded-xl bg-white border border-[#E8E4DF] px-3 py-2.5">
+                              <p className="text-[10px] font-medium uppercase tracking-wider text-[#9E9892]">Registro</p>
+                              <p className="font-medium text-[#1A1A1A]">{new Date(u.fecha_registro).toLocaleDateString('es-VE')}</p>
+                            </div>
+                          </div>
 
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className={u.activo
-                                ? 'border-[#C1121F] text-[#C1121F] hover:bg-[#FEE2E2]'
-                                : 'border-[#1B4332] text-[#1B4332] hover:bg-[#D8F3DC]'
-                              }
-                              disabled={actualizando === u.id}
-                              onClick={() => handleToggleActivo(u.id, u.activo)}
-                            >
-                              {actualizando === u.id ? (
-                                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                              ) : u.activo ? (
-                                <EyeOff className="mr-1 h-3 w-3" />
-                              ) : (
-                                <Eye className="mr-1 h-3 w-3" />
-                              )}
-                              {u.activo ? 'Suspender' : 'Reactivar'}
-                            </Button>
+                          {puedeModificar ? (
+                            <div className="flex flex-wrap items-end gap-3 border-t border-[#E8E4DF] pt-4">
+                              <div className="space-y-1.5">
+                                <p className="text-[10px] font-medium uppercase tracking-wider text-[#9E9892]">Cambiar rol</p>
+                                <Select
+                                  defaultValue={u.rol}
+                                  onValueChange={(value) => handleActualizarRol(u.id, value!)}
+                                  disabled={actualizando === u.id}
+                                >
+                                  <SelectTrigger className="h-9 w-36 border-[#E8E4DF] bg-white rounded-xl text-sm">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {Object.entries(ROL_LABELS).map(([key, label]) => (
+                                      <SelectItem key={key} value={key}>{label}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
 
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="border-[#C1121F] text-[#C1121F] hover:bg-[#FEE2E2]"
-                              disabled={actualizando === u.id}
-                              onClick={() => {
-                                if (confirm(`¿Eliminar a ${u.nombre} ${u.apellido}? Esta acción es irreversible.`)) {
-                                  handleEliminar(u.id)
-                                }
-                              }}
-                            >
-                              <Trash2 className="mr-1 h-3 w-3" />
-                              Eliminar
-                            </Button>
-                          </>
-                        ) : esCeo ? (
-                          <p className="text-xs text-[#9E9892] italic">Cuenta protegida — solo modificable desde Supabase</p>
-                        ) : (
-                          <p className="text-xs text-[#9E9892] italic">Solo el CEO puede modificar otros administradores</p>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
+                              <button
+                                className={`flex h-9 items-center gap-1.5 rounded-xl border px-4 text-sm font-medium transition-all ${
+                                  u.activo
+                                    ? 'border-[#C1121F]/30 text-[#C1121F] hover:bg-[#FEE2E2]'
+                                    : 'border-[#1B4332]/30 text-[#1B4332] hover:bg-[#D8F3DC]'
+                                }`}
+                                disabled={actualizando === u.id}
+                                onClick={() => handleToggleActivo(u.id, u.activo)}
+                              >
+                                {actualizando === u.id ? (
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : u.activo ? (
+                                  <EyeOff className="h-3.5 w-3.5" />
+                                ) : (
+                                  <Eye className="h-3.5 w-3.5" />
+                                )}
+                                {u.activo ? 'Suspender' : 'Reactivar'}
+                              </button>
+
+                              <button
+                                className="flex h-9 items-center gap-1.5 rounded-xl border border-[#C1121F]/30 px-4 text-sm font-medium text-[#C1121F] transition-all hover:bg-[#FEE2E2]"
+                                disabled={actualizando === u.id}
+                                onClick={() => {
+                                  if (confirm(`¿Eliminar a ${u.nombre} ${u.apellido}? Esta acción es irreversible.`)) {
+                                    handleEliminar(u.id)
+                                  }
+                                }}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                                Eliminar
+                              </button>
+                            </div>
+                          ) : esCeo ? (
+                            <div className="border-t border-[#E8E4DF] pt-4">
+                              <div className="flex items-center gap-2 rounded-xl bg-[#FEF9E7] border border-[#F5D060]/30 px-4 py-3 text-xs text-[#B8860B]">
+                                <Shield className="h-4 w-4 shrink-0" />
+                                <span className="font-medium">Cuenta protegida — solo modificable desde Supabase</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="border-t border-[#E8E4DF] pt-4">
+                              <div className="flex items-center gap-2 rounded-xl bg-[#F3E8FF] border border-[#7C3AED]/20 px-4 py-3 text-xs text-[#7C3AED]">
+                                <Shield className="h-4 w-4 shrink-0" />
+                                <span className="font-medium">Solo el CEO puede modificar otros administradores</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </CardContent>
               </Card>
             </motion.div>
           )
         })}
-      </div>
+      </motion.div>
 
-      <RegistrarUsuarioModal
-        abierto={modalRegistroAbierto}
-        onCerrar={() => setModalRegistroAbierto(false)}
-        onRegistrado={cargarUsuarios}
-      />
-    </div>
+      {filtrados.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-16 text-[#9E9892]">
+          <UsersIcon className="h-12 w-12 mb-3 opacity-40" />
+          <p className="text-sm font-medium">No se encontraron usuarios</p>
+          <p className="text-xs mt-1">Intenta ajustar los filtros o la búsqueda</p>
+        </div>
+      )}
+    </motion.div>
   )
 }
