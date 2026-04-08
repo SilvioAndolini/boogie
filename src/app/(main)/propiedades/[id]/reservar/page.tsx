@@ -9,6 +9,7 @@ import { PaymentForm } from '@/components/pagos/payment-form'
 import { formatPrecio, formatFecha } from '@/lib/format'
 import { COMISION_PLATAFORMA_HUESPED } from '@/lib/constants'
 import { crearReserva } from '@/actions/reserva.actions'
+import { registrarPagoReserva } from '@/actions/pago-reserva.actions'
 import { toast } from 'sonner'
 import type { MetodoPagoEnum } from '@/types'
 
@@ -101,9 +102,37 @@ function ReservarContent() {
         cantidadHuespedes: huespedes,
       })
 
-      if (result.exito) {
+      if (result.exito && result.datos) {
         const referencia = paymentFormData.get('referencia') as string
-        console.log('[reserva] Pago referencia:', referencia, 'metodo:', metodoPago)
+        const bancoEmisor = paymentFormData.get('bancoEmisor') as string
+        const telefonoEmisor = paymentFormData.get('telefonoEmisor') as string
+        const comprobanteFile = paymentFormData.get('comprobante') as File | null
+
+        if (referencia && metodoPago) {
+          let comprobanteBase64: string | undefined
+          let comprobanteExt: string | undefined
+
+          if (comprobanteFile) {
+            comprobanteExt = comprobanteFile.name.split('.').pop() || 'jpg'
+            const bytes = new Uint8Array(await comprobanteFile.arrayBuffer())
+            let binary = ''
+            for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
+            comprobanteBase64 = btoa(binary)
+          }
+
+          await registrarPagoReserva({
+            reservaId: result.datos.id,
+            monto: total,
+            moneda: propiedad.moneda,
+            metodoPago: metodoPago,
+            referencia,
+            bancoEmisor: bancoEmisor || undefined,
+            telefonoEmisor: telefonoEmisor || undefined,
+            comprobanteBase64,
+            comprobanteExt,
+          })
+        }
+
         setPaso('confirmacion')
       } else if (result.error) {
         toast.error(result.error.mensaje)
