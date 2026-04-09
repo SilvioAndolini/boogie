@@ -719,7 +719,7 @@ async function _getPropiedadPorIdInternal(idOrSlug: string): Promise<PropiedadDe
 
   let query = supabase
     .from('propiedades')
-    .select('*, propietario:usuarios!propietario_id(id, nombre, apellido, avatar_url, verificado, plan_suscripcion, bio, reputacion, reputacion_manual)')
+    .select('*, propietario:usuarios!propietario_id(id, nombre, apellido, avatar_url, verificado, plan_suscripcion, bio)')
 
   if (isUUID) {
     query = query.eq('id', idOrSlug)
@@ -757,9 +757,17 @@ async function _getPropiedadPorIdInternal(idOrSlug: string): Promise<PropiedadDe
   let hostReputacion: number | null = null
   let hostReputacionManual = false
   if (propietarioRaw?.id) {
-    hostReputacionManual = (propietarioRaw.reputacion_manual as boolean) ?? false
+    const { data: hostProfile } = await supabase
+      .from('usuarios')
+      .select('reputacion, reputacion_manual')
+      .eq('id', propietarioRaw.id as string)
+      .single()
+
+    hostReputacionManual = (hostProfile as Record<string, unknown>)?.reputacion_manual as boolean ?? false
     if (hostReputacionManual) {
-      hostReputacion = propietarioRaw.reputacion != null ? Number(propietarioRaw.reputacion) : null
+      hostReputacion = (hostProfile as Record<string, unknown>)?.reputacion != null
+        ? Number((hostProfile as Record<string, unknown>).reputacion)
+        : null
     } else {
       const { data: hostResenas } = await supabase
         .from('resenas')
