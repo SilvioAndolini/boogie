@@ -6,14 +6,17 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, Shield, CalendarDays, Users, Loader2,
   MapPin, Receipt, Check, Home, ArrowRight, Clock, DollarSign,
+  Sparkles,
 } from 'lucide-react'
 import { PaymentMethodSelector } from '@/components/pagos/payment-method-selector'
 import { PaymentForm } from '@/components/pagos/payment-form'
+import { BoogieStore } from '@/components/reservas/boogie-store'
 import { COMISION_PLATAFORMA_HUESPED } from '@/lib/constants'
 import { crearReserva } from '@/actions/reserva.actions'
 import { registrarPagoReserva } from '@/actions/pago-reserva.actions'
 import { toast } from 'sonner'
 import type { MetodoPagoEnum } from '@/types'
+import type { CartItem } from '@/lib/store-constants'
 
 interface PropiedadReserva {
   id: string
@@ -45,6 +48,7 @@ function formatDateLong(d: Date) {
 
 const PASOS = [
   { id: 'resumen', label: 'Resumen', icon: Receipt },
+  { id: 'store', label: 'Boogie Store', icon: Sparkles },
   { id: 'pago', label: 'Pago', icon: Shield },
   { id: 'confirmacion', label: 'Listo', icon: Check },
 ] as const
@@ -60,6 +64,8 @@ function ReservarContent() {
   const [propiedad, setPropiedad] = useState<PropiedadReserva | null>(null)
   const [cargando, setCargando] = useState(true)
   const [creandoReserva, setCreandoReserva] = useState(false)
+  const [storeCart, setStoreCart] = useState<CartItem[]>([])
+  const [tasaCambio, setTasaCambio] = useState(78.39)
 
   const propiedadId = params.id as string
   const entradaStr = searchParams.get('entrada') || ''
@@ -92,19 +98,34 @@ function ReservarContent() {
       finally { setCargando(false) }
     }
     fetchPropiedad()
+
+    const fetchTasa = async () => {
+      try {
+        const { getCotizacionEuro } = await import('@/lib/services/exchange-rate')
+        const cot = await getCotizacionEuro()
+        setTasaCambio(cot.tasa)
+      } catch {}
+    }
+    fetchTasa()
   }, [propiedadId, entradaStr, salidaStr, router])
 
   const noches = Math.ceil((fechaSalida.getTime() - fechaEntrada.getTime()) / (1000 * 60 * 60 * 24))
   const precioPorNoche = propiedad?.precioPorNoche || 0
   const subtotal = noches * precioPorNoche
   const comision = Math.round(subtotal * COMISION_PLATAFORMA_HUESPED * 100) / 100
-  const total = subtotal + comision
+
+  const storeTotal = storeCart.reduce((sum, item) => {
+    const esPorNoche = item.tipo === 'servicio' && item.tipoPrecio === 'POR_NOCHE'
+    return sum + (esPorNoche ? item.precio * noches : item.precio) * item.cantidad
+  }, 0)
+
+  const total = subtotal + comision + storeTotal
 
   const handlePaymentSubmit = async (paymentFormData: FormData) => {
     if (!propiedad || !metodoPago) return
     setCreandoReserva(true)
     try {
-      console.log('[ReservarPage] Creando reserva...', { propiedadId: propiedad.id, fechaEntrada, fechaSalida, huespedes })
+      console.log('[ReservarPage] Creando reserva...', { propiedadId: propiedad.id, fechaEntrada, fechaSalida, huespedes, storeItems: storeCart.length })
       const result = await crearReserva({
         propiedadId: propiedad.id,
         fechaEntrada: fechaEntrada.toISOString(),
@@ -114,6 +135,25 @@ function ReservarContent() {
       console.log('[ReservarPage] Result:', result)
 
       if (result.exito && result.datos) {
+        if (storeCart.length > 0) {
+          const admin = (await import('@/lib/supabase/admin')).createAdminClient
+          const supabase = admin()
+          const storeItems = storeCart.map((item) => ({
+            reserva_id: result.datos!.id,
+            tipo_item: item.tipo,
+            nombre: item.nombre,
+            cantidad: item.cantidad,
+            precio_unitario: item.precio,
+            moneda: item.moneda,
+            subtotal: (item.tipo === 'servicio' && item.tipoPrecio === 'POR_NOCHE'
+              ? item.precio * noches
+              : item.precio) * item.cantidad,
+            producto_id: item.tipo === 'producto' ? item.id : null,
+            servicio_id: item.tipo === 'servicio' ? item.id : null,
+          }))
+          await supabase.from('reserva_store_items').insert(storeItems)
+        }
+
         const referencia = paymentFormData.get('referencia') as string
         const bancoEmisor = paymentFormData.get('bancoEmisor') as string
         const telefonoEmisor = paymentFormData.get('telefonoEmisor') as string
@@ -164,17 +204,29 @@ function ReservarContent() {
   const imagenPrincipal = propiedad.imagenes?.find((i) => i.es_principal)?.url || propiedad.imagenes?.[0]?.url
   const pasoIndex = PASOS.findIndex((p) => p.id === paso)
 
+  const getBackAction = () => {
+    if (paso === 'store') return () => setPaso('resumen')
+    if (paso === 'pago') return () => setPaso('store')
+    return () => router.back()
+  }
+
+  const getBackLabel = () => {
+    if (paso === 'store') return 'Volver al resumen'
+    if (paso === 'pago') return 'Volver al store'
+    return 'Volver'
+  }
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
 
       {/* ====== BACK ====== */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-6">
         <button
-          onClick={() => paso === 'pago' ? setPaso('resumen') : router.back()}
+          onClick={getBackAction()}
           className="flex items-center gap-2 text-sm text-[#9E9892] hover:text-[#1A1A1A] transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
-          {paso === 'pago' ? 'Volver al resumen' : 'Volver'}
+          {getBackLabel()}
         </button>
       </motion.div>
 
@@ -198,7 +250,7 @@ function ReservarContent() {
                 </span>
               </div>
               {i < PASOS.length - 1 && (
-                <div className={`mx-3 h-px w-16 transition-colors duration-300 ${pasoIndex > i ? 'bg-[#52B788]' : 'bg-[#E8E4DF]'}`} />
+                <div className={`mx-3 h-px w-10 transition-colors duration-300 ${pasoIndex > i ? 'bg-[#52B788]' : 'bg-[#E8E4DF]'}`} />
               )}
             </div>
           )
@@ -249,13 +301,13 @@ function ReservarContent() {
                 </div>
                 <div className="flex items-center gap-2.5 text-sm">
                   <Clock className="h-3.5 w-3.5 text-[#9E9892] shrink-0" />
-                  <span className="text-[#9E9892]">Duración</span>
+                  <span className="text-[#9E9892]">Duracion</span>
                   <span className="flex-1 border-b border-dotted border-[#E8E4DF] min-w-[12px]" />
                   <span className="font-medium text-[#1A1A1A]">{noches} noche{noches > 1 ? 's' : ''}</span>
                 </div>
                 <div className="flex items-center gap-2.5 text-sm">
                   <Users className="h-3.5 w-3.5 text-[#9E9892] shrink-0" />
-                  <span className="text-[#9E9892]">Huéspedes</span>
+                  <span className="text-[#9E9892]">Huespedes</span>
                   <span className="flex-1 border-b border-dotted border-[#E8E4DF] min-w-[12px]" />
                   <span className="font-medium text-[#1A1A1A]">{huespedes}</span>
                 </div>
@@ -273,7 +325,7 @@ function ReservarContent() {
                 </div>
                 <div className="flex items-center gap-2.5 text-sm">
                   <Shield className="h-3.5 w-3.5 text-[#9E9892] shrink-0" />
-                  <span className="text-[#9E9892]">Comisión ({(COMISION_PLATAFORMA_HUESPED * 100).toFixed(0)}%)</span>
+                  <span className="text-[#9E9892]">Comision ({(COMISION_PLATAFORMA_HUESPED * 100).toFixed(0)}%)</span>
                   <span className="flex-1 border-b border-dotted border-[#E8E4DF] min-w-[12px]" />
                   <span className="font-medium text-[#1A1A1A]">{formatUSD(comision)}</span>
                 </div>
@@ -281,20 +333,36 @@ function ReservarContent() {
                   <DollarSign className="h-3.5 w-3.5 text-[#1B4332] shrink-0" />
                   <span className="font-bold text-[#1A1A1A]">Total</span>
                   <span className="flex-1 border-b border-dotted border-[#1B4332]/30 min-w-[12px]" />
-                  <span className="text-lg font-bold text-[#1B4332]">{formatUSD(total)}</span>
+                  <span className="text-lg font-bold text-[#1B4332]">{formatUSD(subtotal + comision)}</span>
                 </div>
               </div>
             </motion.div>
 
             <motion.div variants={fadeUp}>
               <button
-                onClick={() => setPaso('pago')}
+                onClick={() => setPaso('store')}
                 className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1B4332] text-sm font-semibold text-white transition-all hover:bg-[#2D6A4F] active:scale-[0.98]"
               >
-                Continuar al pago
+                <Sparkles className="h-4 w-4" />
+                Arma tu Boogie!
                 <ArrowRight className="h-4 w-4" />
               </button>
             </motion.div>
+          </motion.div>
+        )}
+
+        {paso === 'store' && (
+          <motion.div key="store" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }}>
+            <BoogieStore
+              noches={noches}
+              tasaCambio={tasaCambio}
+              initialCart={storeCart}
+              onBack={() => setPaso('resumen')}
+              onContinue={(cart) => {
+                setStoreCart(cart)
+                setPaso('pago')
+              }}
+            />
           </motion.div>
         )}
 
@@ -311,10 +379,31 @@ function ReservarContent() {
                 </div>
                 <div className="text-right">
                   <p className="text-[10px] text-white/40">{propiedad.titulo}</p>
-                  <p className="text-xs text-white/60">{formatDateShort(fechaEntrada)} → {formatDateShort(fechaSalida)}</p>
+                  <p className="text-xs text-white/60">{formatDateShort(fechaEntrada)} &rarr; {formatDateShort(fechaSalida)}</p>
+                  {storeCart.length > 0 && (
+                    <p className="mt-0.5 text-[10px] text-[#52B788]">+ {storeCart.length} item{storeCart.length > 1 ? 's' : ''} del store</p>
+                  )}
                 </div>
               </div>
             </div>
+
+            {storeTotal > 0 && (
+              <div className="rounded-xl border border-[#D8F3DC] bg-[#D8F3DC]/20 p-3">
+                <p className="text-xs font-semibold text-[#1B4332] mb-1.5">Boogie Store</p>
+                <div className="space-y-1">
+                  {storeCart.map((item) => (
+                    <div key={`${item.tipo}-${item.id}`} className="flex items-center justify-between text-xs">
+                      <span className="text-[#6B6560]">{item.nombre} x{item.cantidad}</span>
+                      <span className="font-medium text-[#1A1A1A]">{formatUSD((item.tipo === 'servicio' && item.tipoPrecio === 'POR_NOCHE' ? item.precio * noches : item.precio) * item.cantidad)}</span>
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-between border-t border-[#D8F3DC] pt-1 mt-1">
+                    <span className="font-semibold text-[#1B4332]">Subtotal store</span>
+                    <span className="font-bold text-[#1B4332]">{formatUSD(storeTotal)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <PaymentMethodSelector selected={metodoPago} onSelect={setMetodoPago} />
 
@@ -340,10 +429,10 @@ function ReservarContent() {
                   <Check className="h-8 w-8 text-white" />
                 </div>
 
-                <h2 className="text-xl font-bold text-[#1A1A1A]">¡Reserva registrada!</h2>
+                <h2 className="text-xl font-bold text-[#1A1A1A]">Reserva registrada!</h2>
 
                 <p className="max-w-sm text-sm text-[#6B6560] leading-relaxed">
-                  Tu pago está en verificación. Te notificaremos por correo cuando sea confirmado.
+                  Tu pago esta en verificacion. Te notificaremos por correo cuando sea confirmado.
                 </p>
 
                 <div className="mt-2 flex gap-3">

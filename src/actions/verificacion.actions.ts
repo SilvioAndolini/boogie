@@ -332,6 +332,8 @@ export async function actualizarRolUsuario(formData: FormData) {
     rol: (formData.get('rol') as string) || undefined,
     activo: (formData.get('activo') as string) || undefined,
     plan: (formData.get('plan') as string) || undefined,
+    reputacion: (formData.get('reputacion') as string) || undefined,
+    reputacionManual: (formData.get('reputacion_manual') as string) || undefined,
   }
 
   const parsed = adminActualizarRolSchema.safeParse(raw)
@@ -340,7 +342,7 @@ export async function actualizarRolUsuario(formData: FormData) {
     return { error: firstError }
   }
 
-  const { usuarioId, rol, activo, plan } = parsed.data as { usuarioId: string; rol?: string; activo?: string; plan?: string }
+  const { usuarioId, rol, activo, plan, reputacion, reputacionManual } = parsed.data as { usuarioId: string; rol?: string; activo?: string; plan?: string; reputacion?: string; reputacionManual?: string }
 
   if (usuarioId === auth.userId && rol && rol !== 'ADMIN') {
     return { error: 'No puedes quitarte tu propio rol de administrador' }
@@ -365,6 +367,8 @@ export async function actualizarRolUsuario(formData: FormData) {
   if (rol) updateData.rol = rol
   if (activo !== undefined) updateData.activo = activo === 'true'
   if (plan) updateData.plan_suscripcion = plan
+  if (reputacion !== undefined) updateData.reputacion = reputacion ? parseFloat(reputacion) : null
+  if (reputacionManual !== undefined) updateData.reputacion_manual = reputacionManual === 'true'
 
   const { error } = await admin
     .from('usuarios')

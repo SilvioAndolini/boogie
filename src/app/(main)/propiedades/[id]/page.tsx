@@ -222,8 +222,8 @@ export default async function PropiedadDetallePage({ params }: Props) {
                   verificado={propiedad.propietario.verificado}
                   plan_suscripcion={propiedad.propietario.plan_suscripcion}
                   bio={propiedad.propietario.bio}
-                  ratingPromedio={propiedad.propietario.ratingPromedio}
-                  totalResenas={propiedad.propietario.totalResenas}
+                  reputacion={propiedad.propietario.reputacion}
+                  reputacionManual={propiedad.propietario.reputacionManual}
                 />
               </div>
             )}

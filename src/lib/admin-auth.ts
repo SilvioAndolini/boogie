@@ -16,6 +16,8 @@ export type EntidadAuditable =
   | 'notificacion'
   | 'configuracion'
   | 'seccion_destacada'
+  | 'store_producto'
+  | 'store_servicio'
 
 export async function requireAdmin() {
   const user = await getUsuarioAutenticado()

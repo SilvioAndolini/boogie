@@ -26,6 +26,8 @@ model Usuario {
   rol             Rol      @default(BOOGER)
   planSuscripcion PlanSuscripcion @default(FREE) @map("plan_suscripcion")
   bio             String?  @db.Text
+  reputacion      Decimal? @db.Decimal(3, 1)
+  reputacionManual Boolean @default(false) @map("reputacion_manual")
   fechaRegistro   DateTime @default(now()) @map("fecha_registro")
   ultimaActividad DateTime @default(now()) @map("ultima_actividad")
   activo          Boolean  @default(true)
@@ -230,6 +232,7 @@ model Reserva {
   huesped             Usuario       @relation("Huesped", fields: [huespedId], references: [id])
   pagos               Pago[]
   resena              Resena?
+  storeItems          ReservaStoreItem[]
 
   @@index([propiedadId, fechaEntrada, fechaSalida])
   @@index([huespedId])
@@ -405,4 +408,91 @@ enum TipoNotificacion {
   PAGO_VERIFICADO
   RECORDATORIO
   SISTEMA
+}
+
+// =============================================
+// BOOGIE STORE — PRODUCTOS Y SERVICIOS
+// =============================================
+
+enum CategoriaStoreProducto {
+  HIGIENE
+  CUIDADO_PERSONAL
+  CONSUMIBLES
+  SNACKS
+  BEBIDAS
+  OTRO
+}
+
+enum CategoriaStoreServicio {
+  GASTRONOMIA
+  UTILIDADES
+  TRANSPORTE
+  LIMPIEZA
+  OTRO
+}
+
+enum TipoPrecio {
+  FIJO
+  POR_NOCHE
+}
+
+model StoreProducto {
+  id          String                @id @default(cuid())
+  nombre      String
+  descripcion String?               @db.Text
+  precio      Decimal               @db.Decimal(10, 2)
+  moneda      Moneda                @default(USD)
+  imagenUrl   String?               @map("imagen_url")
+  categoria   CategoriaStoreProducto
+  activo      Boolean               @default(true)
+  orden       Int                   @default(0)
+  fechaCreacion   DateTime          @default(now()) @map("fecha_creacion")
+  fechaActualizacion DateTime       @default(now()) @updatedAt @map("fecha_actualizacion")
+
+  reservaItems ReservaStoreItem[]
+
+  @@index([categoria])
+  @@index([activo])
+  @@map("store_productos")
+}
+
+model StoreServicio {
+  id          String                @id @default(cuid())
+  nombre      String
+  descripcion String?               @db.Text
+  precio      Decimal               @db.Decimal(10, 2)
+  moneda      Moneda                @default(USD)
+  tipoPrecio  TipoPrecio            @map("tipo_precio")
+  imagenUrl   String?               @map("imagen_url")
+  categoria   CategoriaStoreServicio
+  activo      Boolean               @default(true)
+  orden       Int                   @default(0)
+  fechaCreacion   DateTime          @default(now()) @map("fecha_creacion")
+  fechaActualizacion DateTime       @default(now()) @updatedAt @map("fecha_actualizacion")
+
+  reservaItems ReservaStoreItem[]
+
+  @@index([categoria])
+  @@index([activo])
+  @@map("store_servicios")
+}
+
+model ReservaStoreItem {
+  id          String    @id @default(cuid())
+  reservaId   String    @map("reserva_id")
+  tipoItem    String    @map("tipo_item")
+  nombre      String
+  cantidad    Int       @default(1)
+  precioUnitario Decimal @map("precio_unitario") @db.Decimal(10, 2)
+  moneda      Moneda    @default(USD)
+  subtotal    Decimal   @db.Decimal(10, 2)
+
+  reserva     Reserva   @relation(fields: [reservaId], references: [id], onDelete: Cascade)
+  productoId  String?   @map("producto_id")
+  producto    StoreProducto? @relation(fields: [productoId], references: [id])
+  servicioId  String?   @map("servicio_id")
+  servicio    StoreServicio? @relation(fields: [servicioId], references: [id])
+
+  @@index([reservaId])
+  @@map("reserva_store_items")
 }

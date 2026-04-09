@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Users as UsersIcon, Search, Loader2, Shield, EyeOff, UserPlus, Trash2, X,
-  CreditCard, Phone, CalendarDays, BadgeCheck, Ban, ArrowRightLeft, Crown, Sparkles,
+  CreditCard, Phone, CalendarDays, BadgeCheck, Ban, ArrowRightLeft, Crown, Sparkles, Star,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -34,6 +34,8 @@ interface Usuario {
   plan_suscripcion: 'FREE' | 'ULTRA'
   activo: boolean
   fecha_registro: string
+  reputacion: number | null
+  reputacion_manual: boolean
 }
 
 const ROL_LABELS: Record<string, string> = {
@@ -139,6 +141,18 @@ export default function AdminUsuariosPage() {
     const res = await actualizarRolUsuario(formData)
     if (res.error) toast.error(res.error)
     else { toast.success(`Plan cambiado a ${PLAN_LABELS[plan]}`); await cargarUsuarios() }
+    setActualizando(null)
+  }
+
+  const handleCambiarReputacion = async (usuarioId: string, valor: string, manual: boolean) => {
+    setActualizando(usuarioId)
+    const formData = new FormData()
+    formData.append('usuarioId', usuarioId)
+    formData.append('reputacion', valor)
+    formData.append('reputacion_manual', String(manual))
+    const res = await actualizarRolUsuario(formData)
+    if (res.error) toast.error(res.error)
+    else { toast.success(manual ? 'Reputación manual establecida' : 'Reputación automática restaurada'); await cargarUsuarios() }
     setActualizando(null)
   }
 
@@ -609,6 +623,68 @@ export default function AdminUsuariosPage() {
                                 </SelectContent>
                               </Select>
                             </div>
+
+                            {(u.rol === 'ANFITRION' || u.rol === 'AMBOS') && (
+                              <div className="flex items-center gap-2 border-t border-[#E8E4DF] px-5 py-3 bg-[#FDFCFA]">
+                                <Star className={`h-3.5 w-3.5 shrink-0 ${u.reputacion ? 'fill-[#F4A261] text-[#F4A261]' : 'text-[#9E9892]'}`} />
+                                <span className="text-[11px] font-medium text-[#6B6560]">Reputación</span>
+                                {u.reputacion_manual && (
+                                  <span className="rounded bg-[#E0F2FE] px-1 py-px text-[8px] font-bold text-[#0369A1]">MANUAL</span>
+                                )}
+                                <span className="flex-1" />
+                                <div className="flex items-center gap-1.5">
+                                  <Select
+                                    defaultValue={u.reputacion_manual ? 'manual' : 'auto'}
+                                    onValueChange={(value) => {
+                                      if (value === 'auto') {
+                                        handleCambiarReputacion(u.id, '', false)
+                                      }
+                                    }}
+                                    disabled={actualizando === u.id}
+                                  >
+                                    <SelectTrigger className="h-8 w-24 border border-transparent bg-white shadow-sm rounded-lg text-[10px] font-medium text-[#6B6560] hover:border-[#E8E4DF]">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="auto">Automático</SelectItem>
+                                      <SelectItem value="manual">Manual</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  {u.reputacion_manual && (
+                                    <div className="flex items-center gap-1">
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        max="5"
+                                        step="0.1"
+                                        defaultValue={u.reputacion ?? ''}
+                                        placeholder="0.0"
+                                        className="h-8 w-14 rounded-lg border border-[#E8E4DF] bg-white px-2 text-xs font-semibold text-[#1A1A1A] text-center focus:border-[#1B4332] focus:outline-none"
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') {
+                                            e.preventDefault()
+                                            const val = (e.target as HTMLInputElement).value
+                                            handleCambiarReputacion(u.id, val, true)
+                                          }
+                                        }}
+                                        onBlur={(e) => {
+                                          const val = e.target.value
+                                          if (val !== String(u.reputacion ?? '')) {
+                                            handleCambiarReputacion(u.id, val, true)
+                                          }
+                                        }}
+                                      />
+                                      <span className="text-[10px] text-[#9E9892]">/5</span>
+                                    </div>
+                                  )}
+                                  {!u.reputacion_manual && (
+                                    <span className={`text-xs font-bold ${u.reputacion ? 'text-[#1A1A1A]' : 'text-[#9E9892]'}`}>
+                                      {u.reputacion ? u.reputacion.toFixed(1) : '0.0'}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         ) : esCeo ? (
                           <div className="flex items-center gap-2 border-t border-[#E8E4DF] px-5 py-3 bg-[#FEF9E7]">
