@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Home, MapPin, Sparkles, Check, Upload, X, Loader2, DollarSign, Clock, Pencil, BedDouble, Bath, CookingPot, Sofa, TreePine, Waves, Mountain, HelpCircle } from 'lucide-react'
+import { ArrowLeft, Home, MapPin, Sparkles, Check, Upload, X, Loader2, DollarSign, Clock, Pencil, BedDouble, Bath, CookingPot, Sofa, TreePine, Waves, Mountain, HelpCircle, ChevronDown, Camera } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -87,6 +87,7 @@ export default function NuevaPropiedadPage() {
   const [imagenCategorias, setImagenCategorias] = useState<string[]>([])
   const [customInputVisible, setCustomInputVisible] = useState<number | null>(null)
   const [customInputValue, setCustomInputValue] = useState('')
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
   const [optimizando, setOptimizando] = useState(false)
   const [latitud, setLatitud] = useState<number | null>(null)
   const [longitud, setLongitud] = useState<number | null>(null)
@@ -236,6 +237,39 @@ export default function NuevaPropiedadPage() {
     const trimmed = customInputValue.trim()
     if (!trimmed) return
     setCategoriaImagen(index, `personalizada:${trimmed}`)
+  }
+
+  const groupedImages = useMemo(() => {
+    const map = new Map<string, { parsed: ReturnType<typeof parseCategoria>; indices: number[] }>()
+    previews.forEach((_, i) => {
+      const cat = imagenCategorias[i] || 'otro'
+      if (!map.has(cat)) {
+        map.set(cat, { parsed: parseCategoria(cat), indices: [] })
+      }
+      map.get(cat)!.indices.push(i)
+    })
+    const entries = Array.from(map.entries())
+    entries.sort((a, b) => {
+      const aIsCustom = a[0].startsWith('personalizada:')
+      const bIsCustom = b[0].startsWith('personalizada:')
+      const aIsOther = a[0] === 'otro'
+      const bIsOther = b[0] === 'otro'
+      if (aIsOther && !bIsOther) return 1
+      if (!aIsOther && bIsOther) return -1
+      if (aIsCustom && !bIsCustom) return 1
+      if (!aIsCustom && bIsCustom) return -1
+      return 0
+    })
+    return entries
+  }, [previews, imagenCategorias])
+
+  const toggleGroup = (key: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
   }
 
   const handleCrearBoogie = async () => {
@@ -538,6 +572,11 @@ export default function NuevaPropiedadPage() {
               <h3 className="text-sm font-semibold text-[#1A1A1A]">Fotos del boogie</h3>
               <p className="text-[10px] text-[#9E9892]">Sube fotos y clasifica cada una en su sección</p>
             </div>
+            {previews.length > 0 && (
+              <span className="ml-auto rounded-full bg-[#1B4332] px-2 py-0.5 text-[10px] font-bold text-white">
+                {previews.length}/{MAX_IMAGENES_PROPIEDAD}
+              </span>
+            )}
           </div>
           <div
             onClick={() => !optimizando && fileInputRef.current?.click()}
@@ -563,78 +602,31 @@ export default function NuevaPropiedadPage() {
             )}
           </div>
           <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleImagenes(e.target.files)} />
-          {previews.length > 0 && (
-            <div className="mt-4 space-y-3">
-              {previews.map((src, i) => {
-                const parsed = parseCategoria(imagenCategorias[i] || 'otro')
-                const CatIcon = parsed.icon
-                const isCustomizing = customInputVisible === i
+          {groupedImages.length > 0 && (
+            <div className="mt-4 space-y-2">
+              {groupedImages.map(([catKey, group]) => {
+                const { parsed, indices } = group
+                const GroupIcon = parsed.icon
+                const isCollapsed = collapsedGroups.has(catKey)
+                const isUnassigned = catKey === 'otro'
                 return (
-                  <div key={src} className="group rounded-xl border border-[#E8E4DF] bg-[#FDFCFA] transition-all hover:border-[#D4CFC9]">
-                    <div className="flex gap-3 p-2">
-                      <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg">
-                        <img src={src} alt="" className="h-full w-full object-cover" />
-                        {i === 0 && (
-                          <span className="absolute bottom-0.5 left-0.5 rounded bg-[#1B4332] px-1.5 py-px text-[9px] font-bold text-white">Principal</span>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => removeImagen(i)}
-                          className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                      <div className="flex flex-1 flex-col justify-center gap-1.5">
-                        <span className={`inline-flex w-fit items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${parsed.color}`}>
-                          <CatIcon className="h-3 w-3" />
-                          {parsed.label}
-                        </span>
-                        <div className="flex flex-wrap gap-1">
-                          {CATEGORIAS_IMAGEN.map((c) => {
-                            const isActive = parsed.key === c.value
-                            return (
-                              <button
-                                key={c.value}
-                                type="button"
-                                onClick={() => setCategoriaImagen(i, c.value)}
-                                className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[9px] font-medium transition-all ${
-                                  isActive
-                                    ? `${c.color} ring-1 ring-inset`
-                                    : 'bg-white text-[#9E9892] hover:bg-[#F4F1EC]'
-                                }`}
-                              >
-                                <c.icon className="h-2.5 w-2.5" />
-                                {c.label}
-                              </button>
-                            )
-                          })}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (isCustomizing) {
-                                setCustomInputVisible(null)
-                              } else {
-                                setCustomInputVisible(i)
-                                setCustomInputValue('')
-                              }
-                            }}
-                            className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[9px] font-medium transition-all ${
-                              parsed.key.startsWith('personalizada:')
-                                ? `${CUSTOM_COLOR} ring-1 ring-inset`
-                                : isCustomizing
-                                  ? 'bg-orange-50 text-orange-600 ring-1 ring-inset ring-orange-200'
-                                  : 'bg-white text-[#9E9892] hover:bg-[#F4F1EC]'
-                            }`}
-                          >
-                            <HelpCircle className="h-2.5 w-2.5" />
-                            Personalizar
-                          </button>
-                        </div>
-                      </div>
-                    </div>
+                  <div key={catKey} className="overflow-hidden rounded-xl border border-[#E8E4DF]">
+                    <button
+                      type="button"
+                      onClick={() => toggleGroup(catKey)}
+                      className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-[#FDFCFA] ${
+                        isUnassigned ? 'bg-[#FDFCFA]' : 'bg-white'
+                      }`}
+                    >
+                      <span className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${parsed.color}`}>
+                        <GroupIcon className="h-3 w-3" />
+                        {isUnassigned ? 'Sin clasificar' : parsed.label}
+                      </span>
+                      <span className="text-[10px] text-[#9E9892]">{indices.length} {indices.length === 1 ? 'foto' : 'fotos'}</span>
+                      <ChevronDown className={`ml-auto h-4 w-4 text-[#9E9892] transition-transform ${isCollapsed ? '' : 'rotate-180'}`} />
+                    </button>
                     <AnimatePresence>
-                      {isCustomizing && (
+                      {!isCollapsed && (
                         <motion.div
                           initial={{ height: 0, opacity: 0 }}
                           animate={{ height: 'auto', opacity: 1 }}
@@ -642,26 +634,105 @@ export default function NuevaPropiedadPage() {
                           transition={{ duration: 0.2 }}
                           className="overflow-hidden"
                         >
-                          <div className="flex items-center gap-2 border-t border-[#F4F1EC] px-3 py-2">
-                            <input
-                              type="text"
-                              value={customInputValue}
-                              onChange={(e) => setCustomInputValue(e.target.value)}
-                              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); confirmCustomCategoria(i) } }}
-                              placeholder="Ej: Terraza, Garage, Lobby..."
-                              maxLength={30}
-                              className="h-7 flex-1 rounded-md border border-[#E8E4DF] bg-white px-2 text-[11px] text-[#1A1A1A] placeholder:text-[#C4BFBA] focus:border-[#1B4332] focus:outline-none focus:ring-1 focus:ring-[#1B4332]/20"
-                              autoFocus
-                            />
-                            <button
-                              type="button"
-                              onClick={() => confirmCustomCategoria(i)}
-                              disabled={!customInputValue.trim()}
-                              className="flex h-7 items-center gap-1 rounded-md bg-[#1B4332] px-2.5 text-[10px] font-medium text-white transition-colors hover:bg-[#2D6A4F] disabled:opacity-40"
-                            >
-                              <Check className="h-3 w-3" />
-                              Aplicar
-                            </button>
+                          <div className="border-t border-[#F4F1EC] p-3 space-y-2.5">
+                            {indices.map((imgIdx) => {
+                              const isCustomizing = customInputVisible === imgIdx
+                              return (
+                                <div key={previews[imgIdx]} className="group rounded-lg bg-[#FDFCFA] p-2 transition-all hover:bg-white">
+                                  <div className="flex gap-3">
+                                    <div className="relative h-18 w-18 shrink-0 overflow-hidden rounded-lg">
+                                      <img src={previews[imgIdx]} alt="" className="h-[72px] w-[72px] object-cover" />
+                                      {imgIdx === 0 && (
+                                        <span className="absolute bottom-0.5 left-0.5 rounded bg-[#1B4332] px-1.5 py-px text-[9px] font-bold text-white">Principal</span>
+                                      )}
+                                      <button
+                                        type="button"
+                                        onClick={() => removeImagen(imgIdx)}
+                                        className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </button>
+                                    </div>
+                                    <div className="flex flex-1 flex-col justify-center gap-1.5">
+                                      <div className="flex flex-wrap gap-1">
+                                        {CATEGORIAS_IMAGEN.map((c) => {
+                                          const isActive = (imagenCategorias[imgIdx] || 'otro') === c.value
+                                          return (
+                                            <button
+                                              key={c.value}
+                                              type="button"
+                                              onClick={() => setCategoriaImagen(imgIdx, c.value)}
+                                              className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[9px] font-medium transition-all ${
+                                                isActive
+                                                  ? `${c.color} ring-1 ring-inset`
+                                                  : 'bg-white text-[#9E9892] hover:bg-[#F4F1EC]'
+                                              }`}
+                                            >
+                                              <c.icon className="h-2.5 w-2.5" />
+                                              {c.label}
+                                            </button>
+                                          )
+                                        })}
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            if (isCustomizing) {
+                                              setCustomInputVisible(null)
+                                            } else {
+                                              setCustomInputVisible(imgIdx)
+                                              setCustomInputValue('')
+                                            }
+                                          }}
+                                          className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[9px] font-medium transition-all ${
+                                            (imagenCategorias[imgIdx] || 'otro').startsWith('personalizada:')
+                                              ? `${CUSTOM_COLOR} ring-1 ring-inset`
+                                              : isCustomizing
+                                                ? 'bg-orange-50 text-orange-600 ring-1 ring-inset ring-orange-200'
+                                                : 'bg-white text-[#9E9892] hover:bg-[#F4F1EC]'
+                                          }`}
+                                        >
+                                          <HelpCircle className="h-2.5 w-2.5" />
+                                          Personalizar
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <AnimatePresence>
+                                    {isCustomizing && (
+                                      <motion.div
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: 'auto', opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="overflow-hidden"
+                                      >
+                                        <div className="flex items-center gap-2 pt-2">
+                                          <input
+                                            type="text"
+                                            value={customInputValue}
+                                            onChange={(e) => setCustomInputValue(e.target.value)}
+                                            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); confirmCustomCategoria(imgIdx) } }}
+                                            placeholder="Ej: Terraza, Garage, Lobby..."
+                                            maxLength={30}
+                                            className="h-7 flex-1 rounded-md border border-[#E8E4DF] bg-white px-2 text-[11px] text-[#1A1A1A] placeholder:text-[#C4BFBA] focus:border-[#1B4332] focus:outline-none focus:ring-1 focus:ring-[#1B4332]/20"
+                                            autoFocus
+                                          />
+                                          <button
+                                            type="button"
+                                            onClick={() => confirmCustomCategoria(imgIdx)}
+                                            disabled={!customInputValue.trim()}
+                                            className="flex h-7 items-center gap-1 rounded-md bg-[#1B4332] px-2.5 text-[10px] font-medium text-white transition-colors hover:bg-[#2D6A4F] disabled:opacity-40"
+                                          >
+                                            <Check className="h-3 w-3" />
+                                            Aplicar
+                                          </button>
+                                        </div>
+                                      </motion.div>
+                                    )}
+                                  </AnimatePresence>
+                                </div>
+                              )
+                            })}
                           </div>
                         </motion.div>
                       )}
