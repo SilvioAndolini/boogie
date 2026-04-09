@@ -5,6 +5,33 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin, logAdminAction } from '@/lib/admin-auth'
 import type { EntidadAuditable } from '@/lib/admin-auth'
 
+export async function subirImagenStore(formData: FormData): Promise<{ url?: string; error?: string }> {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
+  const file = formData.get('imagen') as File | null
+  if (!file) return { error: 'No se recibio la imagen' }
+
+  try {
+    const admin = createAdminClient()
+    const ext = file.name.split('.').pop() || 'webp'
+    const path = `store/${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${ext}`
+    const buffer = Buffer.from(await file.arrayBuffer())
+
+    const { error: uploadError } = await admin.storage
+      .from('imagenes')
+      .upload(path, buffer, { contentType: file.type, upsert: true })
+
+    if (uploadError) return { error: uploadError.message }
+
+    const { data: urlData } = admin.storage.from('imagenes').getPublicUrl(path)
+    return { url: urlData.publicUrl }
+  } catch (err) {
+    console.error('[subirImagenStore] Error:', err)
+    return { error: 'Error al subir la imagen' }
+  }
+}
+
 export async function getProductosStoreAdmin() {
   const auth = await requireAdmin()
   if (auth.error) return []

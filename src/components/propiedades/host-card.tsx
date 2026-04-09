@@ -30,7 +30,7 @@ export function HostCard({
       className={`relative overflow-hidden rounded-2xl border p-5 ${
         isUltra
           ? 'border-amber-300/50 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50'
-          : 'border-[#E8E4DF] bg-white'
+          : 'border-[#E8E4DF] bg-gradient-to-br from-[#F0FDF4] via-white to-[#FAFDF7]'
       }`}
     >
       {isUltra && (
@@ -44,7 +44,7 @@ export function HostCard({
               src={avatar_url}
               alt={displayName}
               className={`h-14 w-14 rounded-full object-cover ring-2 ${
-                isUltra ? 'ring-amber-300/60' : 'ring-[#E8E4DF]'
+                isUltra ? 'ring-amber-300/60' : 'ring-[#1B4332]/20'
               }`}
             />
           ) : (
@@ -52,7 +52,7 @@ export function HostCard({
               className={`flex h-14 w-14 items-center justify-center rounded-full text-sm font-bold ${
                 isUltra
                   ? 'bg-gradient-to-br from-amber-200 to-yellow-300 text-amber-800 ring-2 ring-amber-300/60'
-                  : 'bg-[#F4F1EC] text-[#1A1A1A] ring-2 ring-[#E8E4DF]'
+                  : 'bg-gradient-to-br from-[#1B4332] to-[#40916C] text-white ring-2 ring-[#1B4332]/20'
               }`}
             >
               {initials}
@@ -87,7 +87,7 @@ export function HostCard({
 
           <p className="text-[11px] font-medium text-[#9E9892]">Anfitrión</p>
 
-          <div className="mt-2 flex items-center gap-1.5">
+          <div className="mt-2 flex items-center gap-2">
             <div className="flex items-center gap-1">
               <Star
                 className={`h-4 w-4 ${rating > 0 ? 'fill-[#F4A261] text-[#F4A261]' : 'fill-[#E8E4DF] text-[#E8E4DF]'}`}
@@ -96,24 +96,25 @@ export function HostCard({
                 {rating > 0 ? rating.toFixed(1) : '0.0'}
               </span>
             </div>
+            <div className="h-3 w-px bg-[#E8E4DF]" />
+            <button
+              type="button"
+              className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-medium transition-colors ${
+                isUltra
+                  ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                  : 'bg-[#D8F3DC] text-[#1B4332] hover:bg-[#B7E4C7]'
+              }`}
+              title="Enviar mensaje al anfitrión"
+            >
+              <MessageCircle className="h-3 w-3" />
+              Mensaje
+            </button>
           </div>
         </div>
-
-        <button
-          type="button"
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors ${
-            isUltra
-              ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-              : 'bg-[#F4F1EC] text-[#6B6560] hover:bg-[#E8E4DF]'
-          }`}
-          title="Enviar mensaje"
-        >
-          <MessageCircle className="h-4 w-4" />
-        </button>
       </div>
 
       {bio && (
-        <p className="mt-3 text-[11px] leading-relaxed text-[#6B6560] line-clamp-3">
+        <p className="mt-3 border-t border-[#E8E4DF]/50 pt-3 text-[11px] leading-relaxed text-[#6B6560] line-clamp-3">
           {bio}
         </p>
       )}

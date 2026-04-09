@@ -207,7 +207,7 @@ function ReservarContent() {
   const getBackAction = () => {
     if (paso === 'store') return () => setPaso('resumen')
     if (paso === 'pago') return () => setPaso('store')
-    return () => router.back()
+    return () => router.push(`/propiedades/${propiedadId}`)
   }
 
   const getBackLabel = () => {

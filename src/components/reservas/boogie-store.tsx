@@ -232,9 +232,15 @@ export function BoogieStore({ noches, tasaCambio, onContinue, onBack, initialCar
                           qty > 0 ? 'border-[#52B788] ring-1 ring-[#52B788]/30' : 'border-[#E8E4DF]'
                         }`}
                       >
-                        <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-[#D8F3DC]/60">
-                          <Package className="h-5 w-5 text-[#1B4332]" />
-                        </div>
+                        {prod.imagenUrl ? (
+                          <div className="relative mb-2 h-20 w-full overflow-hidden rounded-lg bg-[#F8F6F3]">
+                            <img src={prod.imagenUrl} alt={prod.nombre} className="h-full w-full object-cover" />
+                          </div>
+                        ) : (
+                          <div className="mb-2 flex h-20 items-center justify-center rounded-lg bg-[#D8F3DC]/40">
+                            <Package className="h-8 w-8 text-[#1B4332]/30" />
+                          </div>
+                        )}
                         <h3 className="text-xs font-bold text-[#1A1A1A] leading-tight">{prod.nombre}</h3>
                         {prod.descripcion && (
                           <p className="mt-0.5 text-[10px] text-[#9E9892] line-clamp-2">{prod.descripcion}</p>
@@ -282,9 +288,15 @@ export function BoogieStore({ noches, tasaCambio, onContinue, onBack, initialCar
                         }`}
                       >
                         <div className="flex items-start gap-3">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#D8F3DC]/60">
-                            <ConciergeBell className="h-5 w-5 text-[#1B4332]" />
-                          </div>
+                          {serv.imagenUrl ? (
+                            <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg">
+                              <img src={serv.imagenUrl} alt={serv.nombre} className="h-full w-full object-cover" />
+                            </div>
+                          ) : (
+                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-[#D8F3DC]/60">
+                              <ConciergeBell className="h-5 w-5 text-[#1B4332]" />
+                            </div>
+                          )}
                           <div className="flex-1 min-w-0">
                             <h3 className="text-sm font-bold text-[#1A1A1A]">{serv.nombre}</h3>
                             {serv.descripcion && (
@@ -417,15 +429,21 @@ export function BoogieStore({ noches, tasaCambio, onContinue, onBack, initialCar
                   <div className="space-y-3">
                     {cart.map((item) => (
                       <div key={`${item.tipo}-${item.id}`} className="flex items-center gap-3 rounded-xl border border-[#E8E4DF] p-3">
-                        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-                          item.tipo === 'producto' ? 'bg-[#D8F3DC]/60' : 'bg-[#FEF3C7]/60'
-                        }`}>
-                          {item.tipo === 'producto' ? (
-                            <Package className="h-4 w-4 text-[#1B4332]" />
-                          ) : (
-                            <ConciergeBell className="h-4 w-4 text-[#92400E]" />
-                          )}
-                        </div>
+                        {item.imagenUrl ? (
+                          <div className="h-9 w-9 shrink-0 overflow-hidden rounded-lg">
+                            <img src={item.imagenUrl} alt={item.nombre} className="h-full w-full object-cover" />
+                          </div>
+                        ) : (
+                          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                            item.tipo === 'producto' ? 'bg-[#D8F3DC]/60' : 'bg-[#FEF3C7]/60'
+                          }`}>
+                            {item.tipo === 'producto' ? (
+                              <Package className="h-4 w-4 text-[#1B4332]" />
+                            ) : (
+                              <ConciergeBell className="h-4 w-4 text-[#92400E]" />
+                            )}
+                          </div>
+                        )}
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-bold text-[#1A1A1A] truncate">{item.nombre}</p>
                           <p className="text-[10px] text-[#9E9892]">

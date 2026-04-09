@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus, Trash2, Edit3, Check, X, Package, ConciergeBell,
-  ShoppingBag, Loader2, ChevronDown, DollarSign,
+  ShoppingBag, Loader2, ImageIcon, Upload,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { AdminHeader } from '@/components/admin/admin-header'
@@ -17,7 +17,9 @@ import {
   crearServicioStore,
   actualizarServicioStore,
   eliminarServicioStore,
+  subirImagenStore,
 } from '@/actions/admin-boogie-store.actions'
+import { optimizeImage } from '@/lib/image-optimize'
 import { CATEGORIAS_STORE_PRODUCTO, CATEGORIAS_STORE_SERVICIO, TIPOS_PRECIO_LABELS } from '@/lib/store-constants'
 import type { CategoriaStoreProducto, CategoriaStoreServicio, TipoPrecio } from '@/lib/store-constants'
 
@@ -61,6 +63,7 @@ export default function BoogieStoreAdminPage() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
 
   const [formNombre, setFormNombre] = useState('')
   const [formDescripcion, setFormDescripcion] = useState('')
@@ -69,6 +72,10 @@ export default function BoogieStoreAdminPage() {
   const [formCategoria, setFormCategoria] = useState('')
   const [formTipoPrecio, setFormTipoPrecio] = useState<'FIJO' | 'POR_NOCHE'>('FIJO')
   const [formOrden, setFormOrden] = useState('0')
+  const [formImagenUrl, setFormImagenUrl] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
+
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -88,8 +95,32 @@ export default function BoogieStoreAdminPage() {
     setFormCategoria('')
     setFormTipoPrecio('FIJO')
     setFormOrden('0')
+    setFormImagenUrl(null)
     setEditingId(null)
     setShowForm(false)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploading(true)
+    try {
+      const optimized = await optimizeImage(file)
+      const fd = new FormData()
+      fd.append('imagen', optimized)
+      const res = await subirImagenStore(fd)
+      if (res.error) {
+        toast.error(res.error)
+      } else if (res.url) {
+        setFormImagenUrl(res.url)
+      }
+    } catch {
+      toast.error('Error al procesar la imagen')
+    } finally {
+      setUploading(false)
+    }
   }
 
   const handleSaveProducto = async () => {
@@ -97,23 +128,26 @@ export default function BoogieStoreAdminPage() {
       toast.error('Completa todos los campos requeridos')
       return
     }
+    setSaving(true)
     const datos = {
       nombre: formNombre.trim(),
       descripcion: formDescripcion.trim() || undefined,
       precio: parseFloat(formPrecio),
       moneda: formMoneda,
+      imagenUrl: formImagenUrl || undefined,
       categoria: formCategoria,
       orden: parseInt(formOrden) || 0,
     }
     if (editingId) {
       const res = await actualizarProductoStore(editingId, datos)
-      if (res.error) { toast.error(res.error); return }
+      if (res.error) { toast.error(res.error); setSaving(false); return }
       toast.success('Producto actualizado')
     } else {
       const res = await crearProductoStore(datos)
-      if (res.error) { toast.error(res.error); return }
+      if (res.error) { toast.error(res.error); setSaving(false); return }
       toast.success('Producto creado')
     }
+    setSaving(false)
     resetForm()
     load()
   }
@@ -123,24 +157,27 @@ export default function BoogieStoreAdminPage() {
       toast.error('Completa todos los campos requeridos')
       return
     }
+    setSaving(true)
     const datos = {
       nombre: formNombre.trim(),
       descripcion: formDescripcion.trim() || undefined,
       precio: parseFloat(formPrecio),
       moneda: formMoneda,
       tipoPrecio: formTipoPrecio,
+      imagenUrl: formImagenUrl || undefined,
       categoria: formCategoria,
       orden: parseInt(formOrden) || 0,
     }
     if (editingId) {
       const res = await actualizarServicioStore(editingId, datos)
-      if (res.error) { toast.error(res.error); return }
+      if (res.error) { toast.error(res.error); setSaving(false); return }
       toast.success('Servicio actualizado')
     } else {
       const res = await crearServicioStore(datos)
-      if (res.error) { toast.error(res.error); return }
+      if (res.error) { toast.error(res.error); setSaving(false); return }
       toast.success('Servicio creado')
     }
+    setSaving(false)
     resetForm()
     load()
   }
@@ -153,6 +190,7 @@ export default function BoogieStoreAdminPage() {
     setFormMoneda(p.moneda as 'USD' | 'VES')
     setFormCategoria(p.categoria)
     setFormOrden(String(p.orden))
+    setFormImagenUrl(p.imagen_url)
     setShowForm(true)
   }
 
@@ -165,6 +203,7 @@ export default function BoogieStoreAdminPage() {
     setFormCategoria(s.categoria)
     setFormTipoPrecio(s.tipo_precio as 'FIJO' | 'POR_NOCHE')
     setFormOrden(String(s.orden))
+    setFormImagenUrl(s.imagen_url)
     setShowForm(true)
   }
 
@@ -255,6 +294,53 @@ export default function BoogieStoreAdminPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="col-span-2">
+                    <label className="mb-1 block text-xs font-medium text-[#6B6560]">Imagen</label>
+                    <div className="flex items-center gap-3">
+                      <div
+                        onClick={() => !uploading && fileInputRef.current?.click()}
+                        className="group relative flex h-20 w-20 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-[#E8E4DF] bg-[#F8F6F3] transition-all hover:border-[#1B4332]/40"
+                      >
+                        {formImagenUrl ? (
+                          <>
+                            <img src={formImagenUrl} alt="" className="h-full w-full object-cover" />
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition-opacity group-hover:opacity-100">
+                              <Upload className="h-5 w-5 text-white" />
+                            </div>
+                          </>
+                        ) : (
+                          <div className="flex flex-col items-center gap-1">
+                            {uploading ? (
+                              <Loader2 className="h-5 w-5 animate-spin text-[#9E9892]" />
+                            ) : (
+                              <ImageIcon className="h-5 w-5 text-[#9E9892]" />
+                            )}
+                            <span className="text-[9px] text-[#9E9892]">Subir</span>
+                          </div>
+                        )}
+                      </div>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                      />
+                      <div className="flex-1">
+                        <p className="text-xs text-[#6B6560]">
+                          {formImagenUrl ? 'Imagen cargada. Click para cambiar.' : 'Click para subir una imagen.'}
+                        </p>
+                        {formImagenUrl && (
+                          <button
+                            onClick={() => { setFormImagenUrl(null); if (fileInputRef.current) fileInputRef.current.value = '' }}
+                            className="mt-1 text-xs text-[#C1121F] hover:underline"
+                          >
+                            Eliminar imagen
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-span-2">
                     <label className="mb-1 block text-xs font-medium text-[#6B6560]">Nombre *</label>
                     <input
                       value={formNombre}
@@ -341,9 +427,10 @@ export default function BoogieStoreAdminPage() {
                   </button>
                   <button
                     onClick={tab === 'productos' ? handleSaveProducto : handleSaveServicio}
-                    className="flex items-center gap-2 rounded-lg bg-[#1B4332] px-4 py-2 text-sm font-semibold text-white hover:bg-[#2D6A4F]"
+                    disabled={saving || uploading}
+                    className="flex items-center gap-2 rounded-lg bg-[#1B4332] px-4 py-2 text-sm font-semibold text-white hover:bg-[#2D6A4F] disabled:opacity-50"
                   >
-                    <Check className="h-4 w-4" />
+                    {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                     {editingId ? 'Actualizar' : 'Crear'}
                   </button>
                 </div>
@@ -374,9 +461,13 @@ export default function BoogieStoreAdminPage() {
                         p.activo ? 'border-[#E8E4DF]' : 'border-[#E8E4DF] opacity-50'
                       }`}
                     >
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#D8F3DC]/60">
-                        <Package className="h-5 w-5 text-[#1B4332]" />
-                      </div>
+                      {p.imagen_url ? (
+                        <img src={p.imagen_url} alt={p.nombre} className="h-12 w-12 shrink-0 rounded-lg object-cover" />
+                      ) : (
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[#D8F3DC]/60">
+                          <Package className="h-5 w-5 text-[#1B4332]" />
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-bold text-[#1A1A1A]">{p.nombre}</p>
@@ -388,9 +479,9 @@ export default function BoogieStoreAdminPage() {
                         </div>
                         <p className="text-xs text-[#9E9892]">
                           {CATEGORIAS_STORE_PRODUCTO[p.categoria as CategoriaStoreProducto] || p.categoria}
-                          {' &bull; '}
+                          {' \u2022 '}
                           {p.moneda === 'USD' ? '$' : 'Bs.'}{Number(p.precio).toFixed(2)}
-                          {' &bull; '}
+                          {' \u2022 '}
                           Orden: {p.orden}
                         </p>
                         {p.descripcion && <p className="mt-0.5 text-[11px] text-[#9E9892] line-clamp-1">{p.descripcion}</p>}
@@ -438,9 +529,13 @@ export default function BoogieStoreAdminPage() {
                         s.activo ? 'border-[#E8E4DF]' : 'border-[#E8E4DF] opacity-50'
                       }`}
                     >
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#FEF3C7]/60">
-                        <ConciergeBell className="h-5 w-5 text-[#92400E]" />
-                      </div>
+                      {s.imagen_url ? (
+                        <img src={s.imagen_url} alt={s.nombre} className="h-12 w-12 shrink-0 rounded-lg object-cover" />
+                      ) : (
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[#FEF3C7]/60">
+                          <ConciergeBell className="h-5 w-5 text-[#92400E]" />
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-bold text-[#1A1A1A]">{s.nombre}</p>
@@ -455,9 +550,9 @@ export default function BoogieStoreAdminPage() {
                         </div>
                         <p className="text-xs text-[#9E9892]">
                           {CATEGORIAS_STORE_SERVICIO[s.categoria as CategoriaStoreServicio] || s.categoria}
-                          {' &bull; '}
+                          {' \u2022 '}
                           {s.moneda === 'USD' ? '$' : 'Bs.'}{Number(s.precio).toFixed(2)}
-                          {' &bull; '}
+                          {' \u2022 '}
                           Orden: {s.orden}
                         </p>
                         {s.descripcion && <p className="mt-0.5 text-[11px] text-[#9E9892] line-clamp-1">{s.descripcion}</p>}
