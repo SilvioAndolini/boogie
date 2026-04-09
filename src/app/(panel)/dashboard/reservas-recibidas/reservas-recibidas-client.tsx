@@ -62,11 +62,11 @@ function ReservaRecibidaCard({ reserva }: { reserva: ReservaConPropiedad }) {
   const esPendiente = reserva.estado === 'PENDIENTE'
 
   return (
-    <Card className="border-[#E8E4DF] transition-shadow hover:shadow-md">
+    <Card className="border-[#E8E4DF] transition-all hover:border-[#52B788]/50 hover:shadow-md">
       <CardContent className="py-4">
         <div className="flex items-start gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#D8F3DC] to-[#F8F6F3]">
-            <Home className="h-6 w-6 text-[#1B4332]/30" />
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#D8F3DC]">
+            <Home className="h-5 w-5 text-[#1B4332]" />
           </div>
 
           <div className="min-w-0 flex-1">
@@ -85,7 +85,7 @@ function ReservaRecibidaCard({ reserva }: { reserva: ReservaConPropiedad }) {
               <CalendarDays className="h-3 w-3" />
               {formatFechaCorta(reserva.fechaEntrada)} — {formatFechaCorta(reserva.fechaSalida)}
             </div>
-            <p className="text-xs text-[#9E9892]">
+            <p className="text-[10px] text-[#9E9892]">
               {reserva.cantidadHuespedes} huésped{reserva.cantidadHuespedes > 1 ? 's' : ''} · {reserva.noches} noche{reserva.noches > 1 ? 's' : ''}
             </p>
           </div>
@@ -130,15 +130,25 @@ export function ReservasRecibidasClient({ reservas }: { reservas: ReservaConProp
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-[#1A1A1A]">Reservas recibidas</h1>
-        <p className="text-sm text-[#6B6560]">Gestiona las reservas que reciben tus propiedades</p>
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1B4332] via-[#2D6A4F] to-[#40916C]">
+        <div className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-white/5" />
+        <div className="pointer-events-none absolute -bottom-8 -left-8 h-36 w-36 rounded-full bg-white/5" />
+        <div className="pointer-events-none absolute bottom-4 right-20 h-20 w-20 rounded-full bg-white/[0.03]" />
+        <div className="relative flex items-center gap-4 p-6">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/10">
+            <Inbox className="h-6 w-6 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl font-bold tracking-tight text-white sm:text-2xl">Reservas recibidas</h1>
+            <p className="text-sm text-white/70">Gestiona las reservas que reciben tus propiedades</p>
+          </div>
+        </div>
       </div>
 
       {reservas.length === 0 ? (
         <Card className="border-[#E8E4DF]">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#F8F6F3]">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-[#F8F6F3]">
               <Inbox className="h-8 w-8 text-[#9E9892]" />
             </div>
             <h3 className="text-lg font-semibold text-[#1A1A1A]">No tienes reservas recibidas</h3>
@@ -146,7 +156,7 @@ export function ReservasRecibidasClient({ reservas }: { reservas: ReservaConProp
               Cuando tus Boogies reciban solicitudes de reserva, aparecerán aquí para que puedas confirmarlas o rechazarlas.
             </p>
             <Link href="/dashboard/mis-propiedades/nueva">
-              <Button className="mt-6 bg-[#1B4332] text-white hover:bg-[#2D6A4F]">
+              <Button className="mt-6 gap-2 bg-[#1B4332] text-white hover:bg-[#2D6A4F]">
                 Publicar boogie
               </Button>
             </Link>
@@ -172,7 +182,9 @@ export function ReservasRecibidasClient({ reservas }: { reservas: ReservaConProp
                   <Icono className="h-4 w-4" />
                   {p.etiqueta}
                   {cantidad > 0 && (
-                    <span className="rounded-full bg-[#F8F6F3] px-2 py-0.5 text-xs text-[#6B6560]">
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                      esActiva ? 'bg-[#D8F3DC] text-[#1B4332]' : 'bg-[#F8F6F3] text-[#6B6560]'
+                    }`}>
                       {cantidad}
                     </span>
                   )}
@@ -184,7 +196,7 @@ export function ReservasRecibidasClient({ reservas }: { reservas: ReservaConProp
           {reservasActuales.length === 0 ? (
             <Card className="border-[#E8E4DF]">
               <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#F8F6F3]">
+                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-[#F8F6F3]">
                   <Inbox className="h-6 w-6 text-[#9E9892]" />
                 </div>
                 <h3 className="text-sm font-semibold text-[#1A1A1A]">

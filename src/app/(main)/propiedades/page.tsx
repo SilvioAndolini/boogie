@@ -24,6 +24,7 @@ interface PropiedadesPageProps {
     huespedes?: string
     habitaciones?: string
     banos?: string
+    amenidades?: string
     ordenarPor?: string
   }>
 }
@@ -46,6 +47,7 @@ export default async function PropiedadesPage({ searchParams }: PropiedadesPageP
     tipoPropiedad: params.tipoPropiedad,
     habitaciones: params.habitaciones ? Number(params.habitaciones) : undefined,
     banos: params.banos ? Number(params.banos) : undefined,
+    amenidades: params.amenidades ? params.amenidades.split(',') : undefined,
     ordenarPor: params.ordenarPor,
   })
 
@@ -60,6 +62,9 @@ export default async function PropiedadesPage({ searchParams }: PropiedadesPageP
     ratingPromedio: p.ratingPromedio ?? 0,
     totalResenas: p.totalResenas,
     imagenes: p.imagenes.map((img) => img.url),
+    habitaciones: p.habitaciones ?? 0,
+    camas: p.camas ?? 0,
+    banos: p.banos ?? 0,
   }))
 
   const propiedadesMapa: PropiedadMapa[] = resultado.datos
@@ -83,8 +88,8 @@ export default async function PropiedadesPage({ searchParams }: PropiedadesPageP
 
   return (
     <div className="min-h-screen bg-[#FEFCF9]">
-      <section className="border-b border-[#E8E4DF] bg-white py-6">
-        <div className="mx-auto max-w-[1800px] px-4 sm:px-6 lg:px-8">
+      <section className="border-b border-[#E8E4DF] bg-white py-4 sm:hidden">
+        <div className="mx-auto max-w-[1800px] px-4">
           <SearchBar />
         </div>
       </section>

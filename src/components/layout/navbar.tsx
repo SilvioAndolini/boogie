@@ -1,6 +1,7 @@
 import { getCotizacionEuro } from '@/lib/services/exchange-rate'
 import { createClient } from '@/lib/supabase/server'
 import { NavbarInner } from './navbar-inner'
+import { NavbarSearchSlot } from './navbar-search-slot'
 
 export async function Navbar() {
   const [cotizacion, supabase] = await Promise.all([
@@ -30,6 +31,8 @@ export async function Navbar() {
     : null
 
   return (
-    <NavbarInner cotizacionEuro={cotizacionData} usuario={usuario} />
+    <NavbarInner cotizacionEuro={cotizacionData} usuario={usuario}>
+      <NavbarSearchSlot />
+    </NavbarInner>
   )
 }

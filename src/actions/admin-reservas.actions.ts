@@ -6,6 +6,7 @@ import { adminActualizarReservaSchema } from '@/lib/admin-validations'
 import { puedeTransicionar } from '@/lib/reservas/estados'
 import type { EstadoReserva } from '@/types'
 import { ESTADO_RESERVA_LABELS } from '@/types/reserva'
+import { getCotizacionEuro } from '@/lib/services/exchange-rate'
 
 export async function getReservasAdmin(filtros?: {
   estado?: string
@@ -73,7 +74,7 @@ export async function getReservaDetalleAdmin(reservaId: string) {
       propiedades (id, titulo, slug, ciudad, estado, direccion, precio_por_noche, moneda,
         usuarios!propiedades_propietario_id_fkey (id, nombre, apellido, email, telefono)),
       usuarios!reservas_huesped_id_fkey (id, nombre, apellido, email, telefono, avatar_url, cedula),
-      pagos (id, monto, moneda, metodo_pago, referencia, estado, fecha_creacion, fecha_verificacion, notas_verificacion)
+      pagos (id, monto, moneda, metodo_pago, referencia, comprobante, estado, fecha_creacion, fecha_verificacion, notas_verificacion)
     `)
     .eq('id', reservaId)
     .single()
@@ -91,9 +92,13 @@ export async function getReservaDetalleAdmin(reservaId: string) {
     .order('creado_en', { ascending: false })
     .limit(10)
 
+  const cotizacion = await getCotizacionEuro()
+
   return {
     reserva: data,
     timeline: auditLog || [],
+    tasaBCV: cotizacion.tasa,
+    fuenteBCV: cotizacion.fuente,
   }
 }
 

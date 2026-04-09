@@ -98,6 +98,24 @@ export async function crearPropiedad(formData: FormData) {
   const data = validacion.data
   const supabase = createAdminClient()
 
+  const { data: usuario } = await supabase
+    .from('usuarios')
+    .select('plan_suscripcion')
+    .eq('id', user.id)
+    .single()
+
+  if (usuario?.plan_suscripcion !== 'ULTRA') {
+    const { count } = await supabase
+      .from('propiedades')
+      .select('id', { count: 'exact', head: true })
+      .eq('propietario_id', user.id)
+      .neq('estado_publicacion', 'SUSPENDIDA')
+
+    if ((count ?? 0) >= 5) {
+      return { error: 'Has alcanzado el límite de 5 boogies con el plan Boogie Free. Actualiza a Boogie Ultra para publicar más.' }
+    }
+  }
+
   const propiedadId = crypto.randomUUID()
   const slug = generarSlug(data.titulo)
 
@@ -514,6 +532,7 @@ async function _getPropiedadesPublicasInternal(filtros?: {
   tipoPropiedad?: string
   habitaciones?: number
   banos?: number
+  amenidades?: string[]
   ordenarPor?: string
   pagina?: number
 }) {
@@ -548,6 +567,35 @@ async function _getPropiedadesPublicasInternal(filtros?: {
   }
   if (filtros?.habitaciones) {
     query = query.gte('habitaciones', filtros.habitaciones)
+  }
+  if (filtros?.amenidades && filtros.amenidades.length > 0) {
+    const { data: amenidadProps } = await supabase
+      .from('propiedad_amenidades')
+      .select('propiedad_id, amenidad:amenidades(nombre)')
+      .in('amenidad.nombre', filtros.amenidades!)
+
+    const validIds = [...new Set(
+      (amenidadProps ?? [])
+        .filter((a: Record<string, unknown>) => {
+          const amenidad = a.amenidad as Record<string, unknown> | null
+          return amenidad && filtros.amenidades!.includes(amenidad.nombre as string)
+        })
+        .map((a: Record<string, unknown>) => a.propiedad_id as string)
+    )]
+
+    if (validIds.length > 0) {
+      const amenidadCount: Record<string, number> = {}
+      for (const id of validIds) {
+        amenidadCount[id] = (amenidadCount[id] || 0) + 1
+      }
+      const matchingIds = Object.entries(amenidadCount)
+        .filter(([, count]) => count >= filtros.amenidades!.length)
+        .map(([id]) => id)
+
+      query = query.in('id', matchingIds.length > 0 ? matchingIds : ['__none__'])
+    } else {
+      query = query.in('id', ['__none__'])
+    }
   }
 
   const ordenarPor = filtros?.ordenarPor || 'recientes'
@@ -653,6 +701,7 @@ export async function getPropiedadesPublicas(filtros?: {
   tipoPropiedad?: string
   habitaciones?: number
   banos?: number
+  amenidades?: string[]
   ordenarPor?: string
   pagina?: number
 }) {

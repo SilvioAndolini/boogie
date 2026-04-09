@@ -104,12 +104,14 @@ function ReservarContent() {
     if (!propiedad || !metodoPago) return
     setCreandoReserva(true)
     try {
+      console.log('[ReservarPage] Creando reserva...', { propiedadId: propiedad.id, fechaEntrada, fechaSalida, huespedes })
       const result = await crearReserva({
         propiedadId: propiedad.id,
         fechaEntrada: fechaEntrada.toISOString(),
         fechaSalida: fechaSalida.toISOString(),
         cantidadHuespedes: huespedes,
       })
+      console.log('[ReservarPage] Result:', result)
 
       if (result.exito && result.datos) {
         const referencia = paymentFormData.get('referencia') as string
@@ -127,20 +129,25 @@ function ReservarContent() {
             for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
             comprobanteBase64 = btoa(binary)
           }
-          await registrarPagoReserva({
+          const pagoResult = await registrarPagoReserva({
             reservaId: result.datos.id, monto: total, moneda: propiedad.moneda,
             metodoPago: metodoPago, referencia,
             bancoEmisor: bancoEmisor || undefined,
             telefonoEmisor: telefonoEmisor || undefined,
             comprobanteBase64, comprobanteExt,
           })
+          if (pagoResult.error) {
+            toast.error(pagoResult.error)
+          }
         }
         setPaso('confirmacion')
       } else if (result.error) {
         toast.error(result.error.mensaje)
       }
-    } catch {
-      toast.error('Error al crear la reserva')
+    } catch (err) {
+      console.error('[ReservarPage] Error:', err)
+      const msg = err instanceof Error ? err.message : 'Error al crear la reserva'
+      toast.error(msg)
     } finally {
       setCreandoReserva(false)
     }

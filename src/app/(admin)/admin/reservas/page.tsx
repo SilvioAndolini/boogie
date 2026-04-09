@@ -57,7 +57,7 @@ function formatDate(s: string) {
   return new Date(s + 'T12:00:00').toLocaleDateString('es-VE', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-const ESTADOS_FILTRO = ['TODOS', 'PENDIENTE', 'CONFIRMADA', 'EN_CURSO', 'COMPLETADA', 'CANCELADA_HUESPED', 'RECHAZADA'] as const
+const ESTADOS_FILTRO = ['TODOS', 'PENDIENTE', 'CONFIRMADA', 'EN_CURSO', 'COMPLETADA', 'CANCELADA_HUESPED', 'CANCELADA_ANFITRION', 'RECHAZADA'] as const
 
 export default function AdminReservasPage() {
   const router = useRouter()
@@ -177,7 +177,7 @@ export default function AdminReservasPage() {
               filtroEstado === e ? 'bg-[#1B4332] text-white' : 'text-[#6B6560] hover:bg-[#F8F6F3]'
             }`}
           >
-            {e === 'TODOS' ? 'Todos' : e === 'CANCELADA_HUESPED' ? 'Cancelada' : ESTADO_RESERVA_LABELS[e]}
+            {e === 'TODOS' ? 'Todos' : ESTADO_RESERVA_LABELS[e]}
           </button>
         ))}
       </motion.div>

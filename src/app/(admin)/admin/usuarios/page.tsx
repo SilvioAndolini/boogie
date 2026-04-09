@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Users as UsersIcon, Search, Loader2, Shield, EyeOff, UserPlus, Trash2, X,
-  CreditCard, Phone, CalendarDays, BadgeCheck, Ban, ArrowRightLeft,
+  CreditCard, Phone, CalendarDays, BadgeCheck, Ban, ArrowRightLeft, Crown, Sparkles,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -31,6 +31,7 @@ interface Usuario {
   cedula: string | null
   verificado: boolean
   rol: 'BOOGER' | 'ANFITRION' | 'AMBOS' | 'ADMIN'
+  plan_suscripcion: 'FREE' | 'ULTRA'
   activo: boolean
   fecha_registro: string
 }
@@ -47,6 +48,16 @@ const ROL_COLORS: Record<string, string> = {
   ANFITRION: 'bg-[#D8F3DC] text-[#1B4332]',
   AMBOS: 'bg-[#FEF9E7] text-[#B8860B]',
   ADMIN: 'bg-[#F3E8FF] text-[#7C3AED]',
+}
+
+const PLAN_LABELS: Record<string, string> = {
+  FREE: 'Boogie Free',
+  ULTRA: 'Boogie Ultra',
+}
+
+const PLAN_COLORS: Record<string, string> = {
+  FREE: 'bg-[#F8F6F3] text-[#6B6560]',
+  ULTRA: 'bg-gradient-to-r from-[#D4A017] to-[#F5D060] text-[#3D2E00]',
 }
 
 const stagger = { hidden: {}, visible: { transition: { staggerChildren: 0.04 } } }
@@ -120,6 +131,17 @@ export default function AdminUsuariosPage() {
     setActualizando(null)
   }
 
+  const handleCambiarPlan = async (usuarioId: string, plan: string) => {
+    setActualizando(usuarioId)
+    const formData = new FormData()
+    formData.append('usuarioId', usuarioId)
+    formData.append('plan', plan)
+    const res = await actualizarRolUsuario(formData)
+    if (res.error) toast.error(res.error)
+    else { toast.success(`Plan cambiado a ${PLAN_LABELS[plan]}`); await cargarUsuarios() }
+    setActualizando(null)
+  }
+
   const handleEliminar = async (usuarioId: string) => {
     setActualizando(usuarioId)
     const formData = new FormData()
@@ -169,6 +191,11 @@ export default function AdminUsuariosPage() {
     ADMIN: usuarios.filter((u) => u.rol === 'ADMIN').length,
   }
 
+  const cuentasPorPlan = {
+    FREE: usuarios.filter((u) => u.plan_suscripcion === 'FREE' || !u.plan_suscripcion).length,
+    ULTRA: usuarios.filter((u) => u.plan_suscripcion === 'ULTRA').length,
+  }
+
   if (cargando) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -199,8 +226,8 @@ export default function AdminUsuariosPage() {
         <div className="border-t border-white/10 grid grid-cols-2 sm:grid-cols-4">
           {[
             { label: 'Total', value: usuarios.length, icon: UsersIcon },
-            { label: 'Boogers', value: cuentasPorRol.BOOGER, icon: UsersIcon },
-            { label: 'Anfitriones', value: cuentasPorRol.ANFITRION, icon: UsersIcon },
+            { label: 'Free', value: cuentasPorPlan.FREE, icon: UsersIcon },
+            { label: 'Ultra', value: cuentasPorPlan.ULTRA, icon: Sparkles },
             { label: 'Admins', value: cuentasPorRol.ADMIN, icon: Shield },
           ].map((item) => (
             <div key={item.label} className="flex items-center gap-3 px-5 py-3.5 border-r border-white/10 last:border-r-0">
@@ -442,14 +469,20 @@ export default function AdminUsuariosPage() {
                       }}>
                         CEO
                       </span>
-                    ) : u.rol === 'AMBOS' ? (
-                      <div className="flex gap-1">
-                        <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide bg-[#E0F2FE] text-[#0369A1]">Booger</span>
-                        <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide bg-[#D8F3DC] text-[#1B4332]">Anfitrión</span>
-                      </div>
                     ) : (
                       <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold tracking-wide ${ROL_COLORS[u.rol]}`}>
                         {ROL_LABELS[u.rol]}
+                      </span>
+                    )}
+                    {u.plan_suscripcion === 'ULTRA' && (
+                      <span className="rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wider" style={{
+                        background: 'linear-gradient(135deg, #D4A017, #F5D060, #D4A017)',
+                        color: '#3D2E00',
+                        textShadow: '0 1px 0 rgba(255,255,255,0.3)',
+                        boxShadow: '0 1px 2px rgba(212,160,23,0.3)',
+                        border: '1px solid rgba(212,160,23,0.4)',
+                      }}>
+                        <Sparkles className="inline h-2.5 w-2.5 mr-0.5 -mt-px" />ULTRA
                       </span>
                     )}
                     <svg className={`h-4 w-4 text-[#9E9892] transition-transform duration-300 ${expandidoCurrent ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -498,50 +531,84 @@ export default function AdminUsuariosPage() {
                         </div>
 
                         {puedeModificar ? (
-                          <div className="flex items-center gap-2 border-t border-[#E8E4DF] px-5 py-3 bg-[#FDFCFA]">
-                            <div className="flex items-center gap-2 mr-auto">
-                              <ArrowRightLeft className="h-3.5 w-3.5 text-[#9E9892]" />
+                           <div className="space-y-0">
+                            <div className="flex items-center gap-2 border-t border-[#E8E4DF] px-5 py-3 bg-[#FDFCFA]">
+                              <div className="flex items-center gap-2 mr-auto">
+                                <ArrowRightLeft className="h-3.5 w-3.5 text-[#9E9892]" />
+                                <Select
+                                  defaultValue={u.rol}
+                                  onValueChange={(value) => handleActualizarRol(u.id, value!)}
+                                  disabled={actualizando === u.id}
+                                >
+                                  <SelectTrigger className="h-8 w-28 border-transparent bg-white shadow-sm rounded-lg text-xs font-medium text-[#1A1A1A] hover:border-[#E8E4DF]">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {Object.entries(ROL_LABELS).map(([key, label]) => (
+                                      <SelectItem key={key} value={key}>{label}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              <button
+                                title={u.activo ? 'Suspender usuario' : 'Reactivar usuario'}
+                                disabled={actualizando === u.id}
+                                onClick={() => handleToggleActivo(u.id, u.activo)}
+                                className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all ${
+                                  u.activo
+                                    ? 'text-[#9E9892] hover:bg-[#FEE2E2] hover:text-[#C1121F]'
+                                    : 'text-[#9E9892] hover:bg-[#D8F3DC] hover:text-[#1B4332]'
+                                }`}
+                              >
+                                {actualizando === u.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : (u.activo ? <Ban className="h-3.5 w-3.5" /> : <BadgeCheck className="h-3.5 w-3.5" />)}
+                              </button>
+
+                              <button
+                                title="Eliminar usuario"
+                                disabled={actualizando === u.id}
+                                onClick={() => {
+                                  if (confirm(`¿Eliminar a ${u.nombre} ${u.apellido}? Esta acción es irreversible.`)) {
+                                    handleEliminar(u.id)
+                                  }
+                                }}
+                                className="flex h-8 w-8 items-center justify-center rounded-lg text-[#9E9892] transition-all hover:bg-[#FEE2E2] hover:text-[#C1121F]"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+
+                            <div className="flex items-center gap-2 border-t border-[#E8E4DF] px-5 py-3 bg-[#FDFCFA]">
+                              <Crown className="h-3.5 w-3.5 text-[#D4A017] shrink-0" />
+                              <span className="text-[11px] font-medium text-[#6B6560]">Plan</span>
+                              <span className="flex-1" />
                               <Select
-                                defaultValue={u.rol}
-                                onValueChange={(value) => handleActualizarRol(u.id, value!)}
+                                defaultValue={u.plan_suscripcion || 'FREE'}
+                                onValueChange={(value) => handleCambiarPlan(u.id, value!)}
                                 disabled={actualizando === u.id}
                               >
-                                <SelectTrigger className="h-8 w-28 border-transparent bg-white shadow-sm rounded-lg text-xs font-medium text-[#1A1A1A] hover:border-[#E8E4DF]">
+                                <SelectTrigger className={`h-8 w-36 border shadow-sm rounded-lg text-xs font-semibold hover:border-[#E8E4DF] ${
+                                  u.plan_suscripcion === 'ULTRA'
+                                    ? 'border-[#D4A017]/40 bg-[#FEF9E7] text-[#B8860B]'
+                                    : 'border-transparent bg-white text-[#6B6560]'
+                                }`}>
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {Object.entries(ROL_LABELS).map(([key, label]) => (
-                                    <SelectItem key={key} value={key}>{label}</SelectItem>
-                                  ))}
+                                  <SelectItem value="FREE">
+                                    <span className="flex items-center gap-1.5">
+                                      <span>Boogie Free</span>
+                                    </span>
+                                  </SelectItem>
+                                  <SelectItem value="ULTRA">
+                                    <span className="flex items-center gap-1.5">
+                                      <Sparkles className="h-3 w-3 text-[#D4A017]" />
+                                      <span className="font-semibold text-[#B8860B]">Boogie Ultra</span>
+                                    </span>
+                                  </SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
-
-                            <button
-                              title={u.activo ? 'Suspender usuario' : 'Reactivar usuario'}
-                              disabled={actualizando === u.id}
-                              onClick={() => handleToggleActivo(u.id, u.activo)}
-                              className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all ${
-                                u.activo
-                                  ? 'text-[#9E9892] hover:bg-[#FEE2E2] hover:text-[#C1121F]'
-                                  : 'text-[#9E9892] hover:bg-[#D8F3DC] hover:text-[#1B4332]'
-                              }`}
-                            >
-                              {actualizando === u.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : (u.activo ? <Ban className="h-3.5 w-3.5" /> : <BadgeCheck className="h-3.5 w-3.5" />)}
-                            </button>
-
-                            <button
-                              title="Eliminar usuario"
-                              disabled={actualizando === u.id}
-                              onClick={() => {
-                                if (confirm(`¿Eliminar a ${u.nombre} ${u.apellido}? Esta acción es irreversible.`)) {
-                                  handleEliminar(u.id)
-                                }
-                              }}
-                              className="flex h-8 w-8 items-center justify-center rounded-lg text-[#9E9892] transition-all hover:bg-[#FEE2E2] hover:text-[#C1121F]"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
                           </div>
                         ) : esCeo ? (
                           <div className="flex items-center gap-2 border-t border-[#E8E4DF] px-5 py-3 bg-[#FEF9E7]">

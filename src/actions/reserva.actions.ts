@@ -20,16 +20,20 @@ export async function crearReserva(rawData: {
   notasHuesped?: string
 }): Promise<ResultadoAccion<ReservaConPropiedad>> {
   try {
+    console.log('[crearReserva] Inicio')
     const user = await getUsuarioAutenticado()
     if (!user) return { exito: false, error: { codigo: 'ERR-004', mensaje: 'Debes iniciar sesión para reservar' } }
+    console.log('[crearReserva] User:', user.id)
 
     const validacion = crearReservaSchema.safeParse(rawData)
     if (!validacion.success) {
+      console.log('[crearReserva] Validación falló:', validacion.error.issues[0].message)
       return { exito: false, error: { codigo: 'ERR-001', mensaje: validacion.error.issues[0].message } }
     }
 
     const datos = validacion.data
     const admin = createAdminClient()
+    console.log('[crearReserva] Buscando propiedad:', datos.propiedadId)
 
     const { data: propiedad } = await admin
       .from('propiedades')
@@ -40,6 +44,7 @@ export async function crearReserva(rawData: {
     if (!propiedad || propiedad.estado_publicacion !== 'PUBLICADA') {
       return { exito: false, error: { codigo: 'ERR-002', mensaje: 'La propiedad no está disponible' } }
     }
+    console.log('[crearReserva] Propiedad encontrada:', propiedad.titulo)
 
     if (propiedad.propietario_id === user.id) {
       return { exito: false, error: { codigo: 'ERR-002', mensaje: 'No puedes reservar tu propia propiedad' } }
@@ -68,9 +73,14 @@ export async function crearReserva(rawData: {
     const precio = Number(propiedad.precio_por_noche)
     const calculo = calcularPrecioReserva(precio, datos.fechaEntrada, datos.fechaSalida, propiedad.moneda)
 
+    const codigoReserva = 'BOO-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase()
+    const reservaId = crypto.randomUUID()
+
     const { data: reserva, error: insertError } = await admin
       .from('reservas')
       .insert({
+        id: reservaId,
+        codigo: codigoReserva,
         propiedad_id: datos.propiedadId,
         huesped_id: user.id,
         fecha_entrada: datos.fechaEntrada,
@@ -93,6 +103,7 @@ export async function crearReserva(rawData: {
       console.error('[crearReserva] Error insert:', insertError)
       return { exito: false, error: { codigo: 'ERR-010', mensaje: 'Error al crear la reserva. Intenta de nuevo.' } }
     }
+    console.log('[crearReserva] Reserva creada:', reserva.id)
 
     await admin.from('notificaciones').insert({
       tipo: 'NUEVA_RESERVA',

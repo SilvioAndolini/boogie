@@ -18,6 +18,7 @@ import {
   Shield,
   Menu,
   X,
+  LayoutGrid,
 } from 'lucide-react'
 import { getAdminCounts } from '@/actions/verificacion.actions'
 import { AdminBadgeCount } from './admin-badge-count'
@@ -36,6 +37,7 @@ const ADMIN_LINKS: AdminLink[] = [
   { href: '/admin/pagos', label: 'Pagos', icon: CreditCard, badgeKey: 'pagosPendientes' },
   { href: '/admin/verificaciones', label: 'Verificaciones', icon: FileCheck, badgeKey: 'verificacionesPendientes' },
   { href: '/admin/usuarios', label: 'Usuarios', icon: Users },
+  { href: '/admin/secciones', label: 'Secciones', icon: LayoutGrid },
   { href: '/admin/resenas', label: 'Reseñas', icon: Star },
   { href: '/admin/wallets', label: 'Wallets', icon: Wallet },
   { href: '/admin/auditoria', label: 'Auditoría', icon: ScrollText },

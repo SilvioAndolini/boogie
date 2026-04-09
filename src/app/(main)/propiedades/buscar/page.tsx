@@ -45,6 +45,9 @@ export default async function BuscarPage({ searchParams }: BuscarPageProps) {
     ratingPromedio: p.ratingPromedio ?? 0,
     totalResenas: p.totalResenas,
     imagenes: p.imagenes.map((img) => img.url),
+    habitaciones: p.habitaciones ?? 0,
+    camas: p.camas ?? 0,
+    banos: p.banos ?? 0,
   }))
 
   const propiedadesMapa = resultado.datos
@@ -68,9 +71,9 @@ export default async function BuscarPage({ searchParams }: BuscarPageProps) {
 
   return (
     <div className="min-h-screen bg-[#FEFCF9]">
-      {/* Barra de búsqueda */}
-      <section className="border-b border-[#E8E4DF] bg-white py-6">
-        <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
+      {/* Barra de búsqueda (solo mobile, en desktop está en navbar) */}
+      <section className="border-b border-[#E8E4DF] bg-white py-4 sm:hidden">
+        <div className="mx-auto max-w-[1600px] px-4">
           <SearchBar />
         </div>
       </section>
