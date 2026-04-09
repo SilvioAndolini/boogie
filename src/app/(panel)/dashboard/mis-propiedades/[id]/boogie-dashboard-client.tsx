@@ -9,6 +9,7 @@ import {
   DollarSign, TrendingUp, Users, Clock, Loader2,
   Plus, Trash2, ChevronLeft, ChevronRight, MapPin,
   Eye, X, Upload, Home, Sparkles, Bed, Bath, DoorOpen,
+  BedDouble, CookingPot, Sofa, TreePine, Waves, Mountain, HelpCircle,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts'
@@ -770,37 +771,70 @@ function EditMode({ propiedad, onSave, guardando, onCancel }: {
           ))}
 
           <div className="rounded-xl border border-[#E8E4DF] p-4">
-            <h3 className="text-sm font-semibold text-[#1A1A1A] mb-3">Imágenes</h3>
-            <div className="flex flex-wrap gap-2 mb-3">
-              {imagenesExistentes.map((img, i) => (
-                <div key={img.id ?? `img-${i}`} className="h-16 w-16 overflow-hidden rounded-lg border border-[#E8E4DF]"><img src={img.url} alt="" className="h-full w-full object-cover" /></div>
-              ))}
-              {previews.map((url, i) => (
-                <div key={i} className="overflow-hidden rounded-lg border border-[#1B4332]">
-                  <div className="relative h-16 w-16">
-                    <img src={url} alt="" className="h-full w-full object-cover" />
-                    <button type="button" onClick={() => removeImagen(i)} className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#EF4444] text-white"><X className="h-3 w-3" /></button>
-                  </div>
-                  <select
-                    value={imagenCategorias[i] || 'otro'}
-                    onChange={(e) => setImagenCategorias((p) => { const n = [...p]; n[i] = e.target.value; return n })}
-                    className="w-full border-t border-[#E8E4DF] bg-[#FDFCFA] px-1 py-0.5 text-[9px] focus:outline-none"
-                  >
-                    <option value="habitaciones">Habitaciones</option>
-                    <option value="banos">Baños</option>
-                    <option value="cocina">Cocina</option>
-                    <option value="areas_comunes">Áreas comunes</option>
-                    <option value="exterior">Exterior</option>
-                    <option value="piscina">Piscina</option>
-                    <option value="vistas">Vistas</option>
-                    <option value="otro">Otro</option>
-                  </select>
-                </div>
-              ))}
+            <div className="mb-3 flex items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#D8F3DC]">
+                <Upload className="h-3.5 w-3.5 text-[#1B4332]" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-[#1A1A1A]">Fotos</h3>
+                <p className="text-[10px] text-[#9E9892]">Clasifica cada foto nueva en su sección</p>
+              </div>
             </div>
+            {imagenesExistentes.length > 0 && (
+              <div className="mb-3">
+                <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-[#9E9892]">Fotos actuales</p>
+                <div className="flex flex-wrap gap-2">
+                  {imagenesExistentes.map((img, i) => (
+                    <div key={img.id ?? `img-${i}`} className="h-16 w-16 overflow-hidden rounded-lg border border-[#E8E4DF]"><img src={img.url} alt="" className="h-full w-full object-cover" /></div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {previews.length > 0 && (
+              <div className="mb-3 space-y-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9E9892]">Nuevas fotos</p>
+                {previews.map((url, i) => {
+                  const cats = [
+                    { value: 'habitaciones', label: 'Hab.', icon: BedDouble, color: 'bg-blue-50 text-blue-700 ring-blue-200' },
+                    { value: 'banos', label: 'Baño', icon: Bath, color: 'bg-cyan-50 text-cyan-700 ring-cyan-200' },
+                    { value: 'cocina', label: 'Cocina', icon: CookingPot, color: 'bg-amber-50 text-amber-700 ring-amber-200' },
+                    { value: 'areas_comunes', label: 'Común', icon: Sofa, color: 'bg-purple-50 text-purple-700 ring-purple-200' },
+                    { value: 'exterior', label: 'Ext.', icon: TreePine, color: 'bg-green-50 text-green-700 ring-green-200' },
+                    { value: 'piscina', label: 'Piscina', icon: Waves, color: 'bg-sky-50 text-sky-700 ring-sky-200' },
+                    { value: 'vistas', label: 'Vista', icon: Mountain, color: 'bg-rose-50 text-rose-700 ring-rose-200' },
+                    { value: 'otro', label: 'Otro', icon: HelpCircle, color: 'bg-gray-50 text-gray-600 ring-gray-200' },
+                  ]
+                  const active = cats.find((c) => c.value === (imagenCategorias[i] || 'otro')) ?? cats[7]
+                  return (
+                    <div key={i} className="group flex gap-2.5 rounded-lg border border-[#1B4332]/20 bg-[#FDFCFA] p-2">
+                      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md">
+                        <img src={url} alt="" className="h-full w-full object-cover" />
+                        <button type="button" onClick={() => removeImagen(i)} className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#EF4444] text-white"><X className="h-2.5 w-2.5" /></button>
+                      </div>
+                      <div className="flex flex-1 flex-col justify-center gap-1">
+                        <span className={`inline-flex w-fit items-center gap-0.5 rounded px-1 py-0.5 text-[9px] font-semibold ring-1 ring-inset ${active.color}`}>
+                          <active.icon className="h-2.5 w-2.5" />{active.label}
+                        </span>
+                        <div className="flex flex-wrap gap-0.5">
+                          {cats.map((c) => {
+                            const isAct = (imagenCategorias[i] || 'otro') === c.value
+                            return (
+                              <button key={c.value} type="button" onClick={() => setImagenCategorias((p) => { const n = [...p]; n[i] = c.value; return n })}
+                                className={`inline-flex items-center gap-0.5 rounded px-1 py-px text-[8px] font-medium transition-all ${isAct ? `${c.color} ring-1 ring-inset` : 'bg-white text-[#9E9892] hover:bg-[#F4F1EC]'}`}>
+                                <c.icon className="h-2 w-2" />{c.label}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
             <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleImagenes(e.target.files)} />
             <Button type="button" variant="outline" className="w-full border-dashed border-[#E8E4DF]" onClick={() => fileInputRef.current?.click()} disabled={optimizando}>
-              {optimizando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}Subir imágenes
+              {optimizando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}Subir más fotos
             </Button>
           </div>
 

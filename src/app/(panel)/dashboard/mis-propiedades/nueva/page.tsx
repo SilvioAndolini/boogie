@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Home, MapPin, Sparkles, Check, Upload, X, Loader2, DollarSign, Clock, Pencil, Tag } from 'lucide-react'
+import { ArrowLeft, Home, MapPin, Sparkles, Check, Upload, X, Loader2, DollarSign, Clock, Pencil, BedDouble, Bath, CookingPot, Sofa, TreePine, Waves, Mountain, HelpCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -32,14 +32,14 @@ const AMENIDADES = [
 ]
 
 const CATEGORIAS_IMAGEN = [
-  { value: 'habitaciones', label: 'Habitaciones' },
-  { value: 'banos', label: 'Baños' },
-  { value: 'cocina', label: 'Cocina' },
-  { value: 'areas_comunes', label: 'Áreas comunes' },
-  { value: 'exterior', label: 'Exterior' },
-  { value: 'piscina', label: 'Piscina / Deportes' },
-  { value: 'vistas', label: 'Vistas / Panorámica' },
-  { value: 'otro', label: 'Otro' },
+  { value: 'habitaciones', label: 'Habitaciones', icon: BedDouble, color: 'bg-blue-50 text-blue-700 ring-blue-200' },
+  { value: 'banos', label: 'Baños', icon: Bath, color: 'bg-cyan-50 text-cyan-700 ring-cyan-200' },
+  { value: 'cocina', label: 'Cocina', icon: CookingPot, color: 'bg-amber-50 text-amber-700 ring-amber-200' },
+  { value: 'areas_comunes', label: 'Comunes', icon: Sofa, color: 'bg-purple-50 text-purple-700 ring-purple-200' },
+  { value: 'exterior', label: 'Exterior', icon: TreePine, color: 'bg-green-50 text-green-700 ring-green-200' },
+  { value: 'piscina', label: 'Piscina', icon: Waves, color: 'bg-sky-50 text-sky-700 ring-sky-200' },
+  { value: 'vistas', label: 'Vistas', icon: Mountain, color: 'bg-rose-50 text-rose-700 ring-rose-200' },
+  { value: 'otro', label: 'Otro', icon: HelpCircle, color: 'bg-gray-50 text-gray-600 ring-gray-200' },
 ] as const
 
 const SECCIONES = [
@@ -510,7 +510,15 @@ export default function NuevaPropiedadPage() {
 
         {/* ====== IMÁGENES ====== */}
         <div className="border-t border-[#E8E4DF] px-5 py-5">
-          <h3 className="text-sm font-semibold text-[#1A1A1A] mb-3">Imágenes</h3>
+          <div className="mb-3 flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#D8F3DC]">
+              <Upload className="h-3.5 w-3.5 text-[#1B4332]" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-[#1A1A1A]">Fotos del boogie</h3>
+              <p className="text-[10px] text-[#9E9892]">Sube fotos y clasifica cada una en su sección</p>
+            </div>
+          </div>
           <div
             onClick={() => !optimizando && fileInputRef.current?.click()}
             onDragOver={(e) => { e.preventDefault(); e.stopPropagation() }}
@@ -536,36 +544,56 @@ export default function NuevaPropiedadPage() {
           </div>
           <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleImagenes(e.target.files)} />
           {previews.length > 0 && (
-            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {previews.map((src, i) => (
-                <div key={src} className="group relative overflow-hidden rounded-lg border border-[#E8E4DF]">
-                  <div className="aspect-square">
-                    <img src={src} alt="" className="h-full w-full object-cover" />
+            <div className="mt-4 space-y-3">
+              {previews.map((src, i) => {
+                const cat = CATEGORIAS_IMAGEN.find((c) => c.value === (imagenCategorias[i] || 'otro')) ?? CATEGORIAS_IMAGEN[7]
+                const CatIcon = cat.icon
+                return (
+                  <div key={src} className="group flex gap-3 rounded-xl border border-[#E8E4DF] bg-[#FDFCFA] p-2 transition-all hover:border-[#D4CFC9]">
+                    <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg">
+                      <img src={src} alt="" className="h-full w-full object-cover" />
+                      {i === 0 && (
+                        <span className="absolute bottom-0.5 left-0.5 rounded bg-[#1B4332] px-1.5 py-px text-[9px] font-bold text-white">Principal</span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeImagen(i)}
+                        className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                    <div className="flex flex-1 flex-col justify-center gap-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${cat.color}`}>
+                          <CatIcon className="h-3 w-3" />
+                          {cat.label}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {CATEGORIAS_IMAGEN.map((c) => {
+                          const isActive = (imagenCategorias[i] || 'otro') === c.value
+                          return (
+                            <button
+                              key={c.value}
+                              type="button"
+                              onClick={() => setCategoriaImagen(i, c.value)}
+                              className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[9px] font-medium transition-all ${
+                                isActive
+                                  ? `${c.color} ring-1 ring-inset`
+                                  : 'bg-white text-[#9E9892] hover:bg-[#F4F1EC]'
+                              }`}
+                            >
+                              <c.icon className="h-2.5 w-2.5" />
+                              {c.label}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
                   </div>
-                  {i === 0 && (
-                    <span className="absolute bottom-8 left-1 rounded bg-[#1B4332] px-1.5 py-0.5 text-[10px] font-medium text-white">Principal</span>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => removeImagen(i)}
-                    className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition-opacity group-hover:opacity-100"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                  <div className="flex items-center gap-1 px-1.5 py-1.5">
-                    <Tag className="h-3 w-3 shrink-0 text-[#9E9892]" />
-                    <select
-                      value={imagenCategorias[i] || 'otro'}
-                      onChange={(e) => setCategoriaImagen(i, e.target.value)}
-                      className="h-6 w-full rounded border border-[#E8E4DF] bg-[#FDFCFA] text-[10px] text-[#1A1A1A] focus:border-[#1B4332] focus:outline-none"
-                    >
-                      {CATEGORIAS_IMAGEN.map((cat) => (
-                        <option key={cat.value} value={cat.value}>{cat.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>
