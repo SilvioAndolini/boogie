@@ -66,7 +66,7 @@ export function BookingWidget({
   }
 
   return (
-    <div className="sticky top-20 rounded-xl border border-[#E8E4DF] bg-white p-5 shadow-sm">
+    <div className="rounded-xl border border-[#E8E4DF] bg-white p-4 shadow-sm sm:p-5 lg:sticky lg:top-20">
       <div className="mb-4 flex items-baseline justify-between">
         <div className="flex items-baseline gap-1">
           <AnimatePresence mode="wait" initial={false}>

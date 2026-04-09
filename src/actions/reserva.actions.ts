@@ -372,33 +372,84 @@ export async function getReservasRecibidas(): Promise<ReservaConPropiedad[]> {
   }
 }
 
-export async function getReservaPorId(reservaId: string): Promise<ReservaConPropiedad | null> {
+export async function getReservaStoreItems(reservaId: string) {
   try {
     const user = await getUsuarioAutenticado()
-    if (!user) return null
+    if (!user) return []
 
     const admin = createAdminClient()
 
     const { data: reserva } = await admin
       .from('reservas')
+      .select('id, huesped_id, propiedad_id, propiedades!propiedad_id(propietario_id)')
+      .eq('id', reservaId)
+      .single()
+
+    if (!reserva) return []
+
+    const r = reserva as Record<string, unknown>
+    const prop = r.propiedades as Record<string, unknown>
+    if (r.huesped_id !== user.id && prop.propietario_id !== user.id) return []
+
+    const { data: items } = await admin
+      .from('reserva_store_items')
+      .select('*, producto:producto_id(imagen_url), servicio:servicio_id(imagen_url)')
+      .eq('reserva_id', reservaId)
+
+    if (!items) return []
+    return items
+  } catch (err) {
+    console.error('[getReservaStoreItems] Error:', err)
+    return []
+  }
+}
+
+export async function getReservaPorId(reservaId: string): Promise<ReservaConPropiedad | null> {
+  try {
+    const user = await getUsuarioAutenticado()
+    if (!user) {
+      console.error('[getReservaPorId] No hay usuario autenticado')
+      return null
+    }
+
+    const admin = createAdminClient()
+
+    const { data: reserva, error: queryError } = await admin
+      .from('reservas')
       .select(`
         id, codigo, fecha_entrada, fecha_salida, noches, precio_por_noche,
         subtotal, comision_plataforma, total, moneda, cantidad_huespedes,
         estado, notas_huesped, fecha_creacion, fecha_confirmacion, fecha_cancelacion,
-        propiedades!propiedad_id(id, titulo, direccion, politica_cancelacion, propietario_id),
+        propiedad_id,
+        huesped_id,
+        propiedades!propiedad_id(id, titulo, direccion, politica_cancelacion),
         huesped:huesped_id(id, nombre, apellido, avatar_url),
         pagos(id, monto, metodo_pago, estado, referencia, fecha_creacion)
       `)
       .eq('id', reservaId)
       .single()
 
+    if (queryError) {
+      console.error('[getReservaPorId] Query error:', queryError)
+      return null
+    }
+
     if (!reserva) return null
 
     const r = reserva as Record<string, unknown>
-    const prop = r.propiedades as Record<string, unknown>
 
-    if (r.huesped_id !== user.id && prop.propietario_id !== user.id) {
-      return null
+    if (r.huesped_id !== user.id) {
+      const prop = r.propiedades as Record<string, unknown>
+      const { data: propCheck } = await admin
+        .from('propiedades')
+        .select('propietario_id')
+        .eq('id', r.propiedad_id)
+        .single()
+
+      if (!propCheck || (propCheck as Record<string, unknown>).propietario_id !== user.id) {
+        console.error('[getReservaPorId] Usuario no autorizado')
+        return null
+      }
     }
 
     return mapReservaConPropiedad(r)

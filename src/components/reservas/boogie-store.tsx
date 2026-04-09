@@ -217,9 +217,9 @@ export function BoogieStore({ noches, tasaCambio, onContinue, onBack, initialCar
           ) : (
             <AnimatePresence mode="wait">
               {tab === 'productos' ? (
-                <motion.div key="prod-grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="grid grid-cols-5 gap-1.5 p-1">
+                <motion.div key="prod-grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="grid grid-cols-2 gap-1.5 p-1 sm:grid-cols-3 md:grid-cols-5">
                   {filteredProductos.length === 0 && (
-                    <div className="col-span-5 py-12 text-center text-sm text-[#9E9892]">No hay productos disponibles</div>
+                    <div className="col-span-2 py-12 text-center text-sm text-[#9E9892] sm:col-span-3 md:col-span-5">No hay productos disponibles</div>
                   )}
                   {filteredProductos.map((prod) => {
                     const qty = getCartQty(prod.id, 'producto')
@@ -249,16 +249,23 @@ export function BoogieStore({ noches, tasaCambio, onContinue, onBack, initialCar
                         <div className="p-1.5">
                           <h3 className="text-[9px] font-bold text-[#1A1A1A] leading-tight line-clamp-1">{prod.nombre}</h3>
                           <p className="mt-0.5 text-[10px] font-bold text-[#1B4332]">{formatPrecio(prod.precio)}</p>
-                          <div className="mt-1 flex items-center justify-end">
+                          <div className="mt-1 flex items-center justify-end gap-1">
+                            {qty > 0 && (
+                              <button
+                                onClick={() => removeFromCart(prod.id, 'producto')}
+                                className="flex h-5 w-5 items-center justify-center rounded border border-[#E8E4DF] text-[#6B6560] transition-all hover:bg-[#F8F6F3]"
+                              >
+                                <Minus className="h-2.5 w-2.5" />
+                              </button>
+                            )}
+                            {qty > 0 && (
+                              <span className="min-w-[12px] text-center text-[9px] font-bold text-[#1B4332]">{qty}</span>
+                            )}
                             <button
-                              onClick={() => qty > 0 ? removeFromCart(prod.id, 'producto') : addToCart(prod, 'producto')}
-                              className={`flex h-5 w-5 items-center justify-center rounded text-[10px] font-semibold transition-all active:scale-95 ${
-                                qty > 0
-                                  ? 'border border-[#E8E4DF] text-[#6B6560] hover:bg-[#F8F6F3]'
-                                  : 'bg-[#1B4332] text-white hover:bg-[#2D6A4F]'
-                              }`}
+                              onClick={() => addToCart(prod, 'producto')}
+                              className="flex h-5 w-5 items-center justify-center rounded bg-[#1B4332] text-white transition-all hover:bg-[#2D6A4F] active:scale-95"
                             >
-                              {qty > 0 ? <Minus className="h-2.5 w-2.5" /> : <Plus className="h-2.5 w-2.5" />}
+                              <Plus className="h-2.5 w-2.5" />
                             </button>
                           </div>
                         </div>
@@ -335,129 +342,139 @@ export function BoogieStore({ noches, tasaCambio, onContinue, onBack, initialCar
         </motion.div>
 
         <motion.div variants={fadeUp}>
-          <button
-            onClick={() => setCartOpen(!cartOpen)}
-            className={`relative flex w-full items-center justify-between rounded-xl border p-3 transition-all ${
-              cartCount > 0 ? 'border-[#52B788] bg-[#D8F3DC]/30' : 'border-[#E8E4DF] bg-white'
-            }`}
-          >
-            <div className="flex items-center gap-2.5">
-              <div className="relative">
-                <ShoppingBag className={`h-5 w-5 ${cartCount > 0 ? 'text-[#1B4332]' : 'text-[#9E9892]'}`} />
-                {cartCount > 0 && (
-                  <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#1B4332] text-[9px] font-bold text-white">
-                    {cartCount}
-                  </span>
-                )}
-              </div>
-              <div className="text-left">
-                <p className={`text-sm font-semibold ${cartCount > 0 ? 'text-[#1A1A1A]' : 'text-[#9E9892]'}`}>
-                  {cartCount > 0 ? `${cartCount} item${cartCount > 1 ? 's' : ''} en el carrito` : 'Carrito vacio'}
-                </p>
-                {cartTotal > 0 && (
-                  <p className="text-xs text-[#52B788] font-medium">{formatPrecio(cartTotal)}</p>
-                )}
-              </div>
-            </div>
-            <motion.div animate={{ rotate: cartOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
-              <ChevronDown className="h-4 w-4 text-[#9E9892]" />
-            </motion.div>
-          </button>
-
-          <AnimatePresence>
-            {cartOpen && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                className="overflow-hidden"
-              >
-                <div className="rounded-b-xl border-x border-b border-[#E8E4DF] bg-[#FEFCF9]">
-                  {cart.length === 0 ? (
-                    <div className="flex flex-col items-center gap-2 py-8">
-                      <ShoppingBag className="h-8 w-8 text-[#E8E4DF]" />
-                      <p className="text-xs text-[#9E9892]">Aun no has agregado nada</p>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="max-h-[200px] overflow-y-auto scrollbar-thin">
-                        <div className="space-y-0">
-                          {cart.map((item, i) => (
-                            <div
-                              key={`${item.tipo}-${item.id}`}
-                              className={`flex items-center gap-2.5 px-3.5 py-2.5 ${
-                                i > 0 ? 'border-t border-[#E8E4DF]/60' : ''
-                              }`}
-                            >
-                              <div className="relative h-8 w-6 shrink-0 overflow-hidden rounded bg-[#F8F6F3]">
-                                {item.imagenUrl ? (
-                                  <img src={item.imagenUrl} alt={item.nombre} className="h-full w-full object-contain" />
-                                ) : (
-                                  <div className="flex h-full w-full items-center justify-center">
-                                    {item.tipo === 'producto' ? (
-                                      <Package className="h-3.5 w-3.5 text-[#1B4332]/30" />
-                                    ) : (
-                                      <ConciergeBell className="h-3.5 w-3.5 text-[#92400E]/30" />
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-[11px] font-semibold text-[#1A1A1A] truncate">{item.nombre}</p>
-                              </div>
-                              <div className="flex items-center gap-1 shrink-0">
-                                <button
-                                  onClick={() => removeFromCart(item.id, item.tipo)}
-                                  className="flex h-5 w-5 items-center justify-center rounded border border-[#E8E4DF] text-[#6B6560] hover:bg-[#F8F6F3]"
-                                >
-                                  <Minus className="h-2.5 w-2.5" />
-                                </button>
-                                <span className="min-w-[16px] text-center text-[10px] font-bold text-[#1B4332]">{item.cantidad}</span>
-                                <button
-                                  onClick={() => addToCart(
-                                    { id: item.id, nombre: item.nombre, precio: item.precio, moneda: item.moneda, imagenUrl: item.imagenUrl, tipoPrecio: item.tipoPrecio } as StoreProducto & StoreServicio,
-                                    item.tipo
-                                  )}
-                                  className="flex h-5 w-5 items-center justify-center rounded border border-[#E8E4DF] text-[#6B6560] hover:bg-[#F8F6F3]"
-                                >
-                                  <Plus className="h-2.5 w-2.5" />
-                                </button>
-                              </div>
-                              <p className="w-14 text-right text-[11px] font-bold text-[#1B4332]">{formatPrecio(getItemTotal(item))}</p>
-                              <button
-                                onClick={() => deleteFromCart(item.id, item.tipo)}
-                                className="flex h-5 w-5 items-center justify-center rounded text-[#9E9892] hover:text-[#C1121F] transition-colors"
-                              >
-                                <Trash2 className="h-2.5 w-2.5" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="border-t border-[#E8E4DF] bg-[#D8F3DC]/20 px-3.5 py-2.5">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-[#1A1A1A]">Total</span>
-                          <span className="text-sm font-bold text-[#1B4332]">{formatPrecio(cartTotal)}</span>
-                        </div>
-                        {moneda === 'USD' && (
-                          <p className="mt-0.5 text-right text-[10px] text-[#9E9892]">
-                            Aprox. {formatVES(cartTotal, tasaCambio)}
-                          </p>
-                        )}
-                        {moneda === 'VES' && (
-                          <p className="mt-0.5 text-right text-[10px] text-[#9E9892]">
-                            Aprox. {formatUSD(cartTotal)}
-                          </p>
-                        )}
-                      </div>
-                    </>
+          <div className={`rounded-xl border transition-all ${
+            cartOpen
+              ? 'border-[#1B4332]/20 shadow-sm overflow-hidden'
+              : cartCount > 0
+                ? 'border-[#52B788] overflow-hidden'
+                : 'border-[#E8E4DF] overflow-hidden'
+          }`}>
+            <button
+              onClick={() => setCartOpen(!cartOpen)}
+              className={`relative flex w-full items-center justify-between p-3 transition-colors ${
+                cartOpen
+                  ? 'bg-[#F0FDF4]'
+                  : cartCount > 0
+                    ? 'bg-[#D8F3DC]/30'
+                    : 'bg-white'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="relative">
+                  <ShoppingBag className={`h-5 w-5 ${cartCount > 0 ? 'text-[#1B4332]' : 'text-[#9E9892]'}`} />
+                  {cartCount > 0 && (
+                    <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#1B4332] text-[9px] font-bold text-white">
+                      {cartCount}
+                    </span>
                   )}
                 </div>
+                <div className="text-left">
+                  <p className={`text-sm font-semibold ${cartCount > 0 ? 'text-[#1A1A1A]' : 'text-[#9E9892]'}`}>
+                    {cartCount > 0 ? `${cartCount} item${cartCount > 1 ? 's' : ''} en el carrito` : 'Carrito vacio'}
+                  </p>
+                  {cartTotal > 0 && (
+                    <p className="text-xs text-[#52B788] font-medium">{formatPrecio(cartTotal)}</p>
+                  )}
+                </div>
+              </div>
+              <motion.div animate={{ rotate: cartOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                <ChevronDown className={`h-4 w-4 transition-colors ${cartOpen ? 'text-[#1B4332]' : 'text-[#9E9892]'}`} />
               </motion.div>
-            )}
-          </AnimatePresence>
+            </button>
+
+            <AnimatePresence>
+              {cartOpen && (
+                <motion.div
+                  initial={{ height: 0 }}
+                  animate={{ height: 'auto' }}
+                  exit={{ height: 0 }}
+                  transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                  className="overflow-hidden"
+                >
+                  <div className="border-t border-[#1B4332]/10 bg-white">
+                    {cart.length === 0 ? (
+                      <div className="flex flex-col items-center gap-2 py-8">
+                        <ShoppingBag className="h-8 w-8 text-[#E8E4DF]" />
+                        <p className="text-xs text-[#9E9892]">Aun no has agregado nada</p>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="max-h-[200px] overflow-y-auto scrollbar-thin">
+                          <div className="divide-y divide-[#F4F1EC]">
+                            {cart.map((item) => (
+                              <div
+                                key={`${item.tipo}-${item.id}`}
+                                className="flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-[#FEFCF9] transition-colors"
+                              >
+                                <div className="relative h-8 w-6 shrink-0 overflow-hidden rounded bg-[#F8F6F3]">
+                                  {item.imagenUrl ? (
+                                    <img src={item.imagenUrl} alt={item.nombre} className="h-full w-full object-contain" />
+                                  ) : (
+                                    <div className="flex h-full w-full items-center justify-center">
+                                      {item.tipo === 'producto' ? (
+                                        <Package className="h-3.5 w-3.5 text-[#1B4332]/30" />
+                                      ) : (
+                                        <ConciergeBell className="h-3.5 w-3.5 text-[#92400E]/30" />
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-[11px] font-semibold text-[#1A1A1A] truncate">{item.nombre}</p>
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <button
+                                    onClick={() => removeFromCart(item.id, item.tipo)}
+                                    className="flex h-5 w-5 items-center justify-center rounded border border-[#E8E4DF] text-[#6B6560] hover:bg-[#F8F6F3]"
+                                  >
+                                    <Minus className="h-2.5 w-2.5" />
+                                  </button>
+                                  <span className="min-w-[16px] text-center text-[10px] font-bold text-[#1B4332]">{item.cantidad}</span>
+                                  <button
+                                    onClick={() => addToCart(
+                                      { id: item.id, nombre: item.nombre, precio: item.precio, moneda: item.moneda, imagenUrl: item.imagenUrl, tipoPrecio: item.tipoPrecio } as StoreProducto & StoreServicio,
+                                      item.tipo
+                                    )}
+                                    className="flex h-5 w-5 items-center justify-center rounded border border-[#E8E4DF] text-[#6B6560] hover:bg-[#F8F6F3]"
+                                  >
+                                    <Plus className="h-2.5 w-2.5" />
+                                  </button>
+                                </div>
+                                <p className="w-14 text-right text-[11px] font-bold text-[#1B4332]">{formatPrecio(getItemTotal(item))}</p>
+                                <button
+                                  onClick={() => deleteFromCart(item.id, item.tipo)}
+                                  className="flex h-5 w-5 items-center justify-center rounded text-[#9E9892] hover:text-[#C1121F] transition-colors"
+                                >
+                                  <Trash2 className="h-2.5 w-2.5" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="border-t border-[#1B4332]/10 bg-[#F0FDF4] px-3.5 py-2.5 rounded-b-[11px]">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-[#1A1A1A]">Total</span>
+                            <span className="text-sm font-bold text-[#1B4332]">{formatPrecio(cartTotal)}</span>
+                          </div>
+                          {moneda === 'USD' && (
+                            <p className="mt-0.5 text-right text-[10px] text-[#9E9892]">
+                              Aprox. {formatVES(cartTotal, tasaCambio)}
+                            </p>
+                          )}
+                          {moneda === 'VES' && (
+                            <p className="mt-0.5 text-right text-[10px] text-[#9E9892]">
+                              Aprox. {formatUSD(cartTotal)}
+                            </p>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </motion.div>
 
         <motion.div variants={fadeUp} className="flex gap-3 pt-1">

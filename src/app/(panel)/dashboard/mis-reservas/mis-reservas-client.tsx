@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   CalendarDays,
@@ -14,6 +15,7 @@ import {
   ChevronDown,
   Shield,
   Receipt,
+  ChevronRight,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -37,6 +39,7 @@ const PESTANAS: { key: Pestana; etiqueta: string; icono: React.ElementType }[] =
 ]
 
 function ReservaCard({ reserva, onCancelar }: { reserva: ReservaConPropiedad; onCancelar: (id: string) => void }) {
+  const router = useRouter()
   const esCancelable = sePuedeCancelar(reserva.estado)
   const [expandido, setExpandido] = useState(false)
   const [pending, startTransition] = useTransition()
@@ -65,7 +68,10 @@ function ReservaCard({ reserva, onCancelar }: { reserva: ReservaConPropiedad; on
   )
 
   return (
-    <div className="rounded-2xl border border-[#E8E4DF] bg-white overflow-hidden transition-all hover:border-[#52B788]/50 hover:shadow-sm">
+    <div
+      onClick={() => router.push(`/dashboard/mis-reservas/${reserva.id}`)}
+      className="rounded-2xl border border-[#E8E4DF] bg-white overflow-hidden transition-all hover:border-[#52B788]/50 hover:shadow-sm cursor-pointer"
+    >
       <div className="flex items-center gap-4 px-5 py-4">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#D8F3DC]">
           <Home className="h-5 w-5 text-[#1B4332]" />
@@ -90,7 +96,7 @@ function ReservaCard({ reserva, onCancelar }: { reserva: ReservaConPropiedad; on
           </span>
           {esCancelable && (
             <button
-              onClick={() => setExpandido(!expandido)}
+              onClick={(e) => { e.stopPropagation(); setExpandido(!expandido) }}
               className="mt-1 flex items-center gap-1 text-[10px] font-medium text-[#C1121F] hover:text-[#A0001A] transition-colors"
             >
               <XCircle className="h-3 w-3" />
@@ -99,6 +105,7 @@ function ReservaCard({ reserva, onCancelar }: { reserva: ReservaConPropiedad; on
             </button>
           )}
         </div>
+        <ChevronRight className="h-4 w-4 shrink-0 text-[#9E9892]" />
       </div>
 
       <AnimatePresence>
@@ -110,7 +117,7 @@ function ReservaCard({ reserva, onCancelar }: { reserva: ReservaConPropiedad; on
             transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
             className="overflow-hidden"
           >
-            <div className="border-t border-[#E8E4DF] px-5 py-4 space-y-3">
+            <div className="border-t border-[#E8E4DF] px-5 py-4 space-y-3" onClick={(e) => e.stopPropagation()}>
 
               <div className="flex items-center gap-2 text-xs text-[#9E9892]">
                 <CalendarDays className="h-3 w-3 shrink-0" />

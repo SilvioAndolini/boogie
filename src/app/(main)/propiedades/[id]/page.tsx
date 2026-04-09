@@ -103,7 +103,7 @@ export default async function PropiedadDetallePage({ params }: Props) {
             </div>
 
             {/* ====== STATS ====== */}
-            <div className="mb-8 grid grid-cols-4 gap-2 rounded-xl border border-[#E8E4DF] bg-white px-3 py-2.5">
+            <div className="mb-8 grid grid-cols-2 gap-2 rounded-xl border border-[#E8E4DF] bg-white px-3 py-2.5 sm:grid-cols-4">
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 shrink-0 text-[#1B4332]" />
                 <div className="min-w-0">

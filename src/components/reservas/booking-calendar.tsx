@@ -124,7 +124,7 @@ export function BookingCalendar({
               disabled={!seleccionable}
               onClick={() => handleDiaClick(dia)}
               className={cn(
-                'flex h-8 w-full items-center justify-center rounded-md text-sm transition-colors',
+                'flex h-10 w-full items-center justify-center rounded-md text-sm transition-colors sm:h-8',
                 seleccionable && 'hover:bg-[#D8F3DC] cursor-pointer',
                 !seleccionable && 'text-[#D8D3CC] cursor-not-allowed line-through',
                 esEntrada && 'bg-[#1B4332] text-white rounded-l-md',

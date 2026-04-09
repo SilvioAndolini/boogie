@@ -56,7 +56,7 @@ export function NavbarInner({
 
   return (
     <header className="sticky top-0 z-50 border-b border-[#E8E4DF] bg-white/80 backdrop-blur-lg overflow-visible">
-      <div className="mx-auto flex h-[105px] max-w-7xl items-center justify-between gap-2 px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between gap-2 px-4 sm:h-[105px] sm:px-6 lg:px-8">
         <Link href="/" className="flex shrink-0 items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#1B4332]">
             <span className="text-xl font-bold text-white">B</span>

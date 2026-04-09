@@ -95,7 +95,7 @@ export default function PagosPage() {
       {pagos.length > 0 && (
         <Card className="border-[#E8E4DF]">
           <CardContent className="p-0">
-            <div className="grid grid-cols-[1fr_1.5fr_1fr_1fr_1fr] gap-4 border-b border-[#E8E4DF] px-6 py-3">
+            <div className="hidden sm:grid grid-cols-[1fr_1.5fr_1fr_1fr_1fr] gap-4 border-b border-[#E8E4DF] px-6 py-3">
               <span className="text-[10px] font-bold uppercase tracking-widest text-[#9E9892]">
                 Fecha
               </span>
@@ -122,24 +122,43 @@ export default function PagosPage() {
               return (
                 <div
                   key={pago.id}
-                  className="grid grid-cols-[1fr_1.5fr_1fr_1fr_1fr] items-center gap-4 border-b border-[#E8E4DF] px-6 py-4 last:border-b-0"
+                  className="border-b border-[#E8E4DF] last:border-b-0"
                 >
-                  <span className="text-sm text-[#1A1A1A]">{pago.fecha}</span>
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 shrink-0 text-[#9E9892]" />
-                    <span className="truncate text-sm font-medium text-[#1A1A1A]">
-                      {pago.reservaTitulo}
+                  <div className="hidden sm:grid grid-cols-[1fr_1.5fr_1fr_1fr_1fr] items-center gap-4 px-6 py-4">
+                    <span className="text-sm text-[#1A1A1A]">{pago.fecha}</span>
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 shrink-0 text-[#9E9892]" />
+                      <span className="truncate text-sm font-medium text-[#1A1A1A]">
+                        {pago.reservaTitulo}
+                      </span>
+                    </div>
+                    <span className="text-sm text-[#6B6560]">
+                      {METODO_PAGO_LABELS[pago.metodoPago] ?? pago.metodoPago}
                     </span>
+                    <span className="text-sm font-bold text-[#1B4332]">
+                      {formatearPrecio(pago.monto, pago.moneda)}
+                    </span>
+                    <Badge className={config.className}>
+                      {config.etiqueta}
+                    </Badge>
                   </div>
-                  <span className="text-sm text-[#6B6560]">
-                    {METODO_PAGO_LABELS[pago.metodoPago] ?? pago.metodoPago}
-                  </span>
-                  <span className="text-sm font-bold text-[#1B4332]">
-                    {formatearPrecio(pago.monto, pago.moneda)}
-                  </span>
-                  <Badge className={config.className}>
-                    {config.etiqueta}
-                  </Badge>
+                  <div className="flex sm:hidden items-center justify-between px-4 py-3 gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 shrink-0 text-[#9E9892]" />
+                        <span className="truncate text-sm font-medium text-[#1A1A1A]">{pago.reservaTitulo}</span>
+                      </div>
+                      <div className="mt-1 flex items-center gap-2 text-xs text-[#9E9892]">
+                        <span>{pago.fecha}</span>
+                        <span className="text-[#E8E4DF]">·</span>
+                        <span>{METODO_PAGO_LABELS[pago.metodoPago] ?? pago.metodoPago}</span>
+                      </div>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="text-sm font-bold text-[#1B4332]">{formatearPrecio(pago.monto, pago.moneda)}</p>
+                      <Badge className={`${config.className} mt-1`}>{config.etiqueta}</Badge>
+                    </div>
+                  </div>
                 </div>
               )
             })}

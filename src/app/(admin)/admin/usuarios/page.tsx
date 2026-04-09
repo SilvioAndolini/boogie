@@ -349,12 +349,12 @@ export default function AdminUsuariosPage() {
       </motion.div>
 
       {/* ====== FILTROS ROL ====== */}
-      <motion.div variants={fadeUp} className="mb-6 flex gap-1 rounded-xl border border-[#E8E4DF] bg-white p-1">
+      <motion.div variants={fadeUp} className="mb-6 flex gap-1 overflow-x-auto rounded-xl border border-[#E8E4DF] bg-white p-1">
         {['TODOS', 'BOOGER', 'ANFITRION', 'AMBOS', 'ADMIN'].map((r) => (
           <button
             key={r}
             onClick={() => setFiltroRol(r)}
-            className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+            className={`shrink-0 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
               filtroRol === r ? 'bg-[#1B4332] text-white' : 'text-[#6B6560] hover:bg-[#F8F6F3]'
             }`}
           >
@@ -390,7 +390,7 @@ export default function AdminUsuariosPage() {
                 </div>
 
                 <form onSubmit={handleRegistro} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div className="space-y-1.5">
                       <Label className="text-xs font-semibold uppercase tracking-wider text-[#6B6560]">Nombre</Label>
                       <Input name="nombre" placeholder="María" required minLength={2} disabled={enviando} className="border-[#E8E4DF] bg-white h-10 rounded-xl" />
@@ -406,7 +406,7 @@ export default function AdminUsuariosPage() {
                     <Input name="email" type="email" placeholder="maria@ejemplo.com" required disabled={enviando} className="border-[#E8E4DF] bg-white h-10 rounded-xl" />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div className="space-y-1.5">
                       <Label className="text-xs font-semibold uppercase tracking-wider text-[#6B6560]">Contraseña</Label>
                       <Input name="password" type="password" placeholder="Mínimo 8 caracteres" required minLength={8} disabled={enviando} className="border-[#E8E4DF] bg-white h-10 rounded-xl" />
@@ -417,7 +417,7 @@ export default function AdminUsuariosPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div className="space-y-1.5">
                       <Label className="text-xs font-semibold uppercase tracking-wider text-[#6B6560]">Tipo documento</Label>
                       <Select value={tipoDocumento} onValueChange={(v) => { if (v) setTipoDocumento(v as 'CEDULA' | 'PASAPORTE') }} disabled={enviando}>
@@ -436,7 +436,7 @@ export default function AdminUsuariosPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div className="space-y-1.5">
                       <Label className="text-xs font-semibold uppercase tracking-wider text-[#6B6560]">Código país</Label>
                       <Select value={codigoPais} onValueChange={(v) => { if (v) setCodigoPais(v) }} disabled={enviando}>
@@ -522,16 +522,16 @@ export default function AdminUsuariosPage() {
             <motion.div key={u.id} variants={fadeUp}>
               <div className={`group rounded-2xl border border-[#E8E4DF] bg-white overflow-hidden transition-all ${!u.activo ? 'opacity-50' : ''}`}>
                 <button
-                  className="w-full flex items-center justify-between px-5 py-4 text-left"
+                  className="w-full flex items-center justify-between px-4 py-3.5 text-left sm:px-5 sm:py-4"
                   onClick={() => setExpandido(expandidoCurrent ? null : u.id)}
                 >
-                  <div className="flex items-center gap-3.5 min-w-0">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#1B4332] to-[#40916C] text-xs font-bold text-white">
+                  <div className="flex items-center gap-3 min-w-0 sm:gap-3.5">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#1B4332] to-[#40916C] text-xs font-bold text-white sm:h-11 sm:w-11">
                       {u.nombre.charAt(0)}{u.apellido.charAt(0)}
                     </div>
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold text-[#1A1A1A] truncate">{u.nombre} {u.apellido}</p>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <p className="font-semibold text-[#1A1A1A] truncate text-sm">{u.nombre} {u.apellido}</p>
                         {!u.activo && (
                           <span className="shrink-0 rounded-full bg-[#FEE2E2] px-2 py-0.5 text-[10px] font-bold text-[#991B1B]">Suspendido</span>
                         )}
@@ -540,12 +540,12 @@ export default function AdminUsuariosPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2.5 shrink-0 ml-3">
+                  <div className="flex items-center gap-1.5 shrink-0 ml-2 sm:gap-2.5 sm:ml-3">
                     {u.verificado && (
-                      <BadgeCheck className="h-4 w-4 text-[#1B4332]" />
+                      <BadgeCheck className="hidden sm:block h-4 w-4 text-[#1B4332]" />
                     )}
                     {esCeo ? (
-                      <span className="rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-wider" style={{
+                      <span className="rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wider" style={{
                         background: 'linear-gradient(135deg, #D4A017 0%, #F5D060 25%, #D4A017 50%, #AA8A15 75%, #F5D060 100%)',
                         color: '#3D2E00',
                         textShadow: '0 1px 0 rgba(255,255,255,0.3)',
@@ -555,12 +555,12 @@ export default function AdminUsuariosPage() {
                         CEO
                       </span>
                     ) : (
-                      <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold tracking-wide ${ROL_COLORS[u.rol]}`}>
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide ${ROL_COLORS[u.rol]}`}>
                         {ROL_LABELS[u.rol]}
                       </span>
                     )}
                     {u.plan_suscripcion === 'ULTRA' && (
-                      <span className="rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wider" style={{
+                      <span className="hidden sm:inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wider" style={{
                         background: 'linear-gradient(135deg, #D4A017, #F5D060, #D4A017)',
                         color: '#3D2E00',
                         textShadow: '0 1px 0 rgba(255,255,255,0.3)',
@@ -570,7 +570,7 @@ export default function AdminUsuariosPage() {
                         <Sparkles className="inline h-2.5 w-2.5 mr-0.5 -mt-px" />ULTRA
                       </span>
                     )}
-                    <svg className={`h-4 w-4 text-[#9E9892] transition-transform duration-300 ${expandidoCurrent ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <svg className={`h-4 w-4 text-[#9E9892] transition-transform duration-300 shrink-0 ${expandidoCurrent ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>

@@ -193,8 +193,8 @@ export default function AdminReservasPage() {
           return (
             <motion.div key={r.id} variants={fadeUp}>
               <div className="group rounded-2xl border border-[#E8E4DF] bg-white overflow-hidden transition-all hover:shadow-sm">
-                <div className="flex items-center gap-4 px-5 py-4">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#1B4332] to-[#40916C]">
+                <div className="flex items-center gap-3 px-4 py-4 sm:gap-4 sm:px-5">
+                  <div className="hidden sm:flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#1B4332] to-[#40916C]">
                     <CalendarDays className="h-5 w-5 text-white" />
                   </div>
 
@@ -207,7 +207,7 @@ export default function AdminReservasPage() {
                         {ESTADO_RESERVA_LABELS[r.estado]}
                       </span>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-[#9E9892]">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-[#9E9892]">
                       <span>{huesped ? `${huesped.nombre} ${huesped.apellido}` : '—'}</span>
                       <span className="text-[#E8E4DF]">·</span>
                       <span>{formatDate(r.fecha_entrada)} → {formatDate(r.fecha_salida)}</span>
@@ -216,7 +216,7 @@ export default function AdminReservasPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 shrink-0">
+                  <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                     <div className="text-right">
                       <p className="text-sm font-bold text-[#1A1A1A]">{formatMoney(Number(r.total), r.moneda)}</p>
                       <p className="text-[10px] text-[#9E9892]">{r.cantidad_huespedes} huésped{r.cantidad_huespedes !== 1 ? 'es' : ''}</p>
