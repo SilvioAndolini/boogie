@@ -151,6 +151,7 @@ model ImagenPropiedad {
   url           String
   thumbnailUrl  String?   @map("thumbnail_url")
   alt           String?
+  categoria     String    @default("otro")
   orden         Int       @default(0)
   esPrincipal   Boolean   @default(false) @map("es_principal")
   propiedadId   String    @map("propiedad_id")

@@ -56,7 +56,7 @@ interface PropiedadDetalle {
   ratingPromedio: number | null
   totalResenas: number
   propietario: { id: string; nombre: string; apellido: string; avatar_url: string | null; verificado: boolean } | null
-  imagenes: { id: string; url: string; alt: string | null; orden: number; es_principal: boolean }[]
+  imagenes: { id: string; url: string; alt: string | null; orden: number; es_principal: boolean; categoria: string }[]
   amenidades: { amenidadId: string; amenidad: { id: string; nombre: string; icono: string | null; categoria: string } }[]
   resenas: { id: string; calificacion: number; comentario: string; fechaCreacion: string; autor: { nombre: string; apellido: string; avatar_url: string | null } }[]
 }
@@ -198,6 +198,7 @@ export async function crearPropiedad(formData: FormData) {
   }
 
   const archivos = formData.getAll('imagenes') as File[]
+  const categorias = formData.getAll('imagen_categorias') as string[]
   console.log('[crearPropiedad] Archivos recibidos:', archivos.length)
   if (archivos.length > 0) {
     for (let i = 0; i < archivos.length; i++) {
@@ -227,6 +228,7 @@ export async function crearPropiedad(formData: FormData) {
           url: urlData.publicUrl,
           orden: i,
           es_principal: i === 0,
+          categoria: categorias[i] || 'otro',
         })
 
       if (imgInsertError) {
@@ -463,6 +465,7 @@ export async function actualizarPropiedad(propiedadId: string, formData: FormDat
   }
 
   const archivos = formData.getAll('imagenes') as File[]
+  const categorias = formData.getAll('imagen_categorias') as string[]
   if (archivos.length > 0) {
     const { data: existentes } = await supabase
       .from('imagenes_propiedad')
@@ -496,6 +499,7 @@ export async function actualizarPropiedad(propiedadId: string, formData: FormDat
           url: urlData.publicUrl,
           orden: ordenBase + i,
           es_principal: false,
+          categoria: categorias[i] || 'otro',
         })
     }
   }

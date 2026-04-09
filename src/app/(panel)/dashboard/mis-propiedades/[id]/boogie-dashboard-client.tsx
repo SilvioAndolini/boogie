@@ -616,6 +616,7 @@ function EditMode({ propiedad, onSave, guardando, onCancel }: {
   const [amenidadesSel, setAmenidadesSel] = useState<string[]>((propiedad.amenidades as string[]) || [])
   const [imagenes, setImagenes] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
+  const [imagenCategorias, setImagenCategorias] = useState<string[]>([])
   const [optimizando, setOptimizando] = useState(false)
   const [seccionExpandida, setSeccionExpandida] = useState<string>('info')
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -662,6 +663,7 @@ function EditMode({ propiedad, onSave, guardando, onCancel }: {
     }
     setImagenes((p) => [...p, ...nuevas])
     setPreviews((p) => [...p, ...nuevasPreview])
+    setImagenCategorias((p) => [...p, ...nuevas.map(() => 'otro')])
     setOptimizando(false)
   }, [imagenes.length, imagenesExistentes.length])
 
@@ -669,6 +671,7 @@ function EditMode({ propiedad, onSave, guardando, onCancel }: {
     URL.revokeObjectURL(previews[idx])
     setImagenes((p) => p.filter((_, i) => i !== idx))
     setPreviews((p) => p.filter((_, i) => i !== idx))
+    setImagenCategorias((p) => p.filter((_, i) => i !== idx))
   }
 
   const onSubmit = async (data: Record<string, unknown>) => {
@@ -680,6 +683,7 @@ function EditMode({ propiedad, onSave, guardando, onCancel }: {
     }
     amenidadesSel.forEach((a) => formData.append('amenidades', a))
     imagenes.forEach((img) => formData.append('imagenes', img))
+    imagenCategorias.forEach((c) => formData.append('imagen_categorias', c))
     await onSave(formData)
   }
 
@@ -772,9 +776,25 @@ function EditMode({ propiedad, onSave, guardando, onCancel }: {
                 <div key={img.id ?? `img-${i}`} className="h-16 w-16 overflow-hidden rounded-lg border border-[#E8E4DF]"><img src={img.url} alt="" className="h-full w-full object-cover" /></div>
               ))}
               {previews.map((url, i) => (
-                <div key={i} className="relative h-16 w-16 overflow-hidden rounded-lg border border-[#1B4332]">
-                  <img src={url} alt="" className="h-full w-full object-cover" />
-                  <button type="button" onClick={() => removeImagen(i)} className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#EF4444] text-white"><X className="h-3 w-3" /></button>
+                <div key={i} className="overflow-hidden rounded-lg border border-[#1B4332]">
+                  <div className="relative h-16 w-16">
+                    <img src={url} alt="" className="h-full w-full object-cover" />
+                    <button type="button" onClick={() => removeImagen(i)} className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#EF4444] text-white"><X className="h-3 w-3" /></button>
+                  </div>
+                  <select
+                    value={imagenCategorias[i] || 'otro'}
+                    onChange={(e) => setImagenCategorias((p) => { const n = [...p]; n[i] = e.target.value; return n })}
+                    className="w-full border-t border-[#E8E4DF] bg-[#FDFCFA] px-1 py-0.5 text-[9px] focus:outline-none"
+                  >
+                    <option value="habitaciones">Habitaciones</option>
+                    <option value="banos">Baños</option>
+                    <option value="cocina">Cocina</option>
+                    <option value="areas_comunes">Áreas comunes</option>
+                    <option value="exterior">Exterior</option>
+                    <option value="piscina">Piscina</option>
+                    <option value="vistas">Vistas</option>
+                    <option value="otro">Otro</option>
+                  </select>
                 </div>
               ))}
             </div>

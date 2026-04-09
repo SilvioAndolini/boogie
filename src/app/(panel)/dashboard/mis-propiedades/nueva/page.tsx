@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Home, MapPin, Sparkles, Check, Upload, X, Loader2, DollarSign, Clock, Pencil } from 'lucide-react'
+import { ArrowLeft, Home, MapPin, Sparkles, Check, Upload, X, Loader2, DollarSign, Clock, Pencil, Tag } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -30,6 +30,17 @@ const AMENIDADES = [
   'Seguridad 24h', 'Jardín', 'Parrilla', 'Balcón',
   'Vista al mar', 'Acceso a playa', 'Pet friendly', 'Gimnasio',
 ]
+
+const CATEGORIAS_IMAGEN = [
+  { value: 'habitaciones', label: 'Habitaciones' },
+  { value: 'banos', label: 'Baños' },
+  { value: 'cocina', label: 'Cocina' },
+  { value: 'areas_comunes', label: 'Áreas comunes' },
+  { value: 'exterior', label: 'Exterior' },
+  { value: 'piscina', label: 'Piscina / Deportes' },
+  { value: 'vistas', label: 'Vistas / Panorámica' },
+  { value: 'otro', label: 'Otro' },
+] as const
 
 const SECCIONES = [
   { id: 'info', label: 'Información básica', icon: Home },
@@ -63,6 +74,7 @@ export default function NuevaPropiedadPage() {
   const [amenidadesSeleccionadas, setAmenidadesSeleccionadas] = useState<string[]>([])
   const [imagenes, setImagenes] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
+  const [imagenCategorias, setImagenCategorias] = useState<string[]>([])
   const [optimizando, setOptimizando] = useState(false)
   const [latitud, setLatitud] = useState<number | null>(null)
   const [longitud, setLongitud] = useState<number | null>(null)
@@ -187,6 +199,7 @@ export default function NuevaPropiedadPage() {
     }
     setImagenes((prev) => [...prev, ...nuevas])
     setPreviews((prev) => [...prev, ...nuevasPreview])
+    setImagenCategorias((prev) => [...prev, ...nuevas.map(() => 'otro')])
     setOptimizando(false)
   }, [imagenes.length])
 
@@ -194,6 +207,15 @@ export default function NuevaPropiedadPage() {
     URL.revokeObjectURL(previews[index])
     setImagenes((prev) => prev.filter((_, i) => i !== index))
     setPreviews((prev) => prev.filter((_, i) => i !== index))
+    setImagenCategorias((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const setCategoriaImagen = (index: number, categoria: string) => {
+    setImagenCategorias((prev) => {
+      const next = [...prev]
+      next[index] = categoria
+      return next
+    })
   }
 
   const handleCrearBoogie = async () => {
@@ -227,6 +249,7 @@ export default function NuevaPropiedadPage() {
       })
       amenidadesSeleccionadas.forEach((a) => formData.append('amenidades', a))
       imagenes.forEach((file) => formData.append('imagenes', file))
+      imagenCategorias.forEach((c) => formData.append('imagen_categorias', c))
 
       const result = await crearPropiedad(formData)
       if (result?.error) {
@@ -513,12 +536,14 @@ export default function NuevaPropiedadPage() {
           </div>
           <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleImagenes(e.target.files)} />
           {previews.length > 0 && (
-            <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4">
+            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
               {previews.map((src, i) => (
-                <div key={src} className="group relative aspect-square overflow-hidden rounded-lg border border-[#E8E4DF]">
-                  <img src={src} alt="" className="h-full w-full object-cover" />
+                <div key={src} className="group relative overflow-hidden rounded-lg border border-[#E8E4DF]">
+                  <div className="aspect-square">
+                    <img src={src} alt="" className="h-full w-full object-cover" />
+                  </div>
                   {i === 0 && (
-                    <span className="absolute bottom-1 left-1 rounded bg-[#1B4332] px-1.5 py-0.5 text-[10px] font-medium text-white">Principal</span>
+                    <span className="absolute bottom-8 left-1 rounded bg-[#1B4332] px-1.5 py-0.5 text-[10px] font-medium text-white">Principal</span>
                   )}
                   <button
                     type="button"
@@ -527,6 +552,18 @@ export default function NuevaPropiedadPage() {
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
+                  <div className="flex items-center gap-1 px-1.5 py-1.5">
+                    <Tag className="h-3 w-3 shrink-0 text-[#9E9892]" />
+                    <select
+                      value={imagenCategorias[i] || 'otro'}
+                      onChange={(e) => setCategoriaImagen(i, e.target.value)}
+                      className="h-6 w-full rounded border border-[#E8E4DF] bg-[#FDFCFA] text-[10px] text-[#1A1A1A] focus:border-[#1B4332] focus:outline-none"
+                    >
+                      {CATEGORIAS_IMAGEN.map((cat) => (
+                        <option key={cat.value} value={cat.value}>{cat.label}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               ))}
             </div>

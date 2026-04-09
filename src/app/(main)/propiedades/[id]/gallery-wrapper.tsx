@@ -10,6 +10,7 @@ interface ImagenPropiedad {
   alt: string | null
   orden: number
   es_principal: boolean
+  categoria: string
 }
 
 export function PropertyGalleryWrapper({ imagenes }: { imagenes: ImagenPropiedad[] }) {

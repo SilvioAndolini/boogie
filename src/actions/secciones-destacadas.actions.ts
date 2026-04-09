@@ -55,7 +55,7 @@ export async function getSeccionesDestacadasPublicas() {
 
         const propIds = (props || []).map((p: Record<string, unknown>) => p.id as string)
 
-        let imagenesMap: Record<string, string[]> = {}
+        const imagenesMap: Record<string, string[]> = {}
         if (propIds.length > 0) {
           const { data: imgs } = await admin
             .from('imagenes_propiedad')
@@ -112,7 +112,7 @@ export async function getSeccionesDestacadasPublicas() {
 
         const propIds = (props || []).map((p: Record<string, unknown>) => p.id as string)
 
-        let imagenesMap: Record<string, string[]> = {}
+        const imagenesMap: Record<string, string[]> = {}
         if (propIds.length > 0) {
           const { data: imgs } = await admin
             .from('imagenes_propiedad')
