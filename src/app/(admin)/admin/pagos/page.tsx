@@ -1,14 +1,16 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   CreditCard, Search, Loader2, CheckCircle2, XCircle,
   Clock, DollarSign, TrendingUp, ArrowRight, ShieldCheck,
+  ChevronDown, FileText, Smartphone, Building2, Home,
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
 import { getPagosAdmin, getPagosStatsAdmin, verificarPagoAdmin } from '@/actions/admin-pagos.actions'
+import { getTasaBCV } from '@/actions/wallet.actions'
 import { METODOS_PAGO } from '@/lib/constants'
 import type { EstadoPago } from '@/types'
 
@@ -68,6 +70,10 @@ function formatMoney(n: number, moneda = 'USD') {
   return `$${n.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
 }
 
+function formatDateTime(s: string) {
+  return new Date(s).toLocaleDateString('es-VE', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+}
+
 function getReserva(pago: Pago): ReservaMini | null {
   if (!pago.reservas) return null
   if (Array.isArray(pago.reservas)) return pago.reservas[0] || null
@@ -84,6 +90,8 @@ export default function AdminPagosPage() {
   const [filtroEstado, setFiltroEstado] = useState<string>('TODOS')
   const [filtroMetodo, setFiltroMetodo] = useState<string>('TODOS')
   const [accionando, setAccionando] = useState<string | null>(null)
+  const [pagoExpandido, setPagoExpandido] = useState<string | null>(null)
+  const [tasaBCV, setTasaBCV] = useState<number | null>(null)
 
   const cargarDatos = async () => {
     const [resPagos, resStats] = await Promise.all([
@@ -102,6 +110,10 @@ export default function AdminPagosPage() {
   }
 
   useEffect(() => { cargarDatos() }, [filtroEstado, filtroMetodo])
+
+  useEffect(() => {
+    getTasaBCV().then((res) => { if (res.tasa) setTasaBCV(res.tasa) })
+  }, [])
 
   useEffect(() => {
     const timer = setTimeout(() => { if (!cargando) cargarDatos() }, 400)
@@ -219,13 +231,19 @@ export default function AdminPagosPage() {
           const huesped = reserva?.usuarios
           const esPendiente = p.estado === 'PENDIENTE' || p.estado === 'EN_VERIFICACION'
           const esVerificado = p.estado === 'VERIFICADO'
+          const expandido = pagoExpandido === p.id
+          const montoVES = tasaBCV ? Math.round(Number(p.monto) * tasaBCV * 100) / 100 : null
+          const MetodoIcon = p.metodo_pago === 'PAGO_MOVIL' ? Smartphone : p.metodo_pago === 'TRANSFERENCIA_BANCARIA' ? Building2 : CreditCard
 
           return (
             <motion.div key={p.id} variants={fadeUp}>
               <div className="group rounded-2xl border border-[#E8E4DF] bg-white overflow-hidden transition-all hover:shadow-sm">
-                <div className="flex items-center gap-4 px-5 py-4">
+                <button
+                  onClick={() => setPagoExpandido(expandido ? null : p.id)}
+                  className="flex w-full items-center gap-4 px-5 py-4 text-left"
+                >
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#1B4332] to-[#40916C]">
-                    <CreditCard className="h-5 w-5 text-white" />
+                    <MetodoIcon className="h-5 w-5 text-white" />
                   </div>
 
                   <div className="flex-1 min-w-0">
@@ -241,12 +259,6 @@ export default function AdminPagosPage() {
                       <span className="rounded bg-[#F8F6F3] px-1.5 py-0.5 font-medium">
                         {METODOS_PAGO[p.metodo_pago as keyof typeof METODOS_PAGO] || p.metodo_pago}
                       </span>
-                      {p.referencia && (
-                        <>
-                          <span className="text-[#E8E4DF]">·</span>
-                          <span className="font-mono truncate">Ref: {p.referencia}</span>
-                        </>
-                      )}
                       {reserva?.propiedades && (
                         <>
                           <span className="text-[#E8E4DF]">·</span>
@@ -259,44 +271,162 @@ export default function AdminPagosPage() {
                   <div className="flex items-center gap-3 shrink-0">
                     <div className="text-right">
                       <p className="text-sm font-bold text-[#1A1A1A]">{formatMoney(Number(p.monto), p.moneda)}</p>
-                      {p.monto_equivalente && p.moneda_equivalente && (
-                        <p className="text-[10px] text-[#9E9892]">{formatMoney(Number(p.monto_equivalente), p.moneda_equivalente)}</p>
+                      {montoVES && (
+                        <p className="text-[10px] text-[#9E9892]/60">{formatMoney(montoVES, 'VES')}</p>
                       )}
                     </div>
-
-                    {esPendiente && (
-                      <div className="flex gap-1">
-                        <button
-                          title="Verificar"
-                          disabled={accionando === p.id}
-                          onClick={() => handleAccion(p.id, 'VERIFICADO')}
-                          className="flex h-8 w-8 items-center justify-center rounded-lg text-[#9E9892] transition-all hover:bg-[#D8F3DC] hover:text-[#1B4332]"
-                        >
-                          {accionando === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-                        </button>
-                        <button
-                          title="Rechazar"
-                          disabled={accionando === p.id}
-                          onClick={() => handleAccion(p.id, 'RECHAZADO')}
-                          className="flex h-8 w-8 items-center justify-center rounded-lg text-[#9E9892] transition-all hover:bg-[#FEE2E2] hover:text-[#C1121F]"
-                        >
-                          <XCircle className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    )}
-
-                    {esVerificado && (
-                      <button
-                        title="Acreditar"
-                        disabled={accionando === p.id}
-                        onClick={() => handleAccion(p.id, 'ACREDITADO')}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-[#9E9892] transition-all hover:bg-[#D8F3DC] hover:text-[#1B4332]"
-                      >
-                        {accionando === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
-                      </button>
-                    )}
+                    <ChevronDown className={`h-4 w-4 text-[#9E9892] shrink-0 transition-transform duration-200 ${expandido ? 'rotate-180' : ''}`} />
                   </div>
-                </div>
+                </button>
+
+                <AnimatePresence>
+                  {expandido && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <div className="border-t border-[#E8E4DF] px-5 py-5 space-y-4">
+
+                        <div className="flex flex-col gap-2.5">
+                          <div className="flex items-center gap-2.5 text-sm">
+                            <DollarSign className="h-3.5 w-3.5 text-[#9E9892] shrink-0" />
+                            <span className="text-[#9E9892]">Monto</span>
+                            <span className="flex-1 border-b border-dotted border-[#E8E4DF] min-w-[12px]" />
+                            <span className="font-medium text-[#1A1A1A]">{formatMoney(Number(p.monto), p.moneda)}</span>
+                          </div>
+                          {montoVES && (
+                            <div className="flex items-center gap-2.5 text-sm">
+                              <DollarSign className="h-3.5 w-3.5 text-[#9E9892]/40 shrink-0" />
+                              <span className="text-[#9E9892]/60">Equiv.</span>
+                              <span className="flex-1 border-b border-dotted border-[#E8E4DF] min-w-[12px]" />
+                              <span className="text-xs text-[#9E9892]/70">{formatMoney(montoVES, 'VES')}</span>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-2.5 text-sm">
+                            <CreditCard className="h-3.5 w-3.5 text-[#9E9892] shrink-0" />
+                            <span className="text-[#9E9892]">Método</span>
+                            <span className="flex-1 border-b border-dotted border-[#E8E4DF] min-w-[12px]" />
+                            <span className="font-medium text-[#1A1A1A]">{METODOS_PAGO[p.metodo_pago as keyof typeof METODOS_PAGO] || p.metodo_pago}</span>
+                          </div>
+                          {p.referencia && (
+                            <div className="flex items-center gap-2.5 text-sm">
+                              <FileText className="h-3.5 w-3.5 text-[#9E9892] shrink-0" />
+                              <span className="text-[#9E9892]">Referencia</span>
+                              <span className="flex-1 border-b border-dotted border-[#E8E4DF] min-w-[12px]" />
+                              <span className="font-medium text-[#1A1A1A] font-mono text-xs">{p.referencia}</span>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-2.5 text-sm">
+                            <Clock className="h-3.5 w-3.5 text-[#9E9892] shrink-0" />
+                            <span className="text-[#9E9892]">Creado</span>
+                            <span className="flex-1 border-b border-dotted border-[#E8E4DF] min-w-[12px]" />
+                            <span className="font-medium text-[#1A1A1A]">{formatDateTime(p.fecha_creacion)}</span>
+                          </div>
+                          {p.fecha_verificacion && (
+                            <div className="flex items-center gap-2.5 text-sm">
+                              <CheckCircle2 className="h-3.5 w-3.5 text-[#1B4332] shrink-0" />
+                              <span className="text-[#9E9892]">Verificado</span>
+                              <span className="flex-1 border-b border-dotted border-[#E8E4DF] min-w-[12px]" />
+                              <span className="font-medium text-[#1A1A1A]">{formatDateTime(p.fecha_verificacion)}</span>
+                            </div>
+                          )}
+                          {p.fecha_acreditacion && (
+                            <div className="flex items-center gap-2.5 text-sm">
+                              <ShieldCheck className="h-3.5 w-3.5 text-[#1B4332] shrink-0" />
+                              <span className="text-[#9E9892]">Acreditado</span>
+                              <span className="flex-1 border-b border-dotted border-[#E8E4DF] min-w-[12px]" />
+                              <span className="font-medium text-[#1A1A1A]">{formatDateTime(p.fecha_acreditacion)}</span>
+                            </div>
+                          )}
+                          {p.notas_verificacion && (
+                            <div className="flex items-start gap-2.5 text-sm">
+                              <FileText className="h-3.5 w-3.5 text-[#9E9892] shrink-0 mt-0.5" />
+                              <span className="text-[#9E9892]">Notas</span>
+                              <span className="flex-1 border-b border-dotted border-[#E8E4DF] min-w-[12px]" />
+                              <span className="font-medium text-[#1A1A1A] text-right max-w-[220px]">{p.notas_verificacion}</span>
+                            </div>
+                          )}
+                          {reserva && (
+                            <div className="flex items-center gap-2.5 text-sm">
+                              <Home className="h-3.5 w-3.5 text-[#9E9892] shrink-0" />
+                              <span className="text-[#9E9892]">Propiedad</span>
+                              <span className="flex-1 border-b border-dotted border-[#E8E4DF] min-w-[12px]" />
+                              <span className="font-medium text-[#1A1A1A] truncate max-w-[200px]">{reserva.propiedades?.titulo || '—'}</span>
+                            </div>
+                          )}
+                          {huesped && (
+                            <div className="flex items-center gap-2.5 text-sm">
+                              <span className="text-[#9E9892] text-xs shrink-0 w-3.5 text-center">@</span>
+                              <span className="text-[#9E9892]">Huésped</span>
+                              <span className="flex-1 border-b border-dotted border-[#E8E4DF] min-w-[12px]" />
+                              <span className="font-medium text-[#1A1A1A]">{huesped.nombre} {huesped.apellido}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {p.comprobante && (
+                          <div className="pt-3 border-t border-[#E8E4DF]">
+                            <p className="text-[10px] font-medium uppercase tracking-wider text-[#9E9892] mb-2">Comprobante</p>
+                            <a
+                              href={p.comprobante}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="group/img relative block overflow-hidden rounded-lg border border-[#E8E4DF]"
+                            >
+                              <img
+                                src={p.comprobante}
+                                alt="Comprobante de pago"
+                                className="w-full max-h-56 object-cover transition-transform group-hover/img:scale-105"
+                              />
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover/img:bg-black/20">
+                                <span className="rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium text-[#1A1A1A] opacity-0 transition-opacity group-hover/img:opacity-100">
+                                  Ver completa
+                                </span>
+                              </div>
+                            </a>
+                          </div>
+                        )}
+
+                        {esPendiente && (
+                          <div className="pt-3 border-t border-[#E8E4DF] flex gap-2">
+                            <button
+                              disabled={accionando === p.id}
+                              onClick={(e) => { e.stopPropagation(); handleAccion(p.id, 'VERIFICADO') }}
+                              className="flex h-9 items-center gap-2 rounded-xl bg-[#1B4332] px-4 text-xs font-medium text-white transition-all hover:bg-[#2D6A4F] disabled:opacity-60"
+                            >
+                              {accionando === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                              Verificar
+                            </button>
+                            <button
+                              disabled={accionando === p.id}
+                              onClick={(e) => { e.stopPropagation(); handleAccion(p.id, 'RECHAZADO') }}
+                              className="flex h-9 items-center gap-2 rounded-xl border border-[#C1121F]/30 px-4 text-xs font-medium text-[#C1121F] transition-all hover:bg-[#FEE2E2] disabled:opacity-60"
+                            >
+                              <XCircle className="h-3.5 w-3.5" />
+                              Rechazar
+                            </button>
+                          </div>
+                        )}
+
+                        {esVerificado && (
+                          <div className="pt-3 border-t border-[#E8E4DF]">
+                            <button
+                              disabled={accionando === p.id}
+                              onClick={(e) => { e.stopPropagation(); handleAccion(p.id, 'ACREDITADO') }}
+                              className="flex h-9 items-center gap-2 rounded-xl bg-[#1B4332] px-4 text-xs font-medium text-white transition-all hover:bg-[#2D6A4F] disabled:opacity-60"
+                            >
+                              {accionando === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
+                              Acreditar
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </motion.div>
           )

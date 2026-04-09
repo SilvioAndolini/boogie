@@ -161,6 +161,25 @@
   will-change: transform;
 }
 
+@keyframes cardShimmer {
+  0% { transform: translateX(-120%) translateY(-30%) skewX(-12deg); }
+  50% { transform: translateX(40%) translateY(15%) skewX(-12deg); }
+  100% { transform: translateX(220%) translateY(-30%) skewX(-12deg); }
+}
+
+.gold-card-shimmer::after {
+  content: '';
+  position: absolute;
+  top: -40%;
+  bottom: -40%;
+  left: 0;
+  width: 60%;
+  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.2) 45%, rgba(255,255,255,0.08) 55%, transparent 70%);
+  animation: cardShimmer 5s ease-in-out infinite;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
 .skeleton {
   background: linear-gradient(90deg, #f0ece4 25%, #e8e4df 50%, #f0ece4 75%);
   background-size: 200% 100%;

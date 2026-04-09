@@ -30,6 +30,21 @@ export function isDevPhone(phone: string): boolean {
 export const COMISION_PLATAFORMA_HUESPED = Number(process.env.COMISION_PLATAFORMA_HUESPED) || 0.06
 export const COMISION_PLATAFORMA_ANFITRION = Number(process.env.COMISION_PLATAFORMA_ANFITRION) || 0.03
 
+export const PLANES_SUSCRIPCION = {
+  FREE: {
+    nombre: 'Boogie Free',
+    maxBoogies: 5,
+    descripcion: 'Uso estándar de la plataforma',
+  },
+  ULTRA: {
+    nombre: 'Boogie Ultra',
+    maxBoogies: Infinity,
+    descripcion: 'Boogies ilimitados, prioridad en búsquedas, producción audiovisual profesional',
+  },
+} as const
+
+export const MAX_BOOGIES_FREE = 5
+
 // Paginación
 export const PROPIEDADES_POR_PAGINA = 12
 export const RESENAS_POR_PAGINA = 10

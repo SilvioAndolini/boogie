@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Shield, Scan, Camera, Upload, X, Loader2, CheckCircle2, Clock, AlertCircle, ArrowLeft } from 'lucide-react'
+import { Shield, Scan, Camera, Upload, X, Loader2, CheckCircle2, Clock, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
@@ -219,7 +219,7 @@ export default function VerificarIdentidadPage() {
     return (
       <div className="mx-auto max-w-2xl">
         <div className="flex flex-col items-center gap-4 py-16 text-center">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#D8F3DC]">
+          <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-[#D8F3DC]">
             <CheckCircle2 className="h-10 w-10 text-[#1B4332]" />
           </div>
           <h1 className="text-2xl font-bold text-[#1A1A1A]">Identidad verificada</h1>
@@ -237,8 +237,8 @@ export default function VerificarIdentidadPage() {
     return (
       <div className="mx-auto max-w-2xl">
         <div className="flex flex-col items-center gap-4 py-16 text-center">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#FEF9E7]">
-            <Clock className="h-10 w-10 text-[#B8860B]" />
+          <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-[#FEF3C7]">
+            <Clock className="h-10 w-10 text-[#92400E]" />
           </div>
           <h1 className="text-2xl font-bold text-[#1A1A1A]">Verificación en proceso</h1>
           <p className="max-w-md text-sm text-[#6B6560]">
@@ -258,7 +258,7 @@ export default function VerificarIdentidadPage() {
     return (
       <div className="mx-auto max-w-2xl">
         <div className="flex flex-col items-center gap-4 py-16 text-center">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#FEE2E2]">
+          <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-[#FEE2E2]">
             <AlertCircle className="h-10 w-10 text-[#C1121F]" />
           </div>
           <h1 className="text-2xl font-bold text-[#1A1A1A]">Verificación rechazada</h1>
@@ -275,13 +275,18 @@ export default function VerificarIdentidadPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <div className="mb-8 flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => router.back()} className="text-[#6B6560]">
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold text-[#1A1A1A]">Verificar identidad</h1>
-          <p className="text-sm text-[#6B6560]">Verifica tu identidad para reservar y publicar</p>
+      <div className="mb-8 relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1B4332] via-[#2D6A4F] to-[#40916C]">
+        <div className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-white/5" />
+        <div className="pointer-events-none absolute -bottom-8 -left-8 h-36 w-36 rounded-full bg-white/5" />
+        <div className="pointer-events-none absolute bottom-4 right-20 h-20 w-20 rounded-full bg-white/[0.03]" />
+        <div className="relative flex items-center gap-4 p-6">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/10">
+            <Shield className="h-6 w-6 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl font-bold tracking-tight text-white sm:text-2xl">Verificar identidad</h1>
+            <p className="text-sm text-white/70">Verifica tu identidad para reservar y publicar</p>
+          </div>
         </div>
       </div>
 
@@ -307,11 +312,11 @@ export default function VerificarIdentidadPage() {
                   <Scan className="h-6 w-6 text-[#1B4332]" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-[#1A1A1A]">Verificación con MetaMap</h3>
+                  <h3 className="text-sm font-semibold text-[#1A1A1A]">Verificación con MetaMap</h3>
                   <p className="mt-1 text-sm text-[#6B6560]">
                     Verificación automatizada con IA. Toma fotos de tu documento y un selfie. Resultado en minutos.
                   </p>
-                  <span className="mt-2 inline-block rounded-full bg-[#D8F3DC] px-2.5 py-0.5 text-xs font-medium text-[#1B4332]">
+                  <span className="mt-2 inline-block rounded-full bg-[#D8F3DC] px-2.5 py-0.5 text-[10px] font-bold text-[#1B4332]">
                     Recomendado
                   </span>
                 </div>
@@ -327,11 +332,11 @@ export default function VerificarIdentidadPage() {
                   <Camera className="h-6 w-6 text-[#6B6560]" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-[#1A1A1A]">Verificación manual</h3>
+                  <h3 className="text-sm font-semibold text-[#1A1A1A]">Verificación manual</h3>
                   <p className="mt-1 text-sm text-[#6B6560]">
                     Sube fotos de tu documento de identidad. Un administrador las revisará manualmente.
                   </p>
-                  <span className="mt-2 inline-block rounded-full bg-[#F8F6F3] px-2.5 py-0.5 text-xs font-medium text-[#6B6560]">
+                  <span className="mt-2 inline-block rounded-full bg-[#F8F6F3] px-2.5 py-0.5 text-[10px] font-bold text-[#6B6560]">
                     Revisión manual
                   </span>
                 </div>

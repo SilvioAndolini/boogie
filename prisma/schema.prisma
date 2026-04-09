@@ -24,6 +24,7 @@ model Usuario {
   cedula          String?  @unique
   verificado      Boolean  @default(false)
   rol             Rol      @default(BOOGER)
+  planSuscripcion PlanSuscripcion @default(FREE) @map("plan_suscripcion")
   bio             String?  @db.Text
   fechaRegistro   DateTime @default(now()) @map("fecha_registro")
   ultimaActividad DateTime @default(now()) @map("ultima_actividad")
@@ -45,6 +46,11 @@ enum Rol {
   ANFITRION
   AMBOS
   ADMIN
+}
+
+enum PlanSuscripcion {
+  FREE
+  ULTRA
 }
 
 // =============================================

@@ -10,9 +10,12 @@ const RUTAS_PUBLICAS = [
   '/registro',
   '/recuperar-contrasena',
   '/admin-login',
+  '/guia-anfitrion',
 ]
 
 function esRutaPublica(pathname: string): boolean {
+  if (pathname.startsWith('/auth/')) return true
+  if (pathname === '/completar-perfil') return true
   return RUTAS_PUBLICAS.some(ruta => {
     if (ruta === pathname) return true
     if (ruta === '/propiedades' && pathname.startsWith('/propiedades')) return true
@@ -81,6 +84,26 @@ export async function middleware(request: NextRequest) {
 
     if (user && (pathname.startsWith('/login') || pathname.startsWith('/registro'))) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+
+    if (user && pathname !== '/completar-perfil') {
+      const secretKey = process.env.SUPABASE_SECRET_KEY || supabaseKey
+      const adminClient = createServerClient(supabaseUrl, secretKey, {
+        cookies: {
+          getAll() { return request.cookies.getAll() },
+          setAll() {},
+        },
+      })
+
+      const { data: perfil } = await adminClient
+        .from('usuarios')
+        .select('cedula, telefono')
+        .eq('id', user.id)
+        .maybeSingle()
+
+      if (perfil && (!perfil.cedula || !perfil.telefono)) {
+        return NextResponse.redirect(new URL('/completar-perfil', request.url))
+      }
     }
 
     if (!user && !esRutaPublica(pathname) && !pathname.startsWith('/api/')) {

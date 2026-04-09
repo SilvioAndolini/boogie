@@ -331,6 +331,7 @@ export async function actualizarRolUsuario(formData: FormData) {
     usuarioId: formData.get('usuarioId') as string,
     rol: (formData.get('rol') as string) || undefined,
     activo: (formData.get('activo') as string) || undefined,
+    plan: (formData.get('plan') as string) || undefined,
   }
 
   const parsed = adminActualizarRolSchema.safeParse(raw)
@@ -339,7 +340,7 @@ export async function actualizarRolUsuario(formData: FormData) {
     return { error: firstError }
   }
 
-  const { usuarioId, rol, activo } = parsed.data
+  const { usuarioId, rol, activo, plan } = parsed.data as { usuarioId: string; rol?: string; activo?: string; plan?: string }
 
   if (usuarioId === auth.userId && rol && rol !== 'ADMIN') {
     return { error: 'No puedes quitarte tu propio rol de administrador' }
@@ -348,7 +349,7 @@ export async function actualizarRolUsuario(formData: FormData) {
   const admin = createAdminClient()
   const { data: before } = await admin
     .from('usuarios')
-    .select('rol, activo, email')
+    .select('rol, activo, email, plan_suscripcion')
     .eq('id', usuarioId)
     .single()
 
@@ -363,6 +364,7 @@ export async function actualizarRolUsuario(formData: FormData) {
   const updateData: Record<string, unknown> = {}
   if (rol) updateData.rol = rol
   if (activo !== undefined) updateData.activo = activo === 'true'
+  if (plan) updateData.plan_suscripcion = plan
 
   const { error } = await admin
     .from('usuarios')
@@ -377,6 +379,7 @@ export async function actualizarRolUsuario(formData: FormData) {
   const accionDesc = []
   if (rol && rol !== before?.rol) accionDesc.push(`ROL:${before?.rol}→${rol}`)
   if (activo !== undefined) accionDesc.push(activo === 'true' ? 'REACTIVADO' : 'SUSPENDIDO')
+  if (plan && plan !== before?.plan_suscripcion) accionDesc.push(`PLAN:${before?.plan_suscripcion}→${plan}`)
 
   await logAdminAction({
     accion: accionDesc.join(', '),

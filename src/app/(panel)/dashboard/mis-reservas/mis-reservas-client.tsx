@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import Link from 'next/link'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   CalendarDays,
   Home,
@@ -10,115 +11,21 @@ import {
   XCircle,
   AlertCircle,
   Loader2,
+  ChevronDown,
+  Shield,
+  Receipt,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  DialogClose,
-} from '@/components/ui/dialog'
+import { toast } from 'sonner'
 import type { ReservaConPropiedad } from '@/types/reserva'
 import { ESTADO_RESERVA_LABELS, ESTADO_RESERVA_COLORS } from '@/types/reserva'
 import { formatFechaCorta, formatPrecio } from '@/lib/format'
 import { sePuedeCancelar } from '@/lib/reservas/estados'
-import { cancelarReservaAction } from '@/actions/reserva.actions'
+import { cancelarReserva } from '@/actions/reserva.actions'
 import { calcularReembolsoCompleto } from '@/lib/reservas/calculos'
 import { POLITICAS_CANCELACION } from '@/lib/constants'
-import type { PoliticaCancelacion } from '@/types'
-import { useFormStatus } from 'react-dom'
-
-function CancelSubmitButton() {
-  const { pending } = useFormStatus()
-  return (
-    <Button
-      size="sm"
-      className="bg-[#C1121F] text-white hover:bg-[#A0001A]"
-      disabled={pending}
-    >
-      {pending ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <XCircle className="mr-1 h-3.5 w-3.5" />}
-      Sí, cancelar
-    </Button>
-  )
-}
-
-function CancelarDialog({
-  reserva,
-  open,
-  onOpenChange,
-}: {
-  reserva: ReservaConPropiedad
-  open: boolean
-  onOpenChange: (open: boolean) => void
-}) {
-  const esConfirmada = reserva.estado === 'CONFIRMADA'
-  const politica = reserva.propiedad.politicaCancelacion ?? 'MODERADA'
-
-  let reembolsoInfo = ''
-  if (esConfirmada) {
-    const calc = calcularReembolsoCompleto(
-      Number(reserva.total),
-      Number(reserva.comisionPlataforma),
-      politica,
-      new Date(reserva.fechaEntrada)
-    )
-    reembolsoInfo = calc.mensaje
-  }
-
-  const politicaLabel = POLITICAS_CANCELACION[politica]?.nombre ?? politica
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Cancelar reserva</DialogTitle>
-          <DialogDescription>
-            Estás cancelando tu reserva para &quot;{reserva.propiedad.titulo}&quot; del{' '}
-            {formatFechaCorta(reserva.fechaEntrada)} al {formatFechaCorta(reserva.fechaSalida)}.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-3 py-2">
-          <div className="rounded-lg border border-[#E8E4DF] bg-[#F8F6F3] p-3">
-            <p className="text-xs font-medium text-[#1A1A1A]">
-              Política de cancelación: {politicaLabel}
-            </p>
-            <p className="text-xs text-[#6B6560]">
-              {POLITICAS_CANCELACION[politica]?.descripcion}
-            </p>
-          </div>
-
-          {esConfirmada && reembolsoInfo && (
-            <div className="rounded-lg border border-[#D8F3DC] bg-[#F0FFF4] p-3">
-              <p className="text-xs font-medium text-[#1B4332]">{reembolsoInfo}</p>
-            </div>
-          )}
-
-          <p className="text-xs text-[#9E9892]">
-            Se notificará al anfitrión sobre la cancelación.
-          </p>
-        </div>
-
-        <DialogFooter className="gap-2">
-          <DialogClose asChild>
-            <Button variant="outline" size="sm" className="border-[#E8E4DF] text-[#6B6560]">
-              Mantener reserva
-            </Button>
-          </DialogClose>
-          <form action={cancelarReservaAction}>
-            <input type="hidden" name="reservaId" value={reserva.id} />
-            <CancelSubmitButton />
-          </form>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
 
 type Pestana = 'proximas' | 'en_curso' | 'completadas' | 'canceladas'
 
@@ -129,57 +36,161 @@ const PESTANAS: { key: Pestana; etiqueta: string; icono: React.ElementType }[] =
   { key: 'canceladas', etiqueta: 'Canceladas', icono: XCircle },
 ]
 
-function ReservaCard({ reserva }: { reserva: ReservaConPropiedad }) {
+function ReservaCard({ reserva, onCancelar }: { reserva: ReservaConPropiedad; onCancelar: (id: string) => void }) {
   const esCancelable = sePuedeCancelar(reserva.estado)
-  const [dialogOpen, setDialogOpen] = useState(false)
+  const [expandido, setExpandido] = useState(false)
+  const [pending, startTransition] = useTransition()
+
+  const handleCancelar = () => {
+    startTransition(async () => {
+      const result = await cancelarReserva(reserva.id)
+      if (result.exito) {
+        toast.success('Reserva cancelada')
+        onCancelar(reserva.id)
+      } else if (result.error) {
+        toast.error(result.error.mensaje)
+      }
+    })
+  }
+
+  const esConfirmada = reserva.estado === 'CONFIRMADA'
+  const politica = reserva.propiedad.politicaCancelacion ?? 'MODERADA'
+  const politicaInfo = POLITICAS_CANCELACION[politica]
+
+  let reembolso = calcularReembolsoCompleto(
+    Number(reserva.total),
+    Number(reserva.comisionPlataforma),
+    politica,
+    new Date(reserva.fechaEntrada)
+  )
 
   return (
-    <>
-      <Card className="border-[#E8E4DF] transition-shadow hover:shadow-md">
-        <CardContent className="flex items-center gap-4 py-4">
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#D8F3DC] to-[#F8F6F3]">
-            <Home className="h-6 w-6 text-[#1B4332]/30" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <h4 className="truncate text-sm font-semibold text-[#1A1A1A]">
-              {reserva.propiedad.titulo}
-            </h4>
-            <p className="text-xs text-[#6B6560]">
-              {formatFechaCorta(reserva.fechaEntrada)} — {formatFechaCorta(reserva.fechaSalida)}
-            </p>
-            <p className="text-xs text-[#9E9892]">
-              {reserva.noches} noche{reserva.noches !== 1 ? 's' : ''}
-            </p>
-          </div>
-          <div className="flex shrink-0 flex-col items-end gap-1">
-            <Badge className={ESTADO_RESERVA_COLORS[reserva.estado] ?? 'bg-[#F8F6F3] text-[#6B6560]'}>
-              {ESTADO_RESERVA_LABELS[reserva.estado] ?? reserva.estado}
-            </Badge>
-            <span className="text-sm font-bold text-[#1B4332]">
-              {formatPrecio(Number(reserva.total), reserva.moneda)}
-            </span>
-            {esCancelable && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-1 border-[#C1121F] text-[#C1121F] hover:bg-[#FEE2E2]"
-                onClick={() => setDialogOpen(true)}
-              >
-                <XCircle className="mr-1 h-3.5 w-3.5" />
-                Cancelar
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-      {esCancelable && (
-        <CancelarDialog
-          reserva={reserva}
-          open={dialogOpen}
-          onOpenChange={setDialogOpen}
-        />
-      )}
-    </>
+    <div className="rounded-2xl border border-[#E8E4DF] bg-white overflow-hidden transition-all hover:border-[#52B788]/50 hover:shadow-sm">
+      <div className="flex items-center gap-4 px-5 py-4">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#D8F3DC]">
+          <Home className="h-5 w-5 text-[#1B4332]" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h4 className="truncate text-sm font-semibold text-[#1A1A1A]">
+            {reserva.propiedad.titulo}
+          </h4>
+          <p className="text-xs text-[#6B6560]">
+            {formatFechaCorta(reserva.fechaEntrada)} — {formatFechaCorta(reserva.fechaSalida)}
+          </p>
+          <p className="text-[10px] text-[#9E9892]">
+            {reserva.noches} noche{reserva.noches !== 1 ? 's' : ''}
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <Badge className={ESTADO_RESERVA_COLORS[reserva.estado] ?? 'bg-[#F8F6F3] text-[#6B6560]'}>
+            {ESTADO_RESERVA_LABELS[reserva.estado] ?? reserva.estado}
+          </Badge>
+          <span className="text-sm font-bold text-[#1B4332]">
+            {formatPrecio(Number(reserva.total), reserva.moneda)}
+          </span>
+          {esCancelable && (
+            <button
+              onClick={() => setExpandido(!expandido)}
+              className="mt-1 flex items-center gap-1 text-[10px] font-medium text-[#C1121F] hover:text-[#A0001A] transition-colors"
+            >
+              <XCircle className="h-3 w-3" />
+              Cancelar
+              <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${expandido ? 'rotate-180' : ''}`} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {expandido && esCancelable && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="border-t border-[#E8E4DF] px-5 py-4 space-y-3">
+
+              <div className="flex items-center gap-2 text-xs text-[#9E9892]">
+                <CalendarDays className="h-3 w-3 shrink-0" />
+                <span>{formatFechaCorta(reserva.fechaEntrada)} → {formatFechaCorta(reserva.fechaSalida)}</span>
+                <span className="text-[#E8E4DF]">·</span>
+                <span>{reserva.noches} noche{reserva.noches !== 1 ? 's' : ''}</span>
+              </div>
+
+              <div className="rounded-xl border border-[#E8E4DF] bg-[#FDFCFA] p-3.5 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-3.5 w-3.5 text-[#9E9892] shrink-0" />
+                  <span className="text-xs font-semibold text-[#1A1A1A]">
+                    Política: {politicaInfo?.nombre ?? politica}
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#6B6560] leading-relaxed pl-5.5">
+                  {politicaInfo?.descripcion}
+                </p>
+              </div>
+
+              {esConfirmada && (
+                <div className={`rounded-xl border p-3.5 ${
+                  reembolso.porcentajeReembolso === 100
+                    ? 'border-[#D8F3DC] bg-[#F0FFF4]'
+                    : reembolso.porcentajeReembolso > 0
+                      ? 'border-[#FEF3C7] bg-[#FFFBEB]'
+                      : 'border-[#FEE2E2] bg-[#FEF2F2]'
+                }`}>
+                  <div className="flex items-center gap-2.5 text-sm">
+                    <Receipt className="h-3.5 w-3.5 text-[#9E9892] shrink-0" />
+                    <span className="text-[#9E9892]">Total pagado</span>
+                    <span className="flex-1 border-b border-dotted border-[#E8E4DF] min-w-[12px]" />
+                    <span className="font-medium text-[#1A1A1A]">{formatPrecio(Number(reserva.total), reserva.moneda)}</span>
+                  </div>
+                  <div className="flex items-center gap-2.5 text-sm mt-1.5">
+                    <Receipt className="h-3.5 w-3.5 shrink-0 transparent" />
+                    <span className={`text-xs ${
+                      reembolso.porcentajeReembolso === 100
+                        ? 'text-[#1B4332]'
+                        : reembolso.porcentajeReembolso > 0
+                          ? 'text-[#92400E]'
+                          : 'text-[#C1121F]'
+                    }`}>
+                      {reembolso.mensaje}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {esConfirmada && reembolso.porcentajeReembolso === 0 && (
+                <p className="text-[10px] text-[#C1121F]/70 text-center">
+                  Al cancelar ahora no recibirás reembolso según la política {politicaInfo?.nombre}.
+                </p>
+              )}
+
+              <p className="text-[10px] text-[#9E9892] text-center">
+                Se notificará al anfitrión sobre la cancelación.
+              </p>
+
+              <div className="flex gap-2 pt-1">
+                <button
+                  onClick={() => setExpandido(false)}
+                  className="flex-1 flex h-9 items-center justify-center rounded-xl border border-[#E8E4DF] text-xs font-medium text-[#6B6560] transition-all hover:bg-[#F8F6F3]"
+                >
+                  Mantener reserva
+                </button>
+                <button
+                  disabled={pending}
+                  onClick={handleCancelar}
+                  className="flex-1 flex h-9 items-center justify-center gap-1.5 rounded-xl bg-[#C1121F] text-xs font-medium text-white transition-all hover:bg-[#A0001A] disabled:opacity-60"
+                >
+                  {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <XCircle className="h-3.5 w-3.5" />}
+                  Cancelar reserva
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   )
 }
 
@@ -194,19 +205,44 @@ export interface MisReservasClientProps {
 
 export function MisReservasClient({ reservas }: MisReservasClientProps) {
   const [activa, setActiva] = useState<Pestana>('proximas')
+  const [lista, setLista] = useState(reservas)
   const pestanaActual = PESTANAS.find((p) => p.key === activa)
-  const reservasActuales = reservas[activa]
+  const reservasActuales = lista[activa]
+
+  const handleCancelar = (id: string) => {
+    setLista((prev) => ({
+      ...prev,
+      proximas: prev.proximas.filter((r) => r.id !== id),
+      en_curso: prev.en_curso.filter((r) => r.id !== id),
+      canceladas: [
+        ...prev.canceladas,
+        ...(prev.proximas.find((r) => r.id === id) || prev.en_curso.find((r) => r.id === id)
+          ? [{ ...(prev.proximas.find((r) => r.id === id) || prev.en_curso.find((r) => r.id === id)!), estado: 'CANCELADA_HUESPED' as const }]
+          : []),
+      ],
+    }))
+  }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-[#1A1A1A]">Mis reservas</h1>
-        <p className="text-sm text-[#6B6560]">Consulta y gestiona todas tus reservas</p>
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1B4332] via-[#2D6A4F] to-[#40916C]">
+        <div className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-white/5" />
+        <div className="pointer-events-none absolute -bottom-8 -left-8 h-36 w-36 rounded-full bg-white/5" />
+        <div className="pointer-events-none absolute bottom-4 right-20 h-20 w-20 rounded-full bg-white/[0.03]" />
+        <div className="relative flex items-center gap-4 p-6">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/10">
+            <CalendarDays className="h-6 w-6 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl font-bold tracking-tight text-white sm:text-2xl">Mis reservas</h1>
+            <p className="text-sm text-white/70">Consulta y gestiona todas tus reservas</p>
+          </div>
+        </div>
       </div>
 
       <div className="flex gap-2 overflow-x-auto border-b border-[#E8E4DF] pb-0">
         {PESTANAS.map((p) => {
-          const cantidad = reservas[p.key].length
+          const cantidad = lista[p.key].length
           const Icono = p.icono
           const esActiva = activa === p.key
           return (
@@ -222,7 +258,9 @@ export function MisReservasClient({ reservas }: MisReservasClientProps) {
               <Icono className="h-4 w-4" />
               {p.etiqueta}
               {cantidad > 0 && (
-                <span className="rounded-full bg-[#F8F6F3] px-2 py-0.5 text-xs text-[#6B6560]">
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                  esActiva ? 'bg-[#D8F3DC] text-[#1B4332]' : 'bg-[#F8F6F3] text-[#6B6560]'
+                }`}>
                   {cantidad}
                 </span>
               )}
@@ -234,7 +272,7 @@ export function MisReservasClient({ reservas }: MisReservasClientProps) {
       {reservasActuales.length === 0 ? (
         <Card className="border-[#E8E4DF]">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#F8F6F3]">
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-[#F8F6F3]">
               <CalendarDays className="h-6 w-6 text-[#9E9892]" />
             </div>
             <h3 className="text-sm font-semibold text-[#1A1A1A]">
@@ -256,7 +294,7 @@ export function MisReservasClient({ reservas }: MisReservasClientProps) {
       ) : (
         <div className="space-y-3">
           {reservasActuales.map((reserva) => (
-            <ReservaCard key={reserva.id} reserva={reserva} />
+            <ReservaCard key={reserva.id} reserva={reserva} onCancelar={handleCancelar} />
           ))}
         </div>
       )}

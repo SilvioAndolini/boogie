@@ -1,8 +1,8 @@
 'use client'
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
-import { useCallback, useMemo, Suspense } from 'react'
-import { X, SlidersHorizontal } from 'lucide-react'
+import { useCallback, useMemo, Suspense, useState } from 'react'
+import { X, SlidersHorizontal, Check } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -49,17 +49,47 @@ const ORDENAR = [
   { value: 'rating', label: 'Mejor calificados' },
 ]
 
-const FILTER_KEYS = ['tipoPropiedad', 'precioMin', 'precioMax', 'huespedes', 'habitaciones', 'banos', 'ordenarPor']
+const AMENIDADES_POR_CATEGORIA: Record<string, { nombre: string; icono: string }[]> = {
+  'Esenciales': [
+    { nombre: 'Wi-Fi', icono: '📶' },
+    { nombre: 'Aire acondicionado', icono: '❄️' },
+    { nombre: 'Estacionamiento', icono: '🅿️' },
+    { nombre: 'Agua caliente', icono: '🚿' },
+  ],
+  'Cocina': [
+    { nombre: 'Cocina completa', icono: '🍳' },
+    { nombre: 'Refrigerador', icono: '🧊' },
+    { nombre: 'Cafetera', icono: '☕' },
+    { nombre: 'Microondas', icono: '📡' },
+  ],
+  'Comodidades': [
+    { nombre: 'TV', icono: '📺' },
+    { nombre: 'Lavadora', icono: '🫧' },
+    { nombre: 'Escritorio de trabajo', icono: '💻' },
+    { nombre: 'Ventilador', icono: '🌀' },
+  ],
+  'Exterior': [
+    { nombre: 'Piscina', icono: '🏊' },
+    { nombre: 'Terraza/Balcón', icono: '🌅' },
+    { nombre: 'Jardín', icono: '🌿' },
+    { nombre: 'Área de BBQ', icono: '🔥' },
+    { nombre: 'Vista al mar', icono: '🌊' },
+  ],
+  'Servicios': [
+    { nombre: 'Se permiten mascotas', icono: '🐾' },
+    { nombre: 'Adecuado para familias', icono: '👨‍👩‍👧' },
+    { nombre: 'Check-in self service', icono: '🔑' },
+  ],
+}
+
+const FILTER_KEYS = ['tipoPropiedad', 'precioMin', 'precioMax', 'huespedes', 'habitaciones', 'banos', 'amenidades', 'ordenarPor']
 const ANY_VALUE = 'Todos los tipos'
 
-const selectClass =
-  'h-8 w-full rounded-lg border-[#E8E4DF] bg-white text-xs'
-const triggerClass = 'text-[11px] font-medium'
-
-function FilterPanelInner({ onClose }: { onClose?: () => void }) {
+function FilterPanelInner({ onClose, hideHeader }: { onClose?: () => void; hideHeader?: boolean }) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const [amenidadSearch, setAmenidadSearch] = useState('')
 
   const updateParams = useCallback(
     (updates: Record<string, string>) => {
@@ -102,41 +132,66 @@ function FilterPanelInner({ onClose }: { onClose?: () => void }) {
     return `${min || '0'}-${max || ''}`
   }, [searchParams])
 
+  const selectedAmenidades = useMemo(() => {
+    const raw = searchParams.get('amenidades')
+    return raw ? raw.split(',').filter(Boolean) : []
+  }, [searchParams])
+
+  const toggleAmenidad = useCallback((nombre: string) => {
+    const current = selectedAmenidades.includes(nombre)
+      ? selectedAmenidades.filter((a) => a !== nombre)
+      : [...selectedAmenidades, nombre]
+    updateParams({ amenidades: current.join(',') })
+  }, [selectedAmenidades, updateParams])
+
+  const filteredCategorias = useMemo(() => {
+    if (!amenidadSearch.trim()) return AMENIDADES_POR_CATEGORIA
+    const search = amenidadSearch.toLowerCase()
+    const result: Record<string, { nombre: string; icono: string }[]> = {}
+    for (const [cat, items] of Object.entries(AMENIDADES_POR_CATEGORIA)) {
+      const filtered = items.filter((i) => i.nombre.toLowerCase().includes(search))
+      if (filtered.length > 0) result[cat] = filtered
+    }
+    return result
+  }, [amenidadSearch])
+
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b border-[#E8E4DF] px-4 py-3">
-        <div className="flex items-center gap-2">
-          <SlidersHorizontal className="h-4 w-4 text-[#1B4332]" />
-          <span className="text-sm font-semibold text-[#1A1A1A]">Filtros</span>
-          {activeCount > 0 && (
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#1B4332] text-[10px] font-bold text-white">
-              {activeCount}
-            </span>
-          )}
+      {!hideHeader && (
+        <div className="flex items-center justify-between border-b border-[#E8E4DF] px-5 py-3.5">
+          <div className="flex items-center gap-2">
+            <SlidersHorizontal className="h-4 w-4 text-[#1B4332]" />
+            <span className="text-sm font-semibold text-[#1A1A1A]">Filtros</span>
+            {activeCount > 0 && (
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#1B4332] text-[10px] font-bold text-white">
+                {activeCount}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {activeCount > 0 && (
+              <button
+                onClick={clearAll}
+                className="text-[11px] font-medium text-[#1B4332] hover:underline"
+              >
+                Limpiar todo
+              </button>
+            )}
+            {onClose && (
+              <button
+                onClick={onClose}
+                className="flex h-6 w-6 items-center justify-center rounded-md text-[#6B6560] transition-colors hover:bg-[#F8F6F3] hover:text-[#1A1A1A]"
+                aria-label="Cerrar filtros"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          {activeCount > 0 && (
-            <button
-              onClick={clearAll}
-              className="text-[11px] font-medium text-[#1B4332] hover:underline"
-            >
-              Limpiar todo
-            </button>
-          )}
-          {onClose && (
-            <button
-              onClick={onClose}
-              className="flex h-6 w-6 items-center justify-center rounded-md text-[#6B6560] transition-colors hover:bg-[#F8F6F3] hover:text-[#1A1A1A]"
-              aria-label="Cerrar filtros"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-      </div>
+      )}
 
-      <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
-        <div className="space-y-1.5">
+      <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5">
+        <div className="space-y-2">
           <label className="text-[11px] font-semibold uppercase tracking-wider text-[#6B6560]">
             Tipo de propiedad
           </label>
@@ -144,8 +199,8 @@ function FilterPanelInner({ onClose }: { onClose?: () => void }) {
             value={currentTipo || ANY_VALUE}
             onValueChange={(v) => setFilter('tipoPropiedad', v)}
           >
-            <SelectTrigger className={selectClass}>
-              <SelectValue className={triggerClass} placeholder="Todos los tipos" />
+            <SelectTrigger className="h-10 w-full rounded-xl border-[#E8E4DF] bg-white text-sm hover:border-[#D0CBC4]">
+              <SelectValue className="text-sm" placeholder="Todos los tipos" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={ANY_VALUE}>Todos los tipos</SelectItem>
@@ -158,9 +213,9 @@ function FilterPanelInner({ onClose }: { onClose?: () => void }) {
           </Select>
         </div>
 
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <label className="text-[11px] font-semibold uppercase tracking-wider text-[#6B6560]">
-            Precio por noche
+            Rango de precio
           </label>
           <Select
             value={currentPrecioKey || ANY_VALUE}
@@ -178,8 +233,8 @@ function FilterPanelInner({ onClose }: { onClose?: () => void }) {
               }
             }}
           >
-            <SelectTrigger className={selectClass}>
-              <SelectValue className={triggerClass} placeholder="Cualquier precio" />
+            <SelectTrigger className="h-10 w-full rounded-xl border-[#E8E4DF] bg-white text-sm hover:border-[#D0CBC4]">
+              <SelectValue className="text-sm" placeholder="Cualquier precio" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={ANY_VALUE}>Cualquier precio</SelectItem>
@@ -192,73 +247,115 @@ function FilterPanelInner({ onClose }: { onClose?: () => void }) {
           </Select>
         </div>
 
-        <div className="space-y-1.5">
-          <label className="text-[11px] font-semibold uppercase tracking-wider text-[#6B6560]">
-            Huéspedes
-          </label>
-          <Select
-            value={searchParams.get('huespedes') ?? ANY_VALUE}
-            onValueChange={(v) => setFilter('huespedes', v)}
-          >
-            <SelectTrigger className={selectClass}>
-              <SelectValue className={triggerClass} placeholder="Cualquiera" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ANY_VALUE}>Cualquiera</SelectItem>
-              {RANGOS_NUMERICOS.map((r) => (
-                <SelectItem key={r.value} value={r.value}>
-                  {r.label} huéspedes
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="space-y-2">
+            <label className="text-[11px] font-semibold uppercase tracking-wider text-[#6B6560]">
+              Huéspedes
+            </label>
+            <Select
+              value={searchParams.get('huespedes') ?? ANY_VALUE}
+              onValueChange={(v) => setFilter('huespedes', v)}
+            >
+              <SelectTrigger className="h-10 w-full rounded-xl border-[#E8E4DF] bg-white text-sm hover:border-[#D0CBC4]">
+                <SelectValue className="text-sm" placeholder="Cualquiera" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ANY_VALUE}>Todos</SelectItem>
+                {RANGOS_NUMERICOS.map((r) => (
+                  <SelectItem key={r.value} value={r.value}>
+                    {r.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-[11px] font-semibold uppercase tracking-wider text-[#6B6560]">
+              Habitaciones
+            </label>
+            <Select
+              value={searchParams.get('habitaciones') ?? ANY_VALUE}
+              onValueChange={(v) => setFilter('habitaciones', v)}
+            >
+              <SelectTrigger className="h-10 w-full rounded-xl border-[#E8E4DF] bg-white text-sm hover:border-[#D0CBC4]">
+                <SelectValue className="text-sm" placeholder="Cualquiera" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ANY_VALUE}>Todos</SelectItem>
+                {RANGOS_NUMERICOS.slice(0, 4).map((r) => (
+                  <SelectItem key={r.value} value={r.value}>
+                    {r.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-[11px] font-semibold uppercase tracking-wider text-[#6B6560]">
+              Baños
+            </label>
+            <Select
+              value={searchParams.get('banos') ?? ANY_VALUE}
+              onValueChange={(v) => setFilter('banos', v)}
+            >
+              <SelectTrigger className="h-10 w-full rounded-xl border-[#E8E4DF] bg-white text-sm hover:border-[#D0CBC4]">
+                <SelectValue className="text-sm" placeholder="Cualquiera" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ANY_VALUE}>Todos</SelectItem>
+                {RANGOS_NUMERICOS.slice(0, 3).map((r) => (
+                  <SelectItem key={r.value} value={r.value}>
+                    {r.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
-        <div className="space-y-1.5">
+        <div className="space-y-3">
           <label className="text-[11px] font-semibold uppercase tracking-wider text-[#6B6560]">
-            Habitaciones
+            Amenidades
           </label>
-          <Select
-            value={searchParams.get('habitaciones') ?? ANY_VALUE}
-            onValueChange={(v) => setFilter('habitaciones', v)}
-          >
-            <SelectTrigger className={selectClass}>
-              <SelectValue className={triggerClass} placeholder="Cualquiera" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ANY_VALUE}>Cualquiera</SelectItem>
-              {RANGOS_NUMERICOS.slice(0, 4).map((r) => (
-                <SelectItem key={r.value} value={r.value}>
-                  {r.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <input
+            type="text"
+            placeholder="Buscar amenidad..."
+            value={amenidadSearch}
+            onChange={(e) => setAmenidadSearch(e.target.value)}
+            className="h-9 w-full rounded-xl border border-[#E8E4DF] bg-white px-3 text-sm text-[#1A1A1A] placeholder-[#9E9892] outline-none transition-colors focus:border-[#1B4332]"
+          />
+          <div className="space-y-4">
+            {Object.entries(filteredCategorias).map(([categoria, items]) => (
+              <div key={categoria}>
+                <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-[#9E9892]">
+                  {categoria}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {items.map((item) => {
+                    const isSelected = selectedAmenidades.includes(item.nombre)
+                    return (
+                      <button
+                        key={item.nombre}
+                        onClick={() => toggleAmenidad(item.nombre)}
+                        className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${
+                          isSelected
+                            ? 'border-[#1B4332] bg-[#1B4332] text-white shadow-sm'
+                            : 'border-[#E8E4DF] bg-white text-[#6B6560] hover:border-[#1B4332]/40 hover:text-[#1A1A1A]'
+                        }`}
+                      >
+                        <span className="text-xs">{item.icono}</span>
+                        <span>{item.nombre}</span>
+                        {isSelected && <Check className="h-3 w-3 ml-0.5" />}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <div className="space-y-1.5">
-          <label className="text-[11px] font-semibold uppercase tracking-wider text-[#6B6560]">
-            Baños
-          </label>
-          <Select
-            value={searchParams.get('banos') ?? ANY_VALUE}
-            onValueChange={(v) => setFilter('banos', v)}
-          >
-            <SelectTrigger className={selectClass}>
-              <SelectValue className={triggerClass} placeholder="Cualquiera" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ANY_VALUE}>Cualquiera</SelectItem>
-              {RANGOS_NUMERICOS.slice(0, 3).map((r) => (
-                <SelectItem key={r.value} value={r.value}>
-                  {r.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <label className="text-[11px] font-semibold uppercase tracking-wider text-[#6B6560]">
             Ordenar por
           </label>
@@ -266,8 +363,8 @@ function FilterPanelInner({ onClose }: { onClose?: () => void }) {
             value={searchParams.get('ordenarPor') ?? 'recientes'}
             onValueChange={(v) => setFilter('ordenarPor', v)}
           >
-            <SelectTrigger className={selectClass}>
-              <SelectValue className={triggerClass} placeholder="Más recientes" />
+            <SelectTrigger className="h-10 w-full rounded-xl border-[#E8E4DF] bg-white text-sm hover:border-[#D0CBC4]">
+              <SelectValue className="text-sm" placeholder="Más recientes" />
             </SelectTrigger>
             <SelectContent>
               {ORDENAR.map((o) => (
@@ -283,10 +380,10 @@ function FilterPanelInner({ onClose }: { onClose?: () => void }) {
   )
 }
 
-export function FilterPanel({ onClose }: { onClose?: () => void }) {
+export function FilterPanel({ onClose, hideHeader }: { onClose?: () => void; hideHeader?: boolean }) {
   return (
     <Suspense fallback={<div className="h-full animate-pulse bg-[#F8F6F3]" />}>
-      <FilterPanelInner onClose={onClose} />
+      <FilterPanelInner onClose={onClose} hideHeader={hideHeader} />
     </Suspense>
   )
 }

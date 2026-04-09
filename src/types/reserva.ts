@@ -100,8 +100,8 @@ export const ESTADO_RESERVA_LABELS: Record<EstadoReserva, string> = {
   CONFIRMADA: 'Confirmada',
   EN_CURSO: 'En curso',
   COMPLETADA: 'Completada',
-  CANCELADA_HUESPED: 'Cancelada por ti',
-  CANCELADA_ANFITRION: 'Cancelada por el anfitrión',
+  CANCELADA_HUESPED: 'Cancelada por Huésped',
+  CANCELADA_ANFITRION: 'Cancelada por Anfitrión',
   RECHAZADA: 'Rechazada',
 } as const
 
