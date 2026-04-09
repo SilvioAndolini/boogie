@@ -39,8 +39,18 @@ const CATEGORIAS_IMAGEN = [
   { value: 'exterior', label: 'Exterior', icon: TreePine, color: 'bg-green-50 text-green-700 ring-green-200' },
   { value: 'piscina', label: 'Piscina', icon: Waves, color: 'bg-sky-50 text-sky-700 ring-sky-200' },
   { value: 'vistas', label: 'Vistas', icon: Mountain, color: 'bg-rose-50 text-rose-700 ring-rose-200' },
-  { value: 'otro', label: 'Otro', icon: HelpCircle, color: 'bg-gray-50 text-gray-600 ring-gray-200' },
 ] as const
+
+const CUSTOM_COLOR = 'bg-orange-50 text-orange-700 ring-orange-200'
+
+function parseCategoria(raw: string): { key: string; label: string; icon: typeof BedDouble; color: string } {
+  if (raw.startsWith('personalizada:')) {
+    return { key: raw, label: raw.slice(14), icon: HelpCircle, color: CUSTOM_COLOR }
+  }
+  const found = CATEGORIAS_IMAGEN.find((c) => c.value === raw)
+  if (found) return { key: found.value, label: found.label, icon: found.icon, color: found.color }
+  return { key: 'otro', label: 'Otro', icon: HelpCircle, color: 'bg-gray-50 text-gray-600 ring-gray-200' }
+}
 
 const SECCIONES = [
   { id: 'info', label: 'Información básica', icon: Home },
@@ -75,6 +85,8 @@ export default function NuevaPropiedadPage() {
   const [imagenes, setImagenes] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
   const [imagenCategorias, setImagenCategorias] = useState<string[]>([])
+  const [customInputVisible, setCustomInputVisible] = useState<number | null>(null)
+  const [customInputValue, setCustomInputValue] = useState('')
   const [optimizando, setOptimizando] = useState(false)
   const [latitud, setLatitud] = useState<number | null>(null)
   const [longitud, setLongitud] = useState<number | null>(null)
@@ -216,6 +228,14 @@ export default function NuevaPropiedadPage() {
       next[index] = categoria
       return next
     })
+    setCustomInputVisible(null)
+    setCustomInputValue('')
+  }
+
+  const confirmCustomCategoria = (index: number) => {
+    const trimmed = customInputValue.trim()
+    if (!trimmed) return
+    setCategoriaImagen(index, `personalizada:${trimmed}`)
   }
 
   const handleCrearBoogie = async () => {
@@ -546,51 +566,106 @@ export default function NuevaPropiedadPage() {
           {previews.length > 0 && (
             <div className="mt-4 space-y-3">
               {previews.map((src, i) => {
-                const cat = CATEGORIAS_IMAGEN.find((c) => c.value === (imagenCategorias[i] || 'otro')) ?? CATEGORIAS_IMAGEN[7]
-                const CatIcon = cat.icon
+                const parsed = parseCategoria(imagenCategorias[i] || 'otro')
+                const CatIcon = parsed.icon
+                const isCustomizing = customInputVisible === i
                 return (
-                  <div key={src} className="group flex gap-3 rounded-xl border border-[#E8E4DF] bg-[#FDFCFA] p-2 transition-all hover:border-[#D4CFC9]">
-                    <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg">
-                      <img src={src} alt="" className="h-full w-full object-cover" />
-                      {i === 0 && (
-                        <span className="absolute bottom-0.5 left-0.5 rounded bg-[#1B4332] px-1.5 py-px text-[9px] font-bold text-white">Principal</span>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => removeImagen(i)}
-                        className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                    <div className="flex flex-1 flex-col justify-center gap-1.5">
-                      <div className="flex items-center gap-1.5">
-                        <span className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${cat.color}`}>
+                  <div key={src} className="group rounded-xl border border-[#E8E4DF] bg-[#FDFCFA] transition-all hover:border-[#D4CFC9]">
+                    <div className="flex gap-3 p-2">
+                      <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg">
+                        <img src={src} alt="" className="h-full w-full object-cover" />
+                        {i === 0 && (
+                          <span className="absolute bottom-0.5 left-0.5 rounded bg-[#1B4332] px-1.5 py-px text-[9px] font-bold text-white">Principal</span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => removeImagen(i)}
+                          className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                      <div className="flex flex-1 flex-col justify-center gap-1.5">
+                        <span className={`inline-flex w-fit items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${parsed.color}`}>
                           <CatIcon className="h-3 w-3" />
-                          {cat.label}
+                          {parsed.label}
                         </span>
-                      </div>
-                      <div className="flex flex-wrap gap-1">
-                        {CATEGORIAS_IMAGEN.map((c) => {
-                          const isActive = (imagenCategorias[i] || 'otro') === c.value
-                          return (
-                            <button
-                              key={c.value}
-                              type="button"
-                              onClick={() => setCategoriaImagen(i, c.value)}
-                              className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[9px] font-medium transition-all ${
-                                isActive
-                                  ? `${c.color} ring-1 ring-inset`
+                        <div className="flex flex-wrap gap-1">
+                          {CATEGORIAS_IMAGEN.map((c) => {
+                            const isActive = parsed.key === c.value
+                            return (
+                              <button
+                                key={c.value}
+                                type="button"
+                                onClick={() => setCategoriaImagen(i, c.value)}
+                                className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[9px] font-medium transition-all ${
+                                  isActive
+                                    ? `${c.color} ring-1 ring-inset`
+                                    : 'bg-white text-[#9E9892] hover:bg-[#F4F1EC]'
+                                }`}
+                              >
+                                <c.icon className="h-2.5 w-2.5" />
+                                {c.label}
+                              </button>
+                            )
+                          })}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (isCustomizing) {
+                                setCustomInputVisible(null)
+                              } else {
+                                setCustomInputVisible(i)
+                                setCustomInputValue('')
+                              }
+                            }}
+                            className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[9px] font-medium transition-all ${
+                              parsed.key.startsWith('personalizada:')
+                                ? `${CUSTOM_COLOR} ring-1 ring-inset`
+                                : isCustomizing
+                                  ? 'bg-orange-50 text-orange-600 ring-1 ring-inset ring-orange-200'
                                   : 'bg-white text-[#9E9892] hover:bg-[#F4F1EC]'
-                              }`}
-                            >
-                              <c.icon className="h-2.5 w-2.5" />
-                              {c.label}
-                            </button>
-                          )
-                        })}
+                            }`}
+                          >
+                            <HelpCircle className="h-2.5 w-2.5" />
+                            Personalizar
+                          </button>
+                        </div>
                       </div>
                     </div>
+                    <AnimatePresence>
+                      {isCustomizing && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="flex items-center gap-2 border-t border-[#F4F1EC] px-3 py-2">
+                            <input
+                              type="text"
+                              value={customInputValue}
+                              onChange={(e) => setCustomInputValue(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); confirmCustomCategoria(i) } }}
+                              placeholder="Ej: Terraza, Garage, Lobby..."
+                              maxLength={30}
+                              className="h-7 flex-1 rounded-md border border-[#E8E4DF] bg-white px-2 text-[11px] text-[#1A1A1A] placeholder:text-[#C4BFBA] focus:border-[#1B4332] focus:outline-none focus:ring-1 focus:ring-[#1B4332]/20"
+                              autoFocus
+                            />
+                            <button
+                              type="button"
+                              onClick={() => confirmCustomCategoria(i)}
+                              disabled={!customInputValue.trim()}
+                              className="flex h-7 items-center gap-1 rounded-md bg-[#1B4332] px-2.5 text-[10px] font-medium text-white transition-colors hover:bg-[#2D6A4F] disabled:opacity-40"
+                            >
+                              <Check className="h-3 w-3" />
+                              Aplicar
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 )
               })}

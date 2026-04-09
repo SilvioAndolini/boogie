@@ -25,7 +25,12 @@ const CATEGORIA_LABELS: Record<string, string> = {
   otro: 'Otras fotos',
 }
 
-const CATEGORIA_ORDER = ['habitaciones', 'banos', 'cocina', 'areas_comunes', 'exterior', 'piscina', 'vistas', 'otro']
+function getLabel(cat: string): string {
+  if (cat.startsWith('personalizada:')) return cat.slice(14)
+  return CATEGORIA_LABELS[cat] || cat
+}
+
+const BASE_ORDER = ['habitaciones', 'banos', 'cocina', 'areas_comunes', 'exterior', 'piscina', 'vistas']
 
 interface PropertyLightboxProps {
   imagenes: ImagenPropiedad[]
@@ -52,7 +57,11 @@ export function PropertyLightbox({
 
   const availableCategories = useMemo(() => {
     const cats = new Set(sorted.map((img) => img.categoria || 'otro'))
-    return CATEGORIA_ORDER.filter((c) => cats.has(c))
+    const ordered: string[] = BASE_ORDER.filter((c) => cats.has(c))
+    if (cats.has('otro')) ordered.push('otro')
+    const customCats = Array.from(cats).filter((c) => c.startsWith('personalizada:')).sort()
+    ordered.push(...customCats)
+    return ordered
   }, [sorted])
 
   useEffect(() => {
@@ -140,7 +149,7 @@ export function PropertyLightbox({
             <div className="rounded-full bg-white/10 px-4 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
               {currentIndex + 1} / {groupedImages.length}
               {activeCategory && (
-                <span className="ml-2 text-white/60">· {CATEGORIA_LABELS[activeCategory] || activeCategory}</span>
+                <span className="ml-2 text-white/60">· {getLabel(activeCategory)}</span>
               )}
             </div>
 
@@ -172,7 +181,7 @@ export function PropertyLightbox({
                           : 'bg-white/10 text-white/60 hover:bg-white/20 hover:text-white'
                       }`}
                     >
-                      {CATEGORIA_LABELS[cat] || cat} ({count})
+                      {getLabel(cat)} ({count})
                     </button>
                   )
                 })}

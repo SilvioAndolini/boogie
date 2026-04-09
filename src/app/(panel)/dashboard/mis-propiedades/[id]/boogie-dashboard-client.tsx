@@ -802,29 +802,42 @@ function EditMode({ propiedad, onSave, guardando, onCancel }: {
                     { value: 'exterior', label: 'Ext.', icon: TreePine, color: 'bg-green-50 text-green-700 ring-green-200' },
                     { value: 'piscina', label: 'Piscina', icon: Waves, color: 'bg-sky-50 text-sky-700 ring-sky-200' },
                     { value: 'vistas', label: 'Vista', icon: Mountain, color: 'bg-rose-50 text-rose-700 ring-rose-200' },
-                    { value: 'otro', label: 'Otro', icon: HelpCircle, color: 'bg-gray-50 text-gray-600 ring-gray-200' },
                   ]
-                  const active = cats.find((c) => c.value === (imagenCategorias[i] || 'otro')) ?? cats[7]
+                  const customColor = 'bg-orange-50 text-orange-700 ring-orange-200'
+                  const rawCat = imagenCategorias[i] || 'otro'
+                  const isCustom = rawCat.startsWith('personalizada:')
+                  const activeLabel = isCustom ? rawCat.slice(14) : (cats.find((c) => c.value === rawCat)?.label ?? 'Otro')
+                  const activeIcon = isCustom ? HelpCircle : (cats.find((c) => c.value === rawCat)?.icon ?? HelpCircle)
+                  const activeColor = isCustom ? customColor : (cats.find((c) => c.value === rawCat)?.color ?? 'bg-gray-50 text-gray-600 ring-gray-200')
+                  const ActiveIcon = activeIcon
                   return (
-                    <div key={i} className="group flex gap-2.5 rounded-lg border border-[#1B4332]/20 bg-[#FDFCFA] p-2">
-                      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md">
-                        <img src={url} alt="" className="h-full w-full object-cover" />
-                        <button type="button" onClick={() => removeImagen(i)} className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#EF4444] text-white"><X className="h-2.5 w-2.5" /></button>
-                      </div>
-                      <div className="flex flex-1 flex-col justify-center gap-1">
-                        <span className={`inline-flex w-fit items-center gap-0.5 rounded px-1 py-0.5 text-[9px] font-semibold ring-1 ring-inset ${active.color}`}>
-                          <active.icon className="h-2.5 w-2.5" />{active.label}
-                        </span>
-                        <div className="flex flex-wrap gap-0.5">
-                          {cats.map((c) => {
-                            const isAct = (imagenCategorias[i] || 'otro') === c.value
-                            return (
-                              <button key={c.value} type="button" onClick={() => setImagenCategorias((p) => { const n = [...p]; n[i] = c.value; return n })}
-                                className={`inline-flex items-center gap-0.5 rounded px-1 py-px text-[8px] font-medium transition-all ${isAct ? `${c.color} ring-1 ring-inset` : 'bg-white text-[#9E9892] hover:bg-[#F4F1EC]'}`}>
-                                <c.icon className="h-2 w-2" />{c.label}
-                              </button>
-                            )
-                          })}
+                    <div key={i} className="group rounded-lg border border-[#1B4332]/20 bg-[#FDFCFA]">
+                      <div className="flex gap-2.5 p-2">
+                        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md">
+                          <img src={url} alt="" className="h-full w-full object-cover" />
+                          <button type="button" onClick={() => removeImagen(i)} className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#EF4444] text-white"><X className="h-2.5 w-2.5" /></button>
+                        </div>
+                        <div className="flex flex-1 flex-col justify-center gap-1">
+                          <span className={`inline-flex w-fit items-center gap-0.5 rounded px-1 py-0.5 text-[9px] font-semibold ring-1 ring-inset ${activeColor}`}>
+                            <ActiveIcon className="h-2.5 w-2.5" />{activeLabel}
+                          </span>
+                          <div className="flex flex-wrap gap-0.5">
+                            {cats.map((c) => {
+                              const isAct = rawCat === c.value
+                              return (
+                                <button key={c.value} type="button" onClick={() => setImagenCategorias((p) => { const n = [...p]; n[i] = c.value; return n })}
+                                  className={`inline-flex items-center gap-0.5 rounded px-1 py-px text-[8px] font-medium transition-all ${isAct ? `${c.color} ring-1 ring-inset` : 'bg-white text-[#9E9892] hover:bg-[#F4F1EC]'}`}>
+                                  <c.icon className="h-2 w-2" />{c.label}
+                                </button>
+                              )
+                            })}
+                            <button type="button" onClick={() => {
+                              const label = prompt('Nombre de la categoría personalizada:')
+                              if (label?.trim()) setImagenCategorias((p) => { const n = [...p]; n[i] = `personalizada:${label.trim()}`; return n })
+                            }} className={`inline-flex items-center gap-0.5 rounded px-1 py-px text-[8px] font-medium transition-all ${isCustom ? `${customColor} ring-1 ring-inset` : 'bg-white text-[#9E9892] hover:bg-[#F4F1EC]'}`}>
+                              <HelpCircle className="h-2 w-2" />Personalizar
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
