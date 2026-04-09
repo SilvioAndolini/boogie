@@ -1,8 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { getSeccionesDestacadasPublicas } from '@/actions/secciones-destacadas.actions'
 import { PreviewRow } from './preview-row'
 
 interface PropiedadPreview {
@@ -30,16 +28,10 @@ interface SeccionConPropiedades {
   propiedades: PropiedadPreview[]
 }
 
-export function BoogiePreviewsSection() {
-  const [secciones, setSecciones] = useState<SeccionConPropiedades[]>([])
+export function BoogiePreviewsSection({ secciones }: { secciones: unknown[] }) {
+  const seccionesData = (secciones || []) as unknown as SeccionConPropiedades[]
 
-  useEffect(() => {
-    getSeccionesDestacadasPublicas().then((data) => {
-      setSecciones(data as unknown as SeccionConPropiedades[])
-    })
-  }, [])
-
-  if (secciones.length === 0) return null
+  if (seccionesData.length === 0) return null
 
   return (
     <section className="relative py-20">
@@ -56,7 +48,7 @@ export function BoogiePreviewsSection() {
         </motion.div>
 
         <div className="space-y-12">
-          {secciones.map((seccion) => (
+          {seccionesData.map((seccion) => (
             <PreviewRow
               key={seccion.id}
               titulo={seccion.titulo}

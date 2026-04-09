@@ -4,34 +4,41 @@ import { NavbarInner } from './navbar-inner'
 import { NavbarSearchSlot } from './navbar-search-slot'
 
 export async function Navbar() {
-  const [cotizacion, supabase] = await Promise.all([
-    getCotizacionEuro(),
-    createClient(),
-  ])
+  let cotizacion = null
+  let usuario = null
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  try {
+    const [cotizacionResult, supabase] = await Promise.all([
+      getCotizacionEuro(),
+      createClient(),
+    ])
 
-  const usuario = user
-    ? {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (user) {
+      usuario = {
         id: user.id,
         nombre: user.user_metadata?.nombre || '',
         apellido: user.user_metadata?.apellido || '',
         email: user.email || '',
         avatar_url: user.user_metadata?.avatar_url || '',
       }
-    : null
+    }
 
-  const cotizacionData = cotizacion
-    ? {
-        tasa: cotizacion.tasa,
-        fuente: cotizacion.fuente,
+    if (cotizacionResult) {
+      cotizacion = {
+        tasa: cotizacionResult.tasa,
+        fuente: cotizacionResult.fuente,
       }
-    : null
+    }
+  } catch (err) {
+    console.error('[Navbar] Error loading data:', err)
+  }
 
   return (
-    <NavbarInner cotizacionEuro={cotizacionData} usuario={usuario}>
+    <NavbarInner cotizacionEuro={cotizacion} usuario={usuario}>
       <NavbarSearchSlot />
     </NavbarInner>
   )

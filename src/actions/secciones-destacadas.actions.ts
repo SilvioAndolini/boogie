@@ -19,100 +19,140 @@ export interface SeccionDestacada {
 }
 
 export async function getSeccionesDestacadasPublicas() {
-  const admin = createAdminClient()
+  try {
+    const admin = createAdminClient()
 
-  const { data: secciones, error } = await admin
-    .from('secciones_destacadas')
-    .select('*')
-    .eq('activa', true)
-    .order('orden', { ascending: true })
+    const { data: secciones, error } = await admin
+      .from('secciones_destacadas')
+      .select('*')
+      .eq('activa', true)
+      .order('orden', { ascending: true })
 
-  if (error) {
-    console.error('[getSeccionesDestacadasPublicas] Error:', error.message)
-    return []
-  }
-
-  const resultado: (SeccionDestacada & { propiedades: unknown[] })[] = []
-
-  for (const seccion of secciones || []) {
-    let propiedades: unknown[] = []
-
-    const selectFields = 'id, titulo, tipo_propiedad, precio_por_noche, moneda, ciudad, estado, slug, habitaciones, camas, banos, imagenes:imagenes_propiedad(url), resenas_agregado(rating_promedio, total_resenas)'
-
-    if (seccion.tipo_filtro === 'MANUAL' && seccion.propiedad_ids?.length > 0) {
-      const { data: props, error: propsError } = await admin
-        .from('propiedades')
-        .select(selectFields)
-        .in('id', seccion.propiedad_ids)
-        .eq('estado_publicacion', 'PUBLICADA')
-        .order('titulo')
-
-      if (propsError) {
-        console.error('[getSeccionesDestacadasPublicas] MANUAL query error:', propsError.message, 'ids:', seccion.propiedad_ids)
-      }
-
-      propiedades = (props || []).map((p: Record<string, unknown>) => ({
-        id: p.id,
-        titulo: p.titulo,
-        tipoPropiedad: p.tipo_propiedad,
-        precioPorNoche: Number(p.precio_por_noche),
-        moneda: p.moneda,
-        ciudad: p.ciudad,
-        estado: p.estado,
-        slug: p.slug,
-        habitaciones: p.habitaciones ?? 1,
-        camas: p.camas ?? 1,
-        banos: p.banos ?? 1,
-        imagenes: Array.isArray(p.imagenes) ? p.imagenes.map((i: Record<string, unknown>) => i.url) : [],
-        ratingPromedio: (p.resenas_agregado as Record<string, unknown>)?.rating_promedio ?? 0,
-        totalResenas: (p.resenas_agregado as Record<string, unknown>)?.total_resenas ?? 0,
-      }))
-    } else {
-      let query = admin
-        .from('propiedades')
-        .select(selectFields)
-        .eq('estado_publicacion', 'PUBLICADA')
-
-      if (seccion.filtro_ciudad) {
-        query = query.eq('ciudad', seccion.filtro_ciudad)
-      } else if (seccion.filtro_estado) {
-        query = query.eq('estado', seccion.filtro_estado)
-      }
-
-      if (seccion.tipo_filtro === 'RATING') {
-        query = query.order('rating_promedio', { referencedTable: 'resenas_agregado', ascending: false })
-      } else {
-        query = query.order('total_resenas', { referencedTable: 'resenas_agregado', ascending: false })
-      }
-
-      const { data: props, error: propsError } = await query.limit(10)
-
-      if (propsError) {
-        console.error('[getSeccionesDestacadasPublicas] filter query error:', propsError.message)
-      }
-
-      propiedades = (props || []).map((p: Record<string, unknown>) => ({
-        id: p.id,
-        titulo: p.titulo,
-        tipoPropiedad: p.tipo_propiedad,
-        precioPorNoche: Number(p.precio_por_noche),
-        moneda: p.moneda,
-        ciudad: p.ciudad,
-        estado: p.estado,
-        slug: p.slug,
-        habitaciones: p.habitaciones ?? 1,
-        camas: p.camas ?? 1,
-        banos: p.banos ?? 1,
-        imagenes: Array.isArray(p.imagenes) ? p.imagenes.map((i: Record<string, unknown>) => i.url) : [],
-        ratingPromedio: (p.resenas_agregado as Record<string, unknown>)?.rating_promedio ?? 0,
-        totalResenas: (p.resenas_agregado as Record<string, unknown>)?.total_resenas ?? 0,
-      }))
+    if (error) {
+      console.error('[getSeccionesDestacadasPublicas] secciones error:', error.message)
+      return []
     }
 
-    resultado.push({ ...seccion, propiedades })
-  }
+    if (!secciones || secciones.length === 0) return []
 
-  return resultado
+    const resultado: (SeccionDestacada & { propiedades: unknown[] })[] = []
+
+    for (const seccion of secciones) {
+      let propiedades: unknown[] = []
+
+      const propiedadIds = Array.isArray(seccion.propiedad_ids) ? seccion.propiedad_ids : []
+
+      if (seccion.tipo_filtro === 'MANUAL' && propiedadIds.length > 0) {
+        const { data: props, error: propsError } = await admin
+          .from('propiedades')
+          .select('id, titulo, tipo_propiedad, precio_por_noche, moneda, ciudad, estado, slug, habitaciones, camas, banos, rating_promedio, total_resenas')
+          .in('id', propiedadIds)
+          .eq('estado_publicacion', 'PUBLICADA')
+
+        if (propsError) {
+          console.error('[getSeccionesDestacadasPublicas] MANUAL error:', propsError.message, 'ids:', propiedadIds)
+        }
+
+        const propIds = (props || []).map((p: Record<string, unknown>) => p.id as string)
+
+        let imagenesMap: Record<string, string[]> = {}
+        if (propIds.length > 0) {
+          const { data: imgs } = await admin
+            .from('imagenes_propiedad')
+            .select('propiedad_id, url')
+            .in('propiedad_id', propIds)
+            .order('orden', { ascending: true })
+
+          for (const img of imgs || []) {
+            const pid = (img as Record<string, unknown>).propiedad_id as string
+            if (!imagenesMap[pid]) imagenesMap[pid] = []
+            imagenesMap[pid].push((img as Record<string, unknown>).url as string)
+          }
+        }
+
+        propiedades = (props || []).map((p: Record<string, unknown>) => ({
+          id: p.id,
+          titulo: p.titulo,
+          tipoPropiedad: p.tipo_propiedad,
+          precioPorNoche: Number(p.precio_por_noche),
+          moneda: p.moneda,
+          ciudad: p.ciudad,
+          estado: p.estado,
+          slug: p.slug,
+          habitaciones: p.habitaciones ?? 1,
+          camas: p.camas ?? 1,
+          banos: p.banos ?? 1,
+          imagenes: imagenesMap[p.id as string] || [],
+          ratingPromedio: (p.rating_promedio as number) ?? 0,
+          totalResenas: (p.total_resenas as number) ?? 0,
+        }))
+      } else {
+        let query = admin
+          .from('propiedades')
+          .select('id, titulo, tipo_propiedad, precio_por_noche, moneda, ciudad, estado, slug, habitaciones, camas, banos, rating_promedio, total_resenas')
+          .eq('estado_publicacion', 'PUBLICADA')
+
+        if (seccion.filtro_ciudad) {
+          query = query.eq('ciudad', seccion.filtro_ciudad)
+        } else if (seccion.filtro_estado) {
+          query = query.eq('estado', seccion.filtro_estado)
+        }
+
+        if (seccion.tipo_filtro === 'RATING') {
+          query = query.order('rating_promedio', { ascending: false, nullsFirst: false })
+        } else {
+          query = query.order('total_resenas', { ascending: false })
+        }
+
+        const { data: props, error: propsError } = await query.limit(10)
+
+        if (propsError) {
+          console.error('[getSeccionesDestacadasPublicas] filter error:', propsError.message)
+        }
+
+        const propIds = (props || []).map((p: Record<string, unknown>) => p.id as string)
+
+        let imagenesMap: Record<string, string[]> = {}
+        if (propIds.length > 0) {
+          const { data: imgs } = await admin
+            .from('imagenes_propiedad')
+            .select('propiedad_id, url')
+            .in('propiedad_id', propIds)
+            .order('orden', { ascending: true })
+
+          for (const img of imgs || []) {
+            const pid = (img as Record<string, unknown>).propiedad_id as string
+            if (!imagenesMap[pid]) imagenesMap[pid] = []
+            imagenesMap[pid].push((img as Record<string, unknown>).url as string)
+          }
+        }
+
+        propiedades = (props || []).map((p: Record<string, unknown>) => ({
+          id: p.id,
+          titulo: p.titulo,
+          tipoPropiedad: p.tipo_propiedad,
+          precioPorNoche: Number(p.precio_por_noche),
+          moneda: p.moneda,
+          ciudad: p.ciudad,
+          estado: p.estado,
+          slug: p.slug,
+          habitaciones: p.habitaciones ?? 1,
+          camas: p.camas ?? 1,
+          banos: p.banos ?? 1,
+          imagenes: imagenesMap[p.id as string] || [],
+          ratingPromedio: (p.rating_promedio as number) ?? 0,
+          totalResenas: (p.total_resenas as number) ?? 0,
+        }))
+      }
+
+      resultado.push({ ...seccion, propiedades })
+    }
+
+    return resultado
+  } catch (err) {
+    console.error('[getSeccionesDestacadasPublicas] Exception:', err)
+    return []
+  }
 }
 
 export async function getSeccionesDestacadasAdmin() {
@@ -302,16 +342,16 @@ export async function previsualizarPropiedadesPorUbicacion(tipoFiltro: string, f
   const admin = createAdminClient()
   let query = admin
     .from('propiedades')
-    .select('id, titulo, ciudad, estado, precio_por_noche, moneda, imagenes:imagenes_propiedad(url), resenas_agregado(rating_promedio, total_resenas)')
+    .select('id, titulo, ciudad, estado, precio_por_noche, moneda, rating_promedio, total_resenas, imagenes:imagenes_propiedad(url)')
     .eq('estado_publicacion', 'PUBLICADA')
 
   if (filtroCiudad) query = query.eq('ciudad', filtroCiudad)
   else if (filtroEstado) query = query.eq('estado', filtroEstado)
 
   if (tipoFiltro === 'RATING') {
-    query = query.order('rating_promedio', { referencedTable: 'resenas_agregado', ascending: false })
+    query = query.order('rating_promedio', { ascending: false, nullsFirst: false })
   } else {
-    query = query.order('total_resenas', { referencedTable: 'resenas_agregado', ascending: false })
+    query = query.order('total_resenas', { ascending: false })
   }
 
   const { data } = await query.limit(10)
@@ -324,7 +364,7 @@ export async function previsualizarPropiedadesPorUbicacion(tipoFiltro: string, f
     precioPorNoche: Number(p.precio_por_noche),
     moneda: p.moneda as string,
     imagen: Array.isArray(p.imagenes) && p.imagenes[0] ? (p.imagenes[0] as Record<string, unknown>).url as string : null,
-    ratingPromedio: (p.resenas_agregado as Record<string, unknown>)?.rating_promedio ?? 0,
-    totalResenas: (p.resenas_agregado as Record<string, unknown>)?.total_resenas ?? 0,
+    ratingPromedio: (p.rating_promedio as number) ?? 0,
+    totalResenas: (p.total_resenas as number) ?? 0,
   }))
 }

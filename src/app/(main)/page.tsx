@@ -1,4 +1,5 @@
 import dynamic from 'next/dynamic'
+import { getSeccionesDestacadasPublicas } from '@/actions/secciones-destacadas.actions'
 
 const HeroSection = dynamic(() => import('@/components/landing/hero-section').then(m => ({ default: m.HeroSection })), {
   ssr: true,
@@ -20,7 +21,9 @@ const PaymentsSection = dynamic(() => import('@/components/landing/payments-sect
   loading: () => <div className="h-96" />,
 })
 
-export default function HomePage() {
+export default async function HomePage() {
+  const seccionesDestacadas = await getSeccionesDestacadasPublicas()
+
   return (
     <div className="relative">
       <div className="pointer-events-none absolute inset-0 z-0" aria-hidden="true">
@@ -29,7 +32,7 @@ export default function HomePage() {
         <div className="glow-float-a absolute top-64 left-0 h-[400px] w-[400px] -translate-x-1/4 rounded-full bg-[#52B788]/15 blur-3xl" style={{ animationDelay: '-7s' }} />
 
         <div className="glow-float-b absolute top-[800px] right-0 h-[500px] w-[500px] translate-x-1/3 rounded-full bg-[#1B4332]/8 blur-3xl" />
-        <div className="glow-float-a absolute top-[900px] left-0 h-[400px] w-[400px] -translate-x-1/3 rounded-full bg-[#52B788]/10 blur-3xl" style={{ animationDelay: '-4s' } } />
+        <div className="glow-float-a absolute top-[900px] left-0 h-[400px] w-[400px] -translate-x-1/3 rounded-full bg-[#52B788]/10 blur-3xl" style={{ animationDelay: '-4s' }} />
 
         <div className="glow-float-a absolute top-[1400px] left-1/2 h-[400px] w-[600px] -translate-x-1/2 rounded-full bg-[#D8F3DC]/30 blur-3xl" style={{ animationDelay: '-3s' }} />
         <div className="glow-float-b absolute top-[1600px] right-0 h-[350px] w-[350px] translate-x-1/3 rounded-full bg-[#1B4332]/8 blur-3xl" />
@@ -40,7 +43,7 @@ export default function HomePage() {
 
       <div className="relative z-10">
         <HeroSection />
-        <BoogiePreviewsSection />
+        <BoogiePreviewsSection secciones={seccionesDestacadas} />
         <StepsSection />
         <PaymentsSection />
       </div>
