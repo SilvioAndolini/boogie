@@ -103,26 +103,34 @@ export default async function PropiedadDetallePage({ params }: Props) {
             </div>
 
             {/* ====== STATS ====== */}
-            <div className="mb-8 grid grid-cols-2 gap-3 rounded-2xl border border-[#E8E4DF] bg-white p-4 sm:grid-cols-4">
-              <div className="flex flex-col items-center gap-1.5 rounded-xl bg-[#F8F6F3] px-3 py-3 text-center">
-                <Users className="h-5 w-5 text-[#1B4332]" />
-                <span className="text-xs font-semibold text-[#1A1A1A]">{propiedad.capacidadMaxima}</span>
-                <span className="text-[10px] text-[#9E9892]">Huéspedes</span>
+            <div className="mb-8 grid grid-cols-4 gap-2 rounded-xl border border-[#E8E4DF] bg-white px-3 py-2.5">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 shrink-0 text-[#1B4332]" />
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-[#1A1A1A]">{propiedad.capacidadMaxima}</p>
+                  <p className="text-[9px] text-[#9E9892]">Huéspedes</p>
+                </div>
               </div>
-              <div className="flex flex-col items-center gap-1.5 rounded-xl bg-[#F8F6F3] px-3 py-3 text-center">
-                <DoorOpen className="h-5 w-5 text-[#1B4332]" />
-                <span className="text-xs font-semibold text-[#1A1A1A]">{propiedad.habitaciones}</span>
-                <span className="text-[10px] text-[#9E9892]">Habitaciones</span>
+              <div className="flex items-center gap-2">
+                <DoorOpen className="h-4 w-4 shrink-0 text-[#1B4332]" />
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-[#1A1A1A]">{propiedad.habitaciones}</p>
+                  <p className="text-[9px] text-[#9E9892]">Habitaciones</p>
+                </div>
               </div>
-              <div className="flex flex-col items-center gap-1.5 rounded-xl bg-[#F8F6F3] px-3 py-3 text-center">
-                <BedDouble className="h-5 w-5 text-[#1B4332]" />
-                <span className="text-xs font-semibold text-[#1A1A1A]">{propiedad.camas}</span>
-                <span className="text-[10px] text-[#9E9892]">Camas</span>
+              <div className="flex items-center gap-2">
+                <BedDouble className="h-4 w-4 shrink-0 text-[#1B4332]" />
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-[#1A1A1A]">{propiedad.camas}</p>
+                  <p className="text-[9px] text-[#9E9892]">Camas</p>
+                </div>
               </div>
-              <div className="flex flex-col items-center gap-1.5 rounded-xl bg-[#F8F6F3] px-3 py-3 text-center">
-                <Bath className="h-5 w-5 text-[#1B4332]" />
-                <span className="text-xs font-semibold text-[#1A1A1A]">{propiedad.banos}</span>
-                <span className="text-[10px] text-[#9E9892]">Baños</span>
+              <div className="flex items-center gap-2">
+                <Bath className="h-4 w-4 shrink-0 text-[#1B4332]" />
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-[#1A1A1A]">{propiedad.banos}</p>
+                  <p className="text-[9px] text-[#9E9892]">Baños</p>
+                </div>
               </div>
             </div>
 
