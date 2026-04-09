@@ -209,7 +209,7 @@ export function BoogieStore({ noches, tasaCambio, onContinue, onBack, initialCar
           </AnimatePresence>
         </motion.div>
 
-        <motion.div variants={fadeUp} className="min-h-[240px]">
+        <motion.div variants={fadeUp} className="max-h-[340px] overflow-y-auto rounded-xl scrollbar-thin">
           {loading ? (
             <div className="flex items-center justify-center py-16">
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#1B4332] border-t-transparent" />
@@ -217,9 +217,9 @@ export function BoogieStore({ noches, tasaCambio, onContinue, onBack, initialCar
           ) : (
             <AnimatePresence mode="wait">
               {tab === 'productos' ? (
-                <motion.div key="prod-grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="grid grid-cols-2 gap-2.5">
+                <motion.div key="prod-grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="grid grid-cols-5 gap-1.5 p-1">
                   {filteredProductos.length === 0 && (
-                    <div className="col-span-2 py-12 text-center text-sm text-[#9E9892]">No hay productos disponibles</div>
+                    <div className="col-span-5 py-12 text-center text-sm text-[#9E9892]">No hay productos disponibles</div>
                   )}
                   {filteredProductos.map((prod) => {
                     const qty = getCartQty(prod.id, 'producto')
@@ -228,49 +228,46 @@ export function BoogieStore({ noches, tasaCambio, onContinue, onBack, initialCar
                         key={prod.id}
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className={`relative rounded-xl border bg-white p-3 transition-all ${
+                        className={`relative rounded-lg border bg-white overflow-hidden transition-all ${
                           qty > 0 ? 'border-[#52B788] ring-1 ring-[#52B788]/30' : 'border-[#E8E4DF]'
                         }`}
                       >
-                        {prod.imagenUrl ? (
-                          <div className="relative mb-2 h-20 w-full overflow-hidden rounded-lg bg-[#F8F6F3]">
-                            <img src={prod.imagenUrl} alt={prod.nombre} className="h-full w-full object-cover" />
-                          </div>
-                        ) : (
-                          <div className="mb-2 flex h-20 items-center justify-center rounded-lg bg-[#D8F3DC]/40">
-                            <Package className="h-8 w-8 text-[#1B4332]/30" />
-                          </div>
-                        )}
-                        <h3 className="text-xs font-bold text-[#1A1A1A] leading-tight">{prod.nombre}</h3>
-                        {prod.descripcion && (
-                          <p className="mt-0.5 text-[10px] text-[#9E9892] line-clamp-2">{prod.descripcion}</p>
-                        )}
-                        <p className="mt-2 text-sm font-bold text-[#1B4332]">{formatPrecio(prod.precio)}</p>
-                        <div className="mt-2 flex items-center justify-end gap-1.5">
-                          {qty > 0 && (
-                            <>
-                              <button
-                                onClick={() => removeFromCart(prod.id, 'producto')}
-                                className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#E8E4DF] text-[#6B6560] transition-all hover:bg-[#F8F6F3]"
-                              >
-                                <Minus className="h-3 w-3" />
-                              </button>
-                              <span className="min-w-[20px] text-center text-xs font-bold text-[#1B4332]">{qty}</span>
-                            </>
+                        <div className="relative w-full aspect-[3/4] bg-[#F8F6F3]">
+                          {prod.imagenUrl ? (
+                            <img src={prod.imagenUrl} alt={prod.nombre} className="h-full w-full object-contain" />
+                          ) : (
+                            <div className="flex h-full items-center justify-center">
+                              <Package className="h-5 w-5 text-[#1B4332]/20" />
+                            </div>
                           )}
-                          <button
-                            onClick={() => addToCart(prod, 'producto')}
-                            className="flex h-7 items-center gap-1 rounded-lg bg-[#1B4332] px-2.5 text-xs font-semibold text-white transition-all hover:bg-[#2D6A4F] active:scale-95"
-                          >
-                            <Plus className="h-3 w-3" />
-                          </button>
+                          {qty > 0 && (
+                            <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#1B4332] text-[8px] font-bold text-white">
+                              {qty}
+                            </span>
+                          )}
+                        </div>
+                        <div className="p-1.5">
+                          <h3 className="text-[9px] font-bold text-[#1A1A1A] leading-tight line-clamp-1">{prod.nombre}</h3>
+                          <p className="mt-0.5 text-[10px] font-bold text-[#1B4332]">{formatPrecio(prod.precio)}</p>
+                          <div className="mt-1 flex items-center justify-end">
+                            <button
+                              onClick={() => qty > 0 ? removeFromCart(prod.id, 'producto') : addToCart(prod, 'producto')}
+                              className={`flex h-5 w-5 items-center justify-center rounded text-[10px] font-semibold transition-all active:scale-95 ${
+                                qty > 0
+                                  ? 'border border-[#E8E4DF] text-[#6B6560] hover:bg-[#F8F6F3]'
+                                  : 'bg-[#1B4332] text-white hover:bg-[#2D6A4F]'
+                              }`}
+                            >
+                              {qty > 0 ? <Minus className="h-2.5 w-2.5" /> : <Plus className="h-2.5 w-2.5" />}
+                            </button>
+                          </div>
                         </div>
                       </motion.div>
                     )
                   })}
                 </motion.div>
               ) : (
-                <motion.div key="serv-grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="grid grid-cols-1 gap-2.5">
+                <motion.div key="serv-grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2 p-1">
                   {filteredServicios.length === 0 && (
                     <div className="py-12 text-center text-sm text-[#9E9892]">No hay servicios disponibles</div>
                   )}
@@ -283,52 +280,46 @@ export function BoogieStore({ noches, tasaCambio, onContinue, onBack, initialCar
                         key={serv.id}
                         initial={{ opacity: 0, scale: 0.98 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className={`relative rounded-xl border bg-white p-3.5 transition-all ${
+                        className={`relative rounded-xl border bg-white p-2.5 transition-all ${
                           qty > 0 ? 'border-[#52B788] ring-1 ring-[#52B788]/30' : 'border-[#E8E4DF]'
                         }`}
                       >
-                        <div className="flex items-start gap-3">
-                          {serv.imagenUrl ? (
-                            <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg">
-                              <img src={serv.imagenUrl} alt={serv.nombre} className="h-full w-full object-cover" />
-                            </div>
-                          ) : (
-                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-[#D8F3DC]/60">
-                              <ConciergeBell className="h-5 w-5 text-[#1B4332]" />
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-sm font-bold text-[#1A1A1A]">{serv.nombre}</h3>
-                            {serv.descripcion && (
-                              <p className="mt-0.5 text-[11px] text-[#9E9892] line-clamp-2">{serv.descripcion}</p>
+                        <div className="flex items-center gap-2.5">
+                          <div className="relative h-12 w-9 shrink-0 overflow-hidden rounded-lg bg-[#F8F6F3]">
+                            {serv.imagenUrl ? (
+                              <img src={serv.imagenUrl} alt={serv.nombre} className="h-full w-full object-contain" />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center">
+                                <ConciergeBell className="h-4 w-4 text-[#1B4332]/30" />
+                              </div>
                             )}
-                            <div className="mt-1.5 flex items-center gap-2">
-                              <span className="text-sm font-bold text-[#1B4332]">{formatPrecio(precioTotal)}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-[11px] font-bold text-[#1A1A1A]">{serv.nombre}</h3>
+                            <div className="mt-0.5 flex items-center gap-1.5">
+                              <span className="text-[11px] font-bold text-[#1B4332]">{formatPrecio(precioTotal)}</span>
                               {esPorNoche && (
-                                <span className="rounded bg-[#FEF3C7] px-1.5 py-0.5 text-[9px] font-semibold text-[#92400E]">
-                                  x {noches} noches
+                                <span className="rounded bg-[#FEF3C7] px-1 py-0.5 text-[8px] font-semibold text-[#92400E]">
+                                  x {noches}n
                                 </span>
                               )}
-                              <span className="text-[10px] text-[#9E9892]">
-                                ({TIPOS_PRECIO_LABELS[serv.tipoPrecio as TipoPrecio].toLowerCase()})
-                              </span>
                             </div>
                           </div>
-                          <div className="flex items-center gap-1.5 shrink-0">
+                          <div className="flex items-center gap-1 shrink-0">
                             {qty > 0 && (
                               <>
                                 <button
                                   onClick={() => removeFromCart(serv.id, 'servicio')}
-                                  className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#E8E4DF] text-[#6B6560] transition-all hover:bg-[#F8F6F3]"
+                                  className="flex h-6 w-6 items-center justify-center rounded-lg border border-[#E8E4DF] text-[#6B6560] transition-all hover:bg-[#F8F6F3]"
                                 >
                                   <Minus className="h-3 w-3" />
                                 </button>
-                                <span className="min-w-[20px] text-center text-xs font-bold text-[#1B4332]">{qty}</span>
+                                <span className="min-w-[16px] text-center text-[10px] font-bold text-[#1B4332]">{qty}</span>
                               </>
                             )}
                             <button
                               onClick={() => addToCart(serv, 'servicio')}
-                              className="flex h-7 items-center gap-1 rounded-lg bg-[#1B4332] px-2.5 text-xs font-semibold text-white transition-all hover:bg-[#2D6A4F] active:scale-95"
+                              className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#1B4332] text-xs font-semibold text-white transition-all hover:bg-[#2D6A4F] active:scale-95"
                             >
                               <Plus className="h-3 w-3" />
                             </button>
@@ -345,8 +336,8 @@ export function BoogieStore({ noches, tasaCambio, onContinue, onBack, initialCar
 
         <motion.div variants={fadeUp}>
           <button
-            onClick={() => setCartOpen(true)}
-            className={`relative flex w-full items-center justify-between rounded-xl border p-3.5 transition-all ${
+            onClick={() => setCartOpen(!cartOpen)}
+            className={`relative flex w-full items-center justify-between rounded-xl border p-3 transition-all ${
               cartCount > 0 ? 'border-[#52B788] bg-[#D8F3DC]/30' : 'border-[#E8E4DF] bg-white'
             }`}
           >
@@ -359,7 +350,7 @@ export function BoogieStore({ noches, tasaCambio, onContinue, onBack, initialCar
                   </span>
                 )}
               </div>
-              <div>
+              <div className="text-left">
                 <p className={`text-sm font-semibold ${cartCount > 0 ? 'text-[#1A1A1A]' : 'text-[#9E9892]'}`}>
                   {cartCount > 0 ? `${cartCount} item${cartCount > 1 ? 's' : ''} en el carrito` : 'Carrito vacio'}
                 </p>
@@ -368,8 +359,105 @@ export function BoogieStore({ noches, tasaCambio, onContinue, onBack, initialCar
                 )}
               </div>
             </div>
-            <ChevronDown className="h-4 w-4 text-[#9E9892]" />
+            <motion.div animate={{ rotate: cartOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
+              <ChevronDown className="h-4 w-4 text-[#9E9892]" />
+            </motion.div>
           </button>
+
+          <AnimatePresence>
+            {cartOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                className="overflow-hidden"
+              >
+                <div className="rounded-b-xl border-x border-b border-[#E8E4DF] bg-[#FEFCF9]">
+                  {cart.length === 0 ? (
+                    <div className="flex flex-col items-center gap-2 py-8">
+                      <ShoppingBag className="h-8 w-8 text-[#E8E4DF]" />
+                      <p className="text-xs text-[#9E9892]">Aun no has agregado nada</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="max-h-[200px] overflow-y-auto scrollbar-thin">
+                        <div className="space-y-0">
+                          {cart.map((item, i) => (
+                            <div
+                              key={`${item.tipo}-${item.id}`}
+                              className={`flex items-center gap-2.5 px-3.5 py-2.5 ${
+                                i > 0 ? 'border-t border-[#E8E4DF]/60' : ''
+                              }`}
+                            >
+                              <div className="relative h-8 w-6 shrink-0 overflow-hidden rounded bg-[#F8F6F3]">
+                                {item.imagenUrl ? (
+                                  <img src={item.imagenUrl} alt={item.nombre} className="h-full w-full object-contain" />
+                                ) : (
+                                  <div className="flex h-full w-full items-center justify-center">
+                                    {item.tipo === 'producto' ? (
+                                      <Package className="h-3.5 w-3.5 text-[#1B4332]/30" />
+                                    ) : (
+                                      <ConciergeBell className="h-3.5 w-3.5 text-[#92400E]/30" />
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[11px] font-semibold text-[#1A1A1A] truncate">{item.nombre}</p>
+                              </div>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <button
+                                  onClick={() => removeFromCart(item.id, item.tipo)}
+                                  className="flex h-5 w-5 items-center justify-center rounded border border-[#E8E4DF] text-[#6B6560] hover:bg-[#F8F6F3]"
+                                >
+                                  <Minus className="h-2.5 w-2.5" />
+                                </button>
+                                <span className="min-w-[16px] text-center text-[10px] font-bold text-[#1B4332]">{item.cantidad}</span>
+                                <button
+                                  onClick={() => addToCart(
+                                    { id: item.id, nombre: item.nombre, precio: item.precio, moneda: item.moneda, imagenUrl: item.imagenUrl, tipoPrecio: item.tipoPrecio } as StoreProducto & StoreServicio,
+                                    item.tipo
+                                  )}
+                                  className="flex h-5 w-5 items-center justify-center rounded border border-[#E8E4DF] text-[#6B6560] hover:bg-[#F8F6F3]"
+                                >
+                                  <Plus className="h-2.5 w-2.5" />
+                                </button>
+                              </div>
+                              <p className="w-14 text-right text-[11px] font-bold text-[#1B4332]">{formatPrecio(getItemTotal(item))}</p>
+                              <button
+                                onClick={() => deleteFromCart(item.id, item.tipo)}
+                                className="flex h-5 w-5 items-center justify-center rounded text-[#9E9892] hover:text-[#C1121F] transition-colors"
+                              >
+                                <Trash2 className="h-2.5 w-2.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="border-t border-[#E8E4DF] bg-[#D8F3DC]/20 px-3.5 py-2.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-[#1A1A1A]">Total</span>
+                          <span className="text-sm font-bold text-[#1B4332]">{formatPrecio(cartTotal)}</span>
+                        </div>
+                        {moneda === 'USD' && (
+                          <p className="mt-0.5 text-right text-[10px] text-[#9E9892]">
+                            Aprox. {formatVES(cartTotal, tasaCambio)}
+                          </p>
+                        )}
+                        {moneda === 'VES' && (
+                          <p className="mt-0.5 text-right text-[10px] text-[#9E9892]">
+                            Aprox. {formatUSD(cartTotal)}
+                          </p>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
 
         <motion.div variants={fadeUp} className="flex gap-3 pt-1">
@@ -388,121 +476,6 @@ export function BoogieStore({ noches, tasaCambio, onContinue, onBack, initialCar
           </button>
         </motion.div>
       </motion.div>
-
-      <AnimatePresence>
-        {cartOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
-              onClick={() => setCartOpen(false)}
-            />
-            <motion.div
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="fixed inset-x-0 bottom-0 z-50 max-h-[70vh] overflow-y-auto rounded-t-2xl border-t border-[#E8E4DF] bg-white"
-            >
-              <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#E8E4DF] bg-white px-5 py-4">
-                <h3 className="flex items-center gap-2 text-base font-bold text-[#1A1A1A]">
-                  <ShoppingBag className="h-5 w-5 text-[#1B4332]" />
-                  Tu carrito
-                </h3>
-                <button
-                  onClick={() => setCartOpen(false)}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-[#9E9892] transition-colors hover:bg-[#F8F6F3] hover:text-[#1A1A1A]"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-
-              {cart.length === 0 ? (
-                <div className="flex flex-col items-center gap-3 py-12">
-                  <ShoppingBag className="h-10 w-10 text-[#E8E4DF]" />
-                  <p className="text-sm text-[#9E9892]">Tu carrito esta vacio</p>
-                </div>
-              ) : (
-                <div className="p-5">
-                  <div className="space-y-3">
-                    {cart.map((item) => (
-                      <div key={`${item.tipo}-${item.id}`} className="flex items-center gap-3 rounded-xl border border-[#E8E4DF] p-3">
-                        {item.imagenUrl ? (
-                          <div className="h-9 w-9 shrink-0 overflow-hidden rounded-lg">
-                            <img src={item.imagenUrl} alt={item.nombre} className="h-full w-full object-cover" />
-                          </div>
-                        ) : (
-                          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-                            item.tipo === 'producto' ? 'bg-[#D8F3DC]/60' : 'bg-[#FEF3C7]/60'
-                          }`}>
-                            {item.tipo === 'producto' ? (
-                              <Package className="h-4 w-4 text-[#1B4332]" />
-                            ) : (
-                              <ConciergeBell className="h-4 w-4 text-[#92400E]" />
-                            )}
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-bold text-[#1A1A1A] truncate">{item.nombre}</p>
-                          <p className="text-[10px] text-[#9E9892]">
-                            {formatPrecio(item.tipo === 'servicio' && item.tipoPrecio === 'POR_NOCHE' ? item.precio * noches : item.precio)} c/u
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            onClick={() => removeFromCart(item.id, item.tipo)}
-                            className="flex h-6 w-6 items-center justify-center rounded border border-[#E8E4DF] text-[#6B6560] hover:bg-[#F8F6F3]"
-                          >
-                            <Minus className="h-3 w-3" />
-                          </button>
-                          <span className="min-w-[20px] text-center text-xs font-bold">{item.cantidad}</span>
-                          <button
-                            onClick={() => addToCart(
-                              { id: item.id, nombre: item.nombre, precio: item.precio, moneda: item.moneda, imagenUrl: item.imagenUrl, tipoPrecio: item.tipoPrecio } as StoreProducto & StoreServicio,
-                              item.tipo
-                            )}
-                            className="flex h-6 w-6 items-center justify-center rounded border border-[#E8E4DF] text-[#6B6560] hover:bg-[#F8F6F3]"
-                          >
-                            <Plus className="h-3 w-3" />
-                          </button>
-                        </div>
-                        <div className="w-16 text-right">
-                          <p className="text-xs font-bold text-[#1B4332]">{formatPrecio(getItemTotal(item))}</p>
-                        </div>
-                        <button
-                          onClick={() => deleteFromCart(item.id, item.tipo)}
-                          className="flex h-6 w-6 items-center justify-center rounded text-[#9E9892] hover:text-[#C1121F] transition-colors"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="mt-4 border-t border-[#E8E4DF] pt-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-bold text-[#1A1A1A]">Total del carrito</span>
-                      <span className="text-lg font-bold text-[#1B4332]">{formatPrecio(cartTotal)}</span>
-                    </div>
-                    {moneda === 'USD' && (
-                      <p className="mt-1 text-right text-xs text-[#9E9892]">
-                        Aprox. {formatVES(cartTotal, tasaCambio)}
-                      </p>
-                    )}
-                    {moneda === 'VES' && (
-                      <p className="mt-1 text-right text-xs text-[#9E9892]">
-                        Aprox. {formatUSD(cartTotal)}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
     </div>
   )
 }
