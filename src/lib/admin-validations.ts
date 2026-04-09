@@ -13,8 +13,16 @@ export const adminActualizarRolSchema = z.object({
   usuarioId: z.string().min(1, 'ID de usuario requerido'),
   rol: z.enum(['BOOGER', 'ANFITRION', 'AMBOS', 'ADMIN'], { error: 'Rol inválido' }).optional(),
   activo: z.enum(['true', 'false'], { error: 'Valor inválido' }).optional(),
+  plan: z.enum(['FREE', 'ULTRA'], { error: 'Plan inválido' }).optional(),
+  reputacion: z.string().optional(),
+  reputacion_manual: z.enum(['true', 'false']).optional(),
 }).refine(
-  (data) => data.rol !== undefined || data.activo !== undefined,
+  (data) =>
+    data.rol !== undefined ||
+    data.activo !== undefined ||
+    data.plan !== undefined ||
+    data.reputacion !== undefined ||
+    data.reputacion_manual !== undefined,
   { message: 'Debe especificar al menos un cambio' }
 )
 

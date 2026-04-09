@@ -5,9 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Users as UsersIcon, Search, Loader2, Shield, EyeOff, UserPlus, Trash2, X,
   CreditCard, Phone, CalendarDays, BadgeCheck, Ban, ArrowRightLeft, Crown, Sparkles, Star,
+  AlertTriangle, Pencil,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -57,11 +57,6 @@ const PLAN_LABELS: Record<string, string> = {
   ULTRA: 'Boogie Ultra',
 }
 
-const PLAN_COLORS: Record<string, string> = {
-  FREE: 'bg-[#F8F6F3] text-[#6B6560]',
-  ULTRA: 'bg-gradient-to-r from-[#D4A017] to-[#F5D060] text-[#3D2E00]',
-}
-
 const stagger = { hidden: {}, visible: { transition: { staggerChildren: 0.04 } } }
 const fadeUp = {
   hidden: { opacity: 0, y: 12, filter: 'blur(3px)' },
@@ -81,6 +76,8 @@ export default function AdminUsuariosPage() {
   const [tipoDocumento, setTipoDocumento] = useState<'CEDULA' | 'PASAPORTE'>('CEDULA')
   const [codigoPais, setCodigoPais] = useState('+58')
   const [rol, setRol] = useState<string>('BOOGER')
+  const [deleteModal, setDeleteModal] = useState<{ id: string; nombre: string; apellido: string } | null>(null)
+  const [localReputacion, setLocalReputacion] = useState<Record<string, string>>({})
   const registroRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -144,20 +141,47 @@ export default function AdminUsuariosPage() {
     setActualizando(null)
   }
 
-  const handleCambiarReputacion = async (usuarioId: string, valor: string, manual: boolean) => {
+  const handleActivarManual = async (usuarioId: string) => {
+    setActualizando(usuarioId)
+    const formData = new FormData()
+    formData.append('usuarioId', usuarioId)
+    formData.append('reputacion_manual', 'true')
+    const res = await actualizarRolUsuario(formData)
+    if (res.error) toast.error(res.error)
+    else { toast.success('Modo manual activado. Ingresa el valor.'); await cargarUsuarios() }
+    setActualizando(null)
+  }
+
+  const handleGuardarReputacion = async (usuarioId: string) => {
+    const valor = localReputacion[usuarioId] ?? ''
+    if (!valor) { toast.error('Ingresa un valor'); return }
+    const num = parseFloat(valor)
+    if (isNaN(num) || num < 0 || num > 5) { toast.error('Valor debe ser entre 0 y 5'); return }
     setActualizando(usuarioId)
     const formData = new FormData()
     formData.append('usuarioId', usuarioId)
     formData.append('reputacion', valor)
-    formData.append('reputacion_manual', String(manual))
+    formData.append('reputacion_manual', 'true')
     const res = await actualizarRolUsuario(formData)
     if (res.error) toast.error(res.error)
-    else { toast.success(manual ? 'Reputación manual establecida' : 'Reputación automática restaurada'); await cargarUsuarios() }
+    else { toast.success(`Reputación establecida a ${num.toFixed(1)}`); await cargarUsuarios() }
+    setActualizando(null)
+  }
+
+  const handleRestaurarAuto = async (usuarioId: string) => {
+    setActualizando(usuarioId)
+    const formData = new FormData()
+    formData.append('usuarioId', usuarioId)
+    formData.append('reputacion_manual', 'false')
+    const res = await actualizarRolUsuario(formData)
+    if (res.error) toast.error(res.error)
+    else { toast.success('Reputación automática restaurada'); await cargarUsuarios() }
     setActualizando(null)
   }
 
   const handleEliminar = async (usuarioId: string) => {
     setActualizando(usuarioId)
+    setDeleteModal(null)
     const formData = new FormData()
     formData.append('usuarioId', usuarioId)
     const res = await eliminarUsuarioAdmin(formData)
@@ -220,6 +244,53 @@ export default function AdminUsuariosPage() {
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="visible" className="mx-auto max-w-5xl">
+
+      {/* ====== DELETE MODAL ====== */}
+      <AnimatePresence>
+        {deleteModal && (
+          <motion.div
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setDeleteModal(null)} />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative w-full max-w-sm overflow-hidden rounded-2xl border border-[#E8E4DF] bg-white"
+            >
+              <div className="p-6 text-center">
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#FEE2E2]">
+                  <AlertTriangle className="h-7 w-7 text-[#C1121F]" />
+                </div>
+                <h3 className="mb-1 text-base font-bold text-[#1A1A1A]">Eliminar usuario</h3>
+                <p className="text-sm text-[#6B6560]">
+                  ¿Estás seguro de eliminar a <span className="font-semibold text-[#1A1A1A]">{deleteModal.nombre} {deleteModal.apellido}</span>?
+                </p>
+                <p className="mt-1 text-xs text-[#9E9892]">Esta acción es irreversible.</p>
+              </div>
+              <div className="flex border-t border-[#E8E4DF]">
+                <button
+                  onClick={() => setDeleteModal(null)}
+                  disabled={actualizando === deleteModal.id}
+                  className="flex-1 px-4 py-3 text-sm font-medium text-[#6B6560] transition-colors hover:bg-[#F8F6F3]"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => handleEliminar(deleteModal.id)}
+                  disabled={actualizando === deleteModal.id}
+                  className="flex-1 border-l border-[#E8E4DF] px-4 py-3 text-sm font-semibold text-[#C1121F] transition-colors hover:bg-[#FEE2E2]"
+                >
+                  {actualizando === deleteModal.id ? <Loader2 className="mx-auto h-4 w-4 animate-spin" /> : 'Eliminar'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ====== HERO HEADER ====== */}
       <motion.div variants={fadeUp} className="relative mb-6 overflow-hidden rounded-3xl bg-gradient-to-br from-[#1B4332] via-[#2D6A4F] to-[#40916C]">
@@ -515,6 +586,7 @@ export default function AdminUsuariosPage() {
                       className="overflow-hidden"
                     >
                       <div className="border-t border-[#E8E4DF]">
+                        {/* ====== USER INFO ====== */}
                         <div className="px-5 py-4">
                           <div className="flex flex-col gap-2.5">
                             <div className="flex items-center gap-2.5 text-sm">
@@ -545,75 +617,26 @@ export default function AdminUsuariosPage() {
                         </div>
 
                         {puedeModificar ? (
-                           <div className="space-y-0">
-                            <div className="flex items-center gap-2 border-t border-[#E8E4DF] px-5 py-3 bg-[#FDFCFA]">
-                              <div className="flex items-center gap-2 mr-auto">
-                                <ArrowRightLeft className="h-3.5 w-3.5 text-[#9E9892]" />
-                                <Select
-                                  defaultValue={u.rol}
-                                  onValueChange={(value) => handleActualizarRol(u.id, value!)}
-                                  disabled={actualizando === u.id}
-                                >
-                                  <SelectTrigger className="h-8 w-28 border-transparent bg-white shadow-sm rounded-lg text-xs font-medium text-[#1A1A1A] hover:border-[#E8E4DF]">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {Object.entries(ROL_LABELS).map(([key, label]) => (
-                                      <SelectItem key={key} value={key}>{label}</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-
-                              <button
-                                title={u.activo ? 'Suspender usuario' : 'Reactivar usuario'}
-                                disabled={actualizando === u.id}
-                                onClick={() => handleToggleActivo(u.id, u.activo)}
-                                className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all ${
-                                  u.activo
-                                    ? 'text-[#9E9892] hover:bg-[#FEE2E2] hover:text-[#C1121F]'
-                                    : 'text-[#9E9892] hover:bg-[#D8F3DC] hover:text-[#1B4332]'
-                                }`}
-                              >
-                                {actualizando === u.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : (u.activo ? <Ban className="h-3.5 w-3.5" /> : <BadgeCheck className="h-3.5 w-3.5" />)}
-                              </button>
-
-                              <button
-                                title="Eliminar usuario"
-                                disabled={actualizando === u.id}
-                                onClick={() => {
-                                  if (confirm(`¿Eliminar a ${u.nombre} ${u.apellido}? Esta acción es irreversible.`)) {
-                                    handleEliminar(u.id)
-                                  }
-                                }}
-                                className="flex h-8 w-8 items-center justify-center rounded-lg text-[#9E9892] transition-all hover:bg-[#FEE2E2] hover:text-[#C1121F]"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-
-                            <div className="flex items-center gap-2 border-t border-[#E8E4DF] px-5 py-3 bg-[#FDFCFA]">
+                          <div className="space-y-0">
+                            {/* ====== PLAN ====== */}
+                            <div className="flex items-center gap-2.5 border-t border-[#E8E4DF] px-5 py-3 bg-[#FDFCFA]">
                               <Crown className="h-3.5 w-3.5 text-[#D4A017] shrink-0" />
-                              <span className="text-[11px] font-medium text-[#6B6560]">Plan</span>
+                              <span className="text-[11px] font-medium text-[#6B6560] w-8">Plan</span>
                               <span className="flex-1" />
                               <Select
-                                defaultValue={u.plan_suscripcion || 'FREE'}
-                                onValueChange={(value) => handleCambiarPlan(u.id, value!)}
+                                value={u.plan_suscripcion || 'FREE'}
+                                onValueChange={(value) => handleCambiarPlan(u.id, value ?? 'FREE')}
                                 disabled={actualizando === u.id}
                               >
                                 <SelectTrigger className={`h-8 w-36 border shadow-sm rounded-lg text-xs font-semibold hover:border-[#E8E4DF] ${
                                   u.plan_suscripcion === 'ULTRA'
                                     ? 'border-[#D4A017]/40 bg-[#FEF9E7] text-[#B8860B]'
-                                    : 'border-transparent bg-white text-[#6B6560]'
+                                    : 'border-[#E8E4DF] bg-white text-[#6B6560]'
                                 }`}>
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="FREE">
-                                    <span className="flex items-center gap-1.5">
-                                      <span>Boogie Free</span>
-                                    </span>
-                                  </SelectItem>
+                                  <SelectItem value="FREE">Boogie Free</SelectItem>
                                   <SelectItem value="ULTRA">
                                     <span className="flex items-center gap-1.5">
                                       <Sparkles className="h-3 w-3 text-[#D4A017]" />
@@ -624,67 +647,113 @@ export default function AdminUsuariosPage() {
                               </Select>
                             </div>
 
+                            {/* ====== ROL ====== */}
+                            <div className="flex items-center gap-2.5 border-t border-[#E8E4DF] px-5 py-3 bg-[#FDFCFA]">
+                              <ArrowRightLeft className="h-3.5 w-3.5 text-[#9E9892] shrink-0" />
+                              <span className="text-[11px] font-medium text-[#6B6560] w-8">Rol</span>
+                              <span className="flex-1" />
+                              <Select
+                                value={u.rol}
+                                onValueChange={(value) => handleActualizarRol(u.id, value ?? 'BOOGER')}
+                                disabled={actualizando === u.id}
+                              >
+                                <SelectTrigger className="h-8 w-28 border border-[#E8E4DF] bg-white shadow-sm rounded-lg text-xs font-medium text-[#1A1A1A] hover:border-[#D4CFC9]">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {Object.entries(ROL_LABELS).map(([key, label]) => (
+                                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            {/* ====== REPUTACION (solo anfitriones) ====== */}
                             {(u.rol === 'ANFITRION' || u.rol === 'AMBOS') && (
-                              <div className="flex items-center gap-2 border-t border-[#E8E4DF] px-5 py-3 bg-[#FDFCFA]">
-                                <Star className={`h-3.5 w-3.5 shrink-0 ${u.reputacion ? 'fill-[#F4A261] text-[#F4A261]' : 'text-[#9E9892]'}`} />
-                                <span className="text-[11px] font-medium text-[#6B6560]">Reputación</span>
-                                {u.reputacion_manual && (
-                                  <span className="rounded bg-[#E0F2FE] px-1 py-px text-[8px] font-bold text-[#0369A1]">MANUAL</span>
-                                )}
-                                <span className="flex-1" />
-                                <div className="flex items-center gap-1.5">
-                                  <Select
-                                    defaultValue={u.reputacion_manual ? 'manual' : 'auto'}
-                                    onValueChange={(value) => {
-                                      if (value === 'auto') {
-                                        handleCambiarReputacion(u.id, '', false)
-                                      }
-                                    }}
-                                    disabled={actualizando === u.id}
-                                  >
-                                    <SelectTrigger className="h-8 w-24 border border-transparent bg-white shadow-sm rounded-lg text-[10px] font-medium text-[#6B6560] hover:border-[#E8E4DF]">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="auto">Automático</SelectItem>
-                                      <SelectItem value="manual">Manual</SelectItem>
-                                    </SelectContent>
-                                  </Select>
+                              <div className="border-t border-[#E8E4DF] px-5 py-3 bg-[#FDFCFA]">
+                                <div className="flex items-center gap-2.5">
+                                  <Star className={`h-3.5 w-3.5 shrink-0 ${u.reputacion ? 'fill-[#F4A261] text-[#F4A261]' : 'text-[#9E9892]'}`} />
+                                  <span className="text-[11px] font-medium text-[#6B6560]">Reputación</span>
                                   {u.reputacion_manual && (
-                                    <div className="flex items-center gap-1">
+                                    <span className="rounded bg-[#E0F2FE] px-1.5 py-px text-[8px] font-bold text-[#0369A1]">MANUAL</span>
+                                  )}
+                                  <span className="flex-1" />
+                                  {!u.reputacion_manual && (
+                                    <>
+                                      <span className={`text-xs font-bold ${u.reputacion ? 'text-[#1A1A1A]' : 'text-[#9E9892]'}`}>
+                                        {u.reputacion ? u.reputacion.toFixed(1) : '0.0'}
+                                      </span>
+                                      <span className="text-[10px] text-[#9E9892]">/ 5</span>
+                                    </>
+                                  )}
+                                </div>
+
+                                <div className="mt-2.5 flex items-center gap-2">
+                                  {!u.reputacion_manual ? (
+                                    <button
+                                      onClick={() => handleActivarManual(u.id)}
+                                      disabled={actualizando === u.id}
+                                      className="flex h-7 items-center gap-1.5 rounded-lg bg-[#F0FDF4] px-3 text-[10px] font-medium text-[#1B4332] ring-1 ring-inset ring-[#1B4332]/15 transition-colors hover:bg-[#D8F3DC]"
+                                    >
+                                      {actualizando === u.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Pencil className="h-3 w-3" /> Establecer manualmente</>}
+                                    </button>
+                                  ) : (
+                                    <>
                                       <input
                                         type="number"
                                         min="0"
                                         max="5"
                                         step="0.1"
-                                        defaultValue={u.reputacion ?? ''}
+                                        value={localReputacion[u.id] ?? (u.reputacion != null ? String(u.reputacion) : '')}
+                                        onChange={(e) => setLocalReputacion((prev) => ({ ...prev, [u.id]: e.target.value }))}
                                         placeholder="0.0"
-                                        className="h-8 w-14 rounded-lg border border-[#E8E4DF] bg-white px-2 text-xs font-semibold text-[#1A1A1A] text-center focus:border-[#1B4332] focus:outline-none"
-                                        onKeyDown={(e) => {
-                                          if (e.key === 'Enter') {
-                                            e.preventDefault()
-                                            const val = (e.target as HTMLInputElement).value
-                                            handleCambiarReputacion(u.id, val, true)
-                                          }
-                                        }}
-                                        onBlur={(e) => {
-                                          const val = e.target.value
-                                          if (val !== String(u.reputacion ?? '')) {
-                                            handleCambiarReputacion(u.id, val, true)
-                                          }
-                                        }}
+                                        className="h-7 w-16 rounded-lg border border-[#E8E4DF] bg-white px-2 text-xs font-semibold text-[#1A1A1A] text-center focus:border-[#1B4332] focus:outline-none"
                                       />
-                                      <span className="text-[10px] text-[#9E9892]">/5</span>
-                                    </div>
-                                  )}
-                                  {!u.reputacion_manual && (
-                                    <span className={`text-xs font-bold ${u.reputacion ? 'text-[#1A1A1A]' : 'text-[#9E9892]'}`}>
-                                      {u.reputacion ? u.reputacion.toFixed(1) : '0.0'}
-                                    </span>
+                                      <span className="text-[10px] text-[#9E9892]">/ 5</span>
+                                      <button
+                                        onClick={() => handleGuardarReputacion(u.id)}
+                                        disabled={actualizando === u.id}
+                                        className="flex h-7 items-center gap-1 rounded-lg bg-[#1B4332] px-3 text-[10px] font-medium text-white transition-colors hover:bg-[#2D6A4F] disabled:opacity-50"
+                                      >
+                                        {actualizando === u.id ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Guardar'}
+                                      </button>
+                                      <button
+                                        onClick={() => handleRestaurarAuto(u.id)}
+                                        disabled={actualizando === u.id}
+                                        className="flex h-7 items-center gap-1 rounded-lg bg-[#F4F1EC] px-3 text-[10px] font-medium text-[#6B6560] transition-colors hover:bg-[#E8E4DF]"
+                                      >
+                                        Automático
+                                      </button>
+                                    </>
                                   )}
                                 </div>
                               </div>
                             )}
+
+                            {/* ====== ACCIONES ====== */}
+                            <div className="flex items-center gap-2 border-t border-[#E8E4DF] px-5 py-3 bg-[#FDFCFA]">
+                              <button
+                                title={u.activo ? 'Suspender usuario' : 'Reactivar usuario'}
+                                disabled={actualizando === u.id}
+                                onClick={() => handleToggleActivo(u.id, u.activo)}
+                                className={`flex h-8 items-center gap-1.5 rounded-lg px-3 text-[10px] font-medium transition-all ${
+                                  u.activo
+                                    ? 'text-[#9E9892] hover:bg-[#FEE2E2] hover:text-[#C1121F]'
+                                    : 'text-[#1B4332] hover:bg-[#D8F3DC]'
+                                }`}
+                              >
+                                {actualizando === u.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : (u.activo ? <><Ban className="h-3 w-3" />Suspender</> : <><BadgeCheck className="h-3 w-3" />Reactivar</>)}
+                              </button>
+                              <span className="flex-1" />
+                              <button
+                                title="Eliminar usuario"
+                                disabled={actualizando === u.id}
+                                onClick={() => setDeleteModal({ id: u.id, nombre: u.nombre, apellido: u.apellido })}
+                                className="flex h-8 items-center gap-1.5 rounded-lg px-3 text-[10px] font-medium text-[#9E9892] transition-all hover:bg-[#FEE2E2] hover:text-[#C1121F]"
+                              >
+                                <Trash2 className="h-3 w-3" />Eliminar
+                              </button>
+                            </div>
                           </div>
                         ) : esCeo ? (
                           <div className="flex items-center gap-2 border-t border-[#E8E4DF] px-5 py-3 bg-[#FEF9E7]">
