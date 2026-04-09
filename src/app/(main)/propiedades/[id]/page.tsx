@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge'
 import { getPropiedadPorId } from '@/actions/propiedad.actions'
 import { PropertyGalleryWrapper } from './gallery-wrapper'
 import { BookingWidget } from '@/components/reservas/booking-widget'
+import { HostCard } from '@/components/propiedades/host-card'
 import { TIPOS_PROPIEDAD, POLITICAS_CANCELACION } from '@/lib/constants'
 import { getCotizacionEuro } from '@/lib/services/exchange-rate'
 import { LocationViewMap } from '@/components/propiedades/location-view'
@@ -211,6 +212,21 @@ export default async function PropiedadDetallePage({ params }: Props) {
               propiedadId={propiedad.id}
               tasaEuro={cotizacion.tasa}
             />
+
+            {propiedad.propietario && (
+              <div className="mt-4">
+                <HostCard
+                  nombre={propiedad.propietario.nombre}
+                  apellido={propiedad.propietario.apellido}
+                  avatar_url={propiedad.propietario.avatar_url}
+                  verificado={propiedad.propietario.verificado}
+                  plan_suscripcion={propiedad.propietario.plan_suscripcion}
+                  bio={propiedad.propietario.bio}
+                  ratingPromedio={propiedad.propietario.ratingPromedio}
+                  totalResenas={propiedad.propietario.totalResenas}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>

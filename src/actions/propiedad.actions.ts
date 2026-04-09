@@ -55,7 +55,7 @@ interface PropiedadDetalle {
   estanciaMaxima: number | null
   ratingPromedio: number | null
   totalResenas: number
-  propietario: { id: string; nombre: string; apellido: string; avatar_url: string | null; verificado: boolean } | null
+  propietario: { id: string; nombre: string; apellido: string; avatar_url: string | null; verificado: boolean; plan_suscripcion: string; bio: string | null; ratingPromedio: number; totalResenas: number } | null
   imagenes: { id: string; url: string; alt: string | null; orden: number; es_principal: boolean; categoria: string }[]
   amenidades: { amenidadId: string; amenidad: { id: string; nombre: string; icono: string | null; categoria: string } }[]
   resenas: { id: string; calificacion: number; comentario: string; fechaCreacion: string; autor: { nombre: string; apellido: string; avatar_url: string | null } }[]
@@ -719,7 +719,7 @@ async function _getPropiedadPorIdInternal(idOrSlug: string): Promise<PropiedadDe
 
   let query = supabase
     .from('propiedades')
-    .select('*, propietario:usuarios!propietario_id(id, nombre, apellido, avatar_url, verificado)')
+    .select('*, propietario:usuarios!propietario_id(id, nombre, apellido, avatar_url, verificado, plan_suscripcion, bio)')
 
   if (isUUID) {
     query = query.eq('id', idOrSlug)
@@ -753,6 +753,20 @@ async function _getPropiedadPorIdInternal(idOrSlug: string): Promise<PropiedadDe
 
   const p = propiedad as Record<string, unknown>
 
+  const propietarioRaw = p.propietario as Record<string, unknown> | null
+  let hostRating = 0
+  let hostTotalResenas = 0
+  if (propietarioRaw?.id) {
+    const { data: hostResenas } = await supabase
+      .from('resenas')
+      .select('calificacion')
+      .eq('anfitrion_id', propietarioRaw.id as string)
+    if (hostResenas && hostResenas.length > 0) {
+      hostTotalResenas = hostResenas.length
+      hostRating = hostResenas.reduce((sum: number, r: Record<string, unknown>) => sum + (r.calificacion as number), 0) / hostTotalResenas
+    }
+  }
+
   return {
     id: p.id as string,
     titulo: p.titulo as string,
@@ -778,7 +792,17 @@ async function _getPropiedadPorIdInternal(idOrSlug: string): Promise<PropiedadDe
     estanciaMaxima: p.estancia_maxima as number | null,
     ratingPromedio: p.rating_promedio as number | null,
     totalResenas: (p.total_resenas as number) ?? 0,
-    propietario: p.propietario as PropiedadDetalle['propietario'],
+    propietario: propietarioRaw ? {
+      id: propietarioRaw.id as string,
+      nombre: propietarioRaw.nombre as string,
+      apellido: propietarioRaw.apellido as string,
+      avatar_url: propietarioRaw.avatar_url as string | null,
+      verificado: propietarioRaw.verificado as boolean,
+      plan_suscripcion: (propietarioRaw.plan_suscripcion as string) || 'FREE',
+      bio: propietarioRaw.bio as string | null,
+      ratingPromedio: hostRating,
+      totalResenas: hostTotalResenas,
+    } : null,
     imagenes: (imagenes ?? []) as PropiedadDetalle['imagenes'],
     amenidades: ((amenidadesRaw ?? []) as Record<string, unknown>[]).map((a) => ({
       amenidadId: a.amenidad_id as string,
