@@ -165,24 +165,37 @@ export default function AdminDashboardPage() {
   const [statsLoading, setStatsLoading] = useState(true)
 
   const loadStats = useCallback(async () => {
-    const res = await getAdminStats()
-    if (res && 'usuarios' in res) {
-      setStats(res as unknown as Stats)
+    try {
+      const res = await getAdminStats()
+      if (res && 'usuarios' in res) {
+        setStats(res as unknown as Stats)
+        setStatsLoading(false)
+      }
+    } catch (err) {
+      console.error('[AdminDashboard] loadStats error:', err)
       setStatsLoading(false)
     }
   }, [])
 
   const loadCharts = useCallback(async () => {
-    const res = await getAdminChartsData()
-    if (res && 'ingresosByMonth' in res) {
-      setCharts(res as typeof charts)
+    try {
+      const res = await getAdminChartsData()
+      if (res && 'ingresosByMonth' in res) {
+        setCharts(res as typeof charts)
+      }
+    } catch (err) {
+      console.error('[AdminDashboard] loadCharts error:', err)
     }
   }, [])
 
   const loadTables = useCallback(async () => {
-    const res = await getAdminTablesData()
-    if (res && 'reservas' in res) {
-      setTables(res as typeof tables)
+    try {
+      const res = await getAdminTablesData()
+      if (res && 'reservas' in res) {
+        setTables(res as typeof tables)
+      }
+    } catch (err) {
+      console.error('[AdminDashboard] loadTables error:', err)
     }
   }, [])
 
@@ -328,6 +341,7 @@ export default function AdminDashboardPage() {
         {/* Ingresos + Usuarios */}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <CollapsibleSection
+            key="ingresos-mensuales"
             title="Ingresos mensuales"
             subtitle="Pagos verificados · Últimos 12 meses"
           >
@@ -357,6 +371,7 @@ export default function AdminDashboardPage() {
           </CollapsibleSection>
 
           <CollapsibleSection
+            key="nuevos-usuarios"
             title="Nuevos usuarios"
             subtitle="Registros diarios · Últimos 14 días"
           >
@@ -383,12 +398,15 @@ export default function AdminDashboardPage() {
         {/* Reservas por Estado + Propiedades por Ciudad */}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <CollapsibleSection
+            key="reservas-estado"
             title="Reservas por estado"
             subtitle="Distribución total"
             defaultOpen={false}
           >
             <div className="p-6 pt-4">
-              {!charts ? <ChartSkeleton /> : (
+              {!charts ? <ChartSkeleton /> : !Array.isArray(charts.reservasByStatus) ? (
+                <div className="flex h-52 items-center justify-center text-sm text-[#9E9892]">Sin datos</div>
+              ) : (
                 <Suspense fallback={<ChartSkeleton />}>
                   <div className="h-52 flex items-center justify-center">
                     {charts.reservasByStatus.length > 0 && charts.reservasByStatus.some(r => r.value > 0) ? (
@@ -424,12 +442,13 @@ export default function AdminDashboardPage() {
           </CollapsibleSection>
 
           <CollapsibleSection
+            key="boogies-ciudad"
             title="Boogies por ciudad"
             subtitle="Boogies publicados"
             defaultOpen={false}
           >
             <div className="p-6 pt-4">
-              {!charts ? <ChartSkeleton /> : !charts.propiedadesByCiudad.length ? (
+              {!charts ? <ChartSkeleton /> : !Array.isArray(charts.propiedadesByCiudad) || !charts.propiedadesByCiudad.length ? (
                 <div className="flex h-52 items-center justify-center text-sm text-[#9E9892]">Sin datos</div>
               ) : (
                 <Suspense fallback={<ChartSkeleton />}>
