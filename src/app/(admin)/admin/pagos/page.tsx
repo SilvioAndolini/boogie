@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   CreditCard, Search, Loader2, CheckCircle2, XCircle,
   Clock, DollarSign, TrendingUp, ArrowRight, ShieldCheck,
-  ChevronDown, FileText, Smartphone, Building2, Home,
+  ChevronDown, FileText, Smartphone, Building2, Home, ExternalLink, Coins,
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
@@ -37,6 +37,10 @@ interface Pago {
   fecha_verificacion: string | null
   fecha_acreditacion: string | null
   notas_verificacion: string | null
+  crypto_address: string | null
+  crypto_tx_hash: string | null
+  crypto_confirmations: number | null
+  crypto_value_coin: string | null
   reservas: ReservaMini | ReservaMini[] | null
   usuarios: { id: string; nombre: string; apellido: string; email: string } | null
 }
@@ -317,6 +321,30 @@ export default function AdminPagosPage() {
                               <span className="text-[#9E9892]">Referencia</span>
                               <span className="flex-1 border-b border-dotted border-[#E8E4DF] min-w-[12px]" />
                               <span className="font-medium text-[#1A1A1A] font-mono text-xs">{p.referencia}</span>
+                            </div>
+                          )}
+                          {p.metodo_pago === 'CRIPTO' && p.crypto_tx_hash && (
+                            <div className="flex items-center gap-2.5 text-sm">
+                              <Coins className="h-3.5 w-3.5 text-[#1B4332] shrink-0" />
+                              <span className="text-[#9E9892]">TX Hash</span>
+                              <span className="flex-1 border-b border-dotted border-[#E8E4DF] min-w-[12px]" />
+                              <a
+                                href={`https://tronscan.org/#/transaction/${p.crypto_tx_hash}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 font-mono text-xs font-medium text-[#1B4332] hover:underline"
+                              >
+                                {p.crypto_tx_hash.slice(0, 16)}...
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            </div>
+                          )}
+                          {p.metodo_pago === 'CRIPTO' && p.crypto_confirmations != null && (
+                            <div className="flex items-center gap-2.5 text-sm">
+                              <ShieldCheck className="h-3.5 w-3.5 text-[#9E9892] shrink-0" />
+                              <span className="text-[#9E9892]">Confirmaciones</span>
+                              <span className="flex-1 border-b border-dotted border-[#E8E4DF] min-w-[12px]" />
+                              <span className="font-medium text-[#1A1A1A]">{p.crypto_confirmations}</span>
                             </div>
                           )}
                           <div className="flex items-center gap-2.5 text-sm">

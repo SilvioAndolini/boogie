@@ -82,6 +82,7 @@ export const METODOS_PAGO = {
   USDT: 'USDT (Tether)',
   TARJETA_INTERNACIONAL: 'Tarjeta Internacional',
   EFECTIVO: 'Efectivo',
+  CRIPTO: 'Criptomonedas (USDT)',
 } as const
 
 // Políticas de cancelación

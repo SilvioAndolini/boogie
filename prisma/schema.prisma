@@ -267,6 +267,12 @@ model Pago {
   referencia          String?
   comprobante         String?
 
+  cryptoAddress       String?         @map("crypto_address")
+  cryptoTxHash        String?         @map("crypto_tx_hash")
+  cryptoConfirmations Int?            @default(0) @map("crypto_confirmations")
+  cryptoValueCoin     String?         @map("crypto_value_coin")
+  cryptoQrCode        String?         @map("crypto_qr_code")
+
   estado              EstadoPago      @default(PENDIENTE)
   fechaCreacion       DateTime        @default(now()) @map("fecha_creacion")
   fechaVerificacion   DateTime?       @map("fecha_verificacion")
@@ -293,6 +299,7 @@ enum MetodoPagoEnum {
   USDT
   TARJETA_INTERNACIONAL
   EFECTIVO
+  CRIPTO
 }
 
 enum EstadoPago {

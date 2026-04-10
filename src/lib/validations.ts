@@ -108,7 +108,7 @@ export const pagoSchema = z.object({
   reservaId: z.string(),
   metodoPago: z.enum([
     'TRANSFERENCIA_BANCARIA', 'PAGO_MOVIL', 'ZELLE',
-    'EFECTIVO_FARMATODO', 'USDT', 'TARJETA_INTERNACIONAL', 'EFECTIVO'
+    'EFECTIVO_FARMATODO', 'USDT', 'TARJETA_INTERNACIONAL', 'EFECTIVO', 'CRIPTO'
   ]),
   referencia: z.string().optional(),
   monto: z.coerce.number().min(1),

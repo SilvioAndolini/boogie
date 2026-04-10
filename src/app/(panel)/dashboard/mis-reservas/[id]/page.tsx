@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import {
   ArrowLeft, CalendarDays, Clock, Home, Users, Receipt, Shield,
@@ -195,9 +196,9 @@ export default async function ReservaDetallePage({ params }: Props) {
               const imagenUrl = (productoData?.imagen_url || servicioData?.imagen_url) as string | null
               return (
                 <div key={item.id as string} className="flex items-center gap-2.5 px-4 py-2">
-                  <div className="h-7 w-5 shrink-0 overflow-hidden rounded bg-[#F8F6F3]">
+                  <div className="relative h-7 w-5 shrink-0 overflow-hidden rounded bg-[#F8F6F3]">
                     {imagenUrl ? (
-                      <img src={imagenUrl} alt={item.nombre as string} className="h-full w-full object-contain" />
+                      <Image fill src={imagenUrl} alt={item.nombre as string} className="h-full w-full object-contain" />
                     ) : (
                       <div className={`flex h-full w-full items-center justify-center ${esServicio ? 'bg-[#FEF3C7]/60' : 'bg-[#D8F3DC]/60'}`}>
                         {esServicio ? (

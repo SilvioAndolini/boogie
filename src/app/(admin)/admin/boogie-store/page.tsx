@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus, Trash2, Edit3, Check, X, Package, ConciergeBell,
@@ -302,7 +303,7 @@ export default function BoogieStoreAdminPage() {
                       >
                         {formImagenUrl ? (
                           <>
-                            <img src={formImagenUrl} alt="" className="h-full w-full object-cover" />
+                            <Image fill src={formImagenUrl} alt="" className="h-full w-full object-cover" />
                             <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition-opacity group-hover:opacity-100">
                               <Upload className="h-5 w-5 text-white" />
                             </div>
@@ -462,7 +463,7 @@ export default function BoogieStoreAdminPage() {
                       }`}
                     >
                       {p.imagen_url ? (
-                        <img src={p.imagen_url} alt={p.nombre} className="h-12 w-12 shrink-0 rounded-lg object-cover" />
+                        <Image src={p.imagen_url} alt={p.nombre} width={48} height={48} className="h-12 w-12 shrink-0 rounded-lg object-cover" />
                       ) : (
                         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[#D8F3DC]/60">
                           <Package className="h-5 w-5 text-[#1B4332]" />
@@ -530,7 +531,7 @@ export default function BoogieStoreAdminPage() {
                       }`}
                     >
                       {s.imagen_url ? (
-                        <img src={s.imagen_url} alt={s.nombre} className="h-12 w-12 shrink-0 rounded-lg object-cover" />
+                        <Image src={s.imagen_url} alt={s.nombre} width={48} height={48} className="h-12 w-12 shrink-0 rounded-lg object-cover" />
                       ) : (
                         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[#FEF3C7]/60">
                           <ConciergeBell className="h-5 w-5 text-[#92400E]" />

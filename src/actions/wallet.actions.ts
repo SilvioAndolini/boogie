@@ -115,6 +115,16 @@ export async function getWalletTransacciones(walletId: string) {
   if (!user) return []
 
   const supabase = createAdminClient()
+
+  const { data: wallet } = await supabase
+    .from('wallets')
+    .select('id')
+    .eq('id', walletId)
+    .eq('usuario_id', user.id)
+    .maybeSingle()
+
+  if (!wallet) return []
+
   const { data } = await supabase
     .from('wallet_transacciones')
     .select('*')

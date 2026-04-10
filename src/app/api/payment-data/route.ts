@@ -1,10 +1,16 @@
 import { NextResponse } from 'next/server'
 import { getDatosPago } from '@/lib/payment-data'
+import { getUsuarioAutenticado } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
   try {
+    const user = await getUsuarioAutenticado()
+    if (!user) {
+      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+    }
+
     const datos = await getDatosPago()
     return NextResponse.json(datos, {
       headers: {

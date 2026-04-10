@@ -8,6 +8,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { getTasaBCV } from '@/actions/wallet.actions'
+import { CryptoPayment } from '@/components/pagos/crypto-payment'
 import type { MetodoPagoEnum } from '@/types'
 import type { PaymentData } from '@/lib/payment-data'
 
@@ -15,6 +16,7 @@ interface PaymentFormProps {
   metodo: MetodoPagoEnum
   monto: number
   moneda: 'USD' | 'VES'
+  reservaId?: string
   onSubmit: (data: FormData) => void
 }
 
@@ -33,12 +35,13 @@ function formatUSD(n: number) {
   return `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
-export function PaymentForm({ metodo, monto, moneda, onSubmit }: PaymentFormProps) {
+export function PaymentForm({ metodo, monto, moneda, reservaId, onSubmit }: PaymentFormProps) {
   const [mostrarFormulario, setMostrarFormulario] = useState(false)
   const [enviando, setEnviando] = useState(false)
   const [tasaBCV, setTasaBCV] = useState<number | null>(null)
   const [fuenteBCV, setFuenteBCV] = useState('')
   const [datosPago, setDatosPago] = useState<PaymentData | null>(null)
+  const [cryptoRegistrado, setCryptoRegistrado] = useState(false)
 
   const [ultimos4Ref, setUltimos4Ref] = useState('')
   const [bancoEmisor, setBancoEmisor] = useState('')
@@ -46,6 +49,7 @@ export function PaymentForm({ metodo, monto, moneda, onSubmit }: PaymentFormProp
   const [comprobante, setComprobante] = useState<File | null>(null)
 
   const esPagoMovil = metodo === 'PAGO_MOVIL'
+  const esCripto = metodo === 'CRIPTO'
 
   useEffect(() => {
     getTasaBCV().then((res) => {
@@ -81,6 +85,16 @@ export function PaymentForm({ metodo, monto, moneda, onSubmit }: PaymentFormProp
   }
 
   const datosReceptor = datosPago ? datosPago[metodo as keyof PaymentData] : null
+
+  if (esCripto && reservaId) {
+    return (
+      <CryptoPayment
+        reservaId={reservaId}
+        monto={monto}
+        onPagoRegistrado={() => setCryptoRegistrado(true)}
+      />
+    )
+  }
 
   if (!esPagoMovil) {
     return (

@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
+import { createHmac } from 'crypto'
 
 const METAMAP_WEBHOOK_SECRET = process.env.METAMAP_WEBHOOK_SECRET || ''
 
@@ -8,22 +9,43 @@ interface VerificacionRecord {
   usuario_id: string
 }
 
+function verifyMetaMapSignature(body: string, signature: string): boolean {
+  const expected = createHmac('sha256', METAMAP_WEBHOOK_SECRET)
+    .update(body)
+    .digest('hex')
+  return expected === signature
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    const rawBody = await request.text()
+    let body: Record<string, unknown>
+    try {
+      body = JSON.parse(rawBody)
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+    }
 
-    const resource = body.resource || body.data || body
+    const resource = (body.resource || body.data || body) as Record<string, unknown> | undefined
 
     if (!resource || !resource.id) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 })
     }
 
-    if (METAMAP_WEBHOOK_SECRET) {
-      const signature = request.headers.get('x-metamap-signature')
-        || request.headers.get('signature')
-      if (!signature) {
-        return NextResponse.json({ error: 'Missing signature' }, { status: 401 })
-      }
+    if (!METAMAP_WEBHOOK_SECRET) {
+      console.error('[metamap/webhook] CRITICAL: METAMAP_WEBHOOK_SECRET not configured')
+      return NextResponse.json({ error: 'Webhook not configured' }, { status: 503 })
+    }
+
+    const signature = request.headers.get('x-metamap-signature')
+      || request.headers.get('signature')
+    if (!signature) {
+      return NextResponse.json({ error: 'Missing signature' }, { status: 401 })
+    }
+
+    if (!verifyMetaMapSignature(rawBody, signature)) {
+      console.warn('[metamap/webhook] Invalid signature')
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
     }
 
     const admin = createAdminClient()

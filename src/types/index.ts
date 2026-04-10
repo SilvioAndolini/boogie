@@ -7,7 +7,7 @@ export type Moneda = 'USD' | 'VES'
 export type PoliticaCancelacion = 'FLEXIBLE' | 'MODERADA' | 'ESTRICTA'
 export type EstadoPublicacion = 'BORRADOR' | 'PENDIENTE_REVISION' | 'PUBLICADA' | 'PAUSADA' | 'SUSPENDIDA'
 export type EstadoReserva = 'PENDIENTE' | 'CONFIRMADA' | 'EN_CURSO' | 'COMPLETADA' | 'CANCELADA_HUESPED' | 'CANCELADA_ANFITRION' | 'RECHAZADA'
-export type MetodoPagoEnum = 'TRANSFERENCIA_BANCARIA' | 'PAGO_MOVIL' | 'ZELLE' | 'EFECTIVO_FARMATODO' | 'USDT' | 'TARJETA_INTERNACIONAL' | 'EFECTIVO'
+export type MetodoPagoEnum = 'TRANSFERENCIA_BANCARIA' | 'PAGO_MOVIL' | 'ZELLE' | 'EFECTIVO_FARMATODO' | 'USDT' | 'TARJETA_INTERNACIONAL' | 'EFECTIVO' | 'CRIPTO'
 export type EstadoPago = 'PENDIENTE' | 'EN_VERIFICACION' | 'VERIFICADO' | 'ACREDITADO' | 'RECHAZADO' | 'REEMBOLSADO'
 
 // Interfaz genérica para respuestas paginadas de la API

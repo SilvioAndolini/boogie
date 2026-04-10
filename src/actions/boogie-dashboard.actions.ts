@@ -196,6 +196,7 @@ export async function eliminarGastoMantenimiento(gastoId: string, propiedadId: s
     .from('gastos_mantenimiento')
     .delete()
     .eq('id', gastoId)
+    .eq('propiedad_id', propiedadId)
 
   if (error) {
     console.error('[eliminarGastoMantenimiento] Error:', error.message)

@@ -14,6 +14,7 @@ import { BoogieStore } from '@/components/reservas/boogie-store'
 import { COMISION_PLATAFORMA_HUESPED } from '@/lib/constants'
 import { crearReserva } from '@/actions/reserva.actions'
 import { registrarPagoReserva } from '@/actions/pago-reserva.actions'
+import Image from 'next/image'
 import { toast } from 'sonner'
 import type { MetodoPagoEnum } from '@/types'
 import type { CartItem } from '@/lib/store-constants'
@@ -64,6 +65,7 @@ function ReservarContent() {
   const [propiedad, setPropiedad] = useState<PropiedadReserva | null>(null)
   const [cargando, setCargando] = useState(true)
   const [creandoReserva, setCreandoReserva] = useState(false)
+  const [reservaCreadaId, setReservaCreadaId] = useState<string | null>(null)
   const [storeCart, setStoreCart] = useState<CartItem[]>([])
   const [tasaCambio, setTasaCambio] = useState(78.39)
 
@@ -125,16 +127,60 @@ function ReservarContent() {
     if (!propiedad || !metodoPago) return
     setCreandoReserva(true)
     try {
-      console.log('[ReservarPage] Creando reserva...', { propiedadId: propiedad.id, fechaEntrada, fechaSalida, huespedes, storeItems: storeCart.length })
+      const reservaIdToUse = await ensureReserva()
+      if (!reservaIdToUse) return
+
+      const referencia = paymentFormData.get('referencia') as string
+      const bancoEmisor = paymentFormData.get('bancoEmisor') as string
+      const telefonoEmisor = paymentFormData.get('telefonoEmisor') as string
+      const comprobanteFile = paymentFormData.get('comprobante') as File | null
+
+      if (referencia && metodoPago) {
+        let comprobanteBase64: string | undefined
+        let comprobanteExt: string | undefined
+        if (comprobanteFile) {
+          comprobanteExt = comprobanteFile.name.split('.').pop() || 'jpg'
+          const bytes = new Uint8Array(await comprobanteFile.arrayBuffer())
+          let binary = ''
+          for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
+          comprobanteBase64 = btoa(binary)
+        }
+        const pagoResult = await registrarPagoReserva({
+          reservaId: reservaIdToUse, monto: total, moneda: propiedad.moneda,
+          metodoPago: metodoPago, referencia,
+          bancoEmisor: bancoEmisor || undefined,
+          telefonoEmisor: telefonoEmisor || undefined,
+          comprobanteBase64, comprobanteExt,
+        })
+        if (pagoResult.error) {
+          toast.error(pagoResult.error)
+        }
+      }
+      setPaso('confirmacion')
+    } catch (err) {
+      console.error('[ReservarPage] Error:', err)
+      const msg = err instanceof Error ? err.message : 'Error al crear la reserva'
+      toast.error(msg)
+    } finally {
+      setCreandoReserva(false)
+    }
+  }
+
+  const ensureReserva = async (): Promise<string | null> => {
+    if (reservaCreadaId) return reservaCreadaId
+    if (!propiedad) return null
+
+    try {
       const result = await crearReserva({
         propiedadId: propiedad.id,
         fechaEntrada: fechaEntrada.toISOString(),
         fechaSalida: fechaSalida.toISOString(),
         cantidadHuespedes: huespedes,
       })
-      console.log('[ReservarPage] Result:', result)
 
       if (result.exito && result.datos) {
+        setReservaCreadaId(result.datos.id)
+
         if (storeCart.length > 0) {
           const admin = (await import('@/lib/supabase/admin')).createAdminClient
           const supabase = admin()
@@ -154,43 +200,16 @@ function ReservarContent() {
           await supabase.from('reserva_store_items').insert(storeItems)
         }
 
-        const referencia = paymentFormData.get('referencia') as string
-        const bancoEmisor = paymentFormData.get('bancoEmisor') as string
-        const telefonoEmisor = paymentFormData.get('telefonoEmisor') as string
-        const comprobanteFile = paymentFormData.get('comprobante') as File | null
-
-        if (referencia && metodoPago) {
-          let comprobanteBase64: string | undefined
-          let comprobanteExt: string | undefined
-          if (comprobanteFile) {
-            comprobanteExt = comprobanteFile.name.split('.').pop() || 'jpg'
-            const bytes = new Uint8Array(await comprobanteFile.arrayBuffer())
-            let binary = ''
-            for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
-            comprobanteBase64 = btoa(binary)
-          }
-          const pagoResult = await registrarPagoReserva({
-            reservaId: result.datos.id, monto: total, moneda: propiedad.moneda,
-            metodoPago: metodoPago, referencia,
-            bancoEmisor: bancoEmisor || undefined,
-            telefonoEmisor: telefonoEmisor || undefined,
-            comprobanteBase64, comprobanteExt,
-          })
-          if (pagoResult.error) {
-            toast.error(pagoResult.error)
-          }
-        }
-        setPaso('confirmacion')
+        return result.datos.id
       } else if (result.error) {
         toast.error(result.error.mensaje)
+        return null
       }
     } catch (err) {
-      console.error('[ReservarPage] Error:', err)
-      const msg = err instanceof Error ? err.message : 'Error al crear la reserva'
-      toast.error(msg)
-    } finally {
-      setCreandoReserva(false)
+      console.error('[ReservarPage] ensureReserva error:', err)
+      toast.error(err instanceof Error ? err.message : 'Error al crear la reserva')
     }
+    return null
   }
 
   if (cargando || !propiedad) {
@@ -200,6 +219,13 @@ function ReservarContent() {
       </div>
     )
   }
+
+  useEffect(() => {
+    if (metodoPago === 'CRIPTO' && !reservaCreadaId && propiedad) {
+      setCreandoReserva(true)
+      ensureReserva().finally(() => setCreandoReserva(false))
+    }
+  }, [metodoPago])
 
   const imagenPrincipal = propiedad.imagenes?.find((i) => i.es_principal)?.url || propiedad.imagenes?.[0]?.url
   const pasoIndex = PASOS.findIndex((p) => p.id === paso)
@@ -268,7 +294,7 @@ function ReservarContent() {
               <div className="absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-white/5" />
               <div className="relative flex items-center gap-4 p-5">
                 {imagenPrincipal ? (
-                  <img src={imagenPrincipal} alt="" className="h-16 w-16 shrink-0 rounded-xl object-cover ring-2 ring-white/20" />
+                  <Image src={imagenPrincipal} alt="" width={64} height={64} className="h-16 w-16 shrink-0 rounded-xl object-cover ring-2 ring-white/20" />
                 ) : (
                   <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-white/10 ring-2 ring-white/20">
                     <Home className="h-7 w-7 text-white/60" />
@@ -412,8 +438,15 @@ function ReservarContent() {
                 metodo={metodoPago}
                 monto={total}
                 moneda={propiedad.moneda}
+                reservaId={reservaCreadaId || undefined}
                 onSubmit={handlePaymentSubmit}
               />
+            )}
+
+            {metodoPago === 'CRIPTO' && !reservaCreadaId && (
+              <div className="flex justify-center py-4">
+                <Loader2 className="h-6 w-6 animate-spin text-[#52B788]" />
+              </div>
             )}
           </motion.div>
         )}

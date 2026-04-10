@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ShoppingBag, Plus, Minus, Trash2, X, ChevronDown,
@@ -234,7 +235,7 @@ export function BoogieStore({ noches, tasaCambio, onContinue, onBack, initialCar
                       >
                         <div className="relative w-full aspect-[3/4] bg-[#F8F6F3]">
                           {prod.imagenUrl ? (
-                            <img src={prod.imagenUrl} alt={prod.nombre} className="h-full w-full object-contain" />
+                            <Image fill src={prod.imagenUrl} alt={prod.nombre} className="h-full w-full object-contain" />
                           ) : (
                             <div className="flex h-full items-center justify-center">
                               <Package className="h-5 w-5 text-[#1B4332]/20" />
@@ -294,7 +295,7 @@ export function BoogieStore({ noches, tasaCambio, onContinue, onBack, initialCar
                         <div className="flex items-center gap-2.5">
                           <div className="relative h-12 w-9 shrink-0 overflow-hidden rounded-lg bg-[#F8F6F3]">
                             {serv.imagenUrl ? (
-                              <img src={serv.imagenUrl} alt={serv.nombre} className="h-full w-full object-contain" />
+                              <Image fill src={serv.imagenUrl} alt={serv.nombre} className="h-full w-full object-contain" />
                             ) : (
                               <div className="flex h-full w-full items-center justify-center">
                                 <ConciergeBell className="h-4 w-4 text-[#1B4332]/30" />
@@ -408,7 +409,7 @@ export function BoogieStore({ noches, tasaCambio, onContinue, onBack, initialCar
                               >
                                 <div className="relative h-8 w-6 shrink-0 overflow-hidden rounded bg-[#F8F6F3]">
                                   {item.imagenUrl ? (
-                                    <img src={item.imagenUrl} alt={item.nombre} className="h-full w-full object-contain" />
+                                    <Image fill src={item.imagenUrl} alt={item.nombre} className="h-full w-full object-contain" />
                                   ) : (
                                     <div className="flex h-full w-full items-center justify-center">
                                       {item.tipo === 'producto' ? (
