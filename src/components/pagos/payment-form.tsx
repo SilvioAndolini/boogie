@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { getTasaBCV } from '@/actions/wallet.actions'
 import { CryptoPayment } from '@/components/pagos/crypto-payment'
+import { CardPayment } from '@/components/pagos/card-payment'
 import type { MetodoPagoEnum } from '@/types'
 import type { PaymentData } from '@/lib/payment-data'
 
@@ -58,6 +59,7 @@ export function PaymentForm({
 
   const esPagoMovil = metodo === 'PAGO_MOVIL'
   const esCripto = metodo === 'CRIPTO'
+  const esTarjeta = metodo === 'TARJETA_INTERNACIONAL'
 
   useEffect(() => {
     getTasaBCV().then((res) => {
@@ -104,6 +106,19 @@ export function PaymentForm({
         fechaSalida={fechaSalida}
         cantidadHuespedes={cantidadHuespedes}
         onPagoRegistrado={onCryptoReservaCreated || (() => {})}
+      />
+    )
+  }
+
+  if (esTarjeta && propiedadId && fechaEntrada && fechaSalida && cantidadHuespedes) {
+    return (
+      <CardPayment
+        monto={monto}
+        propiedadId={propiedadId}
+        fechaEntrada={fechaEntrada}
+        fechaSalida={fechaSalida}
+        cantidadHuespedes={cantidadHuespedes}
+        onReservaCreated={onCryptoReservaCreated || (() => {})}
       />
     )
   }
