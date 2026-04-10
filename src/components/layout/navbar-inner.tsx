@@ -14,11 +14,13 @@ import {
   Settings,
   LogOut,
   ChevronRight,
+  MessageCircle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { AnimatePresence, motion } from 'framer-motion'
 import { cerrarSesion } from '@/actions/auth.actions'
+import { useUnreadCount } from '@/hooks/use-unread-count'
 
 interface CotizacionData {
   tasa: number
@@ -46,6 +48,7 @@ export function NavbarInner({
   const [profileOpen, setProfileOpen] = useState(false)
   const pathname = usePathname()
   const isPropiedades = pathname.startsWith('/propiedades')
+  const { count: unreadCount } = useUnreadCount()
 
   const tasaFormateada = cotizacionEuro
     ? cotizacionEuro.tasa.toLocaleString('es-VE', {
@@ -98,6 +101,20 @@ export function NavbarInner({
               <span className="font-semibold">Bs. {tasaFormateada}</span>
               <span className="text-[#6B6560]">({cotizacionEuro.fuente})</span>
             </div>
+          )}
+          {usuario && (
+            <Link
+              href="/dashboard/mensajes"
+              className="relative hidden sm:flex items-center justify-center h-10 w-10 rounded-full transition-colors hover:bg-[#F4F1EC]"
+              title="Mensajes"
+            >
+              <MessageCircle className="h-5 w-5 text-[#6B6560]" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#E76F51] px-1 text-[10px] font-bold text-white">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </Link>
           )}
           <div className="relative hidden sm:flex">
             <button
@@ -265,13 +282,14 @@ export function NavbarInner({
                   </div>
 
                   <div className="space-y-0.5">
-                    {[
+                    {([
                       { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+                      { href: '/dashboard/mensajes', icon: MessageCircle, label: 'Mensajes', badge: unreadCount > 0 ? unreadCount : undefined },
                       { href: '/dashboard/mis-reservas', icon: CalendarDays, label: 'Mis reservas' },
                       { href: '/dashboard/mis-propiedades', icon: Home, label: 'Mis boogies' },
                       { href: '/dashboard/perfil', icon: User, label: 'Perfil' },
                       { href: '/dashboard/pagos/configuracion', icon: Settings, label: 'Configuración' },
-                    ].map((item) => (
+                    ] as { href: string; icon: typeof LayoutDashboard; label: string; badge?: number }[]).map((item) => (
                       <Link
                         key={item.href}
                         href={item.href}
@@ -282,7 +300,14 @@ export function NavbarInner({
                           <item.icon className="h-[18px] w-[18px] text-[#9E9892] group-hover:text-[#1B4332] transition-colors" />
                         </div>
                         <span className="flex-1 font-medium">{item.label}</span>
-                        <ChevronRight className="h-4 w-4 text-[#E8E4DF] group-hover:text-[#9E9892] transition-colors" />
+                        {item.badge && (
+                          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#E76F51] px-1 text-[10px] font-bold text-white">
+                            {item.badge > 99 ? '99+' : item.badge}
+                          </span>
+                        )}
+                        {!item.badge && (
+                          <ChevronRight className="h-4 w-4 text-[#E8E4DF] group-hover:text-[#9E9892] transition-colors" />
+                        )}
                       </Link>
                     ))}
                   </div>
