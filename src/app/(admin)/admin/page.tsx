@@ -1,32 +1,23 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef, Suspense, lazy } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Shield, DollarSign, Users, Building2, CalendarDays,
   ArrowUpRight, Activity, Clock, Loader2, Receipt,
-  ChevronDown, TrendingUp, MapPin,
+  ChevronDown,
 } from 'lucide-react'
+import {
+  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip,
+} from 'recharts'
 import { AdminHeader, AdminStatCard, AdminEmptyState } from '@/components/admin'
 import {
   getAdminStats,
   getAdminChartsData,
   getAdminTablesData,
 } from '@/actions/admin-dashboard.actions'
-
-const AreaChart = lazy(() => import('recharts').then(m => ({ default: m.AreaChart })))
-const Area = lazy(() => import('recharts').then(m => ({ default: m.Area })))
-const BarChart = lazy(() => import('recharts').then(m => ({ default: m.BarChart })))
-const Bar = lazy(() => import('recharts').then(m => ({ default: m.Bar })))
-const PieChart = lazy(() => import('recharts').then(m => ({ default: m.PieChart })))
-const Pie = lazy(() => import('recharts').then(m => ({ default: m.Pie })))
-const Cell = lazy(() => import('recharts').then(m => ({ default: m.Cell })))
-const XAxis = lazy(() => import('recharts').then(m => ({ default: m.XAxis })))
-const YAxis = lazy(() => import('recharts').then(m => ({ default: m.YAxis })))
-const CartesianGrid = lazy(() => import('recharts').then(m => ({ default: m.CartesianGrid })))
-const Tooltip = lazy(() => import('recharts').then(m => ({ default: m.Tooltip })))
-const ResponsiveContainer = lazy(() => import('recharts').then(m => ({ default: m.ResponsiveContainer })))
 
 const stagger = { hidden: {}, visible: { transition: { staggerChildren: 0.06 } } }
 const fadeUp = {
@@ -48,6 +39,8 @@ const ENTIDAD_ICONS: Record<string, string> = {
   usuario: '👤', propiedad: '🏠', reserva: '📅', pago: '💳',
   verificacion: '✅', wallet: '💰', resena: '⭐', notificacion: '🔔', configuracion: '⚙️',
 }
+
+const tooltipStyle = { borderRadius: 12, border: '1px solid #E8E4DF', fontSize: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }
 
 function formatMoney(n: number) {
   return `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -340,56 +333,36 @@ export default function AdminDashboardPage() {
 
         {/* Ingresos + Usuarios */}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <CollapsibleSection
-            key="ingresos-mensuales"
-            title="Ingresos mensuales"
-            subtitle="Pagos verificados · Últimos 12 meses"
-          >
+          <CollapsibleSection title="Ingresos mensuales" subtitle="Pagos verificados · Últimos 12 meses">
             <div className="p-6 pt-4">
               {!charts ? <ChartSkeleton /> : (
-                <Suspense fallback={<ChartSkeleton />}>
-                  <div className="h-52">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={charts.ingresosByMonth} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
-                        <defs>
-                          <linearGradient id="gradAdminIngresos" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#1B4332" stopOpacity={0.25} />
-                            <stop offset="100%" stopColor="#1B4332" stopOpacity={0} />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#F4F1EC" />
-                        <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#9E9892' }} axisLine={{ stroke: '#E8E4DF' }} tickLine={false} />
-                        <YAxis tick={{ fontSize: 11, fill: '#9E9892' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${v}`} />
-                        <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #E8E4DF', fontSize: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }} formatter={(value: any) => [formatMoney(Number(value)), 'Ingresos']} />
-                        <Area type="monotone" dataKey="ingresos" stroke="#1B4332" strokeWidth={2.5} fill="url(#gradAdminIngresos)" />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                </Suspense>
+                <AreaChart width={500} height={208} data={charts.ingresosByMonth} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="gradAdminIngresos" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#1B4332" stopOpacity={0.25} />
+                      <stop offset="100%" stopColor="#1B4332" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F4F1EC" />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#9E9892' }} axisLine={{ stroke: '#E8E4DF' }} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: '#9E9892' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${v}`} />
+                  <Tooltip contentStyle={tooltipStyle} formatter={(value: any) => [formatMoney(Number(value)), 'Ingresos']} />
+                  <Area type="monotone" dataKey="ingresos" stroke="#1B4332" strokeWidth={2.5} fill="url(#gradAdminIngresos)" />
+                </AreaChart>
               )}
             </div>
           </CollapsibleSection>
 
-          <CollapsibleSection
-            key="nuevos-usuarios"
-            title="Nuevos usuarios"
-            subtitle="Registros diarios · Últimos 14 días"
-          >
+          <CollapsibleSection title="Nuevos usuarios" subtitle="Registros diarios · Últimos 14 días">
             <div className="p-6 pt-4">
               {!charts ? <ChartSkeleton /> : (
-                <Suspense fallback={<ChartSkeleton />}>
-                  <div className="h-52">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={charts.usersByDay} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#F4F1EC" />
-                        <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#9E9892' }} axisLine={{ stroke: '#E8E4DF' }} tickLine={false} />
-                        <YAxis tick={{ fontSize: 11, fill: '#9E9892' }} axisLine={false} tickLine={false} allowDecimals={false} />
-                        <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #E8E4DF', fontSize: 12 }} formatter={(value: any) => [value, 'Usuarios']} />
-                        <Bar dataKey="usuarios" fill="#D8F3DC" stroke="#1B4332" strokeWidth={1} radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </Suspense>
+                <BarChart width={500} height={208} data={charts.usersByDay} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F4F1EC" />
+                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#9E9892' }} axisLine={{ stroke: '#E8E4DF' }} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: '#9E9892' }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <Tooltip contentStyle={tooltipStyle} formatter={(value: any) => [value, 'Usuarios']} />
+                  <Bar dataKey="usuarios" fill="#D8F3DC" stroke="#1B4332" strokeWidth={1} radius={[4, 4, 0, 0]} />
+                </BarChart>
               )}
             </div>
           </CollapsibleSection>
@@ -397,36 +370,27 @@ export default function AdminDashboardPage() {
 
         {/* Reservas por Estado + Propiedades por Ciudad */}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <CollapsibleSection
-            key="reservas-estado"
-            title="Reservas por estado"
-            subtitle="Distribución total"
-            defaultOpen={false}
-          >
+          <CollapsibleSection title="Reservas por estado" subtitle="Distribución total" defaultOpen={false}>
             <div className="p-6 pt-4">
-              {!charts ? <ChartSkeleton /> : !Array.isArray(charts.reservasByStatus) ? (
-                <div className="flex h-52 items-center justify-center text-sm text-[#9E9892]">Sin datos</div>
+              {!charts || !Array.isArray(charts.reservasByStatus) || !charts.reservasByStatus.some(r => r.value > 0) ? (
+                <div className="flex h-52 items-center justify-center text-sm text-[#9E9892]">
+                  {!charts ? <ChartSkeleton /> : 'Sin datos'}
+                </div>
               ) : (
-                <Suspense fallback={<ChartSkeleton />}>
-                  <div className="h-52 flex items-center justify-center">
-                    {charts.reservasByStatus.length > 0 && charts.reservasByStatus.some(r => r.value > 0) ? (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={charts.reservasByStatus.filter(r => r.value > 0)}
-                            cx="50%" cy="50%" innerRadius={50} outerRadius={80}
-                            paddingAngle={3} dataKey="value" stroke="none"
-                          >
-                            {charts.reservasByStatus.filter(r => r.value > 0).map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.fill} />
-                            ))}
-                          </Pie>
-                          <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #E8E4DF', fontSize: 12 }} formatter={(value: any, name: any) => [value, name]} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    ) : (
-                      <p className="text-sm text-[#9E9892]">Sin datos</p>
-                    )}
+                <>
+                  <div className="flex items-center justify-center" style={{ height: 208 }}>
+                    <PieChart width={400} height={208}>
+                      <Pie
+                        data={charts.reservasByStatus.filter(r => r.value > 0)}
+                        cx="50%" cy="50%" innerRadius={50} outerRadius={80}
+                        paddingAngle={3} dataKey="value" stroke="none"
+                      >
+                        {charts.reservasByStatus.filter(r => r.value > 0).map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                      </Pie>
+                      <Tooltip contentStyle={tooltipStyle} formatter={(value: any, name: any) => [value, name]} />
+                    </PieChart>
                   </div>
                   <div className="flex flex-wrap justify-center gap-3">
                     {charts.reservasByStatus.filter(r => r.value > 0).map((r) => (
@@ -436,34 +400,27 @@ export default function AdminDashboardPage() {
                       </div>
                     ))}
                   </div>
-                </Suspense>
+                </>
               )}
             </div>
           </CollapsibleSection>
 
-          <CollapsibleSection
-            key="boogies-ciudad"
-            title="Boogies por ciudad"
-            subtitle="Boogies publicados"
-            defaultOpen={false}
-          >
+          <CollapsibleSection title="Boogies por ciudad" subtitle="Boogies publicados" defaultOpen={false}>
             <div className="p-6 pt-4">
-              {!charts ? <ChartSkeleton /> : !Array.isArray(charts.propiedadesByCiudad) || !charts.propiedadesByCiudad.length ? (
-                <div className="flex h-52 items-center justify-center text-sm text-[#9E9892]">Sin datos</div>
+              {!charts || !Array.isArray(charts.propiedadesByCiudad) || !charts.propiedadesByCiudad.length ? (
+                <div className="flex h-52 items-center justify-center text-sm text-[#9E9892]">
+                  {!charts ? <ChartSkeleton /> : 'Sin datos'}
+                </div>
               ) : (
-                <Suspense fallback={<ChartSkeleton />}>
-                  <div className="h-52">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={charts.propiedadesByCiudad} layout="vertical" margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#F4F1EC" horizontal={false} />
-                        <XAxis type="number" tick={{ fontSize: 11, fill: '#9E9892' }} axisLine={false} tickLine={false} allowDecimals={false} />
-                        <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#6B6560' }} axisLine={false} tickLine={false} width={90} />
-                        <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #E8E4DF', fontSize: 12 }} formatter={(value: any) => [value, 'Boogies']} />
-                        <Bar dataKey="value" fill="#52B788" radius={[0, 4, 4, 0]} barSize={20} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </Suspense>
+                <div style={{ height: 208 }}>
+                  <BarChart width={500} height={208} data={charts.propiedadesByCiudad} layout="vertical" margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#F4F1EC" horizontal={false} />
+                    <XAxis type="number" tick={{ fontSize: 11, fill: '#9E9892' }} axisLine={false} tickLine={false} allowDecimals={false} />
+                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#6B6560' }} axisLine={false} tickLine={false} width={90} />
+                    <Tooltip contentStyle={tooltipStyle} formatter={(value: any) => [value, 'Boogies']} />
+                    <Bar dataKey="value" fill="#52B788" radius={[0, 4, 4, 0]} barSize={20} />
+                  </BarChart>
+                </div>
               )}
             </div>
           </CollapsibleSection>
