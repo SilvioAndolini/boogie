@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -347,13 +348,13 @@ export default function EditSidebar({
                 <h3 className="text-sm font-semibold text-[#1A1A1A] mb-3">Imágenes</h3>
                 <div className="flex flex-wrap gap-2 mb-3">
                   {imagenesExistentes.map((img) => (
-                    <div key={img.id} className="h-16 w-16 overflow-hidden rounded-lg border border-[#E8E4DF]">
-                      <img src={img.url} alt="" className="h-full w-full object-cover" />
+                    <div key={img.id} className="relative h-16 w-16 overflow-hidden rounded-lg border border-[#E8E4DF]">
+                      <Image fill src={img.url} alt="" className="h-full w-full object-cover" />
                     </div>
                   ))}
                   {previews.map((url, i) => (
                     <div key={i} className="relative h-16 w-16 overflow-hidden rounded-lg border border-[#1B4332]">
-                      <img src={url} alt="" className="h-full w-full object-cover" />
+                      <Image fill src={url} alt="" className="h-full w-full object-cover" />
                       <button type="button" onClick={() => removeImagen(i)} className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#EF4444] text-white">
                         <X className="h-3 w-3" />
                       </button>

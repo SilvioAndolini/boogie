@@ -22,7 +22,7 @@ export async function subirImagenStore(formData: FormData): Promise<{ url?: stri
       .from('imagenes')
       .upload(path, buffer, { contentType: file.type, upsert: true })
 
-    if (uploadError) return { error: uploadError.message }
+    if (uploadError) return { error: 'Error al subir la imagen' }
 
     const { data: urlData } = admin.storage.from('imagenes').getPublicUrl(path)
     return { url: urlData.publicUrl }
@@ -95,7 +95,7 @@ export async function crearProductoStore(datos: {
       activo: true,
     })
 
-    if (error) return { error: error.message }
+    if (error) return { error: 'Error al crear el producto' }
 
     await logAdminAction({
       accion: 'CREAR',
@@ -138,7 +138,7 @@ export async function actualizarProductoStore(id: string, datos: {
 
     const { error } = await admin.from('store_productos').update(updateData).eq('id', id)
 
-    if (error) return { error: error.message }
+    if (error) return { error: 'Error al actualizar el producto' }
 
     await logAdminAction({
       accion: 'ACTUALIZAR',
@@ -163,7 +163,7 @@ export async function eliminarProductoStore(id: string) {
     const admin = createAdminClient()
     const { error } = await admin.from('store_productos').delete().eq('id', id)
 
-    if (error) return { error: error.message }
+    if (error) return { error: 'Error al eliminar el producto' }
 
     await logAdminAction({
       accion: 'ELIMINAR',
@@ -206,7 +206,7 @@ export async function crearServicioStore(datos: {
       activo: true,
     })
 
-    if (error) return { error: error.message }
+    if (error) return { error: 'Error al crear el servicio' }
 
     await logAdminAction({
       accion: 'CREAR',
@@ -251,7 +251,7 @@ export async function actualizarServicioStore(id: string, datos: {
 
     const { error } = await admin.from('store_servicios').update(updateData).eq('id', id)
 
-    if (error) return { error: error.message }
+    if (error) return { error: 'Error al actualizar el servicio' }
 
     await logAdminAction({
       accion: 'ACTUALIZAR',
@@ -276,7 +276,7 @@ export async function eliminarServicioStore(id: string) {
     const admin = createAdminClient()
     const { error } = await admin.from('store_servicios').delete().eq('id', id)
 
-    if (error) return { error: error.message }
+    if (error) return { error: 'Error al eliminar el servicio' }
 
     await logAdminAction({
       accion: 'ELIMINAR',

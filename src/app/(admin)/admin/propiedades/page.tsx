@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -218,7 +219,7 @@ export default function AdminPropiedadesPage() {
                     >
                       <div className="relative aspect-[4/3] bg-gradient-to-br from-[#D8F3DC] to-[#F8F6F3]">
                         {imagen ? (
-                          <img src={imagen} alt="" className="h-full w-full object-cover" />
+                          <Image fill src={imagen} alt="" className="h-full w-full object-cover" />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center">
                             <span className="text-5xl font-bold text-[#1B4332]/20">B</span>

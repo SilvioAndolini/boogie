@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import NextImage from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Shield, Scan, Camera, Upload, X, Loader2, CheckCircle2, Clock, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -378,7 +379,7 @@ export default function VerificarIdentidadPage() {
                     >
                       {previews[key] ? (
                         <div className="relative w-full">
-                          <img src={previews[key]!} alt={label} className="h-48 w-full object-contain" />
+                          <NextImage width={800} height={192} src={previews[key]!} alt={label} className="h-48 w-full object-contain" />
                           <button
                             type="button"
                             onClick={(e) => {

@@ -505,15 +505,24 @@ function mapReservaConPropiedad(r: Record<string, unknown>): ReservaConPropiedad
 }
 export async function confirmarReservaAction(formData: FormData) {
   const reservaId = formData.get('reservaId') as string
-  await confirmarORechazarReserva(reservaId, 'confirmar')
+  const result = await confirmarORechazarReserva(reservaId, 'confirmar')
+  if (!result.exito) {
+    console.error('[confirmarReservaAction]', result.error)
+  }
 }
 
 export async function rechazarReservaAction(formData: FormData) {
   const reservaId = formData.get('reservaId') as string
-  await confirmarORechazarReserva(reservaId, 'rechazar')
+  const result = await confirmarORechazarReserva(reservaId, 'rechazar')
+  if (!result.exito) {
+    console.error('[rechazarReservaAction]', result.error)
+  }
 }
 
 export async function cancelarReservaAction(formData: FormData) {
   const reservaId = formData.get('reservaId') as string
-  await cancelarReserva(reservaId)
+  const result = await cancelarReserva(reservaId)
+  if (!result.exito) {
+    console.error('[cancelarReservaAction]', result.error)
+  }
 }

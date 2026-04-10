@@ -70,22 +70,18 @@ export async function getPagosStatsAdmin() {
 
   const admin = createAdminClient()
 
-  const [pendientes, enVerificacion, verificados, acreditados, rechazados] = await Promise.all([
+  const [pendientes, enVerificacion, verificados, acreditados, rechazados, totalResult] = await Promise.all([
     admin.from('pagos').select('id', { count: 'exact', head: true }).eq('estado', 'PENDIENTE'),
     admin.from('pagos').select('id', { count: 'exact', head: true }).eq('estado', 'EN_VERIFICACION'),
     admin.from('pagos').select('id', { count: 'exact', head: true }).eq('estado', 'VERIFICADO'),
     admin.from('pagos').select('id', { count: 'exact', head: true }).eq('estado', 'ACREDITADO'),
     admin.from('pagos').select('id', { count: 'exact', head: true }).eq('estado', 'RECHAZADO'),
+    admin.from('pagos').select('monto, moneda').in('estado', ['VERIFICADO', 'ACREDITADO']),
   ])
-
-  const { data: totalData } = await admin
-    .from('pagos')
-    .select('monto, moneda')
-    .in('estado', ['VERIFICADO', 'ACREDITADO'])
 
   let totalUSD = 0
   let totalVES = 0
-  for (const p of (totalData || [])) {
+  for (const p of (totalResult.data || [])) {
     if (p.moneda === 'USD') totalUSD += Number(p.monto)
     else totalVES += Number(p.monto)
   }

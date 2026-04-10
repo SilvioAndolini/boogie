@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { MapPin, MoreVertical, Pencil, Pause, Trash2, Loader2, BedDouble, Bath, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
@@ -92,9 +93,9 @@ export default function BoogieListItem({ boogie }: { boogie: Record<string, unkn
         onClick={() => router.push(`/dashboard/mis-propiedades/${id}`)}
       >
         {/* Thumbnail */}
-        <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-[#D8F3DC] to-[#F8F6F3]">
+        <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-[#D8F3DC] to-[#F8F6F3]">
           {imagenPrincipal ? (
-            <img src={imagenPrincipal} alt="" className="h-full w-full object-cover" />
+            <Image fill src={imagenPrincipal} alt="" className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full w-full items-center justify-center">
               <span className="text-lg font-bold text-[#1B4332]/20">B</span>

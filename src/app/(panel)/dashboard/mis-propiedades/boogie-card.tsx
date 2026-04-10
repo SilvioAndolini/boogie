@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { MapPin, MoreVertical, Pencil, Pause, Trash2, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Card, CardContent } from '@/components/ui/card'
@@ -92,7 +93,7 @@ export default function BoogieCard({ boogie }: { boogie: Record<string, unknown>
         <div className="mx-3 mt-3 overflow-hidden rounded-xl">
           <div className="relative aspect-[4/3] bg-gradient-to-br from-[#D8F3DC] to-[#F8F6F3]">
             {imagenPrincipal ? (
-              <img src={imagenPrincipal} alt="" className="h-full w-full object-cover" />
+              <Image fill src={imagenPrincipal} alt="" className="h-full w-full object-cover" />
             ) : (
               <div className="flex h-full w-full items-center justify-center">
                 <span className="text-5xl font-bold text-[#1B4332]/20">B</span>

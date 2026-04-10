@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
@@ -207,7 +208,7 @@ export default function BoogieDashboardClient({ data }: { data: DashboardData })
         <div className="relative flex flex-col gap-5 p-6 sm:flex-row sm:items-center sm:p-8">
           <div className="group relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl ring-2 ring-white/20 sm:h-24 sm:w-24">
             {imagenPrincipal ? (
-              <img src={imagenPrincipal} alt="" className="h-full w-full object-cover" />
+              <Image fill src={imagenPrincipal} alt="" className="h-full w-full object-cover" />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-white/10 text-2xl font-bold text-white">B</div>
             )}
@@ -785,7 +786,7 @@ function EditMode({ propiedad, onSave, guardando, onCancel }: {
                 <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-[#9E9892]">Fotos actuales</p>
                 <div className="flex flex-wrap gap-2">
                   {imagenesExistentes.map((img, i) => (
-                    <div key={img.id ?? `img-${i}`} className="h-16 w-16 overflow-hidden rounded-lg border border-[#E8E4DF]"><img src={img.url} alt="" className="h-full w-full object-cover" /></div>
+                    <div key={img.id ?? `img-${i}`} className="relative h-16 w-16 overflow-hidden rounded-lg border border-[#E8E4DF]"><Image fill src={img.url} alt="" className="h-full w-full object-cover" /></div>
                   ))}
                 </div>
               </div>
@@ -814,7 +815,7 @@ function EditMode({ propiedad, onSave, guardando, onCancel }: {
                     <div key={i} className="group rounded-lg border border-[#1B4332]/20 bg-[#FDFCFA]">
                       <div className="flex gap-2.5 p-2">
                         <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md">
-                          <img src={url} alt="" className="h-full w-full object-cover" />
+                          <Image fill src={url} alt="" className="h-full w-full object-cover" />
                           <button type="button" onClick={() => removeImagen(i)} className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#EF4444] text-white"><X className="h-2.5 w-2.5" /></button>
                         </div>
                         <div className="flex flex-1 flex-col justify-center gap-1">

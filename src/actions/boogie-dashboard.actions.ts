@@ -21,34 +21,38 @@ export async function getBoogieDashboard(propiedadId: string) {
     return { error: 'Boogie no encontrado' }
   }
 
-  const { data: amenidades } = await supabase
-    .from('propiedad_amenidades')
-    .select('amenidad:amenidades(nombre)')
-    .eq('propiedad_id', propiedadId)
+  const [amenidadesResult, reservasResult, gastosResult, fechasBloqueadasResult, preciosEspecialesResult] = await Promise.all([
+    supabase
+      .from('propiedad_amenidades')
+      .select('amenidad:amenidades(nombre)')
+      .eq('propiedad_id', propiedadId),
+    supabase
+      .from('reservas')
+      .select('id, fecha_entrada, fecha_salida, estado, monto_total, comision_plataforma, cantidad_huespedes, huesped:usuarios!huesped_id(nombre, apellido, email), created_at')
+      .eq('propiedad_id', propiedadId)
+      .order('fecha_entrada', { ascending: false }),
+    supabase
+      .from('gastos_mantenimiento')
+      .select('*')
+      .eq('propiedad_id', propiedadId)
+      .order('fecha', { ascending: false }),
+    supabase
+      .from('fechas_bloqueadas')
+      .select('*')
+      .eq('propiedad_id', propiedadId),
+    supabase
+      .from('precios_especiales')
+      .select('*')
+      .eq('propiedad_id', propiedadId),
+  ])
+
+  const { data: amenidades } = amenidadesResult
+  const { data: reservas } = reservasResult
+  const { data: gastos } = gastosResult
+  const { data: fechasBloqueadas } = fechasBloqueadasResult
+  const { data: preciosEspeciales } = preciosEspecialesResult
 
   propiedad.amenidades = amenidades?.map((a: Record<string, unknown>) => (a.amenidad as Record<string, unknown>)?.nombre).filter(Boolean) || []
-
-  const { data: reservas } = await supabase
-    .from('reservas')
-    .select('id, fecha_entrada, fecha_salida, estado, monto_total, comision_plataforma, cantidad_huespedes, huesped:usuarios!huesped_id(nombre, apellido, email), created_at')
-    .eq('propiedad_id', propiedadId)
-    .order('fecha_entrada', { ascending: false })
-
-  const { data: gastos } = await supabase
-    .from('gastos_mantenimiento')
-    .select('*')
-    .eq('propiedad_id', propiedadId)
-    .order('fecha', { ascending: false })
-
-  const { data: fechasBloqueadas } = await supabase
-    .from('fechas_bloqueadas')
-    .select('*')
-    .eq('propiedad_id', propiedadId)
-
-  const { data: preciosEspeciales } = await supabase
-    .from('precios_especiales')
-    .select('*')
-    .eq('propiedad_id', propiedadId)
 
   const reservasList = reservas || []
   const gastosList = gastos || []

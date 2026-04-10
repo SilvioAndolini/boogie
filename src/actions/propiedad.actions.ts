@@ -172,28 +172,35 @@ export async function crearPropiedad(formData: FormData) {
   }
 
   if (data.amenidades.length > 0) {
-    for (const nombre of data.amenidades) {
-      const { data: amenidad } = await supabase
+    const { data: existingAmenidades } = await supabase
+      .from('amenidades')
+      .select('id, nombre')
+      .in('nombre', data.amenidades)
+
+    const existingMap = new Map(
+      (existingAmenidades ?? []).map((a: Record<string, unknown>) => [a.nombre as string, a.id as string])
+    )
+
+    const newNames = data.amenidades.filter(n => !existingMap.has(n))
+    let newAmenidades: Array<{ id: string; nombre: string }> = []
+    if (newNames.length > 0) {
+      const { data: inserted } = await supabase
         .from('amenidades')
-        .select('id')
-        .eq('nombre', nombre)
-        .single()
+        .insert(newNames.map(nombre => ({ nombre, categoria: 'ESENCIALES' })))
+        .select('id, nombre')
+      newAmenidades = (inserted ?? []) as Array<{ id: string; nombre: string }>
+      newAmenidades.forEach(a => existingMap.set(a.nombre, a.id))
+    }
 
-      let amenidadId = amenidad?.id
+    const amenidadRows = data.amenidades
+      .map(nombre => {
+        const id = existingMap.get(nombre)
+        return id ? { propiedad_id: propiedad.id, amenidad_id: id } : null
+      })
+      .filter(Boolean)
 
-      if (!amenidadId) {
-        const { data: nueva, error: errAmen } = await supabase
-          .from('amenidades')
-          .insert({ nombre, categoria: 'ESENCIALES' })
-          .select('id')
-          .single()
-        if (errAmen || !nueva) continue
-        amenidadId = nueva.id
-      }
-
-      await supabase
-        .from('propiedad_amenidades')
-        .insert({ propiedad_id: propiedad.id, amenidad_id: amenidadId })
+    if (amenidadRows.length > 0) {
+      await supabase.from('propiedad_amenidades').insert(amenidadRows)
     }
   }
 
@@ -733,23 +740,27 @@ async function _getPropiedadPorIdInternal(idOrSlug: string): Promise<PropiedadDe
 
   const propiedadId = (propiedad as Record<string, unknown>).id as string
 
-  const { data: imagenes } = await supabase
-    .from('imagenes_propiedad')
-    .select('*')
-    .eq('propiedad_id', propiedadId)
-    .order('orden', { ascending: true })
+  const [imagenesResult, amenidadesRawResult, resenasRawResult] = await Promise.all([
+    supabase
+      .from('imagenes_propiedad')
+      .select('*')
+      .eq('propiedad_id', propiedadId)
+      .order('orden', { ascending: true }),
+    supabase
+      .from('propiedad_amenidades')
+      .select('amenidad_id, amenidad:amenidades(id, nombre, icono, categoria)')
+      .eq('propiedad_id', propiedadId),
+    supabase
+      .from('resenas')
+      .select('id, calificacion, comentario, fecha_creacion, autor:usuarios!autor_id(nombre, apellido, avatar_url)')
+      .eq('propiedad_id', propiedadId)
+      .order('fecha_creacion', { ascending: false })
+      .limit(10),
+  ])
 
-  const { data: amenidadesRaw } = await supabase
-    .from('propiedad_amenidades')
-    .select('amenidad_id, amenidad:amenidades(id, nombre, icono, categoria)')
-    .eq('propiedad_id', propiedadId)
-
-  const { data: resenasRaw } = await supabase
-    .from('resenas')
-    .select('id, calificacion, comentario, fecha_creacion, autor:usuarios!autor_id(nombre, apellido, avatar_url)')
-    .eq('propiedad_id', propiedadId)
-    .order('fecha_creacion', { ascending: false })
-    .limit(10)
+  const { data: imagenes } = imagenesResult
+  const { data: amenidadesRaw } = amenidadesRawResult
+  const { data: resenasRaw } = resenasRawResult
 
   const p = propiedad as Record<string, unknown>
 

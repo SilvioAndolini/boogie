@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion } from 'framer-motion'
@@ -425,7 +426,7 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
                     <div className="mb-4 grid grid-cols-3 gap-3 sm:grid-cols-4">
                       {imagenesExistentes.map((img) => (
                         <div key={img.id} className="group relative aspect-square overflow-hidden rounded-lg border border-[#E8E4DF]">
-                          <img src={img.url} alt="" className="h-full w-full object-cover" />
+                          <Image fill src={img.url} alt="" className="h-full w-full object-cover" />
                           {img.es_principal && (
                             <span className="absolute bottom-1 left-1 rounded bg-[#1B4332] px-1.5 py-0.5 text-[10px] font-medium text-white">
                               Principal
@@ -470,7 +471,7 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
                     <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4">
                       {previews.map((src, i) => (
                         <div key={src} className="group relative aspect-square overflow-hidden rounded-lg border border-[#E8E4DF]">
-                          <img src={src} alt="" className="h-full w-full object-cover" />
+                          <Image fill src={src} alt="" className="h-full w-full object-cover" />
                           <button
                             type="button"
                             onClick={() => removeNuevaImagen(i)}

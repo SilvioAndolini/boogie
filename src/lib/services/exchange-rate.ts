@@ -6,10 +6,13 @@ export interface CotizacionEuro {
 
 const FALLBACK_TASA = 78.39
 
+let cachedRate: { data: CotizacionEuro; timestamp: number } | null = null
+const CACHE_TTL = 15 * 60 * 1000
+
 async function fetchFromERApi(): Promise<CotizacionEuro | null> {
   try {
     const res = await fetch('https://open.er-api.com/v6/latest/EUR', {
-      cache: 'no-store',
+      next: { revalidate: 900 },
     })
     if (!res.ok) return null
     const data = await res.json()
@@ -27,7 +30,7 @@ async function fetchFromERApi(): Promise<CotizacionEuro | null> {
 async function fetchFromExchangerate(): Promise<CotizacionEuro | null> {
   try {
     const res = await fetch('https://api.exchangerate-api.com/v4/latest/EUR', {
-      cache: 'no-store',
+      next: { revalidate: 900 },
     })
     if (!res.ok) return null
     const data = await res.json()
@@ -43,6 +46,10 @@ async function fetchFromExchangerate(): Promise<CotizacionEuro | null> {
 }
 
 export async function getCotizacionEuro(): Promise<CotizacionEuro> {
+  if (cachedRate && Date.now() - cachedRate.timestamp < CACHE_TTL) {
+    return cachedRate.data
+  }
+
   const cotizacion =
     (await fetchFromERApi()) ??
     (await fetchFromExchangerate()) ?? {
@@ -51,5 +58,6 @@ export async function getCotizacionEuro(): Promise<CotizacionEuro> {
       ultimaActualizacion: new Date(),
     }
 
+  cachedRate = { data: cotizacion, timestamp: Date.now() }
   return cotizacion
 }

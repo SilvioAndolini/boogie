@@ -642,7 +642,7 @@ export default function NuevaPropiedadPage() {
                                 <div key={previews[imgIdx]} className="group rounded-lg bg-[#FDFCFA] p-2 transition-all hover:bg-white">
                                   <div className="flex gap-3">
                                     <div className="relative h-18 w-18 shrink-0 overflow-hidden rounded-lg">
-                                      <img src={previews[imgIdx]} alt="" className="h-[72px] w-[72px] object-cover" />
+                                      <Image src={previews[imgIdx]} alt="" width={72} height={72} className="h-[72px] w-[72px] object-cover" />
                                       {imgIdx === 0 && (
                                         <span className="absolute bottom-0.5 left-0.5 rounded bg-[#1B4332] px-1.5 py-px text-[9px] font-bold text-white">Principal</span>
                                       )}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense, lazy } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Building2, MapPin, Star, Eye, Users, Bed, Bath, DoorOpen,
@@ -200,7 +201,7 @@ export default function AdminPropiedadDetallePage() {
         <div className="relative flex flex-col gap-5 p-6 sm:flex-row sm:items-center sm:p-8">
           <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl ring-2 ring-white/20 sm:h-24 sm:w-24">
             {imagenPrincipal ? (
-              <img src={imagenPrincipal} alt="" className="h-full w-full object-cover" />
+              <Image fill src={imagenPrincipal} alt="" className="h-full w-full object-cover" />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-white/10 text-2xl font-bold text-white">B</div>
             )}
@@ -337,7 +338,7 @@ export default function AdminPropiedadDetallePage() {
                     <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5">
                       {imagenes.map((img, i) => (
                         <a key={i} href={img.url} target="_blank" rel="noopener noreferrer" className="group relative aspect-square overflow-hidden rounded-lg border border-[#E8E4DF]">
-                          <img src={img.url} alt="" className="h-full w-full object-cover transition-transform group-hover:scale-105" />
+                          <Image fill src={img.url} alt="" className="h-full w-full object-cover transition-transform group-hover:scale-105" />
                           {img.es_principal && <span className="absolute bottom-0 left-0 right-0 bg-[#1B4332] px-1 py-0.5 text-center text-[9px] font-bold text-white">Principal</span>}
                         </a>
                       ))}

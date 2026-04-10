@@ -50,8 +50,8 @@ export async function POST(request: NextRequest) {
 
     const admin = createAdminClient()
 
-    const identityId = resource.id
-    const status = (resource.status || resource.reviewStatus || '').toLowerCase()
+    const identityId = resource.id as string
+    const status = ((resource.status || resource.reviewStatus || '') as string).toLowerCase()
 
     let verificacion: VerificacionRecord | null = null
 
