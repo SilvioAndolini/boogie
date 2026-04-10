@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -26,6 +26,8 @@ export function CryptoPayment({ reservaId, monto, onPagoRegistrado }: CryptoPaym
   const [copied, setCopied] = useState(false)
   const [status, setStatus] = useState<'generating' | 'waiting' | 'confirmed'>('generating')
   const [elapsed, setElapsed] = useState(0)
+  const onPagoRegistradoRef = useRef(onPagoRegistrado)
+  onPagoRegistradoRef.current = onPagoRegistrado
 
   useEffect(() => {
     let cancelled = false
@@ -42,7 +44,7 @@ export function CryptoPayment({ reservaId, monto, onPagoRegistrado }: CryptoPaym
         if (!cancelled && data.address) {
           setCryptoAddress(data.address)
           setStatus('waiting')
-          onPagoRegistrado()
+          onPagoRegistradoRef.current()
         } else if (!cancelled) {
           toast.error(data.error || 'Error al generar direccion')
         }
@@ -55,7 +57,7 @@ export function CryptoPayment({ reservaId, monto, onPagoRegistrado }: CryptoPaym
 
     generate()
     return () => { cancelled = true }
-  }, [reservaId, monto, onPagoRegistrado])
+  }, [reservaId, monto])
 
   useEffect(() => {
     if (status !== 'waiting') return
