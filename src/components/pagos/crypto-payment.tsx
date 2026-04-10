@@ -9,9 +9,13 @@ import {
 import { toast } from 'sonner'
 
 interface CryptoPaymentProps {
-  reservaId: string
+  reservaId: string | null
   monto: number
-  onPagoRegistrado: () => void
+  propiedadId?: string
+  fechaEntrada?: string
+  fechaSalida?: string
+  cantidadHuespedes?: number
+  onPagoRegistrado: (reservaId: string) => void
 }
 
 function formatUSD(n: number) {
@@ -20,7 +24,9 @@ function formatUSD(n: number) {
 
 const TRUST_WALLET_DEEPLINK = 'https://link.trustwallet.com'
 
-export function CryptoPayment({ reservaId, monto, onPagoRegistrado }: CryptoPaymentProps) {
+export function CryptoPayment({
+  reservaId, monto, propiedadId, fechaEntrada, fechaSalida, cantidadHuespedes, onPagoRegistrado,
+}: CryptoPaymentProps) {
   const [cryptoAddress, setCryptoAddress] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
@@ -37,14 +43,21 @@ export function CryptoPayment({ reservaId, monto, onPagoRegistrado }: CryptoPaym
         const res = await fetch('/api/crypto/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ reservaId, monto }),
+          body: JSON.stringify({
+            reservaId: reservaId || undefined,
+            monto,
+            propiedadId,
+            fechaEntrada,
+            fechaSalida,
+            cantidadHuespedes,
+          }),
         })
         const data = await res.json()
 
         if (!cancelled && data.address) {
           setCryptoAddress(data.address)
           setStatus('waiting')
-          onPagoRegistradoRef.current()
+          onPagoRegistradoRef.current(data.reservaId || reservaId || '')
         } else if (!cancelled) {
           toast.error(data.error || 'Error al generar direccion')
         }

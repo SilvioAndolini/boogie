@@ -17,6 +17,11 @@ interface PaymentFormProps {
   monto: number
   moneda: 'USD' | 'VES'
   reservaId?: string
+  propiedadId?: string
+  fechaEntrada?: string
+  fechaSalida?: string
+  cantidadHuespedes?: number
+  onCryptoReservaCreated?: (reservaId: string) => void
   onSubmit: (data: FormData) => void
 }
 
@@ -35,7 +40,10 @@ function formatUSD(n: number) {
   return `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
-export function PaymentForm({ metodo, monto, moneda, reservaId, onSubmit }: PaymentFormProps) {
+export function PaymentForm({
+  metodo, monto, moneda, reservaId, propiedadId, fechaEntrada, fechaSalida, cantidadHuespedes,
+  onCryptoReservaCreated, onSubmit,
+}: PaymentFormProps) {
   const [mostrarFormulario, setMostrarFormulario] = useState(false)
   const [enviando, setEnviando] = useState(false)
   const [tasaBCV, setTasaBCV] = useState<number | null>(null)
@@ -86,12 +94,16 @@ export function PaymentForm({ metodo, monto, moneda, reservaId, onSubmit }: Paym
 
   const datosReceptor = datosPago ? datosPago[metodo as keyof PaymentData] : null
 
-  if (esCripto && reservaId) {
+  if (esCripto) {
     return (
       <CryptoPayment
-        reservaId={reservaId}
+        reservaId={reservaId || null}
         monto={monto}
-        onPagoRegistrado={() => setCryptoRegistrado(true)}
+        propiedadId={propiedadId}
+        fechaEntrada={fechaEntrada}
+        fechaSalida={fechaSalida}
+        cantidadHuespedes={cantidadHuespedes}
+        onPagoRegistrado={onCryptoReservaCreated || (() => {})}
       />
     )
   }
