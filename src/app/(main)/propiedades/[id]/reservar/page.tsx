@@ -212,6 +212,13 @@ function ReservarContent() {
     return null
   }
 
+  useEffect(() => {
+    if (metodoPago === 'CRIPTO' && !reservaCreadaId && propiedad) {
+      setCreandoReserva(true)
+      ensureReserva().finally(() => setCreandoReserva(false))
+    }
+  }, [metodoPago])
+
   if (cargando || !propiedad) {
     return (
       <div className="flex items-center justify-center py-24">
@@ -219,13 +226,6 @@ function ReservarContent() {
       </div>
     )
   }
-
-  useEffect(() => {
-    if (metodoPago === 'CRIPTO' && !reservaCreadaId && propiedad) {
-      setCreandoReserva(true)
-      ensureReserva().finally(() => setCreandoReserva(false))
-    }
-  }, [metodoPago])
 
   const imagenPrincipal = propiedad.imagenes?.find((i) => i.es_principal)?.url || propiedad.imagenes?.[0]?.url
   const pasoIndex = PASOS.findIndex((p) => p.id === paso)
