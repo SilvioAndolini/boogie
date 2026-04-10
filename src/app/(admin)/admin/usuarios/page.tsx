@@ -701,7 +701,7 @@ export default function AdminUsuariosPage() {
                                   ) : (
                                     <>
                                       <div
-                                        className="relative flex items-center gap-0.5"
+                                        className="star-rating-hover relative flex items-center gap-0.5"
                                         onMouseLeave={() => setHoverStar((prev) => ({ ...prev, [u.id]: undefined }))}
                                       >
                                         {[1, 2, 3, 4, 5].map((star) => {
@@ -714,7 +714,7 @@ export default function AdminUsuariosPage() {
                                             <button
                                               key={star}
                                               type="button"
-                                              className="relative h-7 w-7"
+                                              className={`relative h-7 w-7 transition-transform duration-150 ${fill > 0 ? 'star-btn-active' : ''}`}
                                               onMouseMove={(e) => {
                                                 const rect = e.currentTarget.getBoundingClientRect()
                                                 const x = e.clientX - rect.left
@@ -726,12 +726,32 @@ export default function AdminUsuariosPage() {
                                                 setLocalReputacion((prev) => ({ ...prev, [u.id]: String(hoverVal ?? star) }))
                                               }}
                                             >
-                                              <Star className="h-5 w-5 text-[#D4CFC9]" />
+                                              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none">
+                                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="#D4CFC9" stroke="#C4BFBA" strokeWidth="0.5" />
+                                              </svg>
                                               <div
                                                 className="absolute inset-0 overflow-hidden"
                                                 style={{ width: `${fill * 100}%` }}
                                               >
-                                                <Star className="h-5 w-5 fill-[#F4A261] text-[#F4A261]" />
+                                                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none">
+                                                  <defs>
+                                                    <linearGradient id={`gold-${star}-${u.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                                                      <stop offset="0%" stopColor="#FFD700" />
+                                                      <stop offset="30%" stopColor="#FFF1A8" />
+                                                      <stop offset="50%" stopColor="#FFD700" />
+                                                      <stop offset="70%" stopColor="#DAA520" />
+                                                      <stop offset="100%" stopColor="#B8860B" />
+                                                    </linearGradient>
+                                                    <filter id={`glow-${star}-${u.id}`}>
+                                                      <feGaussianBlur stdDeviation="0.5" result="blur" />
+                                                      <feMerge>
+                                                        <feMergeNode in="blur" />
+                                                        <feMergeNode in="SourceGraphic" />
+                                                      </feMerge>
+                                                    </filter>
+                                                  </defs>
+                                                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill={`url(#gold-${star}-${u.id})`} stroke="#B8860B" strokeWidth="0.5" filter={`url(#glow-${star}-${u.id})`} />
+                                                </svg>
                                               </div>
                                             </button>
                                           )

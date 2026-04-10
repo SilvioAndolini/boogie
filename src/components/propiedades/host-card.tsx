@@ -29,12 +29,15 @@ export function HostCard({
     <div
       className={`relative overflow-hidden rounded-2xl border p-5 ${
         isUltra
-          ? 'border-amber-300/50 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50'
+          ? 'ultra-shine-card border-amber-300/50 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50'
           : 'border-[#E8E4DF] bg-gradient-to-br from-[#F0FDF4] via-white to-[#FAFDF7]'
       }`}
     >
       {isUltra && (
-        <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-gradient-to-br from-amber-200/40 via-yellow-300/30 to-orange-200/40 blur-xl" />
+        <>
+          <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-gradient-to-br from-amber-200/40 via-yellow-300/30 to-orange-200/40 blur-xl" />
+          <div className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-inset ring-amber-300/20" />
+        </>
       )}
 
       <div className="relative flex items-start gap-4">
