@@ -68,6 +68,8 @@ export default async function BuscarPage({ searchParams }: BuscarPageProps) {
       banos: p.banos,
       ratingPromedio: p.ratingPromedio,
       totalResenas: p.totalResenas,
+      planSuscripcion: ((p as unknown as Record<string, Record<string, unknown>>).propietario?.plan_suscripcion as string) || 'FREE',
+      imagenes: p.imagenes.map((img) => img.url),
     }))
 
   return (

@@ -17,6 +17,8 @@ export interface PropiedadMapa {
   banos: number
   ratingPromedio: number | null
   totalResenas: number
+  planSuscripcion: string
+  imagenes: string[]
 }
 
 const MapCanvas = dynamic(() => import('@/components/propiedades/map-canvas'), {
