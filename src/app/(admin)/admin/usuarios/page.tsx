@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Users as UsersIcon, Search, Loader2, Shield, EyeOff, UserPlus, Trash2, X,
@@ -78,6 +78,7 @@ export default function AdminUsuariosPage() {
   const [rol, setRol] = useState<string>('BOOGER')
   const [deleteModal, setDeleteModal] = useState<{ id: string; nombre: string; apellido: string } | null>(null)
   const [localReputacion, setLocalReputacion] = useState<Record<string, string>>({})
+  const [hoverStar, setHoverStar] = useState<Record<string, number | undefined>>({})
   const registroRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -699,17 +700,46 @@ export default function AdminUsuariosPage() {
                                     </button>
                                   ) : (
                                     <>
-                                      <input
-                                        type="number"
-                                        min="0"
-                                        max="5"
-                                        step="0.1"
-                                        value={localReputacion[u.id] ?? (u.reputacion != null ? String(u.reputacion) : '')}
-                                        onChange={(e) => setLocalReputacion((prev) => ({ ...prev, [u.id]: e.target.value }))}
-                                        placeholder="0.0"
-                                        className="h-7 w-16 rounded-lg border border-[#E8E4DF] bg-white px-2 text-xs font-semibold text-[#1A1A1A] text-center focus:border-[#1B4332] focus:outline-none"
-                                      />
-                                      <span className="text-[10px] text-[#9E9892]">/ 5</span>
+                                      <div
+                                        className="relative flex items-center gap-0.5"
+                                        onMouseLeave={() => setHoverStar((prev) => ({ ...prev, [u.id]: undefined }))}
+                                      >
+                                        {[1, 2, 3, 4, 5].map((star) => {
+                                          const currentVal = localReputacion[u.id] != null ? parseFloat(localReputacion[u.id]) : (u.reputacion ?? 0)
+                                          const hoverVal = hoverStar[u.id]
+                                          const displayVal = hoverVal ?? currentVal
+                                          const fill = Math.min(1, Math.max(0, displayVal - star + 1))
+
+                                          return (
+                                            <button
+                                              key={star}
+                                              type="button"
+                                              className="relative h-7 w-7"
+                                              onMouseMove={(e) => {
+                                                const rect = e.currentTarget.getBoundingClientRect()
+                                                const x = e.clientX - rect.left
+                                                const half = rect.width / 2
+                                                const val = x >= half ? star : star - 0.5
+                                                setHoverStar((prev) => ({ ...prev, [u.id]: val }))
+                                              }}
+                                              onClick={() => {
+                                                setLocalReputacion((prev) => ({ ...prev, [u.id]: String(hoverVal ?? star) }))
+                                              }}
+                                            >
+                                              <Star className="h-5 w-5 text-[#D4CFC9]" />
+                                              <div
+                                                className="absolute inset-0 overflow-hidden"
+                                                style={{ width: `${fill * 100}%` }}
+                                              >
+                                                <Star className="h-5 w-5 fill-[#F4A261] text-[#F4A261]" />
+                                              </div>
+                                            </button>
+                                          )
+                                        })}
+                                        <span className="ml-1.5 text-xs font-bold text-[#1A1A1A] tabular-nums">
+                                          {(hoverStar[u.id] ?? (localReputacion[u.id] != null ? parseFloat(localReputacion[u.id]) : (u.reputacion ?? 0))).toFixed(1)}
+                                        </span>
+                                      </div>
                                       <button
                                         onClick={() => handleGuardarReputacion(u.id)}
                                         disabled={actualizando === u.id}
