@@ -41,14 +41,24 @@ interface PropiedadPreview {
   imagenes: string[]
   ratingPromedio: number
   totalResenas: number
+  planPropietario?: string
 }
 
 function PropertyPreviewCard({ propiedad }: { propiedad: PropiedadPreview }) {
   const imagenUrl = propiedad.imagenes?.[0]
+  const isUltra = propiedad.planPropietario === 'ULTRA'
 
   return (
     <Link href={`/propiedades/${propiedad.id}`} className="group block shrink-0 w-[260px] sm:w-[280px] lg:w-[300px]">
-      <article className="rounded-2xl border border-[#E8E4DF] bg-white p-3.5 transition-all duration-300 ease-out hover:-translate-y-1 hover:border-[#D0CBC4] hover:shadow-[0_12px_40px_-8px_rgba(0,0,0,0.1)]">
+      <article className={`
+        relative overflow-hidden rounded-2xl border p-3.5 transition-all duration-300 ease-out
+        hover:-translate-y-1 hover:shadow-[0_12px_40px_-8px_rgba(0,0,0,0.1)]
+        ${isUltra
+          ? 'border-[#D4A843]/40 bg-gradient-to-br from-[#FFFDF5] via-[#FFF9E6] to-[#FFF3CC] hover:border-[#D4A843]/70'
+          : 'border-[#E8E4DF] bg-white hover:border-[#D0CBC4]'
+        }
+        ${isUltra ? 'ultra-shine-card' : ''}
+      `}>
         <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-gradient-to-b from-[#F0EDE8] to-[#F8F6F3]">
           {imagenUrl ? (
             <Image

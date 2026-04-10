@@ -45,7 +45,7 @@ export async function getSeccionesDestacadasPublicas() {
       if (seccion.tipo_filtro === 'MANUAL' && propiedadIds.length > 0) {
         const { data: props, error: propsError } = await admin
           .from('propiedades')
-          .select('id, titulo, tipo_propiedad, precio_por_noche, moneda, ciudad, estado, slug, habitaciones, camas, banos, rating_promedio, total_resenas')
+          .select('id, titulo, tipo_propiedad, precio_por_noche, moneda, ciudad, estado, slug, habitaciones, camas, banos, rating_promedio, total_resenas, propietario_id')
           .in('id', propiedadIds)
           .eq('estado_publicacion', 'PUBLICADA')
 
@@ -70,6 +70,18 @@ export async function getSeccionesDestacadasPublicas() {
           }
         }
 
+        const propietarioIdsManual = [...new Set((props || []).map((p: Record<string, unknown>) => p.propietario_id as string).filter(Boolean))]
+        const planMapManual: Record<string, string> = {}
+        if (propietarioIdsManual.length > 0) {
+          const { data: users } = await admin
+            .from('usuarios')
+            .select('id, plan_suscripcion')
+            .in('id', propietarioIdsManual)
+          for (const u of (users || [])) {
+            planMapManual[(u as Record<string, unknown>).id as string] = (u as Record<string, unknown>).plan_suscripcion as string || 'FREE'
+          }
+        }
+
         propiedades = (props || []).map((p: Record<string, unknown>) => ({
           id: p.id,
           titulo: p.titulo,
@@ -85,11 +97,12 @@ export async function getSeccionesDestacadasPublicas() {
           imagenes: imagenesMap[p.id as string] || [],
           ratingPromedio: (p.rating_promedio as number) ?? 0,
           totalResenas: (p.total_resenas as number) ?? 0,
+          planPropietario: planMapManual[p.propietario_id as string] || 'FREE',
         }))
       } else {
         let query = admin
           .from('propiedades')
-          .select('id, titulo, tipo_propiedad, precio_por_noche, moneda, ciudad, estado, slug, habitaciones, camas, banos, rating_promedio, total_resenas')
+          .select('id, titulo, tipo_propiedad, precio_por_noche, moneda, ciudad, estado, slug, habitaciones, camas, banos, rating_promedio, total_resenas, propietario_id')
           .eq('estado_publicacion', 'PUBLICADA')
 
         if (seccion.filtro_ciudad) {
@@ -127,6 +140,18 @@ export async function getSeccionesDestacadasPublicas() {
           }
         }
 
+        const propietarioIds = [...new Set((props || []).map((p: Record<string, unknown>) => p.propietario_id as string).filter(Boolean))]
+        const planMap: Record<string, string> = {}
+        if (propietarioIds.length > 0) {
+          const { data: users } = await admin
+            .from('usuarios')
+            .select('id, plan_suscripcion')
+            .in('id', propietarioIds)
+          for (const u of (users || [])) {
+            planMap[(u as Record<string, unknown>).id as string] = (u as Record<string, unknown>).plan_suscripcion as string || 'FREE'
+          }
+        }
+
         propiedades = (props || []).map((p: Record<string, unknown>) => ({
           id: p.id,
           titulo: p.titulo,
@@ -142,6 +167,7 @@ export async function getSeccionesDestacadasPublicas() {
           imagenes: imagenesMap[p.id as string] || [],
           ratingPromedio: (p.rating_promedio as number) ?? 0,
           totalResenas: (p.total_resenas as number) ?? 0,
+          planPropietario: planMap[p.propietario_id as string] || 'FREE',
         }))
       }
 
