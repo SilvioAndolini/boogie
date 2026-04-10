@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { ArrowLeft, Loader2, ShieldCheck, MapPin } from 'lucide-react'
 import { Conversacion } from '@/types/chat'
 import { getConversacionInfo } from '@/actions/chat.actions'
 import { useChat } from '@/hooks/use-chat'
@@ -45,53 +45,58 @@ export default function ConversacionPage() {
   if (loadingInfo) {
     return (
       <div className="flex h-[80vh] items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-[#52B788]" />
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-6 w-6 animate-spin text-[#52B788]" />
+          <span className="text-xs text-[#9E9892]">Cargando conversación...</span>
+        </div>
       </div>
     )
   }
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
       className="flex h-[calc(100vh-8rem)] flex-col overflow-hidden rounded-2xl border border-[#E8E4DF] bg-white"
     >
-      {/* Header */}
-      <div className="flex items-center gap-3 border-b border-[#E8E4DF] px-4 py-3">
-        <button
-          onClick={() => router.push('/dashboard/mensajes')}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-[#9E9892] transition-colors hover:bg-[#F4F1EC] hover:text-[#1A1A1A]"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </button>
+      <div className="relative overflow-hidden bg-gradient-to-r from-[#1B4332] to-[#2D6A4F]">
+        <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-white/5" />
+        <div className="pointer-events-none absolute -bottom-4 -left-4 h-16 w-16 rounded-full bg-white/5" />
+        <div className="relative flex items-center gap-3 px-4 py-3.5">
+          <button
+            onClick={() => router.push('/dashboard/mensajes')}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white transition-colors hover:bg-white/20"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
 
-        <div className="relative">
-          {otroUsuario?.avatar_url ? (
-            <img src={otroUsuario.avatar_url} alt="" className="h-10 w-10 rounded-full object-cover" />
-          ) : (
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1B4332] text-sm font-bold text-white">
-              {getInitials(otroUsuario?.nombre, otroUsuario?.apellido)}
-            </div>
-          )}
-        </div>
+          <div className="relative">
+            {otroUsuario?.avatar_url ? (
+              <img src={otroUsuario.avatar_url} alt="" className="h-10 w-10 rounded-full object-cover ring-2 ring-white/20" />
+            ) : (
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-sm font-bold text-white ring-2 ring-white/20">
+                {getInitials(otroUsuario?.nombre, otroUsuario?.apellido)}
+              </div>
+            )}
+          </div>
 
-        <div className="flex-1 min-w-0">
-          <p className="truncate text-sm font-semibold text-[#1A1A1A]">
-            {otroUsuario ? `${otroUsuario.nombre} ${otroUsuario.apellido}` : 'Usuario'}
-          </p>
-          {propiedad && (
-            <p className="truncate text-[11px] text-[#9E9892]">
-              📍 {propiedad.titulo}
+          <div className="flex-1 min-w-0">
+            <p className="truncate text-sm font-semibold text-white">
+              {otroUsuario ? `${otroUsuario.nombre} ${otroUsuario.apellido}` : 'Usuario'}
             </p>
-          )}
+            {propiedad && (
+              <div className="flex items-center gap-1">
+                <MapPin className="h-3 w-3 text-white/50" />
+                <p className="truncate text-[11px] text-white/60">{propiedad.titulo}</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Messages */}
       <ChatMessages mensajes={mensajes} miId={miId || ''} loading={loadingMessages} />
 
-      {/* Input */}
       <ChatInput
         onSend={(contenido, tipo) => send(contenido, tipo)}
         onSendImage={(file) => sendImage(file)}
