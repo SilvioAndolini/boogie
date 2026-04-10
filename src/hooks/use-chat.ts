@@ -19,7 +19,7 @@ export function useChat(conversacionId: string | null, miId: string | null) {
 
     async function load() {
       setLoading(true)
-      const res = await getMensajes(conversacionId)
+      const res = await getMensajes(conversacionId!)
       if (!cancelled && res.exito) {
         setMensajes(res.datos || [])
       }

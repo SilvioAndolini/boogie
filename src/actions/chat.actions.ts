@@ -14,6 +14,59 @@ import {
 import { generarPreview } from '@/lib/chat/utils'
 import { revalidatePath } from 'next/cache'
 
+export async function getConversacionInfo(
+  conversacionId: string
+): Promise<{
+  exito: boolean
+  miId?: string
+  otroUsuario?: Conversacion['otro_usuario']
+  propiedad?: Conversacion['propiedad']
+  error?: string
+}> {
+  const user = await getUsuarioAutenticado()
+  if (!user) return { exito: false, error: 'No autenticado' }
+
+  const admin = createAdminClient()
+
+  const { data: conv } = await admin
+    .from('conversaciones')
+    .select(`
+      participante_1, participante_2,
+      p1:usuarios!participante_1(id, nombre, apellido, avatar_url),
+      p2:usuarios!participante_2(id, nombre, apellido, avatar_url),
+      propiedad:propiedades(id, titulo)
+    `)
+    .eq('id', conversacionId)
+    .single()
+
+  if (!conv) return { exito: false, error: 'Conversación no encontrada' }
+
+  const c = conv as Record<string, unknown>
+  if (c.participante_1 !== user.id && c.participante_2 !== user.id) {
+    return { exito: false, error: 'Sin permisos' }
+  }
+
+  const esParticipante1 = c.participante_1 === user.id
+  const otro = esParticipante1 ? c.p2 : c.p1
+
+  const { data: userData } = await admin
+    .from('usuarios')
+    .select('rol')
+    .eq('id', user.id)
+    .single()
+
+  if (userData) {
+    await seedMensajesRapidos((userData as Record<string, unknown>).rol as string)
+  }
+
+  return {
+    exito: true,
+    miId: user.id,
+    otroUsuario: otro as Conversacion['otro_usuario'],
+    propiedad: (c.propiedad as Conversacion['propiedad']) || null,
+  }
+}
+
 export async function obtenerOCrearConversacion(
   otroUsuarioId: string,
   propiedadId?: string,

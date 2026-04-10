@@ -5,9 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { Conversacion } from '@/types/chat'
-import { obtenerOCrearConversacion, getMensajesRapidos, seedMensajesRapidos } from '@/actions/chat.actions'
-import { getUsuarioAutenticado } from '@/lib/auth'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { getConversacionInfo } from '@/actions/chat.actions'
 import { useChat } from '@/hooks/use-chat'
 import { ChatMessages } from '@/components/chat/chat-messages'
 import { ChatInput } from '@/components/chat/chat-input'
@@ -28,51 +26,15 @@ export default function ConversacionPage() {
 
   useEffect(() => {
     async function load() {
-      const admin = createAdminClient()
-
-      const { data: conv } = await admin
-        .from('conversaciones')
-        .select(`
-          participante_1, participante_2,
-          p1:usuarios!participante_1(id, nombre, apellido, avatar_url),
-          p2:usuarios!participante_2(id, nombre, apellido, avatar_url),
-          propiedad:propiedades(id, titulo)
-        `)
-        .eq('id', conversacionId)
-        .single()
-
-      if (!conv) {
+      const res = await getConversacionInfo(conversacionId)
+      if (!res.exito) {
         setLoadingInfo(false)
         return
       }
 
-      const c = conv as Record<string, unknown>
-      const esP1 = true
-
-      const user = await getUsuarioAutenticado()
-      if (!user) {
-        setLoadingInfo(false)
-        return
-      }
-
-      setMiId(user.id)
-
-      const esParticipante1 = c.participante_1 === user.id
-      const otro = esParticipante1 ? c.p2 : c.p1
-      setOtroUsuario(otro as Conversacion['otro_usuario'])
-      setPropiedad(c.propiedad as Conversacion['propiedad'])
-
-      const { data: userData } = await admin
-        .from('usuarios')
-        .select('rol')
-        .eq('id', user.id)
-        .single()
-
-      if (userData) {
-        const rol = (userData as Record<string, unknown>).rol as string
-        await seedMensajesRapidos(rol)
-      }
-
+      setMiId(res.miId || null)
+      setOtroUsuario(res.otroUsuario || null)
+      setPropiedad(res.propiedad || null)
       setLoadingInfo(false)
     }
     load()
