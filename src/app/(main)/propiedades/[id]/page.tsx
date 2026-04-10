@@ -320,6 +320,8 @@ export default async function PropiedadDetallePage({ params }: Props) {
                   bio={propiedad.propietario.bio}
                   reputacion={propiedad.propietario.reputacion}
                   reputacionManual={propiedad.propietario.reputacionManual}
+                  propietarioId={propiedad.propietario.id}
+                  propiedadId={propiedad.id}
                 />
               )}
             </div>

@@ -160,9 +160,9 @@ export function PropertyCard({ propiedad }: { propiedad: PropiedadCard }) {
               <span className="text-xs font-normal text-[#6B6560]">/ noche</span>
             </div>
             {propiedad.propietario && (propiedad.propietario.reputacion ?? 0) > 0 && (
-              <div className="ml-auto flex items-center gap-1 rounded-full bg-[#FDF8E8] px-2 py-0.5">
-                <GoldStarSmall size={10} />
-                <span className="text-[10px] font-bold text-[#1A1A1A] tabular-nums">
+              <div className="ml-auto flex items-center gap-1.5 rounded-full bg-[#FDF8E8] px-2.5 py-1">
+                <GoldStarSmall size={12} />
+                <span className="text-xs font-bold text-[#1A1A1A] tabular-nums">
                   {propiedad.propietario.reputacion!.toFixed(1)}
                 </span>
               </div>

@@ -1,5 +1,6 @@
 import { MessageCircle, ShieldCheck, Crown } from 'lucide-react'
 import { GoldStar } from '@/components/ui/gold-star'
+import Link from 'next/link'
 
 interface HostCardProps {
   nombre: string
@@ -10,6 +11,8 @@ interface HostCardProps {
   bio: string | null
   reputacion: number | null
   reputacionManual: boolean
+  propietarioId?: string
+  propiedadId?: string
 }
 
 export function HostCard({
@@ -20,6 +23,8 @@ export function HostCard({
   plan_suscripcion,
   bio,
   reputacion,
+  propietarioId,
+  propiedadId,
 }: HostCardProps) {
   const isUltra = plan_suscripcion === 'ULTRA'
   const initials = `${nombre[0] || ''}${apellido[0] || ''}`
@@ -94,18 +99,20 @@ export function HostCard({
           <div className="mt-2 flex items-center gap-2">
             <GoldStar size={16} rating={rating} showValue />
             <div className="h-3 w-px bg-[#E8E4DF]" />
-            <button
-              type="button"
-              className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-medium transition-colors ${
-                isUltra
-                  ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-                  : 'bg-[#D8F3DC] text-[#1B4332] hover:bg-[#B7E4C7]'
-              }`}
-              title="Enviar mensaje al anfitrión"
-            >
-              <MessageCircle className="h-3 w-3" />
-              Mensaje
-            </button>
+            {propietarioId ? (
+              <ContactButton propietarioId={propietarioId} propiedadId={propiedadId} isUltra={isUltra} />
+            ) : (
+              <span
+                className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-medium ${
+                  isUltra
+                    ? 'bg-amber-100 text-amber-700'
+                    : 'bg-[#D8F3DC] text-[#1B4332]'
+                }`}
+              >
+                <MessageCircle className="h-3 w-3" />
+                Mensaje
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -116,5 +123,26 @@ export function HostCard({
         </p>
       )}
     </div>
+  )
+}
+
+function ContactButton({ propietarioId, propiedadId, isUltra }: { propietarioId: string; propiedadId?: string; isUltra: boolean }) {
+  const params = new URLSearchParams()
+  params.set('usuario', propietarioId)
+  if (propiedadId) params.set('propiedad', propiedadId)
+
+  return (
+    <Link
+      href={`/dashboard/mensajes/nueva?${params.toString()}`}
+      className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-medium transition-colors ${
+        isUltra
+          ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+          : 'bg-[#D8F3DC] text-[#1B4332] hover:bg-[#B7E4C7]'
+      }`}
+      title="Enviar mensaje al anfitrión"
+    >
+      <MessageCircle className="h-3 w-3" />
+      Mensaje
+    </Link>
   )
 }

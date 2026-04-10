@@ -12,6 +12,7 @@ import {
   User,
   Settings,
   Shield,
+  MessageCircle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -38,6 +39,12 @@ const menuItems = [
     titulo: 'Reservas recibidas',
     href: '/dashboard/reservas-recibidas',
     icono: Inbox,
+    grupo: 'general',
+  },
+  {
+    titulo: 'Mensajes',
+    href: '/dashboard/mensajes',
+    icono: MessageCircle,
     grupo: 'general',
   },
   {
