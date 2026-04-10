@@ -193,11 +193,11 @@
 
 /* Map markers — MapLibre */
 .map-marker {
-  background: linear-gradient(135deg, #2d8a5e 0%, #1B4332 35%, #0d2b20 65%, #1B4332 100%);
-  border: 1.5px solid rgba(82, 183, 136, 0.5);
+  background: linear-gradient(145deg, #40916c 0%, #2d6a4f 20%, #1B4332 50%, #0f2e1f 80%, #1B4332 100%);
+  border: 1.5px solid rgba(82, 183, 136, 0.55);
   border-radius: 9999px;
   padding: 5px 12px;
-  box-shadow: 0 2px 10px rgba(27,67,50,0.3), inset 0 1px 0 rgba(255,255,255,0.15);
+  box-shadow: 0 2px 10px rgba(27,67,50,0.3), 0 0 0 1px rgba(27,67,50,0.1), inset 0 1px 0 rgba(255,255,255,0.2);
   cursor: pointer;
   font-family: system-ui, -apple-system, sans-serif;
   font-size: 12px;
@@ -206,72 +206,84 @@
   color: white;
   white-space: nowrap;
   text-decoration: none;
-  transition: transform 0.2s cubic-bezier(.4,0,.2,1), box-shadow 0.2s cubic-bezier(.4,0,.2,1);
+  transition: transform 0.18s cubic-bezier(.4,0,.2,1), box-shadow 0.18s cubic-bezier(.4,0,.2,1), opacity 0.15s ease;
   user-select: none;
   position: relative;
   overflow: hidden;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.25);
 }
 .map-marker::before {
   content: '';
   position: absolute;
   top: 0;
   left: -100%;
-  width: 60%;
+  width: 50%;
   height: 100%;
-  background: linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.2) 45%, rgba(255,255,255,0.05) 55%, transparent 70%);
-  animation: markerShimmer 3s ease-in-out infinite;
+  background: linear-gradient(100deg, transparent 15%, rgba(255,255,255,0.28) 40%, rgba(255,255,255,0.08) 60%, transparent 85%);
+  animation: markerShimmer 3.5s ease-in-out infinite;
   pointer-events: none;
 }
 .map-marker:hover {
-  transform: scale(1.12) translateY(-1px);
-  background: linear-gradient(135deg, #3a9d6f 0%, #2D6A4F 35%, #1B4332 65%, #2D6A4F 100%);
-  border-color: rgba(82, 183, 136, 0.7);
-  box-shadow: 0 6px 20px rgba(27,67,50,0.45), inset 0 1px 0 rgba(255,255,255,0.2);
+  transform: scale(1.15) translateY(-2px);
+  background: linear-gradient(145deg, #52b788 0%, #40916c 20%, #2d6a4f 50%, #1B4332 80%, #2d6a4f 100%);
+  border-color: rgba(82, 183, 136, 0.8);
+  box-shadow: 0 8px 24px rgba(27,67,50,0.45), 0 0 0 2px rgba(82,183,136,0.2), inset 0 1px 0 rgba(255,255,255,0.25);
 }
 .map-marker:active {
-  transform: scale(1.04);
+  transform: scale(1.05);
   box-shadow: 0 2px 8px rgba(27,67,50,0.3);
+}
+.map-marker-hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.8);
 }
 
 .map-marker-ultra {
-  background: linear-gradient(135deg, #d4a843 0%, #b8860b 25%, #8B6914 50%, #b8860b 75%, #d4a843 100%);
-  border: 1.5px solid rgba(255, 215, 0, 0.6);
+  background: linear-gradient(145deg, #f0d060 0%, #daa520 18%, #c49520 32%, #a67c00 50%, #8B6914 68%, #a67c00 82%, #daa520 100%);
+  border: 1.5px solid rgba(255, 215, 0, 0.7);
   border-radius: 9999px;
   padding: 5px 12px;
-  box-shadow: 0 2px 12px rgba(184, 134, 11, 0.35), inset 0 1px 0 rgba(255,255,255,0.25);
+  box-shadow: 0 2px 14px rgba(184, 134, 11, 0.4), 0 0 0 1px rgba(218,165,32,0.3), inset 0 1px 0 rgba(255,255,255,0.35);
   cursor: pointer;
   font-family: system-ui, -apple-system, sans-serif;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 0.02em;
-  color: #1a1200;
+  color: #2a1f00;
   white-space: nowrap;
   text-decoration: none;
-  transition: transform 0.2s cubic-bezier(.4,0,.2,1), box-shadow 0.2s cubic-bezier(.4,0,.2,1);
+  transition: transform 0.18s cubic-bezier(.4,0,.2,1), box-shadow 0.18s cubic-bezier(.4,0,.2,1), opacity 0.15s ease;
   user-select: none;
   position: relative;
   overflow: hidden;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.25);
 }
 .map-marker-ultra::before {
   content: '';
   position: absolute;
   top: 0;
   left: -100%;
-  width: 60%;
+  width: 50%;
   height: 100%;
-  background: linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.35) 45%, rgba(255,255,255,0.1) 55%, transparent 70%);
-  animation: markerShimmer 2.5s ease-in-out infinite;
+  background: linear-gradient(100deg, transparent 10%, rgba(255,255,255,0.45) 35%, rgba(255,255,255,0.15) 55%, transparent 85%);
+  animation: markerShimmer 2.8s ease-in-out infinite;
   pointer-events: none;
 }
 .map-marker-ultra:hover {
-  transform: scale(1.12) translateY(-1px);
-  background: linear-gradient(135deg, #e8c252 0%, #c9961a 25%, #9a7418 50%, #c9961a 75%, #e8c252 100%);
-  border-color: rgba(255, 215, 0, 0.8);
-  box-shadow: 0 6px 24px rgba(184, 134, 11, 0.5), inset 0 1px 0 rgba(255,255,255,0.3);
+  transform: scale(1.15) translateY(-2px);
+  background: linear-gradient(145deg, #ffe066 0%, #f0c030 18%, #daa520 32%, #c49520 50%, #a67c00 68%, #c49520 82%, #f0c030 100%);
+  border-color: rgba(255, 215, 0, 0.9);
+  box-shadow: 0 8px 28px rgba(184, 134, 11, 0.55), 0 0 0 2px rgba(255,215,0,0.25), inset 0 1px 0 rgba(255,255,255,0.4);
 }
 .map-marker-ultra:active {
-  transform: scale(1.04);
+  transform: scale(1.05);
   box-shadow: 0 2px 8px rgba(184, 134, 11, 0.35);
+}
+.map-marker-ultra-hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.8);
 }
 
 @keyframes markerShimmer {
