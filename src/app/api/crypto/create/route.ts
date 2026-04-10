@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createCryptapiAddress, getWalletAddress, CRYPTAPI_TICKER, CRYPTAPI_NETWORK, CRYPTAPI_CURRENCY } from '@/lib/crypto/cryptapi'
 import { APP_URL } from '@/lib/constants'
 import { getUsuarioAutenticado } from '@/lib/auth'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function POST(req: NextRequest) {
   try {
@@ -29,6 +30,20 @@ export async function POST(req: NextRequest) {
       callbackUrl,
       address: walletAddress,
       pending: 1,
+    })
+
+    const admin = createAdminClient()
+    await admin.from('pagos').insert({
+      id: crypto.randomUUID(),
+      monto,
+      moneda: 'USD',
+      metodo_pago: 'CRIPTO',
+      estado: 'PENDIENTE',
+      referencia: 'Crypto - pendiente TX',
+      fecha_creacion: new Date().toISOString(),
+      reserva_id: reservaId,
+      usuario_id: user.id,
+      crypto_address: result.address_in,
     })
 
     return NextResponse.json({

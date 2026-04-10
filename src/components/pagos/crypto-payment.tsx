@@ -42,21 +42,6 @@ export function CryptoPayment({ reservaId, monto, onPagoRegistrado }: CryptoPaym
         if (!cancelled && data.address) {
           setCryptoAddress(data.address)
           setStatus('waiting')
-
-          const admin = (await import('@/lib/supabase/admin')).createAdminClient
-          const supabase = admin()
-          await supabase.from('pagos').insert({
-            id: crypto.randomUUID(),
-            monto,
-            moneda: 'USD',
-            metodo_pago: 'CRIPTO',
-            estado: 'PENDIENTE',
-            referencia: 'Crypto - pendiente TX',
-            fecha_creacion: new Date().toISOString(),
-            reserva_id: reservaId,
-            crypto_address: data.address,
-          })
-
           onPagoRegistrado()
         } else if (!cancelled) {
           toast.error(data.error || 'Error al generar direccion')

@@ -1,6 +1,6 @@
 const CRYPTAPI_BASE = 'https://api.cryptapi.io'
 
-export const CRYPTAPI_TICKER = 'trx_usdt'
+export const CRYPTAPI_TICKER = 'trc20/usdt'
 export const CRYPTAPI_NETWORK = 'TRC20'
 export const CRYPTAPI_CURRENCY = 'USDT'
 export const CRYPTAPI_MIN_CONFIRMATIONS = 1
