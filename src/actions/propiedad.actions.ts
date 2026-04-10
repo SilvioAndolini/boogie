@@ -734,8 +734,11 @@ async function _getPropiedadPorIdInternal(idOrSlug: string): Promise<PropiedadDe
     query = query.eq('slug', idOrSlug)
   }
 
-  const { data: propiedad } = await query.single()
+  const { data: propiedad, error: queryError } = await query.single()
 
+  if (queryError) {
+    console.error('[getPropiedadPorId] Supabase query error:', queryError.code, queryError.message, 'for id:', idOrSlug)
+  }
   if (!propiedad) return null
 
   const propiedadId = (propiedad as Record<string, unknown>).id as string
@@ -848,5 +851,11 @@ const _getPropiedadPorIdCached = unstable_cache(
 )
 
 export async function getPropiedadPorId(id: string): Promise<PropiedadDetalle | null> {
-  return _getPropiedadPorIdCached(id)
+  try {
+    const cached = await _getPropiedadPorIdCached(id)
+    if (cached) return cached
+    return await _getPropiedadPorIdInternal(id)
+  } catch {
+    return await _getPropiedadPorIdInternal(id)
+  }
 }
