@@ -126,11 +126,12 @@ export function BookingCalendar({
               className={cn(
                 'flex h-10 w-full items-center justify-center rounded-md text-sm transition-colors sm:h-8',
                 seleccionable && 'hover:bg-[#D8F3DC] cursor-pointer',
-                !seleccionable && 'text-[#D8D3CC] cursor-not-allowed line-through',
+                pasado && !ocupada && 'text-[#D8D3CC] cursor-not-allowed',
+                ocupada && 'bg-[#FEE2E2] text-[#B91C1C] cursor-not-allowed line-through',
                 esEntrada && 'bg-[#1B4332] text-white rounded-l-md',
                 esSalida && 'bg-[#1B4332] text-white rounded-r-md',
                 enMedio && 'bg-[#D8F3DC] text-[#1B4332]',
-                esHoy && !esEntrada && !esSalida && 'font-bold text-[#1B4332]',
+                esHoy && !esEntrada && !esSalida && !ocupada && 'font-bold text-[#1B4332]',
               )}
             >
               {dia}
