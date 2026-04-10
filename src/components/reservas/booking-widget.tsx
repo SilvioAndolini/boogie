@@ -15,6 +15,7 @@ interface BookingWidgetProps {
   estanciaMinima: number
   propiedadId: string
   tasaEuro: number
+  fechasOcupadas?: { inicio: string; fin: string }[]
 }
 
 export function BookingWidget({
@@ -24,6 +25,7 @@ export function BookingWidget({
   estanciaMinima,
   propiedadId,
   tasaEuro,
+  fechasOcupadas: fechasOcupadasISO,
 }: BookingWidgetProps) {
   const [fechaEntrada, setFechaEntrada] = useState<Date | undefined>()
   const [fechaSalida, setFechaSalida] = useState<Date | undefined>()
@@ -31,6 +33,11 @@ export function BookingWidget({
   const [mostrarCalendario, setMostrarCalendario] = useState(false)
   const [mostrarHuespedes, setMostrarHuespedes] = useState(false)
   const [monedaDisplay, setMonedaDisplay] = useState<'USD' | 'VES'>(moneda)
+
+  const fechasOcupadas = (fechasOcupadasISO || []).map((r) => ({
+    inicio: new Date(r.inicio),
+    fin: new Date(r.fin),
+  }))
 
   useEffect(() => {
     setMonedaDisplay(moneda)
@@ -155,6 +162,7 @@ export function BookingWidget({
               <BookingCalendar
                 fechaEntrada={fechaEntrada}
                 fechaSalida={fechaSalida}
+                fechasOcupadas={fechasOcupadas}
                 onFechaEntradaChange={setFechaEntrada}
                 onFechaSalidaChange={setFechaSalida}
               />

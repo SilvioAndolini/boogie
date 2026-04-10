@@ -213,9 +213,8 @@ function ReservarContent() {
   }
 
   useEffect(() => {
-    if (metodoPago === 'CRIPTO' && !reservaCreadaId && propiedad) {
-      setCreandoReserva(true)
-      ensureReserva().finally(() => setCreandoReserva(false))
+    if (metodoPago !== 'CRIPTO' && reservaCreadaId && metodoPago) {
+      setReservaCreadaId(null)
     }
   }, [metodoPago])
 
@@ -439,11 +438,16 @@ function ReservarContent() {
                 monto={total}
                 moneda={propiedad.moneda}
                 reservaId={reservaCreadaId || undefined}
+                propiedadId={propiedad.id}
+                fechaEntrada={fechaEntrada.toISOString()}
+                fechaSalida={fechaSalida.toISOString()}
+                cantidadHuespedes={huespedes}
+                onCryptoReservaCreated={(id) => setReservaCreadaId(id)}
                 onSubmit={handlePaymentSubmit}
               />
             )}
 
-            {metodoPago === 'CRIPTO' && !reservaCreadaId && (
+            {metodoPago === 'CRIPTO' && !reservaCreadaId && creandoReserva && (
               <div className="flex justify-center py-4">
                 <Loader2 className="h-6 w-6 animate-spin text-[#52B788]" />
               </div>

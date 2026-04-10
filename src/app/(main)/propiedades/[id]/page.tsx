@@ -20,6 +20,7 @@ import { HostCard } from '@/components/propiedades/host-card'
 import { AmenidadIcon } from '@/components/propiedades/amenidad-icon'
 import { TIPOS_PROPIEDAD, POLITICAS_CANCELACION } from '@/lib/constants'
 import { getCotizacionEuro } from '@/lib/services/exchange-rate'
+import { obtenerFechasOcupadas } from '@/lib/reservas/disponibilidad'
 import { LocationViewMap } from '@/components/propiedades/location-view'
 import type { Metadata } from 'next'
 
@@ -42,6 +43,12 @@ export default async function PropiedadDetallePage({ params }: Props) {
   if (!propiedad) notFound()
 
   const cotizacion = await getCotizacionEuro()
+
+  const fechasOcupadasRaw = await obtenerFechasOcupadas(id)
+  const fechasOcupadas = fechasOcupadasRaw.map((r) => ({
+    inicio: r.inicio.toISOString(),
+    fin: r.fin.toISOString(),
+  }))
 
   const reglas = propiedad.reglas
     ? propiedad.reglas.split('\n').filter(Boolean)
@@ -300,6 +307,7 @@ export default async function PropiedadDetallePage({ params }: Props) {
                 estanciaMinima={propiedad.estanciaMinima}
                 propiedadId={propiedad.id}
                 tasaEuro={cotizacion.tasa}
+                fechasOcupadas={fechasOcupadas}
               />
 
               {propiedad.propietario && (

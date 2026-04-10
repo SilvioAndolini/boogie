@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -9,9 +9,13 @@ import {
 import { toast } from 'sonner'
 
 interface CryptoPaymentProps {
-  reservaId: string
+  reservaId: string | null
   monto: number
-  onPagoRegistrado: () => void
+  propiedadId?: string
+  fechaEntrada?: string
+  fechaSalida?: string
+  cantidadHuespedes?: number
+  onPagoRegistrado: (reservaId: string) => void
 }
 
 function formatUSD(n: number) {
@@ -20,12 +24,16 @@ function formatUSD(n: number) {
 
 const TRUST_WALLET_DEEPLINK = 'https://link.trustwallet.com'
 
-export function CryptoPayment({ reservaId, monto, onPagoRegistrado }: CryptoPaymentProps) {
+export function CryptoPayment({
+  reservaId, monto, propiedadId, fechaEntrada, fechaSalida, cantidadHuespedes, onPagoRegistrado,
+}: CryptoPaymentProps) {
   const [cryptoAddress, setCryptoAddress] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
   const [status, setStatus] = useState<'generating' | 'waiting' | 'confirmed'>('generating')
   const [elapsed, setElapsed] = useState(0)
+  const onPagoRegistradoRef = useRef(onPagoRegistrado)
+  onPagoRegistradoRef.current = onPagoRegistrado
 
   useEffect(() => {
     let cancelled = false
@@ -35,29 +43,21 @@ export function CryptoPayment({ reservaId, monto, onPagoRegistrado }: CryptoPaym
         const res = await fetch('/api/crypto/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ reservaId, monto }),
+          body: JSON.stringify({
+            reservaId: reservaId || undefined,
+            monto,
+            propiedadId,
+            fechaEntrada,
+            fechaSalida,
+            cantidadHuespedes,
+          }),
         })
         const data = await res.json()
 
         if (!cancelled && data.address) {
           setCryptoAddress(data.address)
           setStatus('waiting')
-
-          const admin = (await import('@/lib/supabase/admin')).createAdminClient
-          const supabase = admin()
-          await supabase.from('pagos').insert({
-            id: crypto.randomUUID(),
-            monto,
-            moneda: 'USD',
-            metodo_pago: 'CRIPTO',
-            estado: 'PENDIENTE',
-            referencia: 'Crypto - pendiente TX',
-            fecha_creacion: new Date().toISOString(),
-            reserva_id: reservaId,
-            crypto_address: data.address,
-          })
-
-          onPagoRegistrado()
+          onPagoRegistradoRef.current(data.reservaId || reservaId || '')
         } else if (!cancelled) {
           toast.error(data.error || 'Error al generar direccion')
         }
@@ -70,7 +70,7 @@ export function CryptoPayment({ reservaId, monto, onPagoRegistrado }: CryptoPaym
 
     generate()
     return () => { cancelled = true }
-  }, [reservaId, monto, onPagoRegistrado])
+  }, [reservaId, monto])
 
   useEffect(() => {
     if (status !== 'waiting') return
