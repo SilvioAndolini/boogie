@@ -1,4 +1,5 @@
-import { Star, MessageCircle, ShieldCheck, Crown } from 'lucide-react'
+import { MessageCircle, ShieldCheck, Crown } from 'lucide-react'
+import { GoldStar } from '@/components/ui/gold-star'
 
 interface HostCardProps {
   nombre: string
@@ -91,14 +92,7 @@ export function HostCard({
           <p className="text-[11px] font-medium text-[#9E9892]">Anfitrión</p>
 
           <div className="mt-2 flex items-center gap-2">
-            <div className="flex items-center gap-1">
-              <Star
-                className={`h-4 w-4 ${rating > 0 ? 'fill-[#F4A261] text-[#F4A261]' : 'fill-[#E8E4DF] text-[#E8E4DF]'}`}
-              />
-              <span className={`text-sm font-bold ${rating > 0 ? 'text-[#1A1A1A]' : 'text-[#9E9892]'}`}>
-                {rating > 0 ? rating.toFixed(1) : '0.0'}
-              </span>
-            </div>
+            <GoldStar size={16} rating={rating} showValue />
             <div className="h-3 w-px bg-[#E8E4DF]" />
             <button
               type="button"

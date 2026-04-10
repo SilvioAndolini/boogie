@@ -65,6 +65,7 @@ export default async function PropiedadesPage({ searchParams }: PropiedadesPageP
     habitaciones: p.habitaciones ?? 0,
     camas: p.camas ?? 0,
     banos: p.banos ?? 0,
+    propietario: (p as unknown as Record<string, unknown>).propietario as { reputacion: number | null; plan_suscripcion: string } | null,
   }))
 
   const propiedadesMapa: PropiedadMapa[] = resultado.datos

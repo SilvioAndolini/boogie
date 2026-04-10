@@ -28,6 +28,7 @@ interface PropiedadPublica {
   ratingPromedio: number | null
   totalResenas: number
   imagenes: { url: string; es_principal: boolean }[]
+  propietario: { reputacion: number | null; plan_suscripcion: string } | null
 }
 
 interface PropiedadDetalle {
@@ -553,7 +554,7 @@ async function _getPropiedadesPublicasInternal(filtros?: {
 
   let query = supabase
     .from('propiedades')
-    .select('*, imagenes:imagenes_propiedad!propiedad_id(url, es_principal)', { count: 'exact' })
+    .select('*, imagenes:imagenes_propiedad!propiedad_id(url, es_principal), propietario:usuarios!propietario_id(reputacion, plan_suscripcion)', { count: 'exact' })
     .eq('estado_publicacion', 'PUBLICADA')
 
   if (filtros?.ubicacion && !filtros?.lat) {
@@ -683,6 +684,10 @@ async function _getPropiedadesPublicasInternal(filtros?: {
     ratingPromedio: p.rating_promedio as number | null,
     totalResenas: (p.total_resenas as number) ?? 0,
     imagenes: ((p.imagenes as Record<string, unknown>[]) ?? []).filter((img: Record<string, unknown>) => img.es_principal) as { url: string; es_principal: boolean }[],
+    propietario: p.propietario ? {
+      reputacion: (p.propietario as Record<string, unknown>).reputacion != null ? Number((p.propietario as Record<string, unknown>).reputacion) : null,
+      plan_suscripcion: (p.propietario as Record<string, unknown>).plan_suscripcion as string,
+    } : null,
   }))
 
   const total = totalCount

@@ -2,9 +2,10 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { Heart, Star, MapPin, BedDouble, Bath, DoorOpen } from 'lucide-react'
+import { Heart, MapPin, BedDouble, Bath, DoorOpen } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { GoldStar, GoldStarSmall } from '@/components/ui/gold-star'
 import type { TipoPropiedad, Moneda } from '@/types'
 
 export interface PropiedadCard {
@@ -21,6 +22,7 @@ export interface PropiedadCard {
   habitaciones: number
   camas: number
   banos: number
+  propietario?: { reputacion: number | null; plan_suscripcion: string } | null
 }
 
 const TIPO_LABELS: Record<TipoPropiedad, string> = {
@@ -92,7 +94,7 @@ export function PropertyCard({ propiedad }: { propiedad: PropiedadCard }) {
           <div className="absolute top-3 left-3 z-10">
             {ratingPromedio > 0 && (
               <div className="flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 backdrop-blur-md">
-                <Star className="h-3 w-3 fill-[#F4A261] text-[#F4A261]" />
+                <GoldStarSmall size={12} />
                 <span className="text-[11px] font-semibold text-[#1A1A1A]">
                   {ratingPromedio.toFixed(1)}
                 </span>
@@ -150,11 +152,21 @@ export function PropertyCard({ propiedad }: { propiedad: PropiedadCard }) {
               <span className="text-xs">{banos} baño{banos !== 1 ? 's' : ''}</span>
             </div>
           </div>
-          <div className="mt-2.5 flex items-baseline gap-0.5">
-            <span className="text-lg font-bold tracking-tight text-[#1B4332]">
-              {formatearPrecio(precioPorNoche, moneda)}
-            </span>
-            <span className="text-xs font-normal text-[#6B6560]">/ noche</span>
+          <div className="mt-2.5 flex items-center gap-2">
+            <div className="flex items-baseline gap-0.5">
+              <span className="text-lg font-bold tracking-tight text-[#1B4332]">
+                {formatearPrecio(precioPorNoche, moneda)}
+              </span>
+              <span className="text-xs font-normal text-[#6B6560]">/ noche</span>
+            </div>
+            {propiedad.propietario && (propiedad.propietario.reputacion ?? 0) > 0 && (
+              <div className="ml-auto flex items-center gap-1 rounded-full bg-[#FDF8E8] px-2 py-0.5">
+                <GoldStarSmall size={10} />
+                <span className="text-[10px] font-bold text-[#1A1A1A] tabular-nums">
+                  {propiedad.propietario.reputacion!.toFixed(1)}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </article>

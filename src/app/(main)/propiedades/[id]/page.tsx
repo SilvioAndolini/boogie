@@ -13,6 +13,7 @@ import {
   CalendarDays,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { GoldStar } from '@/components/ui/gold-star'
 import { getPropiedadPorId } from '@/actions/propiedad.actions'
 import { PropertyGalleryWrapper } from './gallery-wrapper'
 import { BookingWidget } from '@/components/reservas/booking-widget'
@@ -101,8 +102,7 @@ export default async function PropiedadDetallePage({ params }: Props) {
                 </div>
                 {propiedad.ratingPromedio && (
                   <div className="flex items-center gap-1">
-                    <Star className="h-4 w-4 fill-[#F4A261] text-[#F4A261]" />
-                    <span className="font-semibold text-[#1A1A1A]">{propiedad.ratingPromedio.toFixed(1)}</span>
+                    <GoldStar size={16} rating={propiedad.ratingPromedio} showValue />
                     <span className="text-[#9E9892]">({propiedad.totalResenas})</span>
                   </div>
                 )}
