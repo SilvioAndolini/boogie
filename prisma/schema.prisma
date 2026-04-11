@@ -32,10 +32,11 @@ model Usuario {
   ultimaActividad DateTime @default(now()) @map("ultima_actividad")
   activo          Boolean  @default(true)
 
-  propiedades       Propiedad[]     @relation("Propietario")
-  reservasComoHuesped Reserva[]     @relation("Huesped")
-  resenasEscritas   Resena[]        @relation("AutorResena")
-  resenasRecibidas  Resena[]        @relation("AnfitrionResena")
+  propiedades       Propiedad[]        @relation("Propietario")
+  reservasComoHuesped Reserva[]         @relation("Huesped")
+  boogiesOfertas    BoogieOferta[]      @relation("HuespedOfertas")
+  resenasEscritas   Resena[]           @relation("AutorResena")
+  resenasRecibidas  Resena[]           @relation("AnfitrionResena")
   metodosPago       MetodoPago[]
   notificaciones    Notificacion[]
   pagos             Pago[]
@@ -96,7 +97,8 @@ model Propiedad {
   totalResenas      Int               @default(0) @map("total_resenas")
 
   propietarioId     String            @map("propietario_id")
-  propietario       Usuario           @relation("Propietario", fields: [propietarioId], references: [id])
+  propietario       Usuario          @relation("Propietario", fields: [propietarioId], references: [id])
+  boogiesOfertas    BoogieOferta[]    @relation("PropiedadOfertas")
   imagenes          ImagenPropiedad[]
   amenidades        PropiedadAmenidad[]
   reservas          Reserva[]
@@ -233,6 +235,7 @@ model Reserva {
   pagos               Pago[]
   resena              Resena?
   storeItems          ReservaStoreItem[]
+  boogieOferta        BoogieOferta?
 
   @@index([propiedadId, fechaEntrada, fechaSalida])
   @@index([huespedId])
@@ -248,6 +251,55 @@ enum EstadoReserva {
   CANCELADA_HUESPED
   CANCELADA_ANFITRION
   RECHAZADA
+}
+
+// =============================================
+// BOOGIE OFFERS (NEGOCIA TU BOOGIE)
+// =============================================
+
+model BoogieOferta {
+  id                  String           @id @default(cuid())
+  codigo              String           @unique @default(cuid())
+
+  propiedadId         String           @map("propiedad_id")
+  propiedad           Propiedad        @relation("PropiedadOfertas", fields: [propiedadId], references: [id], onDelete: Cascade)
+  huespedId           String           @map("huesped_id")
+  huesped             Usuario          @relation("HuespedOfertas", fields: [huespedId], references: [id], onDelete: Cascade)
+
+  fechaEntrada        DateTime         @map("fecha_entrada")
+  fechaSalida         DateTime         @map("fecha_salida")
+  noches              Int
+  cantidadHuespedes   Int              @default(1) @map("cantidad_huespedes")
+
+  precioOriginal      Decimal          @map("precio_original") @db.Decimal(10, 2)
+  precioOfertado      Decimal          @map("precio_ofertado") @db.Decimal(10, 2)
+  moneda              Moneda           @default(USD)
+
+  estado              EstadoOferta     @default(PENDIENTE)
+  mensaje             String?          @db.Text
+  motivoRechazo       String?          @map("motivo_rechazo") @db.Text
+
+  fechaCreacion       DateTime         @default(now()) @map("fecha_creacion")
+  fechaAprobada       DateTime?        @map("fecha_aprobada")
+  fechaExpiracion     DateTime?        @map("fecha_expiracion")
+  fechaRechazada      DateTime?        @map("fecha_rechazada")
+  updatedAt           DateTime         @default(now()) @updatedAt @map("updated_at")
+
+  reservaId           String?          @unique @map("reserva_id")
+  reserva             Reserva?         @relation(fields: [reservaId], references: [id])
+
+  @@index([propiedadId, estado])
+  @@index([huespedId, estado])
+  @@index([estado, fechaExpiracion])
+  @@map("boogie_ofertas")
+}
+
+enum EstadoOferta {
+  PENDIENTE
+  ACEPTADA
+  RECHAZADA
+  EXPIRADA
+  PAGADA
 }
 
 // =============================================

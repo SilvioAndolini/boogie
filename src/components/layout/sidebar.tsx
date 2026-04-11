@@ -13,6 +13,7 @@ import {
   Settings,
   Shield,
   MessageCircle,
+  Handshake,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -39,6 +40,12 @@ const menuItems = [
     titulo: 'Reservas recibidas',
     href: '/dashboard/reservas-recibidas',
     icono: Inbox,
+    grupo: 'general',
+  },
+  {
+    titulo: 'Ofertas',
+    href: '/dashboard/ofertas',
+    icono: Handshake,
     grupo: 'general',
   },
   {

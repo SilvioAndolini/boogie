@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { formatPrecio, formatFechaCorta } from '@/lib/format'
 import { BookingCalendar } from '@/components/reservas/booking-calendar'
 import { COMISION_PLATAFORMA_HUESPED } from '@/lib/constants'
+import { NegociaTuBoogie } from '@/components/propiedades/negocia-tu-boogie'
 
 interface BookingWidgetProps {
   precioPorNoche: number
@@ -258,6 +259,19 @@ export function BookingWidget({
           </motion.div>
         )}
       </AnimatePresence>
+
+      <div className="mt-4">
+        <NegociaTuBoogie
+          propiedadId={propiedadId}
+          precioPorNoche={precioDisplay}
+          moneda={monedaDisplay}
+          fechaEntrada={fechaEntrada ?? null}
+          fechaSalida={fechaSalida ?? null}
+          noches={noches}
+          cantidadHuespedes={huespedes}
+          precioTotal={total}
+        />
+      </div>
 
       <div className="mt-3 flex items-center gap-2 text-xs text-[#6B6560]">
         <Shield className="h-4 w-4 shrink-0" />
