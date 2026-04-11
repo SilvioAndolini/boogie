@@ -39,9 +39,6 @@ interface MarkerEntry {
   marker: maplibregl.Marker
   popup: maplibregl.Popup
   el: MarkerElement
-  visible: boolean
-  isUltra: boolean
-  priority: number
 }
 
 interface PopupState {
@@ -96,73 +93,6 @@ function buildPopupHTML(p: PropiedadMapa): string {
   )
 }
 
-const PILL_WIDTH = 90
-const PILL_HEIGHT = 32
-const PILL_PAD_X = 8
-const PILL_PAD_Y = 6
-
-function resolveOverlaps(entries: MarkerEntry[], map: maplibregl.Map): void {
-  const zoom = map.getZoom()
-  const canvas = map.getCanvas()
-  const canvasW = canvas.clientWidth
-  const canvasH = canvas.clientHeight
-
-  const ultraEntries = entries.filter(e => e.isUltra)
-  const freeEntries = entries.filter(e => !e.isUltra)
-
-  const sorted = [
-    ...ultraEntries.sort((a, b) => b.priority - a.priority),
-    ...freeEntries.sort((a, b) => b.priority - a.priority),
-  ]
-
-  const occupied: { x1: number; y1: number; x2: number; y2: number }[] = []
-
-  for (const entry of sorted) {
-    const lngLat = map.project([entry.propiedad.longitud, entry.propiedad.latitud])
-
-    const onScreen =
-      lngLat.x >= -PILL_WIDTH &&
-      lngLat.x <= canvasW + PILL_WIDTH &&
-      lngLat.y >= -PILL_HEIGHT &&
-      lngLat.y <= canvasH + PILL_HEIGHT
-
-    if (!onScreen) {
-      setMarkerVisibility(entry, false)
-      continue
-    }
-
-    const x1 = lngLat.x - PILL_WIDTH / 2 - PILL_PAD_X
-    const y1 = lngLat.y - PILL_HEIGHT / 2 - PILL_PAD_Y
-    const x2 = lngLat.x + PILL_WIDTH / 2 + PILL_PAD_X
-    const y2 = lngLat.y + PILL_HEIGHT / 2 + PILL_PAD_Y
-
-    const overlaps = occupied.some(r => x1 < r.x2 && x2 > r.x1 && y1 < r.y2 && y2 > r.y1)
-
-    if (overlaps) {
-      const zoomThreshold = entry.isUltra ? 8 : 11
-      setMarkerVisibility(entry, zoom >= zoomThreshold)
-    } else {
-      occupied.push({ x1, y1, x2, y2 })
-      setMarkerVisibility(entry, true)
-    }
-  }
-}
-
-function setMarkerVisibility(entry: MarkerEntry, visible: boolean): void {
-  if (entry.visible === visible) return
-  entry.visible = visible
-  const cls = entry.isUltra ? 'map-marker-ultra' : 'map-marker'
-  const hiddenCls = entry.isUltra ? 'map-marker-ultra-hidden' : 'map-marker-hidden'
-  if (visible) {
-    entry.el.className = cls
-    entry.marker.setOffset([0, -PILL_HEIGHT / 2])
-  } else {
-    entry.el.className = `${cls} ${hiddenCls}`
-    if (!entry.el._cleanupHandlers) return
-    entry.popup.remove()
-  }
-}
-
 export default function MapCanvas({ propiedades, centerLat, centerLng }: {
   propiedades: PropiedadMapa[]
   centerLat?: number
@@ -171,7 +101,6 @@ export default function MapCanvas({ propiedades, centerLat, centerLng }: {
   const mapElRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const entriesRef = useRef<MarkerEntry[]>([])
-  const rafRef = useRef<number>(0)
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [errorMsg, setErrorMsg] = useState('')
 
@@ -249,23 +178,17 @@ export default function MapCanvas({ propiedades, centerLat, centerLng }: {
           .setLngLat([p.longitud, p.latitud])
           .addTo(map)
 
-        const priority = (isUltra ? 1000 : 0) + (p.ratingPromedio ?? 0) * 100 + p.totalResenas
-
         const entry: MarkerEntry = {
           id: p.id,
           propiedad: p,
           marker,
           popup,
           el: pill,
-          visible: true,
-          isUltra,
-          priority,
         }
 
         entriesRef.current.push(entry)
 
         const handleMouseEnter = () => {
-          if (!entry.visible) return
           popup.setLngLat([p.longitud, p.latitud]).addTo(map)
         }
 
@@ -274,7 +197,6 @@ export default function MapCanvas({ propiedades, centerLat, centerLng }: {
         }
 
         const handleClick = () => {
-          if (!entry.visible) return
           window.location.href = `/propiedades/${p.id}`
         }
 
@@ -289,31 +211,12 @@ export default function MapCanvas({ propiedades, centerLat, centerLng }: {
         }
       }
 
-      resolveOverlaps(entriesRef.current, map)
-
       if (propiedades.length > 1) {
         const bounds = new maplibregl.LngLatBounds()
         for (const p of propiedades) bounds.extend([p.longitud, p.latitud])
         map.fitBounds(bounds, { padding: 60 })
       }
     })
-
-    const onMoveEnd = () => {
-      cancelAnimationFrame(rafRef.current)
-      rafRef.current = requestAnimationFrame(() => {
-        resolveOverlaps(entriesRef.current, map)
-      })
-    }
-
-    const onMove = () => {
-      cancelAnimationFrame(rafRef.current)
-      rafRef.current = requestAnimationFrame(() => {
-        resolveOverlaps(entriesRef.current, map)
-      })
-    }
-
-    map.on('moveend', onMoveEnd)
-    map.on('move', onMove)
 
     map.on('error', (e) => {
       console.error('MapLibre error:', e.error)
@@ -328,9 +231,6 @@ export default function MapCanvas({ propiedades, centerLat, centerLng }: {
     })
 
     return () => {
-      cancelAnimationFrame(rafRef.current)
-      map.off('moveend', onMoveEnd)
-      map.off('move', onMove)
       entriesRef.current.forEach((entry) => {
         const el = entry.el
         if (el._cleanupHandlers) {
