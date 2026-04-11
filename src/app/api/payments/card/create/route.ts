@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getUsuarioAutenticado } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createNowPaymentsInvoice } from '@/lib/payments/nowpayments'
+import { buildMoonPayUrl, getMoonPayWalletAddress } from '@/lib/payments/moonpay'
 import { APP_URL } from '@/lib/constants'
 import { verificarDisponibilidad } from '@/lib/reservas/disponibilidad'
 import { calcularPrecioReserva } from '@/lib/reservas/calculos'
@@ -15,13 +15,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const {
-      monto,
-      propiedadId,
-      fechaEntrada,
-      fechaSalida,
-      cantidadHuespedes,
-    } = body as {
+    const { monto, propiedadId, fechaEntrada, fechaSalida, cantidadHuespedes } = body as {
       monto: number
       propiedadId?: string
       fechaEntrada?: string
@@ -29,10 +23,15 @@ export async function POST(req: NextRequest) {
       cantidadHuespedes?: number
     }
 
-    console.log(step, 'Request:', { monto, propiedadId, fechaEntrada, fechaSalida, cantidadHuespedes })
+    console.log(step, 'Request:', { monto, propiedadId })
 
     if (!monto || monto <= 0 || !propiedadId || !fechaEntrada || !fechaSalida || !cantidadHuespedes) {
       return NextResponse.json({ error: 'Faltan datos obligatorios' }, { status: 400 })
+    }
+
+    const walletAddress = getMoonPayWalletAddress()
+    if (!walletAddress) {
+      return NextResponse.json({ error: 'Wallet no configurada' }, { status: 500 })
     }
 
     const admin = createAdminClient()
@@ -41,7 +40,7 @@ export async function POST(req: NextRequest) {
       propiedadId, new Date(fechaEntrada), new Date(fechaSalida)
     )
     if (!disponibilidad.disponible) {
-      return NextResponse.json({ error: 'Las fechas seleccionadas ya no estan disponibles' }, { status: 400 })
+      return NextResponse.json({ error: 'Las fechas ya no estan disponibles' }, { status: 400 })
     }
 
     const { data: propiedad, error: propError } = await admin
@@ -55,28 +54,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Propiedad no encontrada' }, { status: 404 })
     }
 
-    const callbackBase = process.env.NEXT_PUBLIC_APP_URL || APP_URL
-    const orderId = `BOO-${Date.now().toString(36).toUpperCase()}`
-
-    const invoice = await createNowPaymentsInvoice({
-      priceAmount: monto,
-      priceCurrency: 'usd',
-      orderId,
-      orderDescription: `Reserva Boogie - ${propiedad.titulo}`,
-      ipnCallbackUrl: `${callbackBase}/api/payments/card/callback`,
-      successUrl: `${callbackBase}/dashboard/mis-reservas?pago=exitoso`,
-      cancelUrl: `${callbackBase}/propiedades/${propiedadId}/reservar?pago=cancelado`,
-    })
-
-    console.log(step, 'Invoice created:', invoice.id)
-
     const calculo = calcularPrecioReserva(
       Number(propiedad.precio_por_noche),
       new Date(fechaEntrada),
       new Date(fechaSalida),
       propiedad.moneda as 'USD' | 'VES'
     )
-    const codigoReserva = orderId + '-' + Math.random().toString(36).substring(2, 6).toUpperCase()
+    const codigoReserva = 'BOO-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase()
     const reservaId = crypto.randomUUID()
 
     const { error: insertError } = await admin
@@ -106,6 +90,8 @@ export async function POST(req: NextRequest) {
 
     console.log(step, 'Reserva creada:', reservaId)
 
+    const externalTxId = reservaId
+
     try {
       await admin.from('pagos').insert({
         id: crypto.randomUUID(),
@@ -113,11 +99,10 @@ export async function POST(req: NextRequest) {
         moneda: 'USD',
         metodo_pago: 'TARJETA_INTERNACIONAL',
         estado: 'PENDIENTE',
-        referencia: `NOWPayments Invoice: ${invoice.id}`,
+        referencia: `MoonPay TX: ${externalTxId}`,
         fecha_creacion: new Date().toISOString(),
         reserva_id: reservaId,
         usuario_id: user.id,
-        crypto_address: null,
       })
     } catch (pagoErr) {
       console.error(step, 'Pago insert error:', pagoErr)
@@ -135,9 +120,19 @@ export async function POST(req: NextRequest) {
       console.error(step, 'Notificacion error:', notifErr)
     }
 
+    const moonpayUrl = buildMoonPayUrl({
+      baseCurrencyCode: 'usd',
+      baseCurrencyAmount: monto,
+      defaultCurrencyCode: 'usdt_trc20',
+      walletAddress,
+      email: user.email,
+      externalTransactionId: externalTxId,
+    })
+
+    console.log(step, 'MoonPay URL generada')
+
     return NextResponse.json({
-      invoiceUrl: invoice.invoice_url,
-      invoiceId: invoice.id,
+      checkoutUrl: moonpayUrl,
       reservaId,
     })
   } catch (err) {

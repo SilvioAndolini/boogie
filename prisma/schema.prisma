@@ -555,3 +555,79 @@ model ReservaStoreItem {
   @@index([reservaId])
   @@map("reserva_store_items")
 }
+
+// =============================================
+// CUPONES Y PROMOCIONES
+// =============================================
+
+enum TipoDescuentoCupon {
+  PORCENTAJE
+  MONTO_FIJO
+  NOCHES_GRATIS
+}
+
+enum TipoAplicacionCupon {
+  PRIMERA_RESERVA
+  CUALQUIER_RESERVA
+  SOLO_ANFITRIONES
+  SOLO_HUESPEDES
+  PROPIEDAD_ESPECIFICA
+  CIUDAD_ESPECIFICA
+  PLAN_ULTRA
+  RESERVA_MINIMA
+  TEMPORADA_ALTA
+  TEMPORADA_BAJA
+  RESENA_POSITIVA
+  CUMPLEANERO
+  USUARIO_NUEVO
+  USUARIO_ESPECIFICO
+}
+
+model Cupon {
+  id                  String                @id @default(cuid())
+  codigo              String                @unique @db.VarChar(30)
+  nombre              String
+  descripcion         String?               @db.Text
+
+  tipoDescuento       TipoDescuentoCupon    @map("tipo_descuento")
+  valorDescuento      Decimal               @map("valor_descuento") @db.Decimal(10, 2)
+  moneda              Moneda                @default(USD)
+  maxDescuento        Decimal?              @map("max_descuento") @db.Decimal(10, 2)
+
+  tipoAplicacion      TipoAplicacionCupon   @map("tipo_aplicacion")
+  valorAplicacion     String?               @map("valor_aplicacion") @db.Text
+
+  minCompra           Decimal?              @map("min_compra") @db.Decimal(10, 2)
+  minNoches           Int?                  @map("min_noches")
+  maxUsos             Int?                  @map("max_usos")
+  maxUsosPorUsuario   Int?                  @default(1) @map("max_usos_por_usuario")
+
+  usosActuales        Int                   @default(0) @map("usos_actuales")
+
+  fechaInicio         DateTime              @map("fecha_inicio")
+  fechaFin            DateTime              @map("fecha_fin")
+
+  activo              Boolean               @default(true)
+  creadoPor           String?               @map("creado_por")
+  fechaCreacion       DateTime              @default(now()) @map("fecha_creacion")
+  fechaActualizacion  DateTime              @default(now()) @updatedAt @map("fecha_actualizacion")
+
+  usos                CuponUso[]
+
+  @@index([codigo])
+  @@index([activo, fechaInicio, fechaFin])
+  @@map("cupones")
+}
+
+model CuponUso {
+  id              String    @id @default(cuid())
+  cuponId         String    @map("cupon_id")
+  usuarioId       String    @map("usuario_id")
+  reservaId       String?   @map("reserva_id")
+  descuentoAplicado Decimal  @map("descuento_aplicado") @db.Decimal(10, 2)
+  fechaUso        DateTime  @default(now()) @map("fecha_uso")
+
+  @@index([cuponId])
+  @@index([usuarioId])
+  @@map("cupon_usos")
+}

@@ -18,6 +18,7 @@ export type EntidadAuditable =
   | 'seccion_destacada'
   | 'store_producto'
   | 'store_servicio'
+  | 'cupon'
 
 export async function requireAdmin() {
   const user = await getUsuarioAutenticado()

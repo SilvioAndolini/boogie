@@ -70,7 +70,7 @@ export function NegociaTuBoogie({
     <>
       <button
         onClick={() => setAbierto(true)}
-        className="group flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#D4A017]/40 bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-50 px-4 py-3 text-sm font-semibold text-[#B8860B] transition-all hover:border-[#D4A017] hover:shadow-md"
+        className="group flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#1B4332]/30 bg-[#D8F3DC] px-4 py-3 text-sm font-semibold text-[#1B4332] transition-all hover:border-[#1B4332] hover:shadow-md"
       >
         <Handshake className="h-4 w-4 transition-transform group-hover:scale-110" />
         Negocia tu Boogie
@@ -82,7 +82,7 @@ export function NegociaTuBoogie({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4"
             onClick={() => setAbierto(false)}
           >
             <motion.div
@@ -100,8 +100,8 @@ export function NegociaTuBoogie({
               </button>
 
               <div className="mb-4 flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100">
-                  <Handshake className="h-4 w-4 text-[#B8860B]" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#D8F3DC]">
+                  <Handshake className="h-4 w-4 text-[#1B4332]" />
                 </div>
                 <h3 className="text-lg font-bold text-[#1A1A1A]">Negocia tu Boogie</h3>
               </div>
@@ -135,7 +135,7 @@ export function NegociaTuBoogie({
                       value={precioOfertado}
                       onChange={(e) => setPrecioOfertado(e.target.value)}
                       placeholder={minOferta.toFixed(2)}
-                      className="h-10 w-full rounded-lg border border-[#E8E4DF] bg-white px-3 text-sm font-semibold text-[#1A1A1A] focus:border-[#D4A017] focus:outline-none focus:ring-1 focus:ring-[#D4A017]/30"
+                      className="h-10 w-full rounded-lg border border-[#E8E4DF] bg-white px-3 text-sm font-semibold text-[#1A1A1A] focus:border-[#1B4332] focus:outline-none focus:ring-1 focus:ring-[#1B4332]/30"
                     />
                     {ofertaNum > 0 && (
                       <div className="mt-1 flex items-center gap-1 text-xs">
@@ -167,14 +167,14 @@ export function NegociaTuBoogie({
                     />
                   </div>
 
-                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+                  <div className="rounded-lg border border-[#1B4332]/20 bg-[#D8F3DC] p-3 text-xs text-[#1B4332]">
                     Si el anfitrion acepta, tendras <strong>2 horas</strong> para completar el pago.
                   </div>
 
                   <Button
                     onClick={handleSubmit}
                     disabled={!puedeEnviar || enviando}
-                    className="w-full bg-[#D4A017] text-white hover:bg-[#B8860B] disabled:opacity-50"
+                    className="w-full bg-[#1B4332] text-white hover:bg-[#2D6A4F] disabled:opacity-50"
                   >
                     {enviando ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
