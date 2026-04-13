@@ -63,6 +63,7 @@ function formatMoney(n: number, moneda?: string) {
 }
 
 function formatDate(s: string) {
+  if (!s) return '—'
   const d = s.includes('T') ? new Date(s) : new Date(s + 'T12:00:00')
   return d.toLocaleDateString('es-VE', { day: 'numeric', month: 'short', year: 'numeric' })
 }
