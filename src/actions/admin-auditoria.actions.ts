@@ -25,7 +25,8 @@ export async function getAuditLogAdmin(filtros?: {
     if (filtros?.fechaFin) params.set('fechaFin', filtros.fechaFin)
     if (filtros?.pagina) params.set('pagina', String(filtros.pagina))
     const qs = params.toString()
-    const raw = await goApi<Record<string, unknown>>(qs ? `/api/v1/admin/auditoria?${qs}` : '/api/v1/admin/auditoria', { raw: true })
+    const outer = await goApi<Record<string, unknown>>(qs ? `/api/v1/admin/auditoria?${qs}` : '/api/v1/admin/auditoria', { raw: true })
+    const raw = (outer?.data ?? outer) as Record<string, unknown>
     return {
       data: (raw?.data ?? []) as AuditResult['data'],
       total: (raw?.total ?? 0) as number,

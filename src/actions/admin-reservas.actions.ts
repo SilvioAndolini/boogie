@@ -33,7 +33,8 @@ export async function getReservasAdmin(filtros?: {
     if (filtros?.busqueda) params.set('busqueda', filtros.busqueda.trim())
     if (filtros?.pagina) params.set('pagina', String(filtros.pagina))
     const qs = params.toString()
-    const raw = await goApi<Record<string, unknown>>(qs ? `/api/v1/admin/reservas?${qs}` : '/api/v1/admin/reservas', { raw: true })
+    const outer = await goApi<Record<string, unknown>>(qs ? `/api/v1/admin/reservas?${qs}` : '/api/v1/admin/reservas', { raw: true })
+    const raw = (outer?.data ?? outer) as Record<string, unknown>
     return {
       data: (raw?.data ?? []) as Array<Record<string, unknown>>,
       total: (raw?.total ?? 0) as number,

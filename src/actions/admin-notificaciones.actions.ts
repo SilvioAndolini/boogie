@@ -26,7 +26,8 @@ export async function getNotificacionesAdmin(filtros?: {
     const params = new URLSearchParams()
     if (filtros?.pagina) params.set('pagina', String(filtros.pagina))
     const qs = params.toString()
-    const raw = await goApi<Record<string, unknown>>(qs ? `/api/v1/admin/notificaciones?${qs}` : '/api/v1/admin/notificaciones', { raw: true })
+    const outer = await goApi<Record<string, unknown>>(qs ? `/api/v1/admin/notificaciones?${qs}` : '/api/v1/admin/notificaciones', { raw: true })
+    const raw = (outer?.data ?? outer) as Record<string, unknown>
     return {
       data: (raw?.data ?? []) as Array<Record<string, unknown>>,
       total: (raw?.total ?? 0) as number,

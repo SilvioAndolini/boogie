@@ -20,7 +20,8 @@ export async function getResenasAdmin(filtros?: {
     if (filtros?.busqueda) params.set('busqueda', filtros.busqueda.trim())
     if (filtros?.pagina) params.set('pagina', String(filtros.pagina))
     const qs = params.toString()
-    const raw = await goApi<Record<string, unknown>>(qs ? `/api/v1/admin/resenas?${qs}` : '/api/v1/admin/resenas', { raw: true })
+    const outer = await goApi<Record<string, unknown>>(qs ? `/api/v1/admin/resenas?${qs}` : '/api/v1/admin/resenas', { raw: true })
+    const raw = (outer?.data ?? outer) as Record<string, unknown>
     return {
       data: (raw?.data ?? []) as Array<Record<string, unknown>>,
       stats: raw?.stats as { total: number; promedio: number; distribucion: Record<string, number> } | undefined,

@@ -127,7 +127,8 @@ type AdminCountsResult = {
 
 export async function getUsuariosAdmin(): Promise<UsuariosResult> {
   try {
-    const raw = await goApi<Record<string, unknown>>('/api/v1/admin/usuarios', { raw: true })
+    const outer = await goApi<Record<string, unknown>>('/api/v1/admin/usuarios', { raw: true })
+    const raw = (outer?.data ?? outer) as Record<string, unknown>
     return {
       data: (raw?.data ?? []) as Array<Record<string, unknown>>,
       total: (raw?.total ?? 0) as number,

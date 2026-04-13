@@ -18,8 +18,8 @@ export async function getPropiedadesAdmin(filters: {
     if (filters.pagina) params.set('pagina', String(filters.pagina))
     if (filters.limite) params.set('limite', String(filters.limite))
     const qs = params.toString()
-    const result = await goApi<unknown>(qs ? `/api/v1/admin/propiedades?${qs}` : '/api/v1/admin/propiedades', { raw: true })
-    const obj = result as Record<string, unknown>
+    const outer = await goApi<unknown>(qs ? `/api/v1/admin/propiedades?${qs}` : '/api/v1/admin/propiedades', { raw: true })
+    const obj = (outer as Record<string, unknown>)?.data ?? outer as Record<string, unknown>
     return {
       propiedades: (obj?.data ?? []) as Array<Record<string, unknown>>,
       total: (obj?.total ?? 0) as number,
