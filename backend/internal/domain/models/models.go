@@ -31,42 +31,60 @@ type Usuario struct {
 }
 
 type Propiedad struct {
-	ID                  string                   `json:"id"`
-	PropietarioID       string                   `json:"propietario_id"`
-	Titulo              string                   `json:"titulo"`
-	Slug                string                   `json:"slug"`
-	Descripcion         string                   `json:"descripcion"`
-	TipoPropiedad       enums.TipoPropiedad      `json:"tipo_propiedad"`
-	PrecioPorNoche      float64                  `json:"precio_por_noche"`
-	Moneda              enums.Moneda             `json:"moneda"`
-	PoliticaCancelacion enums.PoliticaCancelacion `json:"politica_cancelacion"`
-	Capacidad           int                      `json:"capacidad"`
-	Dormitorios         int                      `json:"dormitorios"`
-	Banos               int                      `json:"banos"`
-	Camas               int                      `json:"camas"`
-	Direccion           string                   `json:"direccion"`
-	Ciudad              string                   `json:"ciudad"`
-	Estado              string                   `json:"estado"`
-	Pais                string                   `json:"pais"`
-	Latitud             float64                  `json:"latitud"`
-	Longitud            float64                  `json:"longitud"`
-	CheckIn             string                   `json:"check_in"`
-	CheckOut            string                   `json:"check_out"`
-	EstanciaMinima      int                      `json:"estancia_minima"`
-	EstadoPublicacion   enums.EstadoPublicacion  `json:"estado_publicacion"`
-	Calificacion        float64                  `json:"calificacion"`
-	CantidadResenas     int                      `json:"cantidad_resenas"`
-	Imagenes            []ImagenPropiedad        `json:"imagenes"`
-	CreatedAt           time.Time                `json:"created_at"`
-	UpdatedAt           time.Time                `json:"updated_at"`
+	ID                    string                    `json:"id"`
+	PropietarioID         string                    `json:"propietario_id"`
+	Titulo                string                    `json:"titulo"`
+	Slug                  string                    `json:"slug"`
+	Descripcion           string                    `json:"descripcion"`
+	TipoPropiedad         enums.TipoPropiedad       `json:"tipo_propiedad"`
+	PrecioPorNoche        float64                   `json:"precio_por_noche"`
+	Moneda                enums.Moneda              `json:"moneda"`
+	PoliticaCancelacion   enums.PoliticaCancelacion  `json:"politica_cancelacion"`
+	Capacidad             int                       `json:"capacidad"`
+	Dormitorios           int                       `json:"dormitorios"`
+	Banos                 int                       `json:"banos"`
+	Camas                 int                       `json:"camas"`
+	Direccion             string                    `json:"direccion"`
+	Ciudad                string                    `json:"ciudad"`
+	Estado                string                    `json:"estado"`
+	Zona                  *string                   `json:"zona"`
+	Pais                  *string                   `json:"pais"`
+	Latitud               float64                   `json:"latitud"`
+	Longitud              float64                   `json:"longitud"`
+	CodigoPostal          *string                   `json:"codigo_postal"`
+	Reglas                *string                   `json:"reglas"`
+	CheckIn               *string                   `json:"check_in"`
+	CheckOut              *string                   `json:"check_out"`
+	EstanciaMinima        int                       `json:"estancia_minima"`
+	EstanciaMaxima        *int                      `json:"estancia_maxima"`
+	EstadoPublicacion     enums.EstadoPublicacion   `json:"estado_publicacion"`
+	Destacada             bool                      `json:"destacada"`
+	FechaPublicacion      *time.Time               `json:"fecha_publicacion"`
+	FechaActualizacion    time.Time                 `json:"fecha_actualizacion"`
+	VistasTotales         int                       `json:"vistas_totales"`
+	Calificacion          float64                   `json:"calificacion"`
+	CantidadResenas       int                       `json:"cantidad_resenas"`
+	Imagenes              []ImagenPropiedad         `json:"imagenes"`
+	CreatedAt             time.Time                 `json:"created_at"`
+	UpdatedAt             time.Time                 `json:"updated_at"`
 }
 
 type ImagenPropiedad struct {
-	ID          string  `json:"id"`
-	PropiedadID string  `json:"propiedad_id"`
-	URL         string  `json:"url"`
-	ThumbnailURL *string `json:"thumbnail_url"`
-	Orden       int     `json:"orden"`
+	ID           string   `json:"id"`
+	PropiedadID  string   `json:"propiedad_id"`
+	URL          string   `json:"url"`
+	ThumbnailURL *string  `json:"thumbnail_url"`
+	Alt          *string  `json:"alt"`
+	Categoria    string   `json:"categoria"`
+	Orden        int      `json:"orden"`
+	EsPrincipal  *bool    `json:"es_principal"`
+}
+
+type Amenidad struct {
+	ID        string `json:"id"`
+	Nombre    string `json:"nombre"`
+	Icono     string `json:"icono"`
+	Categoria string `json:"categoria"`
 }
 
 type Reserva struct {
