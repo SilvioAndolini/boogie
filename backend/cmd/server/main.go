@@ -27,7 +27,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	_ = auth.NewSupabaseVerifier(cfg.SupabaseJWTSecret)
+	verifier := auth.NewSupabaseVerifier(cfg.SupabaseJWTSecret)
 
 	db, err := repository.NewPool(context.Background(), cfg.DatabaseURL)
 	if err != nil {
@@ -37,17 +37,37 @@ func main() {
 	exchangeSvc := service.NewExchangeService()
 	ubicacionesSvc := service.NewUbicacionesService()
 
+	var cryptoHandler *handler.CryptoHandler
+	var metamapHandler *handler.MetamapHandler
+	var reservaSvc *service.ReservaDisponibilidad
+
+	if db != nil {
+		cryptoSvc := service.NewCryptoService(service.CryptapiConfig{
+			WalletAddress:   cfg.CryptapiWalletAddress,
+			CallbackSecret:  cfg.CryptapiCallbackSecret,
+			CallbackBaseURL: cfg.AppURL,
+		}, cfg.ComisionPlataformaHuesped, cfg.ComisionPlataformaAnfitrion)
+		reservaSvc = service.NewReservaDisponibilidad(db)
+		cryptoHandler = handler.NewCryptoHandler(cryptoSvc, reservaSvc, db)
+		metamapHandler = handler.NewMetamapHandler(db, cfg.MetamapWebhookSecret)
+	}
+
 	exchangeHandler := handler.NewExchangeHandler(exchangeSvc)
 	ubicacionesHandler := handler.NewUbicacionesHandler(ubicacionesSvc)
 
 	srv := &http.Server{
-		Addr:         fmt.Sprintf(":%s", cfg.Port),
+		Addr: fmt.Sprintf(":%s", cfg.Port),
 		Handler: router.New(&router.RouterOpts{
 			Handlers: &router.Handlers{
-				Healthz:     handler.Healthz,
-				Exchange:    exchangeHandler.Get,
-				Ubicaciones: ubicacionesHandler.Search,
+				Healthz:            handler.Healthz,
+				Exchange:           exchangeHandler.Get,
+				Ubicaciones:        ubicacionesHandler.Search,
+				CryptoCreate:       safeHandler(cryptoHandler, func(h *handler.CryptoHandler) http.HandlerFunc { return h.Create }),
+				CryptoCallback:     safeHandler(cryptoHandler, func(h *handler.CryptoHandler) http.HandlerFunc { return h.Callback }),
+				CryptoCallbackPost: safeHandler(cryptoHandler, func(h *handler.CryptoHandler) http.HandlerFunc { return h.CallbackPost }),
+				MetamapWebhook:     safeHandlerMetamap(metamapHandler),
 			},
+			AuthVerifier:       verifier,
 			AppURL:             cfg.AppURL,
 			ExchangeLimiter:    router.NewExchangeLimiter(),
 			UbicacionesLimiter: router.NewUbicacionesLimiter(),
@@ -80,4 +100,22 @@ func main() {
 	}
 
 	slog.Info("server exited")
+}
+
+func safeHandler(h *handler.CryptoHandler, fn func(*handler.CryptoHandler) http.HandlerFunc) http.HandlerFunc {
+	if h == nil {
+		return func(w http.ResponseWriter, r *http.Request) {
+			handler.ErrorJSON(w, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE", "Database not connected")
+		}
+	}
+	return fn(h)
+}
+
+func safeHandlerMetamap(h *handler.MetamapHandler) http.HandlerFunc {
+	if h == nil {
+		return func(w http.ResponseWriter, r *http.Request) {
+			handler.ErrorJSON(w, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE", "Database not connected")
+		}
+	}
+	return h.Webhook
 }

@@ -14,9 +14,13 @@ import (
 )
 
 type Handlers struct {
-	Healthz     http.HandlerFunc
-	Exchange    http.HandlerFunc
-	Ubicaciones http.HandlerFunc
+	Healthz         http.HandlerFunc
+	Exchange        http.HandlerFunc
+	Ubicaciones     http.HandlerFunc
+	CryptoCreate    http.HandlerFunc
+	CryptoCallback  http.HandlerFunc
+	CryptoCallbackPost http.HandlerFunc
+	MetamapWebhook  http.HandlerFunc
 }
 
 type RouterOpts struct {
@@ -48,6 +52,15 @@ func New(opts *RouterOpts) http.Handler {
 	r.Route("/api/v1", func(r chi.Router) {
 		r.With(rateLimitMiddleware(opts.ExchangeLimiter)).Get("/exchange-rate", opts.Handlers.Exchange)
 		r.With(rateLimitMiddleware(opts.UbicacionesLimiter)).Get("/ubicaciones", opts.Handlers.Ubicaciones)
+
+		r.Group(func(r chi.Router) {
+			r.Use(opts.AuthVerifier.Middleware)
+			r.Post("/crypto/create", opts.Handlers.CryptoCreate)
+		})
+
+		r.Get("/crypto/callback", opts.Handlers.CryptoCallback)
+		r.Post("/crypto/callback", opts.Handlers.CryptoCallbackPost)
+		r.Post("/metamap/webhook", opts.Handlers.MetamapWebhook)
 	})
 
 	return r
