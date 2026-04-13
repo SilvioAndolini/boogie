@@ -1,6 +1,6 @@
 'use server'
 
-import { goGet, goPatch, goDelete, GoAPIError } from '@/lib/go-api-client'
+import { goGet, goApi, goPatch, goDelete, GoAPIError } from '@/lib/go-api-client'
 import { revalidatePath } from 'next/cache'
 
 export async function getPropiedadesAdmin(filters: {
@@ -18,11 +18,13 @@ export async function getPropiedadesAdmin(filters: {
     if (filters.pagina) params.set('pagina', String(filters.pagina))
     if (filters.limite) params.set('limite', String(filters.limite))
     const qs = params.toString()
-    return await goGet<{
-      propiedades: Array<Record<string, unknown>>;
-      total: number;
-      paginas: number;
-    }>(qs ? `/api/v1/admin/propiedades?${qs}` : '/api/v1/admin/propiedades')
+    const result = await goApi<unknown>(qs ? `/api/v1/admin/propiedades?${qs}` : '/api/v1/admin/propiedades', { raw: true })
+    const obj = result as Record<string, unknown>
+    return {
+      propiedades: (obj?.data ?? []) as Array<Record<string, unknown>>,
+      total: (obj?.total ?? 0) as number,
+      paginas: (obj?.totalPaginas ?? 0) as number,
+    }
   } catch (err) {
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al cargar propiedades' }
