@@ -76,7 +76,7 @@ export default function AdminAuditoriaPage() {
     if (res.error) {
       toast.error(res.error)
     } else {
-      setLogs((res.logs || []) as unknown as AuditEntry[])
+      setLogs((res.data || []) as unknown as AuditEntry[])
       setTotal(res.total ?? 0)
     }
     setCargando(false)
