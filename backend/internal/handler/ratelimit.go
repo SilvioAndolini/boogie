@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 	"sync"
 
 	"golang.org/x/time/rate"
@@ -60,18 +61,14 @@ func RateLimitMiddleware(limiter *IPRateLimiter) func(http.Handler) http.Handler
 func GetClientIP(r *http.Request) string {
 	forwarded := r.Header.Get("X-Forwarded-For")
 	if forwarded != "" {
-		return forwarded[:min(len(forwarded), 45)]
+		ip := strings.TrimSpace(strings.SplitN(forwarded, ",", 2)[0])
+		if ip != "" {
+			return ip
+		}
 	}
 	realIP := r.Header.Get("X-Real-Ip")
 	if realIP != "" {
 		return realIP
 	}
 	return r.RemoteAddr
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }

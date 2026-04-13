@@ -40,8 +40,11 @@ func (s *ExchangeService) GetCotizacion() (*models.CotizacionEuro, error) {
 	cotizacion, err := s.fetchCotizacion()
 	if err != nil {
 		slog.Error("failed to fetch exchange rate", "error", err)
-		if s.cached != nil {
-			return s.cached, nil
+		s.mu.RLock()
+		stale := s.cached
+		s.mu.RUnlock()
+		if stale != nil {
+			return stale, nil
 		}
 		return &models.CotizacionEuro{
 			Tasa:              78.39,

@@ -56,7 +56,7 @@ type ReembolsoCalculado struct {
 }
 
 type CryptoService struct {
-	config     CryptapiConfig
+	Config     CryptapiConfig
 	comisionH  float64
 	comisionA  float64
 	httpClient *http.Client
@@ -64,7 +64,7 @@ type CryptoService struct {
 
 func NewCryptoService(cfg CryptapiConfig, comisionH, comisionA float64) *CryptoService {
 	return &CryptoService{
-		config:    cfg,
+		Config:     cfg,
 		comisionH: comisionH,
 		comisionA: comisionA,
 		httpClient: &http.Client{
@@ -75,7 +75,7 @@ func NewCryptoService(cfg CryptapiConfig, comisionH, comisionA float64) *CryptoS
 
 func (s *CryptoService) CreateAddress(callbackURL string) (*CryptAPIResult, error) {
 	url := fmt.Sprintf("%s/%s/create/?callback=%s&address=%s&pending=1",
-		CryptapiBase, CryptapiTicker, callbackURL, s.config.WalletAddress,
+		CryptapiBase, CryptapiTicker, callbackURL, s.Config.WalletAddress,
 	)
 
 	resp, err := s.httpClient.Get(url)
@@ -113,16 +113,18 @@ func (s *CryptoService) BuildCallbackURL(params map[string]string) string {
 		parts = append(parts, fmt.Sprintf("%s=%s", k, v))
 	}
 	return fmt.Sprintf("%s/api/v1/crypto/callback?%s",
-		s.config.CallbackBaseURL, strings.Join(parts, "&"),
+		s.Config.CallbackBaseURL, strings.Join(parts, "&"),
 	)
 }
 
 func (s *CryptoService) VerifyCallbackSecret(secret string) bool {
-	return secret == s.config.CallbackSecret
+	return secret == s.Config.CallbackSecret
 }
 
 func CalcularPrecioReserva(precioPorNoche float64, fechaEntrada, fechaSalida time.Time, moneda enums.Moneda) PrecioReserva {
-	noches := int(fechaSalida.Sub(fechaEntrada).Hours() / 24)
+	dEntrada := time.Date(fechaEntrada.Year(), fechaEntrada.Month(), fechaEntrada.Day(), 0, 0, 0, 0, time.UTC)
+	dSalida := time.Date(fechaSalida.Year(), fechaSalida.Month(), fechaSalida.Day(), 0, 0, 0, 0, time.UTC)
+	noches := int(dSalida.Sub(dEntrada).Hours() / 24)
 	if noches < 1 {
 		noches = 1
 	}

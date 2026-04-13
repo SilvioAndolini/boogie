@@ -37,9 +37,11 @@ func main() {
 	exchangeSvc := service.NewExchangeService()
 	ubicacionesSvc := service.NewUbicacionesService()
 
+	exchangeHandler := handler.NewExchangeHandler(exchangeSvc)
+	ubicacionesHandler := handler.NewUbicacionesHandler(ubicacionesSvc)
+
 	var cryptoHandler *handler.CryptoHandler
 	var metamapHandler *handler.MetamapHandler
-	var reservaSvc *service.ReservaDisponibilidad
 
 	if db != nil {
 		cryptoSvc := service.NewCryptoService(service.CryptapiConfig{
@@ -47,13 +49,167 @@ func main() {
 			CallbackSecret:  cfg.CryptapiCallbackSecret,
 			CallbackBaseURL: cfg.AppURL,
 		}, cfg.ComisionPlataformaHuesped, cfg.ComisionPlataformaAnfitrion)
-		reservaSvc = service.NewReservaDisponibilidad(db)
+		reservaSvc := service.NewReservaDisponibilidad(db)
 		cryptoHandler = handler.NewCryptoHandler(cryptoSvc, reservaSvc, db)
 		metamapHandler = handler.NewMetamapHandler(db, cfg.MetamapWebhookSecret)
 	}
 
-	exchangeHandler := handler.NewExchangeHandler(exchangeSvc)
-	ubicacionesHandler := handler.NewUbicacionesHandler(ubicacionesSvc)
+	var pagoHandlers *router.PagoHandlers
+	var walletHandlers *router.WalletHandlers
+	var resenaHandlers *router.ResenaHandlers
+	var verifHandlers *router.VerificacionHandlers
+	var chatHandlers *router.ChatHandlers
+	var ofertaHandlers *router.OfertaHandlers
+	var tiendaHandlers *router.TiendaHandlers
+	var adminHandlers *router.AdminHandlers
+	var authHandlers *router.AuthHandlers
+
+	authClient := auth.NewSupabaseAuthClient(cfg.SupabaseURL, cfg.SupabaseSecretKey)
+
+	var authRepo *repository.AuthRepo
+	if db != nil {
+		authRepo = repository.NewAuthRepo(db)
+	}
+
+	authH := handler.NewAuthHandler(authClient, verifier, authRepo, cfg.SupabaseURL, cfg.SupabaseSecretKey, cfg.AppURL)
+
+	authHandlers = &router.AuthHandlers{
+		Login:           authH.Login,
+		LoginAdmin:      authH.LoginAdmin,
+		SendOtpEmail:    authH.SendOtpEmail,
+		SendOtpSms:      authH.SendOtpSms,
+		VerifyOtp:       authH.VerifyOtp,
+		Register:        authH.Register,
+		ResetPassword:   authH.ResetPassword,
+		GoogleOAuthURL:  authH.GoogleOAuthURL,
+		GoogleCallback:  authH.GoogleCallback,
+		CompletarPerfil: authH.CompletarPerfil,
+		Me:              authH.Me,
+	}
+
+	if db != nil {
+		pagoRepo := repository.NewPagoRepo(db)
+
+		pagoSvc := service.NewPagoService(pagoRepo)
+		walletSvc := service.NewWalletService(pagoRepo)
+		paymentDataSvc := service.NewPaymentDataService()
+
+		pagoHandler := handler.NewPagoHandler(pagoSvc)
+		walletHandler := handler.NewWalletHandler(walletSvc)
+		paymentDataHandler := handler.NewPaymentDataHandler(paymentDataSvc)
+		cardHandler := handler.NewCardHandler(pagoSvc, pagoRepo)
+
+		pagoHandlers = &router.PagoHandlers{
+			RegistrarSimple:      pagoHandler.RegistrarSimple,
+			RegistrarComprobante: pagoHandler.RegistrarConComprobante,
+			Verificar:            pagoHandler.Verificar,
+			MisPagos:             pagoHandler.MisPagos,
+			PaymentData:          paymentDataHandler.Get,
+			CardCreate:           cardHandler.Create,
+			CardCallback:         cardHandler.Callback,
+		}
+
+		walletHandlers = &router.WalletHandlers{
+			Get:           walletHandler.GetWallet,
+			Activar:       walletHandler.Activar,
+			Recarga:       walletHandler.Recarga,
+			Transacciones: walletHandler.Transacciones,
+		}
+
+		resenaRepo := repository.NewResenaRepo(db)
+		resenaSvc := service.NewResenaService(resenaRepo)
+		resenaH := handler.NewResenaHandler(resenaSvc)
+
+		resenaHandlers = &router.ResenaHandlers{
+			Crear:           resenaH.Crear,
+			Responder:       resenaH.Responder,
+			ListByPropiedad: resenaH.ListByPropiedad,
+		}
+
+		verifRepo := repository.NewVerificacionRepo(db)
+		verifSvc := service.NewVerificacionService(verifRepo)
+		verifH := handler.NewVerificacionHandler(verifSvc)
+
+		verifHandlers = &router.VerificacionHandlers{
+			GetByUser:      verifH.GetByUser,
+			IniciarMetaMap: verifH.IniciarMetaMap,
+			SubirDocumento: verifH.SubirDocumento,
+			ListAll:        verifH.ListAll,
+			Revisar:        verifH.Revisar,
+			AdminCounts:    verifH.AdminCounts,
+		}
+
+		chatRepo := repository.NewChatRepo(db)
+		ofertaRepo := repository.NewOfertaRepo(db)
+		tiendaRepo := repository.NewTiendaRepo(db)
+
+		chatSvc := service.NewChatService(chatRepo)
+		ofertaSvc := service.NewOfertaService(ofertaRepo)
+		tiendaSvc := service.NewTiendaService(tiendaRepo)
+
+		chatH := handler.NewChatHandler(chatSvc)
+		ofertaH := handler.NewOfertaHandler(ofertaSvc)
+		tiendaH := handler.NewTiendaHandler(tiendaSvc)
+
+		chatHandlers = &router.ChatHandlers{
+			GetConversaciones:       chatH.GetConversaciones,
+			GetOrCreateConversacion: chatH.GetOrCreateConversacion,
+			GetMensajes:             chatH.GetMensajes,
+			EnviarMensaje:           chatH.EnviarMensaje,
+			CountNoLeidos:           chatH.CountNoLeidos,
+		}
+
+		ofertaHandlers = &router.OfertaHandlers{
+			Crear:        ofertaH.Crear,
+			Responder:    ofertaH.Responder,
+			GetRecibidas: ofertaH.GetRecibidas,
+			GetEnviadas:  ofertaH.GetEnviadas,
+		}
+
+		tiendaHandlers = &router.TiendaHandlers{
+			GetProductos:    tiendaH.GetProductos,
+			GetServicios:    tiendaH.GetServicios,
+			GetAllProductos: tiendaH.GetAllProductos,
+			GetAllServicios: tiendaH.GetAllServicios,
+		}
+
+		adminRepo := repository.NewAdminRepo(db)
+		adminSvc := service.NewAdminService(adminRepo)
+		adminH := handler.NewAdminHandler(adminSvc, tiendaSvc)
+
+		adminHandlers = &router.AdminHandlers{
+			GetDashboard:            adminH.GetDashboard,
+			GetReservas:             adminH.GetReservas,
+			GetReservasStats:        adminH.GetReservasStats,
+			AccionReserva:           adminH.AccionReserva,
+			GetPagos:                adminH.GetPagos,
+			GetPagosStats:           adminH.GetPagosStats,
+			VerificarPago:           adminH.VerificarPago,
+			GetPropiedades:          adminH.GetPropiedades,
+			UpdatePropiedad:         adminH.UpdatePropiedad,
+			DeletePropiedad:         adminH.DeletePropiedad,
+			GetResenas:              adminH.GetResenas,
+			ModerarResena:           adminH.ModerarResena,
+			GetCupones:              adminH.GetCupones,
+			GetCuponByID:            adminH.GetCuponByID,
+			CrearCupon:              adminH.CrearCupon,
+			EditarCupon:             adminH.EditarCupon,
+			ToggleCuponActivo:       adminH.ToggleCuponActivo,
+			DeleteCupon:             adminH.DeleteCupon,
+			GetCuponUsos:            adminH.GetCuponUsos,
+			GetComisiones:           adminH.GetComisiones,
+			UpdateComisiones:        adminH.UpdateComisiones,
+			GetAuditLog:             adminH.GetAuditLog,
+			GetNotificaciones:       adminH.GetNotificaciones,
+			EnviarNotificacion:      adminH.EnviarNotificacion,
+			CrearProductoStore:      adminH.CrearProductoStore,
+			ActualizarProductoStore: adminH.ActualizarProductoStore,
+			EliminarProductoStore:   adminH.EliminarProductoStore,
+			CrearServicioStore:      adminH.CrearServicioStore,
+			ActualizarServicioStore: adminH.ActualizarServicioStore,
+			EliminarServicioStore:   adminH.EliminarServicioStore,
+		}
+	}
 
 	srv := &http.Server{
 		Addr: fmt.Sprintf(":%s", cfg.Port),
@@ -67,6 +223,15 @@ func main() {
 				CryptoCallbackPost: safeHandler(cryptoHandler, func(h *handler.CryptoHandler) http.HandlerFunc { return h.CallbackPost }),
 				MetamapWebhook:     safeHandlerMetamap(metamapHandler),
 			},
+			PagoHandlers:       pagoHandlers,
+			WalletHandlers:     walletHandlers,
+			ResenaHandlers:     resenaHandlers,
+			VerificacionHandlers: verifHandlers,
+			ChatHandlers:         chatHandlers,
+			OfertaHandlers:       ofertaHandlers,
+			TiendaHandlers:       tiendaHandlers,
+			AdminHandlers:        adminHandlers,
+			AuthHandlers:         authHandlers,
 			AuthVerifier:       verifier,
 			AppURL:             cfg.AppURL,
 			ExchangeLimiter:    router.NewExchangeLimiter(),

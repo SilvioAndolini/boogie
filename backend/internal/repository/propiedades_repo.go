@@ -2,9 +2,10 @@ package repository
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"math"
-	"math/rand"
 	"strings"
 	"time"
 
@@ -87,9 +88,6 @@ func (r *PropiedadesRepo) SearchPublic(ctx context.Context, f *PropiedadesFiltro
 	args := []interface{}{}
 	argIdx := 1
 
-	if f.Ciudad != "" && f.Ciudad != "" {
-		// handled below
-	}
 	if f.Ubicacion != "" {
 		where = append(where, fmt.Sprintf("(p.ciudad ILIKE '%%' || $%d || '%%' OR p.estado ILIKE '%%' || $%d || '%%')", argIdx, argIdx))
 		args = append(args, f.Ubicacion)
@@ -255,9 +253,18 @@ func (r *PropiedadesRepo) GetByID(ctx context.Context, id string) (*PropiedadDet
 		p.VistasTotales = *vistas
 	}
 
-	propietario, _ := r.getPropietario(ctx, p.PropietarioID)
-	amenidades, _ := r.getAmenidades(ctx, p.ID)
-	imagenes, _ := r.getImagenes(ctx, p.ID)
+	propietario, err := r.getPropietario(ctx, p.PropietarioID)
+	if err != nil {
+		return nil, fmt.Errorf("get propietario: %w", err)
+	}
+	amenidades, err := r.getAmenidades(ctx, p.ID)
+	if err != nil {
+		return nil, fmt.Errorf("get amenidades: %w", err)
+	}
+	imagenes, err := r.getImagenes(ctx, p.ID)
+	if err != nil {
+		return nil, fmt.Errorf("get imagenes: %w", err)
+	}
 
 	p.Imagenes = imagenes
 
@@ -321,6 +328,17 @@ func (r *PropiedadesRepo) UpdateEstado(ctx context.Context, id, estado string) e
 	return err
 }
 
+func (r *PropiedadesRepo) UpdateEstadoWithOwner(ctx context.Context, id, estado, propietarioID string) error {
+	tag, err := r.pool.Exec(ctx, `UPDATE propiedades SET estado_publicacion = $2, fecha_actualizacion = NOW() WHERE id = $1 AND propietario_id = $3`, id, estado, propietarioID)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("propiedad no encontrada o no eres el propietario")
+	}
+	return nil
+}
+
 func (r *PropiedadesRepo) Delete(ctx context.Context, id string) error {
 	_, err := r.pool.Exec(ctx, `DELETE FROM propiedad_amenidades WHERE propiedad_id = $1`, id)
 	if err != nil {
@@ -332,6 +350,19 @@ func (r *PropiedadesRepo) Delete(ctx context.Context, id string) error {
 	}
 	_, err = r.pool.Exec(ctx, `DELETE FROM propiedades WHERE id = $1`, id)
 	return err
+}
+
+func (r *PropiedadesRepo) DeleteWithOwner(ctx context.Context, id, propietarioID string) error {
+	tag, err := r.pool.Exec(ctx, `DELETE FROM propiedades WHERE id = $1 AND propietario_id = $2`, id, propietarioID)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("propiedad no encontrada o no eres el propietario")
+	}
+	_, _ = r.pool.Exec(ctx, `DELETE FROM propiedad_amenidades WHERE propiedad_id = $1`, id)
+	_, _ = r.pool.Exec(ctx, `DELETE FROM imagenes_propiedad WHERE propiedad_id = $1`, id)
+	return nil
 }
 
 func (r *PropiedadesRepo) getPropietario(ctx context.Context, userID string) (*PropietarioInfo, error) {
@@ -408,7 +439,10 @@ func GenerateSlug(titulo string) string {
 	if len(slug) > 80 {
 		slug = slug[:80]
 	}
-	slug += "-" + fmt.Sprintf("%04x", rand.Intn(0xFFFF))
+	slug += "-"
+	b := make([]byte, 2)
+	_, _ = rand.Read(b)
+	slug += hex.EncodeToString(b)
 	return slug
 }
 

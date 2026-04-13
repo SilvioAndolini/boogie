@@ -15,11 +15,12 @@ import (
 )
 
 type ReservaHandler struct {
-	svc *service.ReservaService
+	svc        *service.ReservaService
+	disponSvc  *service.ReservaDisponibilidad
 }
 
-func NewReservaHandler(svc *service.ReservaService) *ReservaHandler {
-	return &ReservaHandler{svc: svc}
+func NewReservaHandler(svc *service.ReservaService, disponSvc *service.ReservaDisponibilidad) *ReservaHandler {
+	return &ReservaHandler{svc: svc, disponSvc: disponSvc}
 }
 
 type crearReservaRequest struct {
@@ -242,7 +243,10 @@ func (h *ReservaHandler) Cancelar(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req cancelarRequest
-	_ = DecodeJSON(r, &req)
+	if err := DecodeJSON(r, &req); err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "JSON invalido")
+		return
+	}
 
 	reembolso, err := h.svc.Cancelar(r.Context(), &service.CancelarInput{
 		ReservaID: reservaID,
@@ -423,16 +427,15 @@ func (h *ReservaHandler) Disponibilidad(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	result, err := h.svc.GetByID(r.Context(), propID, "")
+	result, err := h.disponSvc.Verificar(r.Context(), propID, fechaEntrada, fechaSalida)
 	if err != nil {
-		_ = result
+		slog.Error("[reservas/disponibilidad] error", "error", err)
+		ErrorJSON(w, http.StatusInternalServerError, "CHECK_ERROR", "Error al verificar disponibilidad")
+		return
 	}
 
-	_ = fechaEntrada
-	_ = fechaSalida
-
 	JSON(w, http.StatusOK, map[string]interface{}{
-		"disponible": true,
+		"disponible": result.Disponible,
 	})
 }
 

@@ -1,0 +1,403 @@
+package handler
+
+import (
+	"log/slog"
+	"net/http"
+	"strings"
+
+	"github.com/boogie/backend/internal/auth"
+	"github.com/boogie/backend/internal/repository"
+)
+
+type AuthHandler struct {
+	authClient   *auth.SupabaseAuthClient
+	verifier     *auth.SupabaseVerifier
+	repo         *repository.AuthRepo
+	supabaseURL  string
+	serviceKey   string
+	appURL       string
+}
+
+func NewAuthHandler(
+	authClient *auth.SupabaseAuthClient,
+	verifier *auth.SupabaseVerifier,
+	repo *repository.AuthRepo,
+	supabaseURL, serviceKey, appURL string,
+) *AuthHandler {
+	return &AuthHandler{
+		authClient:  authClient,
+		verifier:    verifier,
+		repo:        repo,
+		supabaseURL: supabaseURL,
+		serviceKey:  serviceKey,
+		appURL:      appURL,
+	}
+}
+
+type loginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
+	var req loginRequest
+	if err := DecodeJSON(r, &req); err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "JSON invalido")
+		return
+	}
+	if req.Email == "" || req.Password == "" {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_PARAMS", "email y password son requeridos")
+		return
+	}
+
+	resp, err := h.authClient.SignInWithPassword(r.Context(), req.Email, req.Password)
+	if err != nil {
+		slog.Error("[auth/login] error", "error", err)
+		ErrorJSON(w, http.StatusUnauthorized, "INVALID_CREDENTIALS", "Credenciales invalidas")
+		return
+	}
+
+	JSON(w, http.StatusOK, resp)
+}
+
+type loginAdminRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+func (h *AuthHandler) LoginAdmin(w http.ResponseWriter, r *http.Request) {
+	var req loginAdminRequest
+	if err := DecodeJSON(r, &req); err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "JSON invalido")
+		return
+	}
+	if req.Email == "" || req.Password == "" {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_PARAMS", "email y password son requeridos")
+		return
+	}
+
+	resp, err := h.authClient.SignInWithPassword(r.Context(), req.Email, req.Password)
+	if err != nil {
+		slog.Error("[auth/login-admin] error", "error", err)
+		ErrorJSON(w, http.StatusUnauthorized, "INVALID_CREDENTIALS", "Credenciales invalidas")
+		return
+	}
+
+	if h.repo == nil {
+		ErrorJSON(w, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE", "Base de datos no disponible")
+		return
+	}
+
+	rol, err := h.repo.GetUserRole(r.Context(), resp.User.ID)
+	if err != nil || rol != "ADMIN" {
+		ErrorJSON(w, http.StatusForbidden, "NOT_ADMIN", "No tienes permisos de administrador")
+		return
+	}
+
+	JSON(w, http.StatusOK, resp)
+}
+
+type sendOtpEmailRequest struct {
+	Email string `json:"email"`
+}
+
+func (h *AuthHandler) SendOtpEmail(w http.ResponseWriter, r *http.Request) {
+	var req sendOtpEmailRequest
+	if err := DecodeJSON(r, &req); err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "JSON invalido")
+		return
+	}
+	if req.Email == "" {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_EMAIL", "email es requerido")
+		return
+	}
+
+	if err := h.authClient.SendOTP(r.Context(), req.Email); err != nil {
+		slog.Error("[auth/otp-email] error", "error", err)
+		ErrorJSON(w, http.StatusBadRequest, "OTP_ERROR", "No pudimos enviar el codigo")
+		return
+	}
+
+	JSON(w, http.StatusOK, map[string]interface{}{"ok": true, "mensaje": "Codigo enviado"})
+}
+
+type sendOtpSmsRequest struct {
+	Telefono   string `json:"telefono"`
+	CodigoPais string `json:"codigoPais"`
+}
+
+func (h *AuthHandler) SendOtpSms(w http.ResponseWriter, r *http.Request) {
+	var req sendOtpSmsRequest
+	if err := DecodeJSON(r, &req); err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "JSON invalido")
+		return
+	}
+	if req.Telefono == "" {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_PHONE", "telefono es requerido")
+		return
+	}
+
+	codigoPais := req.CodigoPais
+	if codigoPais == "" {
+		codigoPais = "+58"
+	}
+	telefono := codigoPais + strings.ReplaceAll(req.Telefono, "-", "")
+
+	if err := h.authClient.SendOTPSms(r.Context(), telefono); err != nil {
+		slog.Error("[auth/otp-sms] error", "error", err)
+		ErrorJSON(w, http.StatusBadRequest, "OTP_ERROR", "No pudimos enviar el codigo SMS")
+		return
+	}
+
+	JSON(w, http.StatusOK, map[string]interface{}{"ok": true, "mensaje": "Codigo SMS enviado"})
+}
+
+type verifyOtpRequest struct {
+	Email string `json:"email"`
+	Token string `json:"token"`
+	Type  string `json:"type"`
+}
+
+func (h *AuthHandler) VerifyOtp(w http.ResponseWriter, r *http.Request) {
+	var req verifyOtpRequest
+	if err := DecodeJSON(r, &req); err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "JSON invalido")
+		return
+	}
+	if req.Email == "" || req.Token == "" {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_PARAMS", "email y token son requeridos")
+		return
+	}
+
+	otpType := req.Type
+	if otpType == "" {
+		otpType = "email"
+	}
+
+	resp, err := h.authClient.VerifyOTP(r.Context(), req.Email, req.Token, otpType)
+	if err != nil {
+		slog.Error("[auth/verify-otp] error", "error", err)
+		ErrorJSON(w, http.StatusBadRequest, "OTP_INVALID", "Codigo de verificacion invalido")
+		return
+	}
+
+	JSON(w, http.StatusOK, resp)
+}
+
+type registerRequest struct {
+	Nombre          string  `json:"nombre"`
+	Apellido        string  `json:"apellido"`
+	Email           string  `json:"email"`
+	Password        string  `json:"password"`
+	ConfirmPassword string  `json:"confirmPassword"`
+	TipoDocumento   string  `json:"tipoDocumento"`
+	NumeroDocumento string  `json:"numeroDocumento"`
+	Telefono        string  `json:"telefono"`
+	CodigoPais      string  `json:"codigoPais"`
+	Otp             string  `json:"otp"`
+}
+
+func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
+	var req registerRequest
+	if err := DecodeJSON(r, &req); err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "JSON invalido")
+		return
+	}
+	if req.Email == "" || req.Password == "" || req.Otp == "" {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_PARAMS", "email, password y otp son requeridos")
+		return
+	}
+	if req.Password != req.ConfirmPassword {
+		ErrorJSON(w, http.StatusBadRequest, "PASSWORD_MISMATCH", "Las contrasenas no coinciden")
+		return
+	}
+	if req.Nombre == "" || req.Apellido == "" {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_NAME", "nombre y apellido son requeridos")
+		return
+	}
+	if len(req.Otp) < 6 {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_OTP", "Codigo de verificacion invalido")
+		return
+	}
+
+	otpResp, err := h.authClient.VerifyOTP(r.Context(), req.Email, req.Otp, "email")
+	if err != nil {
+		slog.Error("[auth/register] OTP verify error", "error", err)
+		ErrorJSON(w, http.StatusBadRequest, "OTP_INVALID", "Codigo de verificacion invalido")
+		return
+	}
+	userID := otpResp.User.ID
+	if userID == "" {
+		ErrorJSON(w, http.StatusBadRequest, "VERIFY_ERROR", "Error de verificacion")
+		return
+	}
+
+	codigoPais := req.CodigoPais
+	if codigoPais == "" {
+		codigoPais = "+58"
+	}
+	telefonoCompleto := codigoPais + strings.ReplaceAll(req.Telefono, "-", "")
+
+	documento := normalizarCedula(req.NumeroDocumento)
+	if req.TipoDocumento == "PASAPORTE" {
+		documento = strings.ToUpper(req.NumeroDocumento)
+	}
+
+	if h.repo == nil {
+		slog.Error("[auth/register] no database available for profile creation")
+		ErrorJSON(w, http.StatusInternalServerError, "DB_ERROR", "Error al crear perfil de usuario")
+		return
+	}
+	if err := h.repo.CreateUserProfile(r.Context(), userID, req.Email, req.Nombre, req.Apellido, telefonoCompleto, documento); err != nil {
+		slog.Error("[auth/register] profile error", "error", err)
+		ErrorJSON(w, http.StatusInternalServerError, "PROFILE_ERROR", "Error al crear perfil de usuario")
+		return
+	}
+
+	JSON(w, http.StatusCreated, map[string]interface{}{
+		"ok":      true,
+		"userId":  userID,
+		"mensaje": "Registro exitoso",
+	})
+}
+
+func normalizarCedula(valor string) string {
+	limpio := strings.ToUpper(strings.TrimSpace(valor))
+	limpio = strings.Map(func(r rune) rune {
+		if (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+			return r
+		}
+		return -1
+	}, limpio)
+	if len(limpio) > 0 && (limpio[0] == 'V' || limpio[0] == 'E' || limpio[0] == 'P' || limpio[0] == 'G' || limpio[0] == 'J') {
+		return string(limpio[0]) + "-" + limpio[1:]
+	}
+	return "V-" + limpio
+}
+
+type resetPasswordRequest struct {
+	Email string `json:"email"`
+}
+
+func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
+	var req resetPasswordRequest
+	if err := DecodeJSON(r, &req); err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "JSON invalido")
+		return
+	}
+	if req.Email == "" {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_EMAIL", "email es requerido")
+		return
+	}
+
+	redirectTo := h.appURL + "/recuperar-contrasena"
+	if err := h.authClient.ResetPasswordForEmail(r.Context(), req.Email, redirectTo); err != nil {
+		slog.Error("[auth/reset-password] error", "error", err)
+		ErrorJSON(w, http.StatusBadRequest, "RESET_ERROR", "No pudimos enviar el correo")
+		return
+	}
+
+	JSON(w, http.StatusOK, map[string]interface{}{"ok": true, "mensaje": "Correo de recuperacion enviado"})
+}
+
+type googleOAuthRequest struct {
+	RedirectTo string `json:"redirectTo"`
+}
+
+func (h *AuthHandler) GoogleOAuthURL(w http.ResponseWriter, r *http.Request) {
+	redirectTo := r.URL.Query().Get("redirectTo")
+	if redirectTo == "" {
+		redirectTo = h.appURL + "/auth/callback"
+	}
+	url := h.authClient.GetOAuthURL("google", redirectTo)
+	JSON(w, http.StatusOK, map[string]interface{}{"url": url})
+}
+
+type googleCallbackRequest struct {
+	Code string `json:"code"`
+}
+
+func (h *AuthHandler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
+	code := r.URL.Query().Get("code")
+	if code == "" {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_CODE", "codigo de autorizacion requerido")
+		return
+	}
+
+	slog.Info("[auth/google-callback] Processing code", "code_len", len(code))
+	JSON(w, http.StatusOK, map[string]interface{}{"ok": true, "mensaje": "Callback recibido. El frontend debe intercambiar el code con Supabase directamente."})
+}
+
+type completarPerfilRequest struct {
+	Nombre          string `json:"nombre"`
+	Apellido        string `json:"apellido"`
+	TipoDocumento   string `json:"tipoDocumento"`
+	NumeroDocumento string `json:"numeroDocumento"`
+	Telefono        string `json:"telefono"`
+	CodigoPais      string `json:"codigoPais"`
+}
+
+func (h *AuthHandler) CompletarPerfil(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetUserID(r.Context())
+	if userID == "" {
+		ErrorJSON(w, http.StatusUnauthorized, "AUTH_REQUIRED", "No autenticado")
+		return
+	}
+
+	var req completarPerfilRequest
+	if err := DecodeJSON(r, &req); err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "JSON invalido")
+		return
+	}
+	if req.Nombre == "" || req.Apellido == "" {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_NAME", "nombre y apellido son requeridos")
+		return
+	}
+	if req.NumeroDocumento == "" || len(req.NumeroDocumento) < 4 {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_DOCUMENT", "numeroDocumento invalido")
+		return
+	}
+	if req.Telefono == "" || len(req.Telefono) < 7 {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_PHONE", "telefono invalido")
+		return
+	}
+
+	codigoPais := req.CodigoPais
+	if codigoPais == "" {
+		codigoPais = "+58"
+	}
+	telefonoCompleto := codigoPais + strings.ReplaceAll(req.Telefono, "-", "")
+
+	documento := normalizarCedula(req.NumeroDocumento)
+	if req.TipoDocumento == "PASAPORTE" {
+		documento = strings.ToUpper(req.NumeroDocumento)
+	}
+
+	if h.repo == nil {
+		ErrorJSON(w, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE", "Base de datos no disponible")
+		return
+	}
+	if err := h.repo.UpdateProfile(r.Context(), userID, req.Nombre, req.Apellido, documento, telefonoCompleto); err != nil {
+		slog.Error("[auth/completar-perfil] error", "error", err)
+		ErrorJSON(w, http.StatusBadRequest, "UPDATE_ERROR", "Error al guardar datos")
+		return
+	}
+
+	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+}
+
+func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetUserID(r.Context())
+	if userID == "" {
+		ErrorJSON(w, http.StatusUnauthorized, "AUTH_REQUIRED", "No autenticado")
+		return
+	}
+	email := auth.GetUserEmail(r.Context())
+	role := auth.GetUserRole(r.Context())
+
+	JSON(w, http.StatusOK, map[string]interface{}{
+		"id":    userID,
+		"email": email,
+		"role":  role,
+	})
+}

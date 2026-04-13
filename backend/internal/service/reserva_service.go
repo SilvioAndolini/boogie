@@ -2,10 +2,10 @@ package service
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -48,7 +48,7 @@ func (r *ReservaDisponibilidad) Verificar(ctx context.Context, propiedadID strin
 			},
 		}, nil
 	}
-	if err != sql.ErrNoRows && err.Error() != "no rows in result set" {
+	if err != nil && err != pgx.ErrNoRows {
 		return nil, fmt.Errorf("checking reserva conflicts: %w", err)
 	}
 
@@ -69,6 +69,9 @@ func (r *ReservaDisponibilidad) Verificar(ctx context.Context, propiedadID strin
 				FechaBloqueadaID: bloqueadaID,
 			},
 		}, nil
+	}
+	if err != pgx.ErrNoRows {
+		return nil, fmt.Errorf("checking blocked dates: %w", err)
 	}
 
 	return &DisponibilidadResult{Disponible: true}, nil

@@ -61,12 +61,12 @@ func (s *PropiedadesService) CanCreate(ctx context.Context, propietarioID, plan 
 	return nil
 }
 
-func (s *PropiedadesService) UpdateEstado(ctx context.Context, id, estado string) error {
-	return s.repo.UpdateEstado(ctx, id, estado)
+func (s *PropiedadesService) UpdateEstado(ctx context.Context, id, estado, propietarioID string) error {
+	return s.repo.UpdateEstadoWithOwner(ctx, id, estado, propietarioID)
 }
 
-func (s *PropiedadesService) Delete(ctx context.Context, id string) error {
-	return s.repo.Delete(ctx, id)
+func (s *PropiedadesService) Delete(ctx context.Context, id, propietarioID string) error {
+	return s.repo.DeleteWithOwner(ctx, id, propietarioID)
 }
 
 func FilterByDistance(results []repository.PropiedadListado, lat, lng, radiusKm float64) []repository.PropiedadListado {

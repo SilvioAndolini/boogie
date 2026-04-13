@@ -14,21 +14,131 @@ import (
 )
 
 type Handlers struct {
-	Healthz         http.HandlerFunc
-	Exchange        http.HandlerFunc
-	Ubicaciones     http.HandlerFunc
-	CryptoCreate    http.HandlerFunc
-	CryptoCallback  http.HandlerFunc
+	Healthz            http.HandlerFunc
+	Exchange           http.HandlerFunc
+	Ubicaciones        http.HandlerFunc
+	CryptoCreate       http.HandlerFunc
+	CryptoCallback     http.HandlerFunc
 	CryptoCallbackPost http.HandlerFunc
-	MetamapWebhook  http.HandlerFunc
+	MetamapWebhook     http.HandlerFunc
+}
+
+type PagoHandlers struct {
+	RegistrarSimple       http.HandlerFunc
+	RegistrarComprobante  http.HandlerFunc
+	Verificar             http.HandlerFunc
+	MisPagos              http.HandlerFunc
+	PaymentData           http.HandlerFunc
+	CardCreate            http.HandlerFunc
+	CardCallback          http.HandlerFunc
+}
+
+type WalletHandlers struct {
+	Get           http.HandlerFunc
+	Activar       http.HandlerFunc
+	Recarga       http.HandlerFunc
+	Transacciones http.HandlerFunc
+}
+
+type ResenaHandlers struct {
+	Crear           http.HandlerFunc
+	Responder       http.HandlerFunc
+	ListByPropiedad http.HandlerFunc
+}
+
+type VerificacionHandlers struct {
+	GetByUser       http.HandlerFunc
+	IniciarMetaMap  http.HandlerFunc
+	SubirDocumento  http.HandlerFunc
+	ListAll         http.HandlerFunc
+	Revisar         http.HandlerFunc
+	AdminCounts     http.HandlerFunc
+}
+
+type ChatHandlers struct {
+	GetConversaciones    http.HandlerFunc
+	GetOrCreateConversacion http.HandlerFunc
+	GetMensajes          http.HandlerFunc
+	EnviarMensaje        http.HandlerFunc
+	CountNoLeidos        http.HandlerFunc
+}
+
+type OfertaHandlers struct {
+	Crear       http.HandlerFunc
+	Responder   http.HandlerFunc
+	GetRecibidas http.HandlerFunc
+	GetEnviadas  http.HandlerFunc
+}
+
+type TiendaHandlers struct {
+	GetProductos   http.HandlerFunc
+	GetServicios   http.HandlerFunc
+	GetAllProductos http.HandlerFunc
+	GetAllServicios http.HandlerFunc
+}
+
+type AdminHandlers struct {
+	GetDashboard          http.HandlerFunc
+	GetReservas           http.HandlerFunc
+	GetReservasStats      http.HandlerFunc
+	AccionReserva         http.HandlerFunc
+	GetPagos              http.HandlerFunc
+	GetPagosStats         http.HandlerFunc
+	VerificarPago         http.HandlerFunc
+	GetPropiedades        http.HandlerFunc
+	UpdatePropiedad       http.HandlerFunc
+	DeletePropiedad       http.HandlerFunc
+	GetResenas            http.HandlerFunc
+	ModerarResena         http.HandlerFunc
+	GetCupones            http.HandlerFunc
+	GetCuponByID          http.HandlerFunc
+	CrearCupon            http.HandlerFunc
+	EditarCupon           http.HandlerFunc
+	ToggleCuponActivo     http.HandlerFunc
+	DeleteCupon           http.HandlerFunc
+	GetCuponUsos          http.HandlerFunc
+	GetComisiones         http.HandlerFunc
+	UpdateComisiones      http.HandlerFunc
+	GetAuditLog           http.HandlerFunc
+	GetNotificaciones     http.HandlerFunc
+	EnviarNotificacion    http.HandlerFunc
+	CrearProductoStore    http.HandlerFunc
+	ActualizarProductoStore http.HandlerFunc
+	EliminarProductoStore http.HandlerFunc
+	CrearServicioStore    http.HandlerFunc
+	ActualizarServicioStore http.HandlerFunc
+	EliminarServicioStore http.HandlerFunc
+}
+
+type AuthHandlers struct {
+	Login           http.HandlerFunc
+	LoginAdmin      http.HandlerFunc
+	SendOtpEmail    http.HandlerFunc
+	SendOtpSms      http.HandlerFunc
+	VerifyOtp       http.HandlerFunc
+	Register        http.HandlerFunc
+	ResetPassword   http.HandlerFunc
+	GoogleOAuthURL  http.HandlerFunc
+	GoogleCallback  http.HandlerFunc
+	CompletarPerfil http.HandlerFunc
+	Me              http.HandlerFunc
 }
 
 type RouterOpts struct {
-	Handlers           *Handlers
-	AuthVerifier       *auth.SupabaseVerifier
-	AppURL             string
-	ExchangeLimiter    *handlermw.IPRateLimiter
-	UbicacionesLimiter *handlermw.IPRateLimiter
+	Handlers             *Handlers
+	PagoHandlers         *PagoHandlers
+	WalletHandlers       *WalletHandlers
+	ResenaHandlers       *ResenaHandlers
+	VerificacionHandlers *VerificacionHandlers
+	ChatHandlers         *ChatHandlers
+	OfertaHandlers       *OfertaHandlers
+	TiendaHandlers       *TiendaHandlers
+	AdminHandlers        *AdminHandlers
+	AuthHandlers         *AuthHandlers
+	AuthVerifier         *auth.SupabaseVerifier
+	AppURL               string
+	ExchangeLimiter      *handlermw.IPRateLimiter
+	UbicacionesLimiter   *handlermw.IPRateLimiter
 }
 
 func New(opts *RouterOpts) http.Handler {
@@ -61,6 +171,155 @@ func New(opts *RouterOpts) http.Handler {
 		r.Get("/crypto/callback", opts.Handlers.CryptoCallback)
 		r.Post("/crypto/callback", opts.Handlers.CryptoCallbackPost)
 		r.Post("/metamap/webhook", opts.Handlers.MetamapWebhook)
+
+		if opts.PagoHandlers != nil {
+			r.Route("/pagos", func(r chi.Router) {
+				r.Group(func(r chi.Router) {
+					r.Use(opts.AuthVerifier.Middleware)
+					r.Post("/registrar", opts.PagoHandlers.RegistrarSimple)
+					r.Post("/registrar-comprobante", opts.PagoHandlers.RegistrarComprobante)
+					r.Post("/{id}/verificar", opts.PagoHandlers.Verificar)
+					r.Get("/mis-pagos", opts.PagoHandlers.MisPagos)
+				})
+			})
+
+			r.Get("/payment-data", opts.PagoHandlers.PaymentData)
+
+			r.Route("/payments/card", func(r chi.Router) {
+				r.Group(func(r chi.Router) {
+					r.Use(opts.AuthVerifier.Middleware)
+					r.Post("/create", opts.PagoHandlers.CardCreate)
+				})
+				r.Get("/callback", opts.PagoHandlers.CardCallback)
+				r.Post("/callback", opts.PagoHandlers.CardCallback)
+			})
+		}
+
+		if opts.WalletHandlers != nil {
+			r.Route("/wallet", func(r chi.Router) {
+				r.Use(opts.AuthVerifier.Middleware)
+				r.Get("/", opts.WalletHandlers.Get)
+				r.Post("/activar", opts.WalletHandlers.Activar)
+				r.Post("/recarga", opts.WalletHandlers.Recarga)
+				r.Get("/{walletId}/transacciones", opts.WalletHandlers.Transacciones)
+			})
+		}
+
+		if opts.ResenaHandlers != nil {
+			r.Route("/resenas", func(r chi.Router) {
+				r.Group(func(r chi.Router) {
+					r.Use(opts.AuthVerifier.Middleware)
+					r.Post("/", opts.ResenaHandlers.Crear)
+					r.Post("/{id}/responder", opts.ResenaHandlers.Responder)
+				})
+			})
+
+			r.Get("/propiedades/{propiedadId}/resenas", opts.ResenaHandlers.ListByPropiedad)
+		}
+
+		if opts.VerificacionHandlers != nil {
+			r.Route("/verificacion", func(r chi.Router) {
+				r.Use(opts.AuthVerifier.Middleware)
+				r.Get("/", opts.VerificacionHandlers.GetByUser)
+				r.Post("/iniciar-metamap", opts.VerificacionHandlers.IniciarMetaMap)
+				r.Post("/subir-documento", opts.VerificacionHandlers.SubirDocumento)
+			})
+
+			r.Route("/admin", func(r chi.Router) {
+				r.Use(opts.AuthVerifier.Middleware)
+				r.Get("/verificaciones", opts.VerificacionHandlers.ListAll)
+				r.Post("/verificaciones/{id}/revisar", opts.VerificacionHandlers.Revisar)
+				r.Get("/counts", opts.VerificacionHandlers.AdminCounts)
+			})
+		}
+
+		if opts.ChatHandlers != nil {
+			r.Route("/chat", func(r chi.Router) {
+				r.Use(opts.AuthVerifier.Middleware)
+				r.Get("/conversaciones", opts.ChatHandlers.GetConversaciones)
+				r.Post("/conversaciones", opts.ChatHandlers.GetOrCreateConversacion)
+				r.Get("/mensajes", opts.ChatHandlers.GetMensajes)
+				r.Post("/mensajes", opts.ChatHandlers.EnviarMensaje)
+				r.Get("/no-leidos", opts.ChatHandlers.CountNoLeidos)
+			})
+		}
+
+		if opts.OfertaHandlers != nil {
+			r.Route("/ofertas", func(r chi.Router) {
+				r.Group(func(r chi.Router) {
+					r.Use(opts.AuthVerifier.Middleware)
+					r.Post("/", opts.OfertaHandlers.Crear)
+					r.Post("/{id}/responder", opts.OfertaHandlers.Responder)
+					r.Get("/recibidas", opts.OfertaHandlers.GetRecibidas)
+					r.Get("/enviadas", opts.OfertaHandlers.GetEnviadas)
+				})
+			})
+		}
+
+		if opts.TiendaHandlers != nil {
+			r.Get("/tienda/productos", opts.TiendaHandlers.GetProductos)
+			r.Get("/tienda/servicios", opts.TiendaHandlers.GetServicios)
+
+			r.Route("/admin/tienda", func(r chi.Router) {
+				r.Use(opts.AuthVerifier.Middleware)
+				r.Get("/productos", opts.TiendaHandlers.GetAllProductos)
+				r.Get("/servicios", opts.TiendaHandlers.GetAllServicios)
+			})
+		}
+
+		if opts.AdminHandlers != nil {
+			r.Route("/admin", func(r chi.Router) {
+				r.Use(opts.AuthVerifier.Middleware)
+				r.Get("/dashboard", opts.AdminHandlers.GetDashboard)
+				r.Get("/reservas", opts.AdminHandlers.GetReservas)
+				r.Get("/reservas/stats", opts.AdminHandlers.GetReservasStats)
+				r.Post("/reservas/accion", opts.AdminHandlers.AccionReserva)
+				r.Get("/pagos", opts.AdminHandlers.GetPagos)
+				r.Get("/pagos/stats", opts.AdminHandlers.GetPagosStats)
+				r.Post("/pagos/verificar", opts.AdminHandlers.VerificarPago)
+				r.Get("/propiedades", opts.AdminHandlers.GetPropiedades)
+				r.Patch("/propiedades", opts.AdminHandlers.UpdatePropiedad)
+				r.Delete("/propiedades/{id}", opts.AdminHandlers.DeletePropiedad)
+				r.Get("/resenas", opts.AdminHandlers.GetResenas)
+				r.Post("/resenas/moderar", opts.AdminHandlers.ModerarResena)
+				r.Get("/cupones", opts.AdminHandlers.GetCupones)
+				r.Get("/cupones/{id}", opts.AdminHandlers.GetCuponByID)
+				r.Post("/cupones", opts.AdminHandlers.CrearCupon)
+				r.Put("/cupones", opts.AdminHandlers.EditarCupon)
+				r.Patch("/cupones/{id}/activo", opts.AdminHandlers.ToggleCuponActivo)
+				r.Delete("/cupones/{id}", opts.AdminHandlers.DeleteCupon)
+				r.Get("/cupon-usos", opts.AdminHandlers.GetCuponUsos)
+				r.Get("/comisiones", opts.AdminHandlers.GetComisiones)
+				r.Put("/comisiones", opts.AdminHandlers.UpdateComisiones)
+				r.Get("/auditoria", opts.AdminHandlers.GetAuditLog)
+				r.Get("/notificaciones", opts.AdminHandlers.GetNotificaciones)
+				r.Post("/notificaciones", opts.AdminHandlers.EnviarNotificacion)
+				r.Post("/store/productos", opts.AdminHandlers.CrearProductoStore)
+				r.Patch("/store/productos/{id}", opts.AdminHandlers.ActualizarProductoStore)
+				r.Delete("/store/productos/{id}", opts.AdminHandlers.EliminarProductoStore)
+				r.Post("/store/servicios", opts.AdminHandlers.CrearServicioStore)
+				r.Patch("/store/servicios/{id}", opts.AdminHandlers.ActualizarServicioStore)
+				r.Delete("/store/servicios/{id}", opts.AdminHandlers.EliminarServicioStore)
+			})
+		}
+
+		if opts.AuthHandlers != nil {
+			r.Post("/auth/login", opts.AuthHandlers.Login)
+			r.Post("/auth/login-admin", opts.AuthHandlers.LoginAdmin)
+			r.Post("/auth/otp/email", opts.AuthHandlers.SendOtpEmail)
+			r.Post("/auth/otp/sms", opts.AuthHandlers.SendOtpSms)
+			r.Post("/auth/otp/verify", opts.AuthHandlers.VerifyOtp)
+			r.Post("/auth/register", opts.AuthHandlers.Register)
+			r.Post("/auth/reset-password", opts.AuthHandlers.ResetPassword)
+			r.Get("/auth/google", opts.AuthHandlers.GoogleOAuthURL)
+			r.Get("/auth/google/callback", opts.AuthHandlers.GoogleCallback)
+
+			r.Group(func(r chi.Router) {
+				r.Use(opts.AuthVerifier.Middleware)
+				r.Post("/auth/completar-perfil", opts.AuthHandlers.CompletarPerfil)
+				r.Get("/auth/me", opts.AuthHandlers.Me)
+			})
+		}
 	})
 
 	return r

@@ -72,19 +72,25 @@ func (v *SupabaseVerifier) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
-			http.Error(w, `{"error":{"code":"AUTH_MISSING_TOKEN","message":"Authorization header required"}}`, http.StatusUnauthorized)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte(`{"error":{"code":"AUTH_MISSING_TOKEN","message":"Authorization header required"}}`))
 			return
 		}
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 		if tokenString == authHeader {
-			http.Error(w, `{"error":{"code":"AUTH_INVALID_TOKEN","message":"Invalid authorization format"}}`, http.StatusUnauthorized)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte(`{"error":{"code":"AUTH_INVALID_TOKEN","message":"Invalid authorization format"}}`))
 			return
 		}
 
 		claims, err := v.VerifyToken(tokenString)
 		if err != nil {
-			http.Error(w, `{"error":{"code":"AUTH_INVALID_TOKEN","message":"Invalid or expired token"}}`, http.StatusUnauthorized)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte(`{"error":{"code":"AUTH_INVALID_TOKEN","message":"Invalid or expired token"}}`))
 			return
 		}
 
@@ -120,7 +126,9 @@ func RequireAdmin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		role := GetUserRole(r.Context())
 		if role != "ADMIN" {
-			http.Error(w, `{"error":{"code":"AUTH_NOT_ADMIN","message":"Admin access required"}}`, http.StatusForbidden)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte(`{"error":{"code":"AUTH_NOT_ADMIN","message":"Admin access required"}}`))
 			return
 		}
 		next.ServeHTTP(w, r)

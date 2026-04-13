@@ -58,10 +58,12 @@ func TestSupabaseVerifier_InvalidSecret(t *testing.T) {
 func TestSupabaseVerifier_ExpiredToken(t *testing.T) {
 	v := NewSupabaseVerifier("test-secret")
 
-	token := makeTestToken("test-secret", jwt.MapClaims{
+	claims := jwt.MapClaims{
 		"sub": "user-123",
-		"exp": 0,
-	})
+		"exp": float64(1),
+		"iat": float64(0),
+	}
+	token := makeTestToken("test-secret", claims)
 
 	_, err := v.VerifyToken(token)
 	if err == nil {

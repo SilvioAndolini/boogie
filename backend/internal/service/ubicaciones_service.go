@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -101,12 +102,15 @@ func (s *UbicacionesService) Search(q string) ([]models.LocationSuggestion, erro
 }
 
 func (s *UbicacionesService) searchPhoton(q string) ([]models.LocationSuggestion, error) {
-	url := fmt.Sprintf(
+	apiURL := fmt.Sprintf(
 		"https://photon.komoot.io/api/?q=%s&limit=10&lat=10.5&lon=-66.9&bbox=-73.5,0.5,-59,13",
-		q,
+		url.QueryEscape(q),
 	)
 
-	req, _ := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", apiURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("photon request: %w", err)
+	}
 	req.Header.Set("User-Agent", "Boogie/1.0 (contacto@boogie.com.ve)")
 
 	resp, err := s.httpClient.Do(req)
@@ -217,12 +221,15 @@ func buildPhotonDetalle(props map[string]interface{}, nombre string) string {
 }
 
 func (s *UbicacionesService) searchNominatim(q string) ([]models.LocationSuggestion, error) {
-	url := fmt.Sprintf(
+	apiURL := fmt.Sprintf(
 		"https://nominatim.openstreetmap.org/search?q=%s&countrycodes=ve&format=json&addressdetails=1&limit=8&accept-language=es",
-		q,
+		url.QueryEscape(q),
 	)
 
-	req, _ := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", apiURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("nominatim request: %w", err)
+	}
 	req.Header.Set("User-Agent", "Boogie/1.0 (contacto@boogie.com.ve)")
 
 	resp, err := s.httpClient.Do(req)

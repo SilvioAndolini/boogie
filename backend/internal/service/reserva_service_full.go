@@ -70,7 +70,8 @@ func (s *ReservaService) Crear(ctx context.Context, input *CrearReservaInput) (*
 		return nil, fmt.Errorf("capacidad maxima es %d huespedes", prop.Capacidad)
 	}
 
-	noches := int(input.FechaSalida.Sub(input.FechaEntrada).Hours() / 24)
+	noches := int(time.Date(input.FechaSalida.Year(), input.FechaSalida.Month(), input.FechaSalida.Day(), 0, 0, 0, 0, time.UTC).
+		Sub(time.Date(input.FechaEntrada.Year(), input.FechaEntrada.Month(), input.FechaEntrada.Day(), 0, 0, 0, 0, time.UTC)).Hours() / 24)
 	if noches < prop.EstanciaMinima {
 		return nil, fmt.Errorf("estancia minima es de %d noches", prop.EstanciaMinima)
 	}
@@ -159,7 +160,7 @@ func (s *ReservaService) ConfirmarORechazar(ctx context.Context, reservaID, user
 	return nil
 }
 
-func (s *ReservaService) Cancelar(ctx context.Context, input *CancelarInput) (*CalcularReembolso, error) {
+func (s *ReservaService) Cancelar(ctx context.Context, input *CancelarInput) (*ReembolsoCalculado, error) {
 	detalle, err := s.repo.GetByID(ctx, input.ReservaID)
 	if err != nil {
 		return nil, fmt.Errorf("reserva no encontrada")
@@ -174,7 +175,7 @@ func (s *ReservaService) Cancelar(ctx context.Context, input *CancelarInput) (*C
 		motivoStr = *input.Motivo
 	}
 
-	var reembolso *CalcularReembolso
+	var reembolso *ReembolsoCalculado
 
 	if detalle.HuespedID == input.UserID {
 		if err := s.repo.CancelarHuesped(ctx, input.ReservaID, motivoStr); err != nil {
@@ -224,11 +225,23 @@ func (s *ReservaService) GetByID(ctx context.Context, reservaID, userID string) 
 }
 
 func (s *ReservaService) ListByHuesped(ctx context.Context, huespedID string, page, perPage int) ([]repository.ReservaConPropiedad, int, error) {
+	if page < 1 {
+		page = 1
+	}
+	if perPage < 1 {
+		perPage = 20
+	}
 	offset := (page - 1) * perPage
 	return s.repo.ListByHuesped(ctx, huespedID, perPage, offset)
 }
 
 func (s *ReservaService) ListByPropietario(ctx context.Context, propietarioID, estado string, page, perPage int) ([]repository.ReservaConHuesped, int, error) {
+	if page < 1 {
+		page = 1
+	}
+	if perPage < 1 {
+		perPage = 20
+	}
 	offset := (page - 1) * perPage
 	return s.repo.ListByPropietario(ctx, propietarioID, estado, perPage, offset)
 }

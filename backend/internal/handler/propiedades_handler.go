@@ -20,6 +20,11 @@ func NewPropiedadesHandler(svc *service.PropiedadesService) *PropiedadesHandler 
 }
 
 func (h *PropiedadesHandler) Search(w http.ResponseWriter, r *http.Request) {
+	if h.svc == nil {
+		ErrorJSON(w, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE", "Servicio no disponible")
+		return
+	}
+
 	q := r.URL.Query()
 
 	filtros := &repository.PropiedadesFiltros{
@@ -154,7 +159,7 @@ func (h *PropiedadesHandler) UpdateEstado(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if err := h.svc.UpdateEstado(r.Context(), id, req.Estado); err != nil {
+	if err := h.svc.UpdateEstado(r.Context(), id, req.Estado, userID); err != nil {
 		slog.Error("[propiedades/update-estado] error", "error", err)
 		ErrorJSON(w, http.StatusInternalServerError, "UPDATE_ERROR", "Error al actualizar estado")
 		return
@@ -176,7 +181,7 @@ func (h *PropiedadesHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.svc.Delete(r.Context(), id); err != nil {
+	if err := h.svc.Delete(r.Context(), id, userID); err != nil {
 		slog.Error("[propiedades/delete] error", "error", err)
 		ErrorJSON(w, http.StatusInternalServerError, "DELETE_ERROR", "Error al eliminar propiedad")
 		return

@@ -56,7 +56,7 @@ func (h *CryptoHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if h.cryptoSvc.config.WalletAddress == "" {
+	if h.cryptoSvc.Config.WalletAddress == "" {
 		slog.Error("[crypto/create] CRYPTAPI_WALLET_ADDRESS not configured")
 		ErrorJSON(w, http.StatusInternalServerError, "WALLET_NOT_CONFIGURED", "Wallet no configurada")
 		return
@@ -133,7 +133,7 @@ func (h *CryptoHandler) Create(w http.ResponseWriter, r *http.Request) {
 		"propiedadId":   req.PropiedadID,
 		"fechaEntrada":  req.FechaEntrada,
 		"fechaSalida":   req.FechaSalida,
-		"secret":        h.cryptoSvc.config.CallbackSecret,
+		"secret":        h.cryptoSvc.Config.CallbackSecret,
 	})
 
 	cryptoResult, err := h.cryptoSvc.CreateAddress(callbackURL)
@@ -261,13 +261,6 @@ func (h *CryptoHandler) Callback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }
 
 func (h *CryptoHandler) CallbackPost(w http.ResponseWriter, r *http.Request) {
