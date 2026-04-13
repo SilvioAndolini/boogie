@@ -2,7 +2,6 @@ package handler
 
 import (
 	"net/http"
-	"net/url"
 
 	"github.com/boogie/backend/internal/service"
 )
@@ -25,12 +24,7 @@ func (h *UbicacionesHandler) Search(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	decoded, err := url.QueryUnescape(q)
-	if err != nil {
-		decoded = q
-	}
-
-	results, err := h.service.Search(decoded)
+	results, err := h.service.Search(q)
 	if err != nil {
 		ErrorJSON(w, http.StatusInternalServerError, "UBICACIONES_ERROR", "Error al buscar ubicaciones")
 		return

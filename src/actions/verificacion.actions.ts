@@ -1,67 +1,34 @@
 'use server'
 
-import { createAdminClient } from '@/lib/supabase/admin'
+import { goGet, goPost, goPatch, goDelete, GoAPIError } from '@/lib/go-api-client'
 import { getUsuarioAutenticado } from '@/lib/auth'
-import { requireAdmin, logAdminAction } from '@/lib/admin-auth'
-import { isCeoEmail } from '@/lib/admin-constants'
-import { adminRevisarVerificacionSchema, adminActualizarRolSchema } from '@/lib/admin-validations'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 
 export async function getVerificacionUsuario() {
   const user = await getUsuarioAutenticado()
   if (!user) return { error: 'No autenticado' }
 
-  const admin = createAdminClient()
-  const { data, error } = await admin
-    .from('verificaciones_documento')
-    .select('*')
-    .eq('usuario_id', user.id)
-    .order('fecha_creacion', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-
-  if (error) {
-    console.error('[getVerificacionUsuario] Error:', error.message)
+  try {
+    const verificacion = await goGet<Record<string, unknown>>('/api/v1/verificacion')
+    return { verificacion }
+  } catch (err) {
+    if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al consultar verificación' }
   }
-
-  return { verificacion: data }
 }
 
 export async function iniciarVerificacionMetaMap() {
   const user = await getUsuarioAutenticado()
   if (!user) return { error: 'No autenticado' }
 
-  const admin = createAdminClient()
-
-  const { data: existente } = await admin
-    .from('verificaciones_documento')
-    .select('id, estado')
-    .eq('usuario_id', user.id)
-    .in('estado', ['PENDIENTE', 'EN_PROCESO', 'APROBADA'])
-    .maybeSingle()
-
-  if (existente) {
-    if (existente.estado === 'APROBADA') return { error: 'Ya estás verificado' }
-    return { error: 'Ya tienes una verificación en proceso' }
-  }
-
-  const { data, error } = await admin
-    .from('verificaciones_documento')
-    .insert({
-      usuario_id: user.id,
-      metodo: 'METAMAP',
-      estado: 'PENDIENTE',
-    })
-    .select()
-    .single()
-
-  if (error) {
-    console.error('[iniciarVerificacionMetaMap] Error:', error.message)
+  try {
+    const verificacion = await goPost<Record<string, unknown>>('/api/v1/verificacion/iniciar-metamap')
+    return { verificacion }
+  } catch (err) {
+    if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al crear verificación' }
   }
-
-  return { verificacion: data }
 }
 
 export async function subirDocumentoManual(formData: FormData) {
@@ -77,20 +44,8 @@ export async function subirDocumentoManual(formData: FormData) {
   }
 
   const admin = createAdminClient()
-
-  const { data: existente } = await admin
-    .from('verificaciones_documento')
-    .select('id, estado')
-    .eq('usuario_id', user.id)
-    .in('estado', ['PENDIENTE', 'EN_PROCESO', 'APROBADA'])
-    .maybeSingle()
-
-  if (existente) {
-    if (existente.estado === 'APROBADA') return { error: 'Ya estás verificado' }
-    return { error: 'Ya tienes una verificación en proceso' }
-  }
-
   const timestamp = Date.now()
+
   const uploadImage = async (file: File, suffix: string) => {
     const ext = file.name.split('.').pop() || 'webp'
     const path = `verificaciones/${user.id}/${timestamp}_${suffix}.${ext}`
@@ -98,12 +53,7 @@ export async function subirDocumentoManual(formData: FormData) {
     const { error: uploadError } = await admin.storage
       .from('imagenes')
       .upload(path, buffer, { contentType: file.type, upsert: true })
-
-    if (uploadError) {
-      console.error('[subirDocumentoManual] Upload error:', uploadError.message)
-      return null
-    }
-
+    if (uploadError) return null
     const { data: urlData } = admin.storage.from('imagenes').getPublicUrl(path)
     return urlData.publicUrl
   }
@@ -118,358 +68,120 @@ export async function subirDocumentoManual(formData: FormData) {
     return { error: 'Error al subir las imágenes. Intenta de nuevo.' }
   }
 
-  const { data, error } = await admin
-    .from('verificaciones_documento')
-    .insert({
-      usuario_id: user.id,
-      metodo: 'MANUAL',
-      estado: 'PENDIENTE',
-      foto_frontal_url: fotoFrontalUrl,
-      foto_trasera_url: fotoTraseraUrl,
-      foto_selfie_url: fotoSelfieUrl,
+  try {
+    const verificacion = await goPost<Record<string, unknown>>('/api/v1/verificacion/subir-documento', {
+      fotoFrontalUrl,
+      fotoTraseraUrl,
+      fotoSelfieUrl,
     })
-    .select()
-    .single()
-
-  if (error) {
-    console.error('[subirDocumentoManual] Insert error:', error.message)
+    revalidatePath('/dashboard/verificar-identidad')
+    return { verificacion }
+  } catch (err) {
+    if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al registrar verificación' }
   }
-
-  revalidatePath('/dashboard/verificar-identidad')
-  return { verificacion: data }
 }
 
 export async function getVerificacionesPendientes() {
-  const auth = await requireAdmin()
-  if (auth.error) return { error: auth.error }
-
-  const admin = createAdminClient()
-  const { data, error } = await admin
-    .from('verificaciones_documento')
-    .select(`
-      *,
-      usuario:usuarios!verificaciones_documento_usuario_id_fkey (
-        id, nombre, apellido, email, cedula, telefono
-      )
-    `)
-    .order('fecha_creacion', { ascending: false })
-
-  if (error) {
-    console.error('[getVerificacionesPendientes] Error:', error.message)
+  try {
+    const verificaciones = await goGet<Array<Record<string, unknown>>>('/api/v1/admin/verificaciones')
+    return { verificaciones }
+  } catch (err) {
+    if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al cargar verificaciones' }
   }
-
-  return { verificaciones: data }
 }
 
 export async function revisarVerificacion(formData: FormData) {
-  const auth = await requireAdmin()
-  if (auth.error) return { error: auth.error }
+  const verificacionId = formData.get('verificacionId') as string
+  const accion = formData.get('accion') as string
+  const motivoRechazo = (formData.get('motivoRechazo') as string) || undefined
 
-  const raw = {
-    verificacionId: formData.get('verificacionId') as string,
-    accion: formData.get('accion') as string,
-    motivoRechazo: (formData.get('motivoRechazo') as string) || undefined,
-  }
-
-  const parsed = adminRevisarVerificacionSchema.safeParse(raw)
-  if (!parsed.success) {
-    const firstError = parsed.error.issues[0]?.message || 'Datos inválidos'
-    return { error: firstError }
-  }
-
-  const { verificacionId, accion, motivoRechazo } = parsed.data
-
-  const admin = createAdminClient()
-
-  const updateData: Record<string, unknown> = {
-    estado: accion,
-    revisado_por: auth.userId,
-    fecha_revision: new Date().toISOString(),
-    fecha_actualizacion: new Date().toISOString(),
-  }
-
-  if (accion === 'RECHAZADA') {
-    updateData.motivo_rechazo = motivoRechazo
-  }
-
-  const { data: verifBefore } = await admin
-    .from('verificaciones_documento')
-    .select('usuario_id')
-    .eq('id', verificacionId)
-    .single()
-
-  const { error } = await admin
-    .from('verificaciones_documento')
-    .update(updateData)
-    .eq('id', verificacionId)
-
-  if (error) {
-    console.error('[revisarVerificacion] Error:', error.message)
+  try {
+    await goPost(`/api/v1/admin/verificaciones/${verificacionId}/revisar`, {
+      accion,
+      motivoRechazo,
+    })
+    revalidatePath('/admin/verificaciones')
+    return { exito: true }
+  } catch (err) {
+    if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al actualizar verificación' }
   }
-
-  if (accion === 'APROBADA' && verifBefore) {
-    await admin
-      .from('usuarios')
-      .update({ verificado: true })
-      .eq('id', verifBefore.usuario_id)
-  }
-
-  await logAdminAction({
-    accion: `VERIFICACION_${accion}`,
-    entidad: 'verificacion',
-    entidadId: verificacionId,
-    detalles: { usuarioVerificado: verifBefore?.usuario_id, motivoRechazo },
-  })
-
-  revalidatePath('/admin/verificaciones')
-  return { exito: true }
 }
 
-export async function getUsuariosAdmin() {
-  const auth = await requireAdmin()
-  if (auth.error) {
-    console.error('[getUsuariosAdmin] Auth error:', auth.error)
-    return { error: auth.error }
-  }
+type UsuariosResult = {
+  usuarios?: Array<Record<string, unknown>>;
+  isCeo?: boolean;
+  error?: string;
+}
 
-  const admin = createAdminClient()
+type AdminCountsResult = {
+  verificacionesPendientes?: number;
+  reservasPendientes?: number;
+  pagosPendientes?: number;
+  error?: string;
+}
 
-  const { data: perfiles, error } = await admin
-    .from('usuarios')
-    .select('*')
-    .order('fecha_registro', { ascending: false })
-
-  if (error) {
-    console.error('[getUsuariosAdmin] Error:', error.message)
+export async function getUsuariosAdmin(): Promise<UsuariosResult> {
+  try {
+    return await goGet<{
+      usuarios: Array<Record<string, unknown>>;
+      isCeo: boolean;
+    }>('/api/v1/admin/usuarios')
+  } catch (err) {
+    if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al cargar usuarios' }
   }
-
-  const perfilIds = new Set((perfiles || []).map((p) => p.id))
-
-  let page = 1
-  let allAuthUsers: { id: string; email?: string; user_metadata?: { nombre?: string; apellido?: string; telefono?: string } }[] = []
-  let hasMore = true
-  while (hasMore) {
-    const { data: pageData } = await admin.auth.admin.listUsers({ page, perPage: 100 })
-    const users = pageData?.users || []
-    allAuthUsers = allAuthUsers.concat(users)
-    hasMore = users.length === 100
-    page++
-  }
-
-  const huerfanosAuth = allAuthUsers.filter((u) => !perfilIds.has(u.id) && u.id !== auth.userId)
-
-  if (huerfanosAuth.length > 0) {
-    console.log('[getUsuariosAdmin] Recuperando perfiles huérfanos de Auth:', huerfanosAuth.map((u) => u.email))
-
-    for (const authUser of huerfanosAuth) {
-      const { error: insertError } = await admin.from('usuarios').insert({
-        id: authUser.id,
-        email: authUser.email || '',
-        nombre: authUser.user_metadata?.nombre || 'Sin',
-        apellido: authUser.user_metadata?.apellido || 'nombre',
-        telefono: authUser.user_metadata?.telefono || null,
-        cedula: null,
-        verificado: false,
-        rol: 'BOOGER',
-      }).select()
-
-      if (insertError) {
-        console.error('[getUsuariosAdmin] Error recuperando perfil:', authUser.email, insertError.message)
-      }
-    }
-
-    if (huerfanosAuth.some((u) => !perfilIds.has(u.id))) {
-      await logAdminAction({
-        accion: 'RECUPERAR_PERFILES_AUTH',
-        entidad: 'usuario',
-        detalles: { recuperados: huerfanosAuth.map((u) => ({ id: u.id, email: u.email })) },
-      })
-    }
-  }
-
-  const perfilSinAuth = (perfiles || []).filter((p) => !allAuthUsers.some((au) => au.id === p.id))
-
-  if (perfilSinAuth.length > 0) {
-    console.log('[getUsuariosAdmin] Eliminando perfiles sin Auth:', perfilSinAuth.map((p) => p.email))
-
-    const { error: deleteError } = await admin
-      .from('usuarios')
-      .delete()
-      .in('id', perfilSinAuth.map((p) => p.id))
-
-    if (!deleteError) {
-      await logAdminAction({
-        accion: 'LIMPIEZA_HUERFANOS',
-        entidad: 'usuario',
-        detalles: { eliminados: perfilSinAuth.map((p) => ({ id: p.id, email: p.email })) },
-      })
-    }
-  }
-
-  const { data: perfilesFinales, error: errorFinal } = await admin
-    .from('usuarios')
-    .select('*')
-    .order('fecha_registro', { ascending: false })
-
-  if (errorFinal) {
-    return { error: 'Error al cargar usuarios' }
-  }
-
-  console.log('[getUsuariosAdmin] Usuarios finales:', perfilesFinales?.length ?? 0)
-  return { usuarios: perfilesFinales, isCeo: auth.isCeo }
 }
 
 export async function actualizarRolUsuario(formData: FormData) {
-  const auth = await requireAdmin()
-  if (auth.error) return { error: auth.error }
+  const usuarioId = formData.get('usuarioId') as string
+  const rol = (formData.get('rol') as string) || undefined
+  const activo = (formData.get('activo') as string) || undefined
+  const plan = (formData.get('plan') as string) || undefined
+  const reputacion = (formData.get('reputacion') as string) || undefined
+  const reputacion_manual = (formData.get('reputacion_manual') as string) || undefined
 
-  const raw = {
-    usuarioId: formData.get('usuarioId') as string,
-    rol: (formData.get('rol') as string) || undefined,
-    activo: (formData.get('activo') as string) || undefined,
-    plan: (formData.get('plan') as string) || undefined,
-    reputacion: (formData.get('reputacion') as string) || undefined,
-    reputacion_manual: (formData.get('reputacion_manual') as string) || undefined,
-  }
-
-  const parsed = adminActualizarRolSchema.safeParse(raw)
-  if (!parsed.success) {
-    const firstError = parsed.error.issues[0]?.message || 'Datos inválidos'
-    return { error: firstError }
-  }
-
-  const { usuarioId, rol, activo, plan, reputacion, reputacion_manual } = parsed.data as { usuarioId: string; rol?: string; activo?: string; plan?: string; reputacion?: string; reputacion_manual?: string }
-
-  if (usuarioId === auth.userId && rol && rol !== 'ADMIN') {
-    return { error: 'No puedes quitarte tu propio rol de administrador' }
-  }
-
-  const admin = createAdminClient()
-  const { data: before } = await admin
-    .from('usuarios')
-    .select('rol, activo, email, plan_suscripcion')
-    .eq('id', usuarioId)
-    .single()
-
-  if (isCeoEmail(before?.email)) {
-    return { error: 'No puedes modificar al CEO' }
-  }
-
-  if (before?.rol === 'ADMIN' && !auth.isCeo) {
-    return { error: 'Solo el CEO puede modificar otros administradores' }
-  }
-
-  const updateData: Record<string, unknown> = {}
-  if (rol) updateData.rol = rol
-  if (activo !== undefined) updateData.activo = activo === 'true'
-  if (plan) updateData.plan_suscripcion = plan
-  if (reputacion !== undefined) updateData.reputacion = reputacion ? parseFloat(reputacion) : null
-  if (reputacion_manual !== undefined) updateData.reputacion_manual = reputacion_manual === 'true'
-
-  const { error } = await admin
-    .from('usuarios')
-    .update(updateData)
-    .eq('id', usuarioId)
-
-  if (error) {
-    console.error('[actualizarRolUsuario] Error:', error.message)
+  try {
+    await goPatch(`/api/v1/admin/usuarios/${usuarioId}`, {
+      rol,
+      activo,
+      plan,
+      reputacion,
+      reputacion_manual,
+    })
+    revalidatePath('/admin/usuarios')
+    return { exito: true }
+  } catch (err) {
+    if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al actualizar usuario' }
   }
-
-  const accionDesc = []
-  if (rol && rol !== before?.rol) accionDesc.push(`ROL:${before?.rol}→${rol}`)
-  if (activo !== undefined) accionDesc.push(activo === 'true' ? 'REACTIVADO' : 'SUSPENDIDO')
-  if (plan && plan !== before?.plan_suscripcion) accionDesc.push(`PLAN:${before?.plan_suscripcion}→${plan}`)
-
-  await logAdminAction({
-    accion: accionDesc.join(', '),
-    entidad: 'usuario',
-    entidadId: usuarioId,
-    detalles: { antes: before, despues: updateData },
-  })
-
-  revalidatePath('/admin/usuarios')
-  return { exito: true }
 }
 
 export async function eliminarUsuarioAdmin(formData: FormData) {
-  const auth = await requireAdmin()
-  if (auth.error) return { error: auth.error }
-
   const usuarioId = formData.get('usuarioId') as string
   if (!usuarioId) return { error: 'ID de usuario requerido' }
 
-  if (usuarioId === auth.userId) {
-    return { error: 'No puedes eliminar tu propia cuenta' }
+  try {
+    await goDelete(`/api/v1/admin/usuarios/${usuarioId}`)
+    revalidatePath('/admin/usuarios')
+    return { exito: true }
+  } catch (err) {
+    if (err instanceof GoAPIError) return { error: err.message }
+    return { error: 'Error al eliminar usuario' }
   }
-
-  const admin = createAdminClient()
-
-  const { data: perfil } = await admin
-    .from('usuarios')
-    .select('email, nombre, apellido, rol')
-    .eq('id', usuarioId)
-    .single()
-
-  if (isCeoEmail(perfil?.email)) {
-    return { error: 'No puedes eliminar al CEO' }
-  }
-
-  if (perfil?.rol === 'ADMIN' && !auth.isCeo) {
-    return { error: 'Solo el CEO puede eliminar otros administradores' }
-  }
-
-  const { error: perfilError } = await admin
-    .from('usuarios')
-    .delete()
-    .eq('id', usuarioId)
-
-  if (perfilError) {
-    console.error('[eliminarUsuarioAdmin] Error eliminando perfil:', perfilError.message)
-    return { error: 'Error al eliminar el perfil' }
-  }
-
-  const { error: authError } = await admin.auth.admin.deleteUser(usuarioId)
-
-  if (authError) {
-    console.error('[eliminarUsuarioAdmin] Error eliminando auth user:', authError.message)
-  }
-
-  await logAdminAction({
-    accion: 'ELIMINAR_USUARIO',
-    entidad: 'usuario',
-    entidadId: usuarioId,
-    detalles: {
-      email: perfil?.email,
-      nombre: perfil ? `${perfil.nombre} ${perfil.apellido}` : null,
-      rol: perfil?.rol,
-      authEliminado: !authError,
-    },
-  })
-
-  revalidatePath('/admin/usuarios')
-  return { exito: true }
 }
 
-export async function getAdminCounts() {
-  const auth = await requireAdmin()
-  if (auth.error) return { error: auth.error }
-
-  const admin = createAdminClient()
-
-  const [verifPendientes, reservasPendientes, pagosPendientes] = await Promise.all([
-    admin.from('verificaciones_documento').select('id', { count: 'exact', head: true }).eq('estado', 'PENDIENTE'),
-    admin.from('reservas').select('id', { count: 'exact', head: true }).eq('estado', 'PENDIENTE'),
-    admin.from('pagos').select('id', { count: 'exact', head: true }).eq('estado', 'PENDIENTE'),
-  ])
-
-  return {
-    verificacionesPendientes: verifPendientes.count ?? 0,
-    reservasPendientes: reservasPendientes.count ?? 0,
-    pagosPendientes: pagosPendientes.count ?? 0,
+export async function getAdminCounts(): Promise<AdminCountsResult> {
+  try {
+    return await goGet<{
+      verificacionesPendientes: number;
+      reservasPendientes: number;
+      pagosPendientes: number;
+    }>('/api/v1/admin/counts')
+  } catch (err) {
+    if (err instanceof GoAPIError) return { error: err.message }
+    return { error: 'Error al cargar conteos' }
   }
 }

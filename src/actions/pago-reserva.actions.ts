@@ -2,6 +2,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getUsuarioAutenticado } from '@/lib/auth'
+import { goPost } from '@/lib/go-api-client'
 
 export async function registrarPagoReserva(datos: {
   reservaId: string
@@ -17,11 +18,10 @@ export async function registrarPagoReserva(datos: {
   const user = await getUsuarioAutenticado()
   if (!user) return { error: 'No autenticado' }
 
-  const admin = createAdminClient()
-
   let comprobanteUrl: string | null = null
 
   if (datos.comprobanteBase64 && datos.comprobanteExt) {
+    const admin = createAdminClient()
     const { data: buckets } = await admin.storage.listBuckets()
     const bucketExists = buckets?.some((b) => b.name === 'pagos')
     if (!bucketExists) {
@@ -42,28 +42,21 @@ export async function registrarPagoReserva(datos: {
     }
   }
 
-  const referenciaCompleta = [
-    datos.referencia,
-    datos.bancoEmisor ? `Banco: ${datos.bancoEmisor}` : '',
-    datos.telefonoEmisor ? `Tel: ${datos.telefonoEmisor}` : '',
-  ].filter(Boolean).join(' | ')
-
-  const { error } = await admin.from('pagos').insert({
-    id: crypto.randomUUID(),
-    monto: datos.monto,
-    moneda: datos.moneda,
-    metodo_pago: datos.metodoPago,
-    referencia: referenciaCompleta,
-    comprobante: comprobanteUrl,
-    estado: 'PENDIENTE',
-    fecha_creacion: new Date().toISOString(),
-    reserva_id: datos.reservaId,
-    usuario_id: user.id,
-  })
-
-  if (error) {
-    console.error('[registrarPagoReserva] Error:', error.message)
-    return { error: `Error al registrar el pago: ${error.message}` }
+  try {
+    await goPost('/api/v1/pagos/registrar-comprobante', {
+      reservaId: datos.reservaId,
+      monto: datos.monto,
+      moneda: datos.moneda,
+      metodoPago: datos.metodoPago,
+      referencia: datos.referencia,
+      bancoEmisor: datos.bancoEmisor,
+      telefonoEmisor: datos.telefonoEmisor,
+      comprobanteBase64: comprobanteUrl,
+      comprobanteExt: datos.comprobanteExt,
+    })
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Error al registrar el pago'
+    return { error: message }
   }
 
   return { exito: true }

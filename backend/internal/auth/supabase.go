@@ -2,8 +2,16 @@ package auth
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"math/big"
 	"net/http"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -22,20 +30,92 @@ type UserClaims struct {
 	Role  string
 }
 
-type SupabaseVerifier struct {
-	jwtSecret string
+type jwksKey struct {
+	Kid string `json:"kid"`
+	Kty string `json:"kty"`
+	Alg string `json:"alg"`
+	Crv string `json:"crv"`
+	X   string `json:"x"`
+	Y   string `json:"y"`
 }
 
-func NewSupabaseVerifier(jwtSecret string) *SupabaseVerifier {
-	return &SupabaseVerifier{jwtSecret: jwtSecret}
+type jwksResponse struct {
+	Keys []jwksKey `json:"keys"`
+}
+
+type SupabaseVerifier struct {
+	supabaseURL string
+	keys        map[string]*ecdsa.PublicKey
+	mu          sync.RWMutex
+	fetchedAt   time.Time
+}
+
+func NewSupabaseVerifier(supabaseURL string) *SupabaseVerifier {
+	v := &SupabaseVerifier{
+		supabaseURL: strings.TrimRight(supabaseURL, "/"),
+		keys:        make(map[string]*ecdsa.PublicKey),
+	}
+	v.fetchKeys()
+	return v
+}
+
+func (v *SupabaseVerifier) fetchKeys() {
+	url := v.supabaseURL + "/auth/v1/jwks"
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Get(url)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	var jwks jwksResponse
+	if err := json.NewDecoder(resp.Body).Decode(&jwks); err != nil {
+		return
+	}
+
+	newKeys := make(map[string]*ecdsa.PublicKey)
+	for _, k := range jwks.Keys {
+		pubKey, err := parseECDSAPublicKey(k.X, k.Y)
+		if err != nil {
+			continue
+		}
+		newKeys[k.Kid] = pubKey
+	}
+
+	v.mu.Lock()
+	v.keys = newKeys
+	v.fetchedAt = time.Now()
+	v.mu.Unlock()
+}
+
+func (v *SupabaseVerifier) getKey(kid string) *ecdsa.PublicKey {
+	v.mu.RLock()
+	if time.Since(v.fetchedAt) > 1*time.Hour {
+		v.mu.RUnlock()
+		v.fetchKeys()
+		v.mu.RLock()
+	}
+	defer v.mu.RUnlock()
+	return v.keys[kid]
 }
 
 func (v *SupabaseVerifier) VerifyToken(tokenString string) (*UserClaims, error) {
 	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
-		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, jwt.ErrSignatureInvalid
+		if _, ok := t.Method.(*jwt.SigningMethodECDSA); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 		}
-		return []byte(v.jwtSecret), nil
+
+		kid, _ := t.Header["kid"].(string)
+		key := v.getKey(kid)
+		if key == nil {
+			v.fetchKeys()
+			key = v.getKey(kid)
+		}
+		if key == nil {
+			return nil, fmt.Errorf("key not found for kid: %s", kid)
+		}
+		return key, nil
 	})
 	if err != nil {
 		return nil, err
@@ -133,4 +213,24 @@ func RequireAdmin(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+func parseECDSAPublicKey(xStr, yStr string) (*ecdsa.PublicKey, error) {
+	xBytes, err := base64.RawURLEncoding.DecodeString(xStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode x: %w", err)
+	}
+	yBytes, err := base64.RawURLEncoding.DecodeString(yStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode y: %w", err)
+	}
+
+	x := new(big.Int).SetBytes(xBytes)
+	y := new(big.Int).SetBytes(yBytes)
+
+	return &ecdsa.PublicKey{
+		Curve: elliptic.P256(),
+		X:     x,
+		Y:     y,
+	}, nil
 }

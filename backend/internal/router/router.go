@@ -224,13 +224,6 @@ func New(opts *RouterOpts) http.Handler {
 				r.Post("/iniciar-metamap", opts.VerificacionHandlers.IniciarMetaMap)
 				r.Post("/subir-documento", opts.VerificacionHandlers.SubirDocumento)
 			})
-
-			r.Route("/admin", func(r chi.Router) {
-				r.Use(opts.AuthVerifier.Middleware)
-				r.Get("/verificaciones", opts.VerificacionHandlers.ListAll)
-				r.Post("/verificaciones/{id}/revisar", opts.VerificacionHandlers.Revisar)
-				r.Get("/counts", opts.VerificacionHandlers.AdminCounts)
-			})
 		}
 
 		if opts.ChatHandlers != nil {
@@ -259,47 +252,56 @@ func New(opts *RouterOpts) http.Handler {
 		if opts.TiendaHandlers != nil {
 			r.Get("/tienda/productos", opts.TiendaHandlers.GetProductos)
 			r.Get("/tienda/servicios", opts.TiendaHandlers.GetServicios)
-
-			r.Route("/admin/tienda", func(r chi.Router) {
-				r.Use(opts.AuthVerifier.Middleware)
-				r.Get("/productos", opts.TiendaHandlers.GetAllProductos)
-				r.Get("/servicios", opts.TiendaHandlers.GetAllServicios)
-			})
 		}
 
-		if opts.AdminHandlers != nil {
+		if opts.AdminHandlers != nil || opts.VerificacionHandlers != nil || opts.TiendaHandlers != nil {
 			r.Route("/admin", func(r chi.Router) {
 				r.Use(opts.AuthVerifier.Middleware)
-				r.Get("/dashboard", opts.AdminHandlers.GetDashboard)
-				r.Get("/reservas", opts.AdminHandlers.GetReservas)
-				r.Get("/reservas/stats", opts.AdminHandlers.GetReservasStats)
-				r.Post("/reservas/accion", opts.AdminHandlers.AccionReserva)
-				r.Get("/pagos", opts.AdminHandlers.GetPagos)
-				r.Get("/pagos/stats", opts.AdminHandlers.GetPagosStats)
-				r.Post("/pagos/verificar", opts.AdminHandlers.VerificarPago)
-				r.Get("/propiedades", opts.AdminHandlers.GetPropiedades)
-				r.Patch("/propiedades", opts.AdminHandlers.UpdatePropiedad)
-				r.Delete("/propiedades/{id}", opts.AdminHandlers.DeletePropiedad)
-				r.Get("/resenas", opts.AdminHandlers.GetResenas)
-				r.Post("/resenas/moderar", opts.AdminHandlers.ModerarResena)
-				r.Get("/cupones", opts.AdminHandlers.GetCupones)
-				r.Get("/cupones/{id}", opts.AdminHandlers.GetCuponByID)
-				r.Post("/cupones", opts.AdminHandlers.CrearCupon)
-				r.Put("/cupones", opts.AdminHandlers.EditarCupon)
-				r.Patch("/cupones/{id}/activo", opts.AdminHandlers.ToggleCuponActivo)
-				r.Delete("/cupones/{id}", opts.AdminHandlers.DeleteCupon)
-				r.Get("/cupon-usos", opts.AdminHandlers.GetCuponUsos)
-				r.Get("/comisiones", opts.AdminHandlers.GetComisiones)
-				r.Put("/comisiones", opts.AdminHandlers.UpdateComisiones)
-				r.Get("/auditoria", opts.AdminHandlers.GetAuditLog)
-				r.Get("/notificaciones", opts.AdminHandlers.GetNotificaciones)
-				r.Post("/notificaciones", opts.AdminHandlers.EnviarNotificacion)
-				r.Post("/store/productos", opts.AdminHandlers.CrearProductoStore)
-				r.Patch("/store/productos/{id}", opts.AdminHandlers.ActualizarProductoStore)
-				r.Delete("/store/productos/{id}", opts.AdminHandlers.EliminarProductoStore)
-				r.Post("/store/servicios", opts.AdminHandlers.CrearServicioStore)
-				r.Patch("/store/servicios/{id}", opts.AdminHandlers.ActualizarServicioStore)
-				r.Delete("/store/servicios/{id}", opts.AdminHandlers.EliminarServicioStore)
+				r.Use(auth.RequireAdmin)
+
+				if opts.VerificacionHandlers != nil {
+					r.Get("/verificaciones", opts.VerificacionHandlers.ListAll)
+					r.Post("/verificaciones/{id}/revisar", opts.VerificacionHandlers.Revisar)
+					r.Get("/counts", opts.VerificacionHandlers.AdminCounts)
+				}
+
+				if opts.TiendaHandlers != nil {
+					r.Get("/tienda/productos", opts.TiendaHandlers.GetAllProductos)
+					r.Get("/tienda/servicios", opts.TiendaHandlers.GetAllServicios)
+				}
+
+				if opts.AdminHandlers != nil {
+					r.Get("/dashboard", opts.AdminHandlers.GetDashboard)
+					r.Get("/reservas", opts.AdminHandlers.GetReservas)
+					r.Get("/reservas/stats", opts.AdminHandlers.GetReservasStats)
+					r.Post("/reservas/accion", opts.AdminHandlers.AccionReserva)
+					r.Get("/pagos", opts.AdminHandlers.GetPagos)
+					r.Get("/pagos/stats", opts.AdminHandlers.GetPagosStats)
+					r.Post("/pagos/verificar", opts.AdminHandlers.VerificarPago)
+					r.Get("/propiedades", opts.AdminHandlers.GetPropiedades)
+					r.Patch("/propiedades", opts.AdminHandlers.UpdatePropiedad)
+					r.Delete("/propiedades/{id}", opts.AdminHandlers.DeletePropiedad)
+					r.Get("/resenas", opts.AdminHandlers.GetResenas)
+					r.Post("/resenas/moderar", opts.AdminHandlers.ModerarResena)
+					r.Get("/cupones", opts.AdminHandlers.GetCupones)
+					r.Get("/cupones/{id}", opts.AdminHandlers.GetCuponByID)
+					r.Post("/cupones", opts.AdminHandlers.CrearCupon)
+					r.Put("/cupones", opts.AdminHandlers.EditarCupon)
+					r.Patch("/cupones/{id}/activo", opts.AdminHandlers.ToggleCuponActivo)
+					r.Delete("/cupones/{id}", opts.AdminHandlers.DeleteCupon)
+					r.Get("/cupon-usos", opts.AdminHandlers.GetCuponUsos)
+					r.Get("/comisiones", opts.AdminHandlers.GetComisiones)
+					r.Put("/comisiones", opts.AdminHandlers.UpdateComisiones)
+					r.Get("/auditoria", opts.AdminHandlers.GetAuditLog)
+					r.Get("/notificaciones", opts.AdminHandlers.GetNotificaciones)
+					r.Post("/notificaciones", opts.AdminHandlers.EnviarNotificacion)
+					r.Post("/store/productos", opts.AdminHandlers.CrearProductoStore)
+					r.Patch("/store/productos/{id}", opts.AdminHandlers.ActualizarProductoStore)
+					r.Delete("/store/productos/{id}", opts.AdminHandlers.EliminarProductoStore)
+					r.Post("/store/servicios", opts.AdminHandlers.CrearServicioStore)
+					r.Patch("/store/servicios/{id}", opts.AdminHandlers.ActualizarServicioStore)
+					r.Delete("/store/servicios/{id}", opts.AdminHandlers.EliminarServicioStore)
+				}
 			})
 		}
 

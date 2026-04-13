@@ -15,31 +15,31 @@ datasource db {
 // =============================================
 
 model Usuario {
-  id              String   @id @default(cuid())
-  email           String   @unique
-  nombre          String
-  apellido        String
-  telefono        String?
-  avatarUrl       String?  @map("avatar_url")
-  cedula          String?  @unique
-  verificado      Boolean  @default(false)
-  rol             Rol      @default(BOOGER)
-  planSuscripcion PlanSuscripcion @default(FREE) @map("plan_suscripcion")
-  bio             String?  @db.Text
-  reputacion      Decimal? @db.Decimal(3, 1)
-  reputacionManual Boolean @default(false) @map("reputacion_manual")
-  fechaRegistro   DateTime @default(now()) @map("fecha_registro")
-  ultimaActividad DateTime @default(now()) @map("ultima_actividad")
-  activo          Boolean  @default(true)
+  id               String          @id @default(cuid())
+  email            String          @unique
+  nombre           String
+  apellido         String
+  telefono         String?
+  avatarUrl        String?         @map("avatar_url")
+  cedula           String?         @unique
+  verificado       Boolean         @default(false)
+  rol              Rol             @default(BOOGER)
+  planSuscripcion  PlanSuscripcion @default(FREE) @map("plan_suscripcion")
+  bio              String?         @db.Text
+  reputacion       Decimal?        @db.Decimal(3, 1)
+  reputacionManual Boolean         @default(false) @map("reputacion_manual")
+  fechaRegistro    DateTime        @default(now()) @map("fecha_registro")
+  ultimaActividad  DateTime        @default(now()) @map("ultima_actividad")
+  activo           Boolean         @default(true)
 
-  propiedades       Propiedad[]        @relation("Propietario")
-  reservasComoHuesped Reserva[]         @relation("Huesped")
-  boogiesOfertas    BoogieOferta[]      @relation("HuespedOfertas")
-  resenasEscritas   Resena[]           @relation("AutorResena")
-  resenasRecibidas  Resena[]           @relation("AnfitrionResena")
-  metodosPago       MetodoPago[]
-  notificaciones    Notificacion[]
-  pagos             Pago[]
+  propiedades         Propiedad[]    @relation("Propietario")
+  reservasComoHuesped Reserva[]      @relation("Huesped")
+  boogiesOfertas      BoogieOferta[] @relation("HuespedOfertas")
+  resenasEscritas     Resena[]       @relation("AutorResena")
+  resenasRecibidas    Resena[]       @relation("AnfitrionResena")
+  metodosPago         MetodoPago[]
+  notificaciones      Notificacion[]
+  pagos               Pago[]
 
   @@map("usuarios")
 }
@@ -61,44 +61,44 @@ enum PlanSuscripcion {
 // =============================================
 
 model Propiedad {
-  id                String            @id @default(cuid())
-  titulo            String
-  descripcion       String            @db.Text
-  tipoPropiedad     TipoPropiedad     @map("tipo_propiedad")
-  precioPorNoche    Decimal           @map("precio_por_noche") @db.Decimal(10, 2)
-  moneda            Moneda            @default(USD)
-  capacidadMaxima   Int               @map("capacidad_maxima")
-  habitaciones      Int               @default(1)
-  banos             Int               @default(1)
-  camas             Int               @default(1)
+  id              String        @id @default(cuid())
+  titulo          String
+  descripcion     String        @db.Text
+  tipoPropiedad   TipoPropiedad @map("tipo_propiedad")
+  precioPorNoche  Decimal       @map("precio_por_noche") @db.Decimal(10, 2)
+  moneda          Moneda        @default(USD)
+  capacidadMaxima Int           @map("capacidad_maxima")
+  habitaciones    Int           @default(1)
+  banos           Int           @default(1)
+  camas           Int           @default(1)
 
-  direccion         String
-  ciudad            String
-  estado            String
-  zona              String?
-  latitud           Float?
-  longitud          Float?
-  codigoPostal      String?           @map("codigo_postal")
+  direccion    String
+  ciudad       String
+  estado       String
+  zona         String?
+  latitud      Float?
+  longitud     Float?
+  codigoPostal String? @map("codigo_postal")
 
-  reglas            String?           @db.Text
+  reglas              String?             @db.Text
   politicaCancelacion PoliticaCancelacion @default(MODERADA) @map("politica_cancelacion")
-  horarioCheckIn    String?           @map("horario_checkin") @default("14:00")
-  horarioCheckOut   String?           @map("horario_checkout") @default("11:00")
-  estanciaMinima    Int               @default(1) @map("estancia_minima")
-  estanciaMaxima    Int?              @map("estancia_maxima")
+  horarioCheckIn      String?             @default("14:00") @map("horario_checkin")
+  horarioCheckOut     String?             @default("11:00") @map("horario_checkout")
+  estanciaMinima      Int                 @default(1) @map("estancia_minima")
+  estanciaMaxima      Int?                @map("estancia_maxima")
 
-  estadoPublicacion EstadoPublicacion @default(BORRADOR) @map("estado_publicacion")
-  destacada         Boolean           @default(false)
-  fechaPublicacion  DateTime?         @map("fecha_publicacion")
-  fechaActualizacion DateTime         @default(now()) @updatedAt @map("fecha_actualizacion")
+  estadoPublicacion  EstadoPublicacion @default(BORRADOR) @map("estado_publicacion")
+  destacada          Boolean           @default(false)
+  fechaPublicacion   DateTime?         @map("fecha_publicacion")
+  fechaActualizacion DateTime          @default(now()) @updatedAt @map("fecha_actualizacion")
 
-  vistasTotales     Int               @default(0) @map("vistas_totales")
-  ratingPromedio    Float?            @map("rating_promedio")
-  totalResenas      Int               @default(0) @map("total_resenas")
+  vistasTotales  Int    @default(0) @map("vistas_totales")
+  ratingPromedio Float? @map("rating_promedio")
+  totalResenas   Int    @default(0) @map("total_resenas")
 
-  propietarioId     String            @map("propietario_id")
-  propietario       Usuario          @relation("Propietario", fields: [propietarioId], references: [id])
-  boogiesOfertas    BoogieOferta[]    @relation("PropiedadOfertas")
+  propietarioId     String              @map("propietario_id")
+  propietario       Usuario             @relation("Propietario", fields: [propietarioId], references: [id])
+  boogiesOfertas    BoogieOferta[]      @relation("PropiedadOfertas")
   imagenes          ImagenPropiedad[]
   amenidades        PropiedadAmenidad[]
   reservas          Reserva[]
@@ -151,16 +151,16 @@ enum EstadoPublicacion {
 // =============================================
 
 model ImagenPropiedad {
-  id            String    @id @default(cuid())
-  url           String
-  thumbnailUrl  String?   @map("thumbnail_url")
-  alt           String?
-  categoria     String    @default("otro")
-  orden         Int       @default(0)
-  esPrincipal   Boolean   @default(false) @map("es_principal")
-  propiedadId   String    @map("propiedad_id")
-  propiedad     Propiedad @relation(fields: [propiedadId], references: [id], onDelete: Cascade)
-  fechaSubida   DateTime  @default(now()) @map("fecha_subida")
+  id           String    @id @default(cuid())
+  url          String
+  thumbnailUrl String?   @map("thumbnail_url")
+  alt          String?
+  categoria    String    @default("otro")
+  orden        Int       @default(0)
+  esPrincipal  Boolean   @default(false) @map("es_principal")
+  propiedadId  String    @map("propiedad_id")
+  propiedad    Propiedad @relation(fields: [propiedadId], references: [id], onDelete: Cascade)
+  fechaSubida  DateTime  @default(now()) @map("fecha_subida")
 
   @@map("imagenes_propiedad")
 }
@@ -205,37 +205,37 @@ model PropiedadAmenidad {
 // =============================================
 
 model Reserva {
-  id                  String        @id @default(cuid())
-  codigo              String        @unique @default(cuid())
+  id     String @id @default(cuid())
+  codigo String @unique @default(cuid())
 
-  fechaEntrada        DateTime      @map("fecha_entrada")
-  fechaSalida         DateTime      @map("fecha_salida")
-  noches              Int
+  fechaEntrada DateTime @map("fecha_entrada")
+  fechaSalida  DateTime @map("fecha_salida")
+  noches       Int
 
-  precioPorNoche      Decimal       @map("precio_por_noche") @db.Decimal(10, 2)
-  subtotal            Decimal       @db.Decimal(10, 2)
-  comisionPlataforma  Decimal       @map("comision_plataforma") @db.Decimal(10, 2)
-  comisionAnfitrion   Decimal?      @map("comision_anfitrion") @db.Decimal(10, 2)
-  total               Decimal       @db.Decimal(10, 2)
-  moneda              Moneda        @default(USD)
+  precioPorNoche     Decimal  @map("precio_por_noche") @db.Decimal(10, 2)
+  subtotal           Decimal  @db.Decimal(10, 2)
+  comisionPlataforma Decimal  @map("comision_plataforma") @db.Decimal(10, 2)
+  comisionAnfitrion  Decimal? @map("comision_anfitrion") @db.Decimal(10, 2)
+  total              Decimal  @db.Decimal(10, 2)
+  moneda             Moneda   @default(USD)
 
-  estado              EstadoReserva @default(PENDIENTE)
-  fechaCreacion       DateTime      @default(now()) @map("fecha_creacion")
-  fechaConfirmacion   DateTime?     @map("fecha_confirmacion")
-  fechaCancelacion    DateTime?     @map("fecha_cancelacion")
+  estado            EstadoReserva @default(PENDIENTE)
+  fechaCreacion     DateTime      @default(now()) @map("fecha_creacion")
+  fechaConfirmacion DateTime?     @map("fecha_confirmacion")
+  fechaCancelacion  DateTime?     @map("fecha_cancelacion")
 
-  cantidadHuespedes   Int           @default(1) @map("cantidad_huespedes")
-  notasHuesped        String?       @map("notas_huesped") @db.Text
-  notasInternas       String?       @map("notas_internas") @db.Text
+  cantidadHuespedes Int     @default(1) @map("cantidad_huespedes")
+  notasHuesped      String? @map("notas_huesped") @db.Text
+  notasInternas     String? @map("notas_internas") @db.Text
 
-  propiedadId         String        @map("propiedad_id")
-  propiedad           Propiedad     @relation(fields: [propiedadId], references: [id])
-  huespedId           String        @map("huesped_id")
-  huesped             Usuario       @relation("Huesped", fields: [huespedId], references: [id])
-  pagos               Pago[]
-  resena              Resena?
-  storeItems          ReservaStoreItem[]
-  boogieOferta        BoogieOferta?
+  propiedadId  String             @map("propiedad_id")
+  propiedad    Propiedad          @relation(fields: [propiedadId], references: [id])
+  huespedId    String             @map("huesped_id")
+  huesped      Usuario            @relation("Huesped", fields: [huespedId], references: [id])
+  pagos        Pago[]
+  resena       Resena?
+  storeItems   ReservaStoreItem[]
+  boogieOferta BoogieOferta?
 
   @@index([propiedadId, fechaEntrada, fechaSalida])
   @@index([huespedId])
@@ -258,35 +258,35 @@ enum EstadoReserva {
 // =============================================
 
 model BoogieOferta {
-  id                  String           @id @default(cuid())
-  codigo              String           @unique @default(cuid())
+  id     String @id @default(cuid())
+  codigo String @unique @default(cuid())
 
-  propiedadId         String           @map("propiedad_id")
-  propiedad           Propiedad        @relation("PropiedadOfertas", fields: [propiedadId], references: [id], onDelete: Cascade)
-  huespedId           String           @map("huesped_id")
-  huesped             Usuario          @relation("HuespedOfertas", fields: [huespedId], references: [id], onDelete: Cascade)
+  propiedadId String    @map("propiedad_id")
+  propiedad   Propiedad @relation("PropiedadOfertas", fields: [propiedadId], references: [id], onDelete: Cascade)
+  huespedId   String    @map("huesped_id")
+  huesped     Usuario   @relation("HuespedOfertas", fields: [huespedId], references: [id], onDelete: Cascade)
 
-  fechaEntrada        DateTime         @map("fecha_entrada")
-  fechaSalida         DateTime         @map("fecha_salida")
-  noches              Int
-  cantidadHuespedes   Int              @default(1) @map("cantidad_huespedes")
+  fechaEntrada      DateTime @map("fecha_entrada")
+  fechaSalida       DateTime @map("fecha_salida")
+  noches            Int
+  cantidadHuespedes Int      @default(1) @map("cantidad_huespedes")
 
-  precioOriginal      Decimal          @map("precio_original") @db.Decimal(10, 2)
-  precioOfertado      Decimal          @map("precio_ofertado") @db.Decimal(10, 2)
-  moneda              Moneda           @default(USD)
+  precioOriginal Decimal @map("precio_original") @db.Decimal(10, 2)
+  precioOfertado Decimal @map("precio_ofertado") @db.Decimal(10, 2)
+  moneda         Moneda  @default(USD)
 
-  estado              EstadoOferta     @default(PENDIENTE)
-  mensaje             String?          @db.Text
-  motivoRechazo       String?          @map("motivo_rechazo") @db.Text
+  estado        EstadoOferta @default(PENDIENTE)
+  mensaje       String?      @db.Text
+  motivoRechazo String?      @map("motivo_rechazo") @db.Text
 
-  fechaCreacion       DateTime         @default(now()) @map("fecha_creacion")
-  fechaAprobada       DateTime?        @map("fecha_aprobada")
-  fechaExpiracion     DateTime?        @map("fecha_expiracion")
-  fechaRechazada      DateTime?        @map("fecha_rechazada")
-  updatedAt           DateTime         @default(now()) @updatedAt @map("updated_at")
+  fechaCreacion   DateTime  @default(now()) @map("fecha_creacion")
+  fechaAprobada   DateTime? @map("fecha_aprobada")
+  fechaExpiracion DateTime? @map("fecha_expiracion")
+  fechaRechazada  DateTime? @map("fecha_rechazada")
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at")
 
-  reservaId           String?          @unique @map("reserva_id")
-  reserva             Reserva?         @relation(fields: [reservaId], references: [id])
+  reservaId String?  @unique @map("reserva_id")
+  reserva   Reserva? @relation(fields: [reservaId], references: [id])
 
   @@index([propiedadId, estado])
   @@index([huespedId, estado])
@@ -307,36 +307,36 @@ enum EstadoOferta {
 // =============================================
 
 model Pago {
-  id                  String          @id @default(cuid())
+  id String @id @default(cuid())
 
-  monto               Decimal         @db.Decimal(10, 2)
-  moneda              Moneda          @default(USD)
-  montoEquivalente    Decimal?        @map("monto_equivalente") @db.Decimal(10, 2)
-  monedaEquivalente   String?         @map("moneda_equivalente")
-  tasaCambio          Decimal?        @map("tasa_cambio") @db.Decimal(12, 6)
+  monto             Decimal  @db.Decimal(10, 2)
+  moneda            Moneda   @default(USD)
+  montoEquivalente  Decimal? @map("monto_equivalente") @db.Decimal(10, 2)
+  monedaEquivalente String?  @map("moneda_equivalente")
+  tasaCambio        Decimal? @map("tasa_cambio") @db.Decimal(12, 6)
 
-  metodoPago          MetodoPagoEnum  @map("metodo_pago")
-  referencia          String?
-  comprobante         String?
+  metodoPago  MetodoPagoEnum @map("metodo_pago")
+  referencia  String?
+  comprobante String?
 
-  cryptoAddress       String?         @map("crypto_address")
-  cryptoTxHash        String?         @map("crypto_tx_hash")
-  cryptoConfirmations Int?            @default(0) @map("crypto_confirmations")
-  cryptoValueCoin     String?         @map("crypto_value_coin")
-  cryptoQrCode        String?         @map("crypto_qr_code")
+  cryptoAddress       String? @map("crypto_address")
+  cryptoTxHash        String? @map("crypto_tx_hash")
+  cryptoConfirmations Int?    @default(0) @map("crypto_confirmations")
+  cryptoValueCoin     String? @map("crypto_value_coin")
+  cryptoQrCode        String? @map("crypto_qr_code")
 
-  estado              EstadoPago      @default(PENDIENTE)
-  fechaCreacion       DateTime        @default(now()) @map("fecha_creacion")
-  fechaVerificacion   DateTime?       @map("fecha_verificacion")
-  fechaAcreditacion   DateTime?       @map("fecha_acreditacion")
+  estado            EstadoPago @default(PENDIENTE)
+  fechaCreacion     DateTime   @default(now()) @map("fecha_creacion")
+  fechaVerificacion DateTime?  @map("fecha_verificacion")
+  fechaAcreditacion DateTime?  @map("fecha_acreditacion")
 
-  verificadoPor       String?         @map("verificado_por")
-  notasVerificacion   String?         @map("notas_verificacion") @db.Text
+  verificadoPor     String? @map("verificado_por")
+  notasVerificacion String? @map("notas_verificacion") @db.Text
 
-  reservaId           String          @map("reserva_id")
-  reserva             Reserva         @relation(fields: [reservaId], references: [id])
-  usuarioId           String          @map("usuario_id")
-  usuario             Usuario         @relation(fields: [usuarioId], references: [id])
+  reservaId String  @map("reserva_id")
+  reserva   Reserva @relation(fields: [reservaId], references: [id])
+  usuarioId String  @map("usuario_id")
+  usuario   Usuario @relation(fields: [usuarioId], references: [id])
 
   @@index([estado])
   @@index([reservaId])
@@ -368,18 +368,18 @@ enum EstadoPago {
 // =============================================
 
 model MetodoPago {
-  id            String          @id @default(cuid())
+  id            String         @id @default(cuid())
   tipo          MetodoPagoEnum
   banco         String?
-  numeroCuenta  String?         @map("numero_cuenta")
+  numeroCuenta  String?        @map("numero_cuenta")
   titular       String?
   cedula        String?
-  emailZelle    String?         @map("email_zelle")
-  direccionUSDT String?         @map("direccion_usdt")
-  activo        Boolean         @default(true)
-  principal     Boolean         @default(false)
-  usuarioId     String          @map("usuario_id")
-  usuario       Usuario         @relation(fields: [usuarioId], references: [id])
+  emailZelle    String?        @map("email_zelle")
+  direccionUSDT String?        @map("direccion_usdt")
+  activo        Boolean        @default(true)
+  principal     Boolean        @default(false)
+  usuarioId     String         @map("usuario_id")
+  usuario       Usuario        @relation(fields: [usuarioId], references: [id])
 
   @@map("metodos_pago")
 }
@@ -389,25 +389,25 @@ model MetodoPago {
 // =============================================
 
 model Resena {
-  id            String    @id @default(cuid())
-  calificacion  Int
-  limpieza      Int?
-  comunicacion  Int?
-  ubicacion     Int?
-  valor         Int?
-  comentario    String    @db.Text
-  respuesta     String?   @db.Text
-  fechaCreacion DateTime  @default(now()) @map("fecha_creacion")
+  id             String    @id @default(cuid())
+  calificacion   Int
+  limpieza       Int?
+  comunicacion   Int?
+  ubicacion      Int?
+  valor          Int?
+  comentario     String    @db.Text
+  respuesta      String?   @db.Text
+  fechaCreacion  DateTime  @default(now()) @map("fecha_creacion")
   fechaRespuesta DateTime? @map("fecha_respuesta")
 
-  propiedadId   String    @map("propiedad_id")
-  propiedad     Propiedad @relation(fields: [propiedadId], references: [id])
-  autorId       String    @map("autor_id")
-  autor         Usuario   @relation("AutorResena", fields: [autorId], references: [id])
-  anfitrionId   String    @map("anfitrion_id")
-  anfitrion     Usuario   @relation("AnfitrionResena", fields: [anfitrionId], references: [id])
-  reservaId     String    @unique @map("reserva_id")
-  reserva       Reserva   @relation(fields: [reservaId], references: [id])
+  propiedadId String    @map("propiedad_id")
+  propiedad   Propiedad @relation(fields: [propiedadId], references: [id])
+  autorId     String    @map("autor_id")
+  autor       Usuario   @relation("AutorResena", fields: [autorId], references: [id])
+  anfitrionId String    @map("anfitrion_id")
+  anfitrion   Usuario   @relation("AnfitrionResena", fields: [anfitrionId], references: [id])
+  reservaId   String    @unique @map("reserva_id")
+  reserva     Reserva   @relation(fields: [reservaId], references: [id])
 
   @@map("resenas")
 }
@@ -428,13 +428,13 @@ model FechaBloqueada {
 }
 
 model PrecioEspecial {
-  id              String    @id @default(cuid())
-  nombre          String
-  fechaInicio     DateTime  @map("fecha_inicio")
-  fechaFin        DateTime  @map("fecha_fin")
-  precioPorNoche  Decimal   @map("precio_por_noche") @db.Decimal(10, 2)
-  propiedadId     String    @map("propiedad_id")
-  propiedad       Propiedad @relation(fields: [propiedadId], references: [id], onDelete: Cascade)
+  id             String    @id @default(cuid())
+  nombre         String
+  fechaInicio    DateTime  @map("fecha_inicio")
+  fechaFin       DateTime  @map("fecha_fin")
+  precioPorNoche Decimal   @map("precio_por_noche") @db.Decimal(10, 2)
+  propiedadId    String    @map("propiedad_id")
+  propiedad      Propiedad @relation(fields: [propiedadId], references: [id], onDelete: Cascade)
 
   @@map("precios_especiales")
 }
@@ -444,15 +444,15 @@ model PrecioEspecial {
 // =============================================
 
 model Notificacion {
-  id            String            @id @default(cuid())
+  id            String           @id @default(cuid())
   tipo          TipoNotificacion
   titulo        String
-  mensaje       String            @db.Text
-  leida         Boolean           @default(false)
-  urlAccion     String?           @map("url_accion")
-  fechaCreacion DateTime          @default(now()) @map("fecha_creacion")
-  usuarioId     String            @map("usuario_id")
-  usuario       Usuario           @relation(fields: [usuarioId], references: [id])
+  mensaje       String           @db.Text
+  leida         Boolean          @default(false)
+  urlAccion     String?          @map("url_accion")
+  fechaCreacion DateTime         @default(now()) @map("fecha_creacion")
+  usuarioId     String           @map("usuario_id")
+  usuario       Usuario          @relation(fields: [usuarioId], references: [id])
 
   @@index([usuarioId, leida])
   @@map("notificaciones")
@@ -496,17 +496,17 @@ enum TipoPrecio {
 }
 
 model StoreProducto {
-  id          String                @id @default(cuid())
-  nombre      String
-  descripcion String?               @db.Text
-  precio      Decimal               @db.Decimal(10, 2)
-  moneda      Moneda                @default(USD)
-  imagenUrl   String?               @map("imagen_url")
-  categoria   CategoriaStoreProducto
-  activo      Boolean               @default(true)
-  orden       Int                   @default(0)
-  fechaCreacion   DateTime          @default(now()) @map("fecha_creacion")
-  fechaActualizacion DateTime       @default(now()) @updatedAt @map("fecha_actualizacion")
+  id                 String                 @id @default(cuid())
+  nombre             String
+  descripcion        String?                @db.Text
+  precio             Decimal                @db.Decimal(10, 2)
+  moneda             Moneda                 @default(USD)
+  imagenUrl          String?                @map("imagen_url")
+  categoria          CategoriaStoreProducto
+  activo             Boolean                @default(true)
+  orden              Int                    @default(0)
+  fechaCreacion      DateTime               @default(now()) @map("fecha_creacion")
+  fechaActualizacion DateTime               @default(now()) @updatedAt @map("fecha_actualizacion")
 
   reservaItems ReservaStoreItem[]
 
@@ -516,18 +516,18 @@ model StoreProducto {
 }
 
 model StoreServicio {
-  id          String                @id @default(cuid())
-  nombre      String
-  descripcion String?               @db.Text
-  precio      Decimal               @db.Decimal(10, 2)
-  moneda      Moneda                @default(USD)
-  tipoPrecio  TipoPrecio            @map("tipo_precio")
-  imagenUrl   String?               @map("imagen_url")
-  categoria   CategoriaStoreServicio
-  activo      Boolean               @default(true)
-  orden       Int                   @default(0)
-  fechaCreacion   DateTime          @default(now()) @map("fecha_creacion")
-  fechaActualizacion DateTime       @default(now()) @updatedAt @map("fecha_actualizacion")
+  id                 String                 @id @default(cuid())
+  nombre             String
+  descripcion        String?                @db.Text
+  precio             Decimal                @db.Decimal(10, 2)
+  moneda             Moneda                 @default(USD)
+  tipoPrecio         TipoPrecio             @map("tipo_precio")
+  imagenUrl          String?                @map("imagen_url")
+  categoria          CategoriaStoreServicio
+  activo             Boolean                @default(true)
+  orden              Int                    @default(0)
+  fechaCreacion      DateTime               @default(now()) @map("fecha_creacion")
+  fechaActualizacion DateTime               @default(now()) @updatedAt @map("fecha_actualizacion")
 
   reservaItems ReservaStoreItem[]
 
@@ -537,20 +537,20 @@ model StoreServicio {
 }
 
 model ReservaStoreItem {
-  id          String    @id @default(cuid())
-  reservaId   String    @map("reserva_id")
-  tipoItem    String    @map("tipo_item")
-  nombre      String
-  cantidad    Int       @default(1)
+  id             String  @id @default(cuid())
+  reservaId      String  @map("reserva_id")
+  tipoItem       String  @map("tipo_item")
+  nombre         String
+  cantidad       Int     @default(1)
   precioUnitario Decimal @map("precio_unitario") @db.Decimal(10, 2)
-  moneda      Moneda    @default(USD)
-  subtotal    Decimal   @db.Decimal(10, 2)
+  moneda         Moneda  @default(USD)
+  subtotal       Decimal @db.Decimal(10, 2)
 
-  reserva     Reserva   @relation(fields: [reservaId], references: [id], onDelete: Cascade)
-  productoId  String?   @map("producto_id")
-  producto    StoreProducto? @relation(fields: [productoId], references: [id])
-  servicioId  String?   @map("servicio_id")
-  servicio    StoreServicio? @relation(fields: [servicioId], references: [id])
+  reserva    Reserva        @relation(fields: [reservaId], references: [id], onDelete: Cascade)
+  productoId String?        @map("producto_id")
+  producto   StoreProducto? @relation(fields: [productoId], references: [id])
+  servicioId String?        @map("servicio_id")
+  servicio   StoreServicio? @relation(fields: [servicioId], references: [id])
 
   @@index([reservaId])
   @@map("reserva_store_items")
@@ -584,35 +584,35 @@ enum TipoAplicacionCupon {
 }
 
 model Cupon {
-  id                  String                @id @default(cuid())
-  codigo              String                @unique @db.VarChar(30)
-  nombre              String
-  descripcion         String?               @db.Text
+  id          String  @id @default(cuid())
+  codigo      String  @unique @db.VarChar(30)
+  nombre      String
+  descripcion String? @db.Text
 
-  tipoDescuento       TipoDescuentoCupon    @map("tipo_descuento")
-  valorDescuento      Decimal               @map("valor_descuento") @db.Decimal(10, 2)
-  moneda              Moneda                @default(USD)
-  maxDescuento        Decimal?              @map("max_descuento") @db.Decimal(10, 2)
+  tipoDescuento  TipoDescuentoCupon @map("tipo_descuento")
+  valorDescuento Decimal            @map("valor_descuento") @db.Decimal(10, 2)
+  moneda         Moneda             @default(USD)
+  maxDescuento   Decimal?           @map("max_descuento") @db.Decimal(10, 2)
 
-  tipoAplicacion      TipoAplicacionCupon   @map("tipo_aplicacion")
-  valorAplicacion     String?               @map("valor_aplicacion") @db.Text
+  tipoAplicacion  TipoAplicacionCupon @map("tipo_aplicacion")
+  valorAplicacion String?             @map("valor_aplicacion") @db.Text
 
-  minCompra           Decimal?              @map("min_compra") @db.Decimal(10, 2)
-  minNoches           Int?                  @map("min_noches")
-  maxUsos             Int?                  @map("max_usos")
-  maxUsosPorUsuario   Int?                  @default(1) @map("max_usos_por_usuario")
+  minCompra         Decimal? @map("min_compra") @db.Decimal(10, 2)
+  minNoches         Int?     @map("min_noches")
+  maxUsos           Int?     @map("max_usos")
+  maxUsosPorUsuario Int?     @default(1) @map("max_usos_por_usuario")
 
-  usosActuales        Int                   @default(0) @map("usos_actuales")
+  usosActuales Int @default(0) @map("usos_actuales")
 
-  fechaInicio         DateTime              @map("fecha_inicio")
-  fechaFin            DateTime              @map("fecha_fin")
+  fechaInicio DateTime @map("fecha_inicio")
+  fechaFin    DateTime @map("fecha_fin")
 
-  activo              Boolean               @default(true)
-  creadoPor           String?               @map("creado_por")
-  fechaCreacion       DateTime              @default(now()) @map("fecha_creacion")
-  fechaActualizacion  DateTime              @default(now()) @updatedAt @map("fecha_actualizacion")
+  activo             Boolean  @default(true)
+  creadoPor          String?  @map("creado_por")
+  fechaCreacion      DateTime @default(now()) @map("fecha_creacion")
+  fechaActualizacion DateTime @default(now()) @updatedAt @map("fecha_actualizacion")
 
-  usos                CuponUso[]
+  usos CuponUso[]
 
   @@index([codigo])
   @@index([activo, fechaInicio, fechaFin])
@@ -620,12 +620,13 @@ model Cupon {
 }
 
 model CuponUso {
-  id              String    @id @default(cuid())
-  cuponId         String    @map("cupon_id")
-  usuarioId       String    @map("usuario_id")
-  reservaId       String?   @map("reserva_id")
+  id                String   @id @default(cuid())
+  cuponId           String   @map("cupon_id")
+  usuarioId         String   @map("usuario_id")
+  reservaId         String?  @map("reserva_id")
   descuentoAplicado Decimal  @map("descuento_aplicado") @db.Decimal(10, 2)
-  fechaUso        DateTime  @default(now()) @map("fecha_uso")
+  fechaUso          DateTime @default(now()) @map("fecha_uso")
+  cupon             Cupon    @relation(fields: [cuponId], references: [id])
 
   @@index([cuponId])
   @@index([usuarioId])

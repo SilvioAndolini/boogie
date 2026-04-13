@@ -88,6 +88,11 @@ func (h *AuthHandler) LoginAdmin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if resp.User == nil {
+		ErrorJSON(w, http.StatusUnauthorized, "INVALID_CREDENTIALS", "Credenciales invalidas")
+		return
+	}
+
 	rol, err := h.repo.GetUserRole(r.Context(), resp.User.ID)
 	if err != nil || rol != "ADMIN" {
 		ErrorJSON(w, http.StatusForbidden, "NOT_ADMIN", "No tienes permisos de administrador")
@@ -226,11 +231,11 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		ErrorJSON(w, http.StatusBadRequest, "OTP_INVALID", "Codigo de verificacion invalido")
 		return
 	}
-	userID := otpResp.User.ID
-	if userID == "" {
+	if otpResp.User == nil || otpResp.User.ID == "" {
 		ErrorJSON(w, http.StatusBadRequest, "VERIFY_ERROR", "Error de verificacion")
 		return
 	}
+	userID := otpResp.User.ID
 
 	codigoPais := req.CodigoPais
 	if codigoPais == "" {

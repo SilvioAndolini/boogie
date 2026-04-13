@@ -41,7 +41,7 @@ export default function WalletPage() {
       if (res.wallet) {
         setWallet(res.wallet as typeof wallet)
         const txs = await getWalletTransacciones(res.wallet.id)
-        setTransacciones(txs as Transaccion[])
+        setTransacciones(txs as unknown as Transaccion[])
       }
       setCargando(false)
     }

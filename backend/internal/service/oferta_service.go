@@ -37,7 +37,8 @@ func (s *OfertaService) Crear(ctx context.Context, input *CrearOfertaInput) (str
 		return "", fmt.Errorf("no puedes ofertar en tu propia propiedad")
 	}
 
-	noches := int(input.FechaSalida.Sub(input.FechaEntrada).Hours() / 24)
+	noches := int(time.Date(input.FechaSalida.Year(), input.FechaSalida.Month(), input.FechaSalida.Day(), 0, 0, 0, 0, time.UTC).
+		Sub(time.Date(input.FechaEntrada.Year(), input.FechaEntrada.Month(), input.FechaEntrada.Day(), 0, 0, 0, 0, time.UTC)).Hours() / 24)
 	if noches < 1 {
 		noches = 1
 	}
@@ -61,7 +62,10 @@ func (s *OfertaService) Crear(ctx context.Context, input *CrearOfertaInput) (str
 		return "", fmt.Errorf("la oferta es demasiado baja (mínimo 30%% del precio original)")
 	}
 
-	exists, _ := s.repo.ExistsActive(ctx, input.PropiedadID, input.HuespedID)
+	exists, err := s.repo.ExistsActive(ctx, input.PropiedadID, input.HuespedID)
+	if err != nil {
+		return "", fmt.Errorf("error al verificar oferta existente")
+	}
 	if exists {
 		return "", fmt.Errorf("ya tienes una oferta activa para esta propiedad")
 	}

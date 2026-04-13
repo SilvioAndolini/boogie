@@ -45,6 +45,8 @@ export const PLANES_SUSCRIPCION = {
 
 export const MAX_BOOGIES_FREE = 5
 
+export type CategoriaBoogie = 'ALOJAMIENTO' | 'DEPORTE' | 'SERVICIO'
+
 // Paginación
 export const PROPIEDADES_POR_PAGINA = 12
 export const RESENAS_POR_PAGINA = 10

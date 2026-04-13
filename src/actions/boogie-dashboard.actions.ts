@@ -2,35 +2,25 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getUsuarioAutenticado } from '@/lib/auth'
+import { goGet } from '@/lib/go-api-client'
 import { revalidatePath } from 'next/cache'
 
 export async function getBoogieDashboard(propiedadId: string) {
   const user = await getUsuarioAutenticado()
   if (!user) return { error: 'No autenticado' }
 
-  const supabase = createAdminClient()
-
-  const { data: propiedad, error: propError } = await supabase
-    .from('propiedades')
-    .select('*, imagenes:imagenes_propiedad!propiedad_id(url, es_principal, orden)')
-    .eq('id', propiedadId)
-    .eq('propietario_id', user.id)
-    .maybeSingle()
-
-  if (propError || !propiedad) {
+  let propiedad: Record<string, unknown> | null = null
+  try {
+    propiedad = await goGet<Record<string, unknown>>(`/api/v1/propiedades/${propiedadId}`)
+  } catch {
     return { error: 'Boogie no encontrado' }
   }
 
-  const [amenidadesResult, reservasResult, gastosResult, fechasBloqueadasResult, preciosEspecialesResult] = await Promise.all([
-    supabase
-      .from('propiedad_amenidades')
-      .select('amenidad:amenidades(nombre)')
-      .eq('propiedad_id', propiedadId),
-    supabase
-      .from('reservas')
-      .select('id, fecha_entrada, fecha_salida, estado, monto_total, comision_plataforma, cantidad_huespedes, huesped:usuarios!huesped_id(nombre, apellido, email), created_at')
-      .eq('propiedad_id', propiedadId)
-      .order('fecha_entrada', { ascending: false }),
+  if (!propiedad) return { error: 'Boogie no encontrado' }
+
+  const supabase = createAdminClient()
+
+  const [gastosResult, fechasBloqueadasResult, preciosEspecialesResult] = await Promise.all([
     supabase
       .from('gastos_mantenimiento')
       .select('*')
@@ -46,15 +36,25 @@ export async function getBoogieDashboard(propiedadId: string) {
       .eq('propiedad_id', propiedadId),
   ])
 
-  const { data: amenidades } = amenidadesResult
-  const { data: reservas } = reservasResult
   const { data: gastos } = gastosResult
   const { data: fechasBloqueadas } = fechasBloqueadasResult
   const { data: preciosEspeciales } = preciosEspecialesResult
 
-  propiedad.amenidades = amenidades?.map((a: Record<string, unknown>) => (a.amenidad as Record<string, unknown>)?.nombre).filter(Boolean) || []
+  let reservasList: Record<string, unknown>[] = []
+  let amenidades: string[] = []
+  try {
+    const [reservasData, amenidadesData] = await Promise.all([
+      goGet<Record<string, unknown>[]>(`/api/v1/propiedades/${propiedadId}/reservas`),
+      goGet<{ nombre: string }[]>(`/api/v1/propiedades/${propiedadId}/amenidades`),
+    ])
+    reservasList = reservasData || []
+    amenidades = (amenidadesData || []).map((a) => a.nombre).filter(Boolean)
+  } catch (err) {
+    console.error('[getBoogieDashboard] Go API error:', err)
+  }
 
-  const reservasList = reservas || []
+  propiedad.amenidades = amenidades
+
   const gastosList = gastos || []
 
   const totalIngresos = reservasList

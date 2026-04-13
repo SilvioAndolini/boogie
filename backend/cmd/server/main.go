@@ -27,7 +27,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	verifier := auth.NewSupabaseVerifier(cfg.SupabaseJWTSecret)
+	verifier := auth.NewSupabaseVerifier(cfg.SupabaseURL)
 
 	db, err := repository.NewPool(context.Background(), cfg.DatabaseURL)
 	if err != nil {
@@ -250,8 +250,6 @@ func main() {
 		}
 	}()
 
-	_ = db
-
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
@@ -262,6 +260,10 @@ func main() {
 
 	if err := srv.Shutdown(ctx); err != nil {
 		slog.Error("server forced shutdown", "error", err)
+	}
+
+	if db != nil {
+		db.Close()
 	}
 
 	slog.Info("server exited")

@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { getUsuarioAutenticado } from '@/lib/auth'
 import { perfilSchema } from '@/lib/validations'
+import { goGet, GoAPIError } from '@/lib/go-api-client'
 import { revalidatePath } from 'next/cache'
 
 const AVATAR_MAX_SIZE = 2 * 1024 * 1024
@@ -18,23 +19,14 @@ export async function getPerfilUsuario() {
 
   console.log('[getPerfilUsuario] User ID:', user.id, '| email:', user.email)
 
-  const admin = createAdminClient()
-  const { data, error } = await admin
-    .from('usuarios')
-    .select('*')
-    .eq('id', user.id)
-    .order('fecha_registro', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-
-  if (error) {
-    console.error('[getPerfilUsuario] DB error:', error.message)
+  try {
+    const perfil = await goGet('/api/v1/auth/me')
+    console.log('[getPerfilUsuario] Perfil encontrado:', JSON.stringify({ nombre: (perfil as Record<string, unknown>).nombre, apellido: (perfil as Record<string, unknown>).apellido, email: (perfil as Record<string, unknown>).email, telefono: (perfil as Record<string, unknown>).telefono }))
+    return { perfil }
+  } catch (err) {
+    console.error('[getPerfilUsuario] Go API error:', err instanceof Error ? err.message : err)
     return { error: 'Error al cargar perfil' }
   }
-
-  console.log('[getPerfilUsuario] Perfil encontrado:', JSON.stringify({ nombre: data.nombre, apellido: data.apellido, email: data.email, telefono: data.telefono }))
-
-  return { perfil: data }
 }
 
 export async function actualizarPerfil(formData: FormData) {
@@ -56,22 +48,22 @@ export async function actualizarPerfil(formData: FormData) {
     return { error: validacion.error.issues[0].message }
   }
 
-  const admin = createAdminClient()
-  const { error } = await admin
-    .from('usuarios')
-    .update({
-      nombre: datos.nombre,
-      apellido: datos.apellido,
-      telefono: datos.telefono || null,
-      bio: datos.bio || null,
-      metodo_pago_preferido: datos.metodoPagoPreferido || null,
-      tiktok: datos.tiktok || null,
-      instagram: datos.instagram || null,
-    })
-    .eq('id', user.id)
-
-  if (error) {
-    console.error('[actualizarPerfil] Error:', error.message)
+  try {
+    const admin = createAdminClient()
+    await admin
+      .from('usuarios')
+      .update({
+        nombre: datos.nombre,
+        apellido: datos.apellido,
+        telefono: datos.telefono || null,
+        bio: datos.bio || null,
+        metodo_pago_preferido: datos.metodoPagoPreferido || null,
+        tiktok: datos.tiktok || null,
+        instagram: datos.instagram || null,
+      })
+      .eq('id', user.id)
+  } catch (err) {
+    console.error('[actualizarPerfil] Error:', err instanceof Error ? err.message : err)
     return { error: 'Error al guardar los cambios' }
   }
 

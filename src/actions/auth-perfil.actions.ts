@@ -1,14 +1,8 @@
 'use server'
 
 import { getUsuarioAutenticado } from '@/lib/auth'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { goPost, GoAPIError } from '@/lib/go-api-client'
 import { redirect } from 'next/navigation'
-
-function normalizarCedula(valor: string): string {
-  const limpio = valor.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
-  if (/^[VEPGJ]/.test(limpio)) return limpio.charAt(0) + '-' + limpio.slice(1)
-  return 'V-' + limpio
-}
 
 export async function completarPerfilGoogle(formData: FormData) {
   const user = await getUsuarioAutenticado()
@@ -26,36 +20,24 @@ export async function completarPerfilGoogle(formData: FormData) {
   if (!numeroDocumento || numeroDocumento.length < 4) return { error: 'Ingresa tu número de documento' }
   if (!telefono || telefono.length < 7) return { error: 'Ingresa tu número de teléfono' }
 
-  const documento = tipoDocumento === 'CEDULA'
-    ? normalizarCedula(numeroDocumento)
-    : numeroDocumento.toUpperCase()
-
-  const telefonoCompleto = `${codigoPais}${telefono.replace(/\D/g, '')}`
-
-  const admin = createAdminClient()
-
-  const { data: existingCedula } = await admin
-    .from('usuarios')
-    .select('id')
-    .eq('cedula', documento)
-    .maybeSingle()
-
-  if (existingCedula && existingCedula.id !== user.id) {
-    return { error: 'Ya existe un usuario con ese número de documento' }
-  }
-
-  const { error: updateError } = await admin
-    .from('usuarios')
-    .update({
+  try {
+    await goPost('/api/v1/auth/completar-perfil', {
       nombre,
       apellido,
-      cedula: documento,
-      telefono: telefonoCompleto,
+      cedula: numeroDocumento,
+      tipoDocumento,
+      telefono,
+      codigoPais,
     })
-    .eq('id', user.id)
-
-  if (updateError) {
-    console.error('[completarPerfilGoogle] Error:', updateError.message)
+  } catch (err) {
+    if (err instanceof GoAPIError) {
+      console.error('[completarPerfilGoogle] Error:', err.message)
+      if (err.code === 'DUPLICATE_CEDULA' || err.message?.toLowerCase().includes('documento')) {
+        return { error: 'Ya existe un usuario con ese número de documento' }
+      }
+      return { error: err.message || 'Error al guardar tus datos. Intenta de nuevo.' }
+    }
+    console.error('[completarPerfilGoogle] Error:', err)
     return { error: 'Error al guardar tus datos. Intenta de nuevo.' }
   }
 

@@ -29,6 +29,20 @@ func (s *ResenaService) Crear(ctx context.Context, userID string, input *CrearRe
 	if input.Calificacion < 1 || input.Calificacion > 5 {
 		return "", fmt.Errorf("la calificacion debe ser entre 1 y 5")
 	}
+	subRatings := []struct {
+		val  *int
+		name string
+	}{
+		{input.Limpieza, "limpieza"},
+		{input.Comunicacion, "comunicacion"},
+		{input.Ubicacion, "ubicacion"},
+		{input.Valor, "valor"},
+	}
+	for _, sr := range subRatings {
+		if sr.val != nil && (*sr.val < 1 || *sr.val > 5) {
+			return "", fmt.Errorf("%s debe ser entre 1 y 5", sr.name)
+		}
+	}
 
 	reserva, err := s.repo.GetReservaForResena(ctx, input.ReservaID, userID)
 	if err != nil {

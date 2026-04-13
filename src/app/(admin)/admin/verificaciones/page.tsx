@@ -58,7 +58,7 @@ export default function AdminVerificacionesPage() {
       if (res.error) {
         toast.error(res.error)
       } else if (res.verificaciones) {
-        setVerificaciones(res.verificaciones as Verificacion[])
+        setVerificaciones(res.verificaciones as unknown as Verificacion[])
       }
       setCargando(false)
     })
@@ -80,7 +80,7 @@ export default function AdminVerificacionesPage() {
     } else {
       toast.success(accion === 'APROBADA' ? 'Verificación aprobada' : 'Verificación rechazada')
       const res2 = await getVerificacionesPendientes()
-      if (res2.verificaciones) setVerificaciones(res2.verificaciones as Verificacion[])
+      if (res2.verificaciones) setVerificaciones(res2.verificaciones as unknown as Verificacion[])
     }
     setProcesando(null)
   }

@@ -233,8 +233,8 @@ func (r *AdminRepo) GetReservasAdmin(ctx context.Context, estado, busqueda strin
 			r.precio_por_noche, r.subtotal, r.comision_plataforma, r.total, r.moneda,
 			r.estado, r.cantidad_huespedes, r.notas_huesped, r.notas_internas,
 			r.fecha_creacion, r.fecha_confirmacion, r.fecha_cancelacion,
-			p.id, p.titulo, p.slug, p.ciudad, p.estado,
-			u.id, u.nombre, u.apellido, u.email, u.avatar_url
+			COALESCE(p.id,''), COALESCE(p.titulo,''), COALESCE(p.slug,''), COALESCE(p.ciudad,''), COALESCE(p.estado,''),
+			COALESCE(u.id,''), COALESCE(u.nombre,''), COALESCE(u.apellido,''), COALESCE(u.email,''), u.avatar_url
 		FROM reservas r
 		LEFT JOIN propiedades p ON r.propiedad_id = p.id
 		LEFT JOIN usuarios u ON r.huesped_id = u.id
@@ -477,11 +477,11 @@ func (r *AdminRepo) GetPropiedadesAdmin(ctx context.Context, estado, ciudad, bus
 		SELECT pr.id, pr.titulo, pr.slug, pr.tipo_propiedad, pr.precio_por_noche, pr.moneda,
 			pr.capacidad_maxima, pr.ciudad, pr.estado, pr.estado_publicacion, pr.destacada,
 			pr.fecha_actualizacion, pr.vistas_totales,
-			COALESCE(pr.rating_promedio, 0), COALESCE(pr.total_resenas, 0),
-			u.id, u.nombre, u.apellido, u.email, u.avatar_url
+			COALESCE(pr.calificacion, 0), COALESCE(pr.cantidad_resenas, 0),
+			COALESCE(u.id,''), COALESCE(u.nombre,''), COALESCE(u.apellido,''), COALESCE(u.email,''), u.avatar_url
 		FROM propiedades pr
 		LEFT JOIN usuarios u ON pr.propietario_id = u.id
-		%s
+		%s}
 		ORDER BY pr.fecha_actualizacion DESC
 		LIMIT $%d OFFSET $%d`,
 		whereClause, argIdx, argIdx+1)
@@ -754,9 +754,9 @@ func (r *AdminRepo) DeleteCupon(ctx context.Context, id string) error {
 
 func (r *AdminRepo) GetCuponUsos(ctx context.Context, cuponID string) ([]CuponUso, error) {
 	q := `SELECT cu.id, cu.cupon_id, cu.usuario_id, cu.reserva_id, cu.descuento_aplicado, cu.fecha_uso,
-		u.id, u.nombre, u.apellido, u.email,
-		c.codigo, c.nombre,
-		rs.codigo
+		COALESCE(u.id,''), COALESCE(u.nombre,''), COALESCE(u.apellido,''), COALESCE(u.email,''),
+		COALESCE(c.codigo,''), COALESCE(c.nombre,''),
+		COALESCE(rs.codigo,'')
 		FROM cupon_usos cu
 		LEFT JOIN usuarios u ON cu.usuario_id = u.id
 		LEFT JOIN cupones c ON cu.cupon_id = c.id
@@ -878,7 +878,7 @@ func (r *AdminRepo) GetAuditLog(ctx context.Context, entidad, adminID, fechaInic
 
 	q := fmt.Sprintf(`
 		SELECT a.id, a.admin_id, a.accion, a.entidad, a.entidad_id, a.detalles, a.ip, a.user_agent, a.created_at,
-			u.id, u.nombre, u.apellido, u.email
+			COALESCE(u.id,''), COALESCE(u.nombre,''), COALESCE(u.apellido,''), COALESCE(u.email,'')
 		FROM admin_audit_log a
 		LEFT JOIN usuarios u ON a.admin_id = u.id
 		%s
@@ -922,7 +922,7 @@ func (r *AdminRepo) GetNotificacionesAdmin(ctx context.Context, pagina, limite i
 
 	rows, err := r.pool.Query(ctx, `
 		SELECT n.id, n.titulo, n.mensaje, n.leida, n.url_accion, n.fecha_creacion,
-			u.id, u.nombre, u.apellido, u.email
+			COALESCE(u.id,''), COALESCE(u.nombre,''), COALESCE(u.apellido,''), COALESCE(u.email,'')
 		FROM notificaciones n
 		LEFT JOIN usuarios u ON n.usuario_id = u.id
 		WHERE n.tipo = 'SISTEMA'

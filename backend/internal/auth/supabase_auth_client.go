@@ -271,7 +271,7 @@ func (c *SupabaseAuthClient) AdminCreateUser(ctx context.Context, serviceRoleKey
 	if err != nil {
 		return nil, err
 	}
-	slog.Info("[auth] AdminCreateUser response", "status", status, "body", string(data))
+	slog.Info("[auth] AdminCreateUser response", "status", status)
 	if status != http.StatusOK && status != http.StatusCreated {
 		return nil, parseAuthError(data, status)
 	}

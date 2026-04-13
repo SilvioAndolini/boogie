@@ -68,7 +68,7 @@ export default async function MisPropiedadesPage() {
       )}
 
       {hayPropiedades && (
-        <BoogieListClient propiedades={propiedades as Record<string, unknown>[]} />
+        <BoogieListClient propiedades={propiedades as unknown as Record<string, unknown>[]} />
       )}
     </div>
   )

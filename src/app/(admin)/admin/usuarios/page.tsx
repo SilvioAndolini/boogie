@@ -88,7 +88,7 @@ export default function AdminUsuariosPage() {
       if (res.error) {
         toast.error(res.error)
       } else if (res.usuarios) {
-        setUsuarios(res.usuarios as Usuario[])
+        setUsuarios(res.usuarios as unknown as Usuario[])
         setIsCeo(res.isCeo ?? false)
       }
       setCargando(false)
@@ -104,7 +104,7 @@ export default function AdminUsuariosPage() {
     if (res.error) {
       toast.error(res.error)
     } else if (res.usuarios) {
-      setUsuarios(res.usuarios as Usuario[])
+      setUsuarios(res.usuarios as unknown as Usuario[])
       setIsCeo(res.isCeo ?? false)
     }
   }

@@ -11,7 +11,7 @@ type Config struct {
 	AppURL                   string
 	SupabaseURL              string
 	SupabaseSecretKey        string
-	SupabaseJWTSecret        string
+	SupabaseJWTSecret        string  // deprecated, kept for compatibility
 	DatabaseURL              string
 	CryptapiWalletAddress    string
 	CryptapiCallbackSecret   string
@@ -41,9 +41,7 @@ func Load() (*Config, error) {
 	if c.SupabaseSecretKey == "" {
 		return nil, fmt.Errorf("SUPABASE_SECRET_KEY is required")
 	}
-	if c.SupabaseJWTSecret == "" {
-		return nil, fmt.Errorf("SUPABASE_JWT_SECRET is required")
-	}
+	// SUPABASE_JWT_SECRET deprecated — auth uses JWKS now
 	if c.DatabaseURL == "" {
 		return nil, fmt.Errorf("DATABASE_URL is required")
 	}

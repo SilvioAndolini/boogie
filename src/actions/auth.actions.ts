@@ -1,16 +1,9 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { registroSchema, loginSchema, recuperacionSchema } from '@/lib/validations'
-import { isDevPhone } from '@/lib/constants'
-
-function normalizarCedula(valor: string): string {
-  const limpio = valor.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
-  if (/^[VEPGJ]/.test(limpio)) return limpio.charAt(0) + '-' + limpio.slice(1)
-  return 'V-' + limpio
-}
+import { goPost, GoAPIError } from '@/lib/go-api-client'
 
 export async function enviarOtpEmail(email: string) {
   console.log('[enviarOtpEmail] Enviando OTP a:', email)
@@ -108,44 +101,18 @@ export async function verificarOtpYRegistrar(formData: FormData) {
       return { error: 'No se pudo establecer la contraseña. Intenta de nuevo.' }
     }
 
-    const admin = createAdminClient()
-
-    /*
-     * ⚠️ DEV_PHONE_EXCEPTION — ELIMINAR ANTES DE PRODUCCIÓN
-     */
-    const devException = isDevPhone(datos.telefono)
-    const documento = datos.tipoDocumento === 'CEDULA'
-      ? normalizarCedula(datos.numeroDocumento)
-      : datos.numeroDocumento.toUpperCase()
-
-    if (devException) {
-      const { data: existingCedula } = await admin
-        .from('usuarios')
-        .select('id')
-        .eq('cedula', documento)
-        .maybeSingle()
-
-      const { error: perfilError } = await admin.from('usuarios').insert({
-        id: userId,
+    try {
+      await goPost('/api/v1/auth/register', {
         email: datos.email,
+        password: datos.password,
         nombre: datos.nombre,
         apellido: datos.apellido,
-        telefono: telefonoCompleto,
-        cedula: existingCedula ? null : documento,
-        verificado: false,
+        telefono: datos.telefono,
+        cedula: datos.numeroDocumento,
+        tipoDocumento: datos.tipoDocumento,
       })
-      if (perfilError) console.error('[registro] Error creando perfil (dev):', perfilError.message)
-    } else {
-      const { error: perfilError } = await admin.from('usuarios').insert({
-        id: userId,
-        email: datos.email,
-        nombre: datos.nombre,
-        apellido: datos.apellido,
-        telefono: telefonoCompleto,
-        cedula: documento,
-        verificado: false,
-      })
-      if (perfilError) console.error('[registro] Error creando perfil:', perfilError.message)
+    } catch (regErr) {
+      console.error('[registro] Go API register error:', regErr instanceof Error ? regErr.message : regErr)
     }
 
     await supabase.auth.signOut()
@@ -214,16 +181,17 @@ export async function iniciarSesionAdmin(formData: FormData) {
     return { error: 'Credenciales inválidas. Verifica tu correo y contraseña.' }
   }
 
-  const admin = createAdminClient()
-  const { data: usuario } = await admin
-    .from('usuarios')
-    .select('rol')
-    .eq('email', datos.email)
-    .single()
-
-  if (!usuario || usuario.rol !== 'ADMIN') {
+  try {
+    await goPost('/api/v1/auth/login-admin', {
+      email: datos.email,
+      password: datos.password,
+    })
+  } catch (err) {
     await supabase.auth.signOut()
-    return { error: 'No tienes permisos de administrador.' }
+    if (err instanceof GoAPIError) {
+      return { error: 'No tienes permisos de administrador.' }
+    }
+    return { error: 'Error al verificar permisos de administrador.' }
   }
 
   redirect('/admin')
