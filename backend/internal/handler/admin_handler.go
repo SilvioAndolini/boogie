@@ -789,3 +789,140 @@ func (h *AdminHandler) EliminarServicioStore(w http.ResponseWriter, r *http.Requ
 	}
 	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
 }
+
+func (h *AdminHandler) GetUsuarios(w http.ResponseWriter, r *http.Request) {
+	if ok, _, _ := requireAdmin(w, r); !ok {
+		return
+	}
+	busqueda := r.URL.Query().Get("busqueda")
+	rol := r.URL.Query().Get("rol")
+	pagina := intQueryParam(r, "pagina", 1)
+	limite := intQueryParam(r, "limite", 20)
+
+	result, err := h.svc.GetUsuarios(r.Context(), busqueda, rol, pagina, limite)
+	if err != nil {
+		slog.Error("[admin/usuarios] error", "error", err)
+		ErrorJSON(w, http.StatusInternalServerError, "LIST_ERROR", err.Error())
+		return
+	}
+	JSON(w, http.StatusOK, result)
+}
+
+func (h *AdminHandler) CrearUsuario(w http.ResponseWriter, r *http.Request) {
+	ok, adminID, _ := requireAdmin(w, r)
+	if !ok {
+		return
+	}
+	var req struct {
+		Email     string  `json:"email"`
+		Password  string  `json:"password"`
+		Nombre    string  `json:"nombre"`
+		Apellido  string  `json:"apellido"`
+		Telefono  *string `json:"telefono"`
+		Rol       string  `json:"rol"`
+	}
+	if err := DecodeJSON(r, &req); err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "JSON invalido")
+		return
+	}
+	if req.Email == "" || req.Password == "" || req.Nombre == "" {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_PARAMS", "email, password y nombre son requeridos")
+		return
+	}
+	result, err := h.svc.CrearUsuario(r.Context(), req.Email, req.Password, req.Nombre, req.Apellido, req.Telefono, req.Rol, adminID)
+	if err != nil {
+		slog.Error("[admin/usuarios/crear] error", "error", err)
+		ErrorJSON(w, http.StatusBadRequest, "CREATE_ERROR", err.Error())
+		return
+	}
+	JSON(w, http.StatusCreated, result)
+}
+
+func (h *AdminHandler) UpdateUsuario(w http.ResponseWriter, r *http.Request) {
+	if ok, _, _ := requireAdmin(w, r); !ok {
+		return
+	}
+	id := chi.URLParam(r, "id")
+	var req struct {
+		Rol        *string  `json:"rol"`
+		Plan       *string  `json:"plan_suscripcion"`
+		Reputacion *float64 `json:"reputacion"`
+		Activo     *bool    `json:"activo"`
+	}
+	if err := DecodeJSON(r, &req); err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "JSON invalido")
+		return
+	}
+	if err := h.svc.UpdateUsuario(r.Context(), id, req.Rol, req.Plan, req.Reputacion, req.Activo); err != nil {
+		slog.Error("[admin/usuarios/update] error", "error", err)
+		ErrorJSON(w, http.StatusBadRequest, "UPDATE_ERROR", err.Error())
+		return
+	}
+	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+}
+
+func (h *AdminHandler) DeleteUsuario(w http.ResponseWriter, r *http.Request) {
+	if ok, _, _ := requireAdmin(w, r); !ok {
+		return
+	}
+	id := chi.URLParam(r, "id")
+	if err := h.svc.DeleteUsuario(r.Context(), id); err != nil {
+		slog.Error("[admin/usuarios/delete] error", "error", err)
+		ErrorJSON(w, http.StatusBadRequest, "DELETE_ERROR", err.Error())
+		return
+	}
+	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+}
+
+func (h *AdminHandler) GetPropiedadByID(w http.ResponseWriter, r *http.Request) {
+	if ok, _, _ := requireAdmin(w, r); !ok {
+		return
+	}
+	id := chi.URLParam(r, "id")
+	result, err := h.svc.GetPropiedadByID(r.Context(), id)
+	if err != nil {
+		ErrorJSON(w, http.StatusNotFound, "NOT_FOUND", "Propiedad no encontrada")
+		return
+	}
+	JSON(w, http.StatusOK, result)
+}
+
+func (h *AdminHandler) GetCiudades(w http.ResponseWriter, r *http.Request) {
+	if ok, _, _ := requireAdmin(w, r); !ok {
+		return
+	}
+	ciudades, err := h.svc.GetCiudades(r.Context())
+	if err != nil {
+		slog.Error("[admin/propiedades/ciudades] error", "error", err)
+		ErrorJSON(w, http.StatusInternalServerError, "LIST_ERROR", "Error al obtener ciudades")
+		return
+	}
+	JSON(w, http.StatusOK, ciudades)
+}
+
+func (h *AdminHandler) GetPropiedadIngresos(w http.ResponseWriter, r *http.Request) {
+	if ok, _, _ := requireAdmin(w, r); !ok {
+		return
+	}
+	id := chi.URLParam(r, "id")
+	result, err := h.svc.GetPropiedadIngresos(r.Context(), id)
+	if err != nil {
+		slog.Error("[admin/propiedades/ingresos] error", "error", err)
+		ErrorJSON(w, http.StatusInternalServerError, "INGRESOS_ERROR", err.Error())
+		return
+	}
+	JSON(w, http.StatusOK, result)
+}
+
+func (h *AdminHandler) GetReservaByID(w http.ResponseWriter, r *http.Request) {
+	if ok, _, _ := requireAdmin(w, r); !ok {
+		return
+	}
+	id := chi.URLParam(r, "id")
+	result, err := h.svc.GetReservaByID(r.Context(), id)
+	if err != nil {
+		ErrorJSON(w, http.StatusNotFound, "NOT_FOUND", "Reserva no encontrada")
+		return
+	}
+	JSON(w, http.StatusOK, result)
+}

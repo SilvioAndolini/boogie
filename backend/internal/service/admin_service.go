@@ -313,3 +313,48 @@ func (s *AdminService) EnviarNotificacion(ctx context.Context, usuarioID, titulo
 func (s *AdminService) GetDashboardStats(ctx context.Context) (map[string]interface{}, error) {
 	return s.repo.GetDashboardStats(ctx)
 }
+
+func (s *AdminService) GetUsuarios(ctx context.Context, busqueda, rol string, pagina, limite int) (*PaginatedResult, error) {
+	if limite < 1 {
+		limite = 20
+	}
+	if limite > 100 {
+		limite = 100
+	}
+	if pagina < 1 {
+		pagina = 1
+	}
+	usuarios, total, err := s.repo.GetUsuariosAdmin(ctx, busqueda, rol, pagina, limite)
+	if err != nil {
+		return nil, fmt.Errorf("error al obtener usuarios")
+	}
+	return paginated(usuarios, total, pagina, limite), nil
+}
+
+func (s *AdminService) CrearUsuario(ctx context.Context, email, password, nombre, apellido string, telefono *string, rol, adminID string) (map[string]interface{}, error) {
+	return s.repo.CrearUsuarioAdmin(ctx, email, password, nombre, apellido, telefono, rol, adminID)
+}
+
+func (s *AdminService) UpdateUsuario(ctx context.Context, id string, rol, plan *string, reputacion *float64, activo *bool) error {
+	return s.repo.UpdateUsuarioAdmin(ctx, id, rol, plan, reputacion, activo)
+}
+
+func (s *AdminService) DeleteUsuario(ctx context.Context, id string) error {
+	return s.repo.DeleteUsuarioAdmin(ctx, id)
+}
+
+func (s *AdminService) GetPropiedadByID(ctx context.Context, id string) (*repository.AdminPropiedad, error) {
+	return s.repo.GetPropiedadByIDAdmin(ctx, id)
+}
+
+func (s *AdminService) GetCiudades(ctx context.Context) ([]string, error) {
+	return s.repo.GetCiudades(ctx)
+}
+
+func (s *AdminService) GetPropiedadIngresos(ctx context.Context, id string) (map[string]interface{}, error) {
+	return s.repo.GetPropiedadIngresos(ctx, id)
+}
+
+func (s *AdminService) GetReservaByID(ctx context.Context, id string) (*repository.AdminReserva, error) {
+	return s.repo.GetReservaByIDFull(ctx, id)
+}

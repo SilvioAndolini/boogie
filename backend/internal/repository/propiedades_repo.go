@@ -104,7 +104,7 @@ func (r *PropiedadesRepo) SearchPublic(ctx context.Context, f *PropiedadesFiltro
 		argIdx++
 	}
 	if f.Huespedes != nil {
-		where = append(where, fmt.Sprintf("p.capacidad >= $%d", argIdx))
+		where = append(where, fmt.Sprintf("COALESCE(p.capacidad_maxima, 1) >= $%d", argIdx))
 		args = append(args, *f.Huespedes)
 		argIdx++
 	}
@@ -114,7 +114,7 @@ func (r *PropiedadesRepo) SearchPublic(ctx context.Context, f *PropiedadesFiltro
 		argIdx++
 	}
 	if f.Dormitorios != nil {
-		where = append(where, fmt.Sprintf("p.dormitorios >= $%d", argIdx))
+		where = append(where, fmt.Sprintf("COALESCE(p.habitaciones, 0) >= $%d", argIdx))
 		args = append(args, *f.Dormitorios)
 		argIdx++
 	}
@@ -133,7 +133,7 @@ func (r *PropiedadesRepo) SearchPublic(ctx context.Context, f *PropiedadesFiltro
 	case "precio_desc":
 		orderBy = "p.precio_por_noche DESC"
 	case "rating":
-		orderBy = "p.calificacion DESC NULLS LAST"
+		orderBy = "p.rating_promedio DESC NULLS LAST"
 	case "recientes":
 		orderBy = "p.fecha_actualizacion DESC"
 	}
@@ -164,8 +164,8 @@ func (r *PropiedadesRepo) SearchPublic(ctx context.Context, f *PropiedadesFiltro
 
 	query := fmt.Sprintf(`
 		SELECT p.id, p.titulo, p.slug, p.tipo_propiedad, p.precio_por_noche, p.moneda,
-		       p.capacidad, p.dormitorios, p.banos, p.ciudad, p.estado,
-		       p.latitud, p.longitud, p.calificacion, p.cantidad_resenas,
+		       COALESCE(p.capacidad_maxima, 1), COALESCE(p.habitaciones, 0), p.banos, p.ciudad, p.estado,
+		       p.latitud, p.longitud, COALESCE(p.rating_promedio, 0), COALESCE(p.total_resenas, 0),
 		       (SELECT url FROM imagenes_propiedad WHERE propiedad_id = p.id ORDER BY orden LIMIT 1) as imagen_principal,
 		       u.plan_suscripcion
 		FROM propiedades p
@@ -212,15 +212,15 @@ func (r *PropiedadesRepo) GetByID(ctx context.Context, id string) (*PropiedadDet
 	err := r.pool.QueryRow(ctx, `
 		SELECT id, propietario_id, titulo, slug, descripcion, tipo_propiedad,
 		       precio_por_noche, moneda, politica_cancelacion,
-		       capacidad, dormitorios, banos, camas,
+		       COALESCE(capacidad_maxima, 1), COALESCE(habitaciones, 0), banos, camas,
 		       direccion, ciudad, estado,
-		       zona, pais, latitud, longitud, codigo_postal,
-		       reglas, check_in, check_out,
+		       zona, NULL, latitud, longitud, codigo_postal,
+		       reglas, horario_checkin, horario_checkout,
 		       estancia_minima, estancia_maxima,
 		       estado_publicacion, destacada,
 		       fecha_publicacion, fecha_actualizacion,
-		       vistas_totales, calificacion, cantidad_resenas,
-		       created_at, updated_at
+		       COALESCE(vistas_totales, 0), COALESCE(rating_promedio, 0), COALESCE(total_resenas, 0),
+		       NOW(), NOW()
 		FROM propiedades WHERE id = $1
 	`, id).Scan(
 		&p.ID, &p.PropietarioID, &p.Titulo, &p.Slug, &p.Descripcion, &p.TipoPropiedad,
@@ -287,8 +287,8 @@ func (r *PropiedadesRepo) GetBySlug(ctx context.Context, slug string) (*Propieda
 func (r *PropiedadesRepo) ListByPropietario(ctx context.Context, propietarioID string) ([]PropiedadListado, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT p.id, p.titulo, p.slug, p.tipo_propiedad, p.precio_por_noche, p.moneda,
-		       p.capacidad, p.dormitorios, p.banos, p.ciudad, p.estado,
-		       p.latitud, p.longitud, p.calificacion, p.cantidad_resenas,
+		       COALESCE(p.capacidad_maxima, 1), COALESCE(p.habitaciones, 0), p.banos, p.ciudad, p.estado,
+		       p.latitud, p.longitud, COALESCE(p.rating_promedio, 0), COALESCE(p.total_resenas, 0),
 		       (SELECT url FROM imagenes_propiedad WHERE propiedad_id = p.id ORDER BY orden LIMIT 1),
 		       NULL::text
 		FROM propiedades p
@@ -368,14 +368,18 @@ func (r *PropiedadesRepo) DeleteWithOwner(ctx context.Context, id, propietarioID
 func (r *PropiedadesRepo) getPropietario(ctx context.Context, userID string) (*PropietarioInfo, error) {
 	var p PropietarioInfo
 	var bio *string
+	var reputacion *float64
 	err := r.pool.QueryRow(ctx, `
-		SELECT id, nombre, apellido, foto_url, verificado, plan_suscripcion, biografia, reputacion
+		SELECT id, nombre, apellido, avatar_url, verificado, plan_suscripcion, bio, reputacion
 		FROM usuarios WHERE id = $1
-	`, userID).Scan(&p.ID, &p.Nombre, &p.Apellido, &p.AvatarURL, &p.Verificado, &p.PlanSuscripcion, &bio, &p.Reputacion)
+	`, userID).Scan(&p.ID, &p.Nombre, &p.Apellido, &p.AvatarURL, &p.Verificado, &p.PlanSuscripcion, &bio, &reputacion)
 	if err != nil {
 		return nil, err
 	}
 	p.Bio = bio
+	if reputacion != nil {
+		p.Reputacion = *reputacion
+	}
 	return &p, nil
 }
 

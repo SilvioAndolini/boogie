@@ -63,6 +63,8 @@ func main() {
 	var tiendaHandlers *router.TiendaHandlers
 	var adminHandlers *router.AdminHandlers
 	var authHandlers *router.AuthHandlers
+	var propiedadesHandlers *router.PropiedadesHandlers
+	var reservaHandlers *router.ReservaHandlers
 
 	authClient := auth.NewSupabaseAuthClient(cfg.SupabaseURL, cfg.SupabaseSecretKey)
 
@@ -182,14 +184,22 @@ func main() {
 			GetReservas:             adminH.GetReservas,
 			GetReservasStats:        adminH.GetReservasStats,
 			AccionReserva:           adminH.AccionReserva,
+			GetReservaByID:          adminH.GetReservaByID,
 			GetPagos:                adminH.GetPagos,
 			GetPagosStats:           adminH.GetPagosStats,
 			VerificarPago:           adminH.VerificarPago,
 			GetPropiedades:          adminH.GetPropiedades,
+			GetPropiedadByID:        adminH.GetPropiedadByID,
 			UpdatePropiedad:         adminH.UpdatePropiedad,
 			DeletePropiedad:         adminH.DeletePropiedad,
+			GetCiudades:             adminH.GetCiudades,
+			GetPropiedadIngresos:    adminH.GetPropiedadIngresos,
 			GetResenas:              adminH.GetResenas,
 			ModerarResena:           adminH.ModerarResena,
+			GetUsuarios:             adminH.GetUsuarios,
+			CrearUsuario:            adminH.CrearUsuario,
+			UpdateUsuario:           adminH.UpdateUsuario,
+			DeleteUsuario:           adminH.DeleteUsuario,
 			GetCupones:              adminH.GetCupones,
 			GetCuponByID:            adminH.GetCuponByID,
 			CrearCupon:              adminH.CrearCupon,
@@ -208,6 +218,33 @@ func main() {
 			CrearServicioStore:      adminH.CrearServicioStore,
 			ActualizarServicioStore: adminH.ActualizarServicioStore,
 			EliminarServicioStore:   adminH.EliminarServicioStore,
+		}
+
+		propiedadesRepo := repository.NewPropiedadesRepo(db)
+		propiedadesSvc := service.NewPropiedadesService(propiedadesRepo, 3)
+		propiedadesH := handler.NewPropiedadesHandler(propiedadesSvc)
+
+		propiedadesHandlers = &router.PropiedadesHandlers{
+			Search:         propiedadesH.Search,
+			GetByID:        propiedadesH.GetByID,
+			MisPropiedades: propiedadesH.MisPropiedades,
+			UpdateEstado:   propiedadesH.UpdateEstado,
+			Delete:         propiedadesH.Delete,
+		}
+
+		reservaRepo := repository.NewReservaRepo(db)
+		reservaSvc := service.NewReservaService(reservaRepo, cfg.ComisionPlataformaHuesped, cfg.ComisionPlataformaAnfitrion)
+		reservaDisponSvc := service.NewReservaDisponibilidad(db)
+		reservaH := handler.NewReservaHandler(reservaSvc, reservaDisponSvc)
+
+		reservaHandlers = &router.ReservaHandlers{
+			Crear:              reservaH.Crear,
+			GetByID:            reservaH.GetByID,
+			MisReservas:        reservaH.MisReservas,
+			ReservasRecibidas:  reservaH.ReservasRecibidas,
+			ConfirmarORechazar: reservaH.ConfirmarORechazar,
+			Cancelar:           reservaH.Cancelar,
+			Disponibilidad:     reservaH.Disponibilidad,
 		}
 	}
 
@@ -232,6 +269,8 @@ func main() {
 			TiendaHandlers:       tiendaHandlers,
 			AdminHandlers:        adminHandlers,
 			AuthHandlers:         authHandlers,
+			PropiedadesHandlers:  propiedadesHandlers,
+			ReservaHandlers:      reservaHandlers,
 			AuthVerifier:       verifier,
 			AppURL:             cfg.AppURL,
 			ExchangeLimiter:    router.NewExchangeLimiter(),

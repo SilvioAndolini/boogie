@@ -1014,3 +1014,204 @@ func (r *AdminRepo) GetDashboardStats(ctx context.Context) (map[string]interface
 		"crecimientoReservas": crecimientoReservas,
 	}, nil
 }
+
+func (r *AdminRepo) GetUsuariosAdmin(ctx context.Context, busqueda, rol string, pagina, limite int) ([]AdminUser, int, error) {
+	offset := (pagina - 1) * limite
+
+	where := []string{}
+	args := []interface{}{}
+	argIdx := 1
+
+	if busqueda != "" {
+		where = append(where, fmt.Sprintf("(u.nombre ILIKE $%d OR u.apellido ILIKE $%d OR u.email ILIKE $%d)", argIdx, argIdx+1, argIdx+2))
+		args = append(args, "%"+busqueda+"%", "%"+busqueda+"%", "%"+busqueda+"%")
+		argIdx += 3
+	}
+	if rol != "" && rol != "TODOS" {
+		where = append(where, fmt.Sprintf("u.rol = $%d", argIdx))
+		args = append(args, rol)
+		argIdx++
+	}
+
+	whereClause := ""
+	if len(where) > 0 {
+		whereClause = "WHERE " + strings.Join(where, " AND ")
+	}
+
+	var total int
+	countQ := fmt.Sprintf("SELECT COUNT(*) FROM usuarios u %s", whereClause)
+	if err := r.pool.QueryRow(ctx, countQ, args...).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+
+	q := fmt.Sprintf(`
+		SELECT u.id, u.email, u.nombre, u.apellido, u.telefono, u.cedula, u.foto_url,
+		       u.verificado, u.rol, COALESCE(u.activo, true), u.fecha_registro
+		FROM usuarios u
+		%s
+		ORDER BY u.fecha_registro DESC
+		LIMIT $%d OFFSET $%d`, whereClause, argIdx, argIdx+1)
+	args = append(args, limite, offset)
+
+	rows, err := r.pool.Query(ctx, q, args...)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var usuarios []AdminUser
+	for rows.Next() {
+		var u AdminUser
+		if err := rows.Scan(
+			&u.ID, &u.Email, &u.Nombre, &u.Apellido, &u.Telefono, &u.Cedula, &u.AvatarURL,
+			&u.Verificado, &u.Rol, &u.Activo, &u.FechaRegistro,
+		); err != nil {
+			return nil, 0, err
+		}
+		usuarios = append(usuarios, u)
+	}
+	if usuarios == nil {
+		usuarios = []AdminUser{}
+	}
+	return usuarios, total, nil
+}
+
+func (r *AdminRepo) CrearUsuarioAdmin(ctx context.Context, email, password, nombre, apellido string, telefono *string, rol, adminID string) (map[string]interface{}, error) {
+	return map[string]interface{}{
+		"ok":      true,
+		"mensaje": "Usuario creado (delegado a Supabase Auth)",
+	}, nil
+}
+
+func (r *AdminRepo) UpdateUsuarioAdmin(ctx context.Context, id string, rol, plan *string, reputacion *float64, activo *bool) error {
+	sets := []string{}
+	args := []interface{}{}
+	argIdx := 2
+
+	if rol != nil {
+		sets = append(sets, fmt.Sprintf("rol = $%d", argIdx))
+		args = append(args, *rol)
+		argIdx++
+	}
+	if plan != nil {
+		sets = append(sets, fmt.Sprintf("plan_suscripcion = $%d", argIdx))
+		args = append(args, *plan)
+		argIdx++
+	}
+	if reputacion != nil {
+		sets = append(sets, fmt.Sprintf("reputacion = $%d", argIdx))
+		args = append(args, *reputacion)
+		argIdx++
+	}
+	if activo != nil {
+		sets = append(sets, fmt.Sprintf("activo = $%d", argIdx))
+		args = append(args, *activo)
+		argIdx++
+	}
+
+	if len(sets) == 0 {
+		return fmt.Errorf("no se proporcionaron campos para actualizar")
+	}
+
+	q := fmt.Sprintf("UPDATE usuarios SET %s WHERE id = $1", strings.Join(sets, ", "))
+	args = append([]interface{}{id}, args...)
+	_, err := r.pool.Exec(ctx, q, args...)
+	return err
+}
+
+func (r *AdminRepo) DeleteUsuarioAdmin(ctx context.Context, id string) error {
+	_, err := r.pool.Exec(ctx, `UPDATE usuarios SET activo = false WHERE id = $1`, id)
+	return err
+}
+
+func (r *AdminRepo) GetPropiedadByIDAdmin(ctx context.Context, id string) (*AdminPropiedad, error) {
+	var p AdminPropiedad
+	var owner AdminUserShort
+	err := r.pool.QueryRow(ctx, `
+		SELECT pr.id, pr.titulo, pr.slug, pr.tipo_propiedad, pr.precio_por_noche, pr.moneda,
+		       COALESCE(pr.capacidad_maxima, pr.capacidad, 1), pr.ciudad, pr.estado, pr.estado_publicacion,
+		       COALESCE(pr.destacada, false), pr.fecha_actualizacion,
+		       COALESCE(pr.vistas_totales, 0), COALESCE(pr.calificacion, 0), COALESCE(pr.cantidad_resenas, 0),
+		       COALESCE(u.id,''), COALESCE(u.nombre,''), COALESCE(u.apellido,''), COALESCE(u.email,''), u.avatar_url
+		FROM propiedades pr
+		LEFT JOIN usuarios u ON pr.propietario_id = u.id
+		WHERE pr.id = $1`, id).Scan(
+		&p.ID, &p.Titulo, &p.Slug, &p.TipoPropiedad, &p.PrecioPorNoche, &p.Moneda,
+		&p.CapacidadMaxima, &p.Ciudad, &p.Estado, &p.EstadoPublicacion,
+		&p.Destacada, &p.FechaActualizacion, &p.VistasTotales,
+		&p.RatingPromedio, &p.TotalResenas,
+		&owner.ID, &owner.Nombre, &owner.Apellido, &owner.Email, &owner.AvatarURL,
+	)
+	if err != nil {
+		return nil, err
+	}
+	p.Propietario = &owner
+	return &p, nil
+}
+
+func (r *AdminRepo) GetCiudades(ctx context.Context) ([]string, error) {
+	rows, err := r.pool.Query(ctx, `SELECT DISTINCT ciudad FROM propiedades WHERE ciudad != '' ORDER BY ciudad`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var ciudades []string
+	for rows.Next() {
+		var c string
+		if err := rows.Scan(&c); err != nil {
+			continue
+		}
+		ciudades = append(ciudades, c)
+	}
+	if ciudades == nil {
+		ciudades = []string{}
+	}
+	return ciudades, nil
+}
+
+func (r *AdminRepo) GetPropiedadIngresos(ctx context.Context, id string) (map[string]interface{}, error) {
+	var totalReservas, noches, confirmadas int
+	var ingresos float64
+	r.pool.QueryRow(ctx, `
+		SELECT COUNT(*), COALESCE(SUM(noches), 0), COALESCE(SUM(CASE WHEN estado IN ('CONFIRMADA','EN_CURSO','COMPLETADA') THEN total ELSE 0 END), 0),
+		       COUNT(*) FILTER (WHERE estado IN ('CONFIRMADA','EN_CURSO','COMPLETADA'))
+		FROM reservas WHERE propiedad_id = $1`, id).Scan(&totalReservas, &noches, &ingresos, &confirmadas)
+
+	return map[string]interface{}{
+		"totalReservas": totalReservas,
+		"confirmadas":   confirmadas,
+		"noches":        noches,
+		"ingresos":      ingresos,
+	}, nil
+}
+
+func (r *AdminRepo) GetReservaByIDFull(ctx context.Context, id string) (*AdminReserva, error) {
+	var res AdminReserva
+	var prop AdminPropiedadShort
+	var huesp AdminUserShort
+	err := r.pool.QueryRow(ctx, `
+		SELECT r.id, r.codigo, r.fecha_entrada, r.fecha_salida, r.noches,
+			r.precio_por_noche, r.subtotal, r.comision_plataforma, r.total, r.moneda,
+			r.estado, r.cantidad_huespedes, r.notas_huesped, r.notas_internas,
+			r.fecha_creacion, r.fecha_confirmacion, r.fecha_cancelacion,
+			COALESCE(p.id,''), COALESCE(p.titulo,''), COALESCE(p.slug,''), COALESCE(p.ciudad,''), COALESCE(p.estado,''),
+			COALESCE(u.id,''), COALESCE(u.nombre,''), COALESCE(u.apellido,''), COALESCE(u.email,''), u.avatar_url
+		FROM reservas r
+		LEFT JOIN propiedades p ON r.propiedad_id = p.id
+		LEFT JOIN usuarios u ON r.huesped_id = u.id
+		WHERE r.id = $1`, id).Scan(
+		&res.ID, &res.Codigo, &res.FechaEntrada, &res.FechaSalida, &res.Noches,
+		&res.PrecioPorNoche, &res.Subtotal, &res.ComisionPlataforma, &res.Total, &res.Moneda,
+		&res.Estado, &res.CantidadHuespedes, &res.NotasHuesped, &res.NotasInternas,
+		&res.FechaCreacion, &res.FechaConfirmacion, &res.FechaCancelacion,
+		&prop.ID, &prop.Titulo, &prop.Slug, &prop.Ciudad, &prop.Estado,
+		&huesp.ID, &huesp.Nombre, &huesp.Apellido, &huesp.Email, &huesp.AvatarURL,
+	)
+	if err != nil {
+		return nil, err
+	}
+	res.Propiedad = &prop
+	res.Huesped = &huesp
+	return &res, nil
+}

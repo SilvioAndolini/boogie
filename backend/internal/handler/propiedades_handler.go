@@ -101,6 +101,7 @@ func (h *PropiedadesHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.svc.GetByIDOrSlug(r.Context(), id)
 	if err != nil {
+		slog.Error("[propiedades/get-by-id] error", "error", err, "id", id)
 		ErrorJSON(w, http.StatusNotFound, "NOT_FOUND", "Propiedad no encontrada")
 		return
 	}

@@ -77,19 +77,45 @@ type TiendaHandlers struct {
 	GetAllServicios http.HandlerFunc
 }
 
+type PropiedadesHandlers struct {
+	Search         http.HandlerFunc
+	GetByID        http.HandlerFunc
+	MisPropiedades http.HandlerFunc
+	UpdateEstado   http.HandlerFunc
+	Delete         http.HandlerFunc
+}
+
+type ReservaHandlers struct {
+	Crear             http.HandlerFunc
+	GetByID           http.HandlerFunc
+	MisReservas       http.HandlerFunc
+	ReservasRecibidas http.HandlerFunc
+	ConfirmarORechazar http.HandlerFunc
+	Cancelar          http.HandlerFunc
+	Disponibilidad    http.HandlerFunc
+}
+
 type AdminHandlers struct {
 	GetDashboard          http.HandlerFunc
 	GetReservas           http.HandlerFunc
 	GetReservasStats      http.HandlerFunc
 	AccionReserva         http.HandlerFunc
+	GetReservaByID        http.HandlerFunc
 	GetPagos              http.HandlerFunc
 	GetPagosStats         http.HandlerFunc
 	VerificarPago         http.HandlerFunc
 	GetPropiedades        http.HandlerFunc
+	GetPropiedadByID      http.HandlerFunc
 	UpdatePropiedad       http.HandlerFunc
 	DeletePropiedad       http.HandlerFunc
+	GetCiudades           http.HandlerFunc
+	GetPropiedadIngresos  http.HandlerFunc
 	GetResenas            http.HandlerFunc
 	ModerarResena         http.HandlerFunc
+	GetUsuarios           http.HandlerFunc
+	CrearUsuario          http.HandlerFunc
+	UpdateUsuario         http.HandlerFunc
+	DeleteUsuario         http.HandlerFunc
 	GetCupones            http.HandlerFunc
 	GetCuponByID          http.HandlerFunc
 	CrearCupon            http.HandlerFunc
@@ -125,20 +151,22 @@ type AuthHandlers struct {
 }
 
 type RouterOpts struct {
-	Handlers             *Handlers
-	PagoHandlers         *PagoHandlers
-	WalletHandlers       *WalletHandlers
-	ResenaHandlers       *ResenaHandlers
-	VerificacionHandlers *VerificacionHandlers
-	ChatHandlers         *ChatHandlers
-	OfertaHandlers       *OfertaHandlers
-	TiendaHandlers       *TiendaHandlers
-	AdminHandlers        *AdminHandlers
-	AuthHandlers         *AuthHandlers
-	AuthVerifier         *auth.SupabaseVerifier
-	AppURL               string
-	ExchangeLimiter      *handlermw.IPRateLimiter
-	UbicacionesLimiter   *handlermw.IPRateLimiter
+	Handlers              *Handlers
+	PagoHandlers          *PagoHandlers
+	WalletHandlers        *WalletHandlers
+	ResenaHandlers        *ResenaHandlers
+	VerificacionHandlers  *VerificacionHandlers
+	ChatHandlers          *ChatHandlers
+	OfertaHandlers        *OfertaHandlers
+	TiendaHandlers        *TiendaHandlers
+	PropiedadesHandlers   *PropiedadesHandlers
+	ReservaHandlers       *ReservaHandlers
+	AdminHandlers         *AdminHandlers
+	AuthHandlers          *AuthHandlers
+	AuthVerifier          *auth.SupabaseVerifier
+	AppURL                string
+	ExchangeLimiter       *handlermw.IPRateLimiter
+	UbicacionesLimiter    *handlermw.IPRateLimiter
 }
 
 func New(opts *RouterOpts) http.Handler {
@@ -254,6 +282,65 @@ func New(opts *RouterOpts) http.Handler {
 			r.Get("/tienda/servicios", opts.TiendaHandlers.GetServicios)
 		}
 
+		if opts.PropiedadesHandlers != nil {
+			r.Get("/propiedades/publicas", opts.PropiedadesHandlers.Search)
+			r.Get("/propiedades/buscar", opts.PropiedadesHandlers.Search)
+			r.Get("/propiedades/{id}", opts.PropiedadesHandlers.GetByID)
+
+			r.Route("/propiedades", func(r chi.Router) {
+				r.Group(func(r chi.Router) {
+					r.Use(opts.AuthVerifier.Middleware)
+					r.Get("/mias", opts.PropiedadesHandlers.MisPropiedades)
+					r.Post("/", func(w http.ResponseWriter, r *http.Request) {
+						w.WriteHeader(http.StatusNotImplemented)
+						w.Write([]byte(`{"error":{"code":"NOT_IMPLEMENTED","message":"Use Supabase storage for property creation"}}`))
+					})
+				})
+				r.Group(func(r chi.Router) {
+					r.Use(opts.AuthVerifier.Middleware)
+					r.Route("/{id}", func(r chi.Router) {
+						r.Patch("/estado", opts.PropiedadesHandlers.UpdateEstado)
+						r.Put("/", func(w http.ResponseWriter, r *http.Request) {
+							w.WriteHeader(http.StatusNotImplemented)
+							w.Write([]byte(`{"error":{"code":"NOT_IMPLEMENTED","message":"Use Supabase storage for property update"}}`))
+						})
+						r.Get("/editar", opts.PropiedadesHandlers.GetByID)
+						r.Delete("/", opts.PropiedadesHandlers.Delete)
+						r.Get("/reservas", func(w http.ResponseWriter, r *http.Request) {
+							w.WriteHeader(http.StatusNotImplemented)
+						})
+						r.Get("/amenidades", func(w http.ResponseWriter, r *http.Request) {
+							w.WriteHeader(http.StatusNotImplemented)
+						})
+					})
+				})
+			})
+		}
+
+		if opts.ReservaHandlers != nil {
+			r.Get("/reservas/disponibilidad", opts.ReservaHandlers.Disponibilidad)
+
+			r.Route("/reservas", func(r chi.Router) {
+				r.Use(opts.AuthVerifier.Middleware)
+				r.Post("/", opts.ReservaHandlers.Crear)
+				r.Get("/mias", opts.ReservaHandlers.MisReservas)
+				r.Get("/recibidas", opts.ReservaHandlers.ReservasRecibidas)
+				r.Get("/{id}", opts.ReservaHandlers.GetByID)
+				r.Get("/{id}/store-items", func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(http.StatusNotImplemented)
+				})
+				r.Post("/{id}/cancelar", opts.ReservaHandlers.Cancelar)
+				r.Post("/{id}/confirmar", func(w http.ResponseWriter, r *http.Request) {
+					r.URL.RawQuery += "&accion=confirmar"
+					opts.ReservaHandlers.ConfirmarORechazar.ServeHTTP(w, r)
+				})
+				r.Post("/{id}/rechazar", func(w http.ResponseWriter, r *http.Request) {
+					r.URL.RawQuery += "&accion=rechazar"
+					opts.ReservaHandlers.ConfirmarORechazar.ServeHTTP(w, r)
+				})
+			})
+		}
+
 		if opts.AdminHandlers != nil || opts.VerificacionHandlers != nil || opts.TiendaHandlers != nil {
 			r.Route("/admin", func(r chi.Router) {
 				r.Use(opts.AuthVerifier.Middleware)
@@ -275,14 +362,22 @@ func New(opts *RouterOpts) http.Handler {
 					r.Get("/reservas", opts.AdminHandlers.GetReservas)
 					r.Get("/reservas/stats", opts.AdminHandlers.GetReservasStats)
 					r.Post("/reservas/accion", opts.AdminHandlers.AccionReserva)
+					r.Get("/reservas/{id}", opts.AdminHandlers.GetReservaByID)
 					r.Get("/pagos", opts.AdminHandlers.GetPagos)
 					r.Get("/pagos/stats", opts.AdminHandlers.GetPagosStats)
 					r.Post("/pagos/verificar", opts.AdminHandlers.VerificarPago)
 					r.Get("/propiedades", opts.AdminHandlers.GetPropiedades)
+					r.Get("/propiedades/ciudades", opts.AdminHandlers.GetCiudades)
+					r.Get("/propiedades/{id}", opts.AdminHandlers.GetPropiedadByID)
+					r.Get("/propiedades/{id}/ingresos", opts.AdminHandlers.GetPropiedadIngresos)
 					r.Patch("/propiedades", opts.AdminHandlers.UpdatePropiedad)
 					r.Delete("/propiedades/{id}", opts.AdminHandlers.DeletePropiedad)
 					r.Get("/resenas", opts.AdminHandlers.GetResenas)
 					r.Post("/resenas/moderar", opts.AdminHandlers.ModerarResena)
+					r.Get("/usuarios", opts.AdminHandlers.GetUsuarios)
+					r.Post("/usuarios", opts.AdminHandlers.CrearUsuario)
+					r.Patch("/usuarios/{id}", opts.AdminHandlers.UpdateUsuario)
+					r.Delete("/usuarios/{id}", opts.AdminHandlers.DeleteUsuario)
 					r.Get("/cupones", opts.AdminHandlers.GetCupones)
 					r.Get("/cupones/{id}", opts.AdminHandlers.GetCuponByID)
 					r.Post("/cupones", opts.AdminHandlers.CrearCupon)

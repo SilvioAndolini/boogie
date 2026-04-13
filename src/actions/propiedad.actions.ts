@@ -59,6 +59,166 @@ interface PropiedadDetalle {
   resenas: { id: string; calificacion: number; comentario: string; fechaCreacion: string; autor: { nombre: string; apellido: string; avatar_url: string | null } }[]
 }
 
+interface GoPropiedadItem {
+  id: string
+  titulo: string
+  tipo_propiedad: string
+  precio_por_noche: number
+  moneda: string
+  capacidad: number
+  dormitorios: number
+  banos: number
+  ciudad: string
+  estado: string
+  latitud: number | null
+  longitud: number | null
+  calificacion: number
+  total_resenas: number
+  imagen_principal: string | null
+  plan_suscripcion: string | null
+}
+
+interface GoPropiedadDetail {
+  id: string
+  propietario_id: string
+  titulo: string
+  slug: string
+  descripcion: string
+  tipo_propiedad: string
+  precio_por_noche: number
+  moneda: string
+  politica_cancelacion: string
+  capacidad: number
+  dormitorios: number
+  banos: number
+  camas: number
+  direccion: string
+  ciudad: string
+  estado: string
+  zona: string | null
+  latitud: number
+  longitud: number
+  reglas: string | null
+  check_in: string | null
+  check_out: string | null
+  estancia_minima: number
+  estancia_maxima: number | null
+  estado_publicacion: string
+  calificacion: number
+  cantidad_resenas: number
+  propietario: {
+    id: string
+    nombre: string
+    apellido: string
+    avatar_url: string | null
+    verificado: boolean
+    plan_suscripcion: string
+    bio: string | null
+    reputacion: number
+  } | null
+  amenidades: {
+    id: string
+    nombre: string
+    icono: string | null
+    categoria: string
+  }[] | null
+  imagenes: {
+    id: string
+    propiedad_id: string
+    url: string
+    thumbnail_url: string | null
+    alt: string | null
+    categoria: string
+    orden: number
+  }[] | null
+}
+
+function mapPropiedadItem(item: GoPropiedadItem): PropiedadPublica {
+  return {
+    id: item.id,
+    titulo: item.titulo,
+    descripcion: '',
+    tipoPropiedad: item.tipo_propiedad,
+    precioPorNoche: item.precio_por_noche,
+    moneda: item.moneda,
+    capacidadMaxima: item.capacidad,
+    habitaciones: item.dormitorios,
+    banos: item.banos,
+    camas: 0,
+    direccion: '',
+    ciudad: item.ciudad,
+    estado: item.estado,
+    zona: null,
+    latitud: item.latitud,
+    longitud: item.longitud,
+    ratingPromedio: item.calificacion || null,
+    totalResenas: item.total_resenas,
+    imagenes: item.imagen_principal ? [{ url: item.imagen_principal, es_principal: true }] : [],
+    propietario: item.plan_suscripcion ? { reputacion: null, plan_suscripcion: item.plan_suscripcion } : null,
+  }
+}
+
+function mapPropiedadDetail(d: GoPropiedadDetail): PropiedadDetalle {
+  const imagenes = (d.imagenes || []).map((img) => ({
+    id: img.id,
+    url: img.url,
+    alt: img.alt,
+    orden: img.orden,
+    es_principal: img.orden === 0,
+    categoria: img.categoria,
+  }))
+
+  const amenidades = (d.amenidades || []).map((a) => ({
+    amenidadId: a.id,
+    amenidad: { id: a.id, nombre: a.nombre, icono: a.icono, categoria: a.categoria },
+  }))
+
+  const propietario = d.propietario
+    ? {
+        id: d.propietario.id,
+        nombre: d.propietario.nombre,
+        apellido: d.propietario.apellido,
+        avatar_url: d.propietario.avatar_url,
+        verificado: d.propietario.verificado,
+        plan_suscripcion: d.propietario.plan_suscripcion,
+        bio: d.propietario.bio,
+        reputacion: d.propietario.reputacion || null,
+        reputacionManual: false,
+      }
+    : null
+
+  return {
+    id: d.id,
+    titulo: d.titulo,
+    descripcion: d.descripcion,
+    tipoPropiedad: d.tipo_propiedad,
+    precioPorNoche: d.precio_por_noche,
+    moneda: d.moneda,
+    capacidadMaxima: d.capacidad,
+    habitaciones: d.dormitorios,
+    banos: d.banos,
+    camas: d.camas,
+    direccion: d.direccion,
+    ciudad: d.ciudad,
+    estado: d.estado,
+    zona: d.zona,
+    latitud: d.latitud,
+    longitud: d.longitud,
+    reglas: d.reglas,
+    politicaCancelacion: d.politica_cancelacion,
+    horarioCheckIn: d.check_in,
+    horarioCheckOut: d.check_out,
+    estanciaMinima: d.estancia_minima,
+    estanciaMaxima: d.estancia_maxima,
+    ratingPromedio: d.calificacion || null,
+    totalResenas: d.cantidad_resenas,
+    propietario,
+    imagenes,
+    amenidades,
+    resenas: [],
+  }
+}
+
 export async function crearPropiedad(formData: FormData) {
   const user = await getUsuarioAutenticado()
   if (!user) redirect('/login')
@@ -193,13 +353,22 @@ export async function getPropiedadesPublicas(filtros?: {
   if (filtros?.pagina != null) params.set('pagina', String(filtros.pagina))
 
   try {
-    return await goGet<{
-      datos: PropiedadPublica[];
-      total: number;
-      pagina: number;
-      porPagina: number;
-      totalPaginas: number;
-    }>(`/api/v1/propiedades/publicas?${params.toString()}`)
+    const raw = await goFetch<{
+      data?: GoPropiedadItem[]
+      meta?: { page: number; perPage: number; total: number }
+    }>(`/api/v1/propiedades/publicas?${params.toString()}`, { raw: true })
+
+    const items = raw.data ?? (raw as unknown as GoPropiedadItem[])
+    const meta = raw.meta ?? { page: 1, perPage: 20, total: 0 }
+    const datos = (items || []).map(mapPropiedadItem)
+
+    return {
+      datos,
+      total: meta.total,
+      pagina: meta.page,
+      porPagina: meta.perPage,
+      totalPaginas: meta.total > 0 ? Math.ceil(meta.total / meta.perPage) : 0,
+    }
   } catch {
     return { datos: [], total: 0, pagina: 1, porPagina: 20, totalPaginas: 0 }
   }
@@ -207,7 +376,9 @@ export async function getPropiedadesPublicas(filtros?: {
 
 export async function getPropiedadPorId(id: string): Promise<PropiedadDetalle | null> {
   try {
-    return await goGet<PropiedadDetalle>(`/api/v1/propiedades/${id}`)
+    const raw = await goFetch<GoPropiedadDetail>(`/api/v1/propiedades/${id}`)
+    if (!raw) return null
+    return mapPropiedadDetail(raw)
   } catch {
     return null
   }
