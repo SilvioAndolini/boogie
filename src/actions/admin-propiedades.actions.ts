@@ -41,7 +41,8 @@ export async function getCiudadesPropiedades() {
 
 export async function getPropiedadDetalleAdmin(id: string) {
   try {
-    return await goGet<Record<string, unknown>>(`/api/v1/admin/propiedades/${id}`)
+    const data = await goGet<Record<string, unknown>>(`/api/v1/admin/propiedades/${id}`)
+    return { propiedad: data, reservas: [] }
   } catch (err) {
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Propiedad no encontrada' }
