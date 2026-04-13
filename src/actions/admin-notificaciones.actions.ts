@@ -1,6 +1,6 @@
 'use server'
 
-import { goGet, goPost, GoAPIError } from '@/lib/go-api-client'
+import { goApi, goPost, GoAPIError } from '@/lib/go-api-client'
 import { revalidatePath } from 'next/cache'
 
 export async function enviarNotificacionAdmin(formData: FormData) {
@@ -26,12 +26,13 @@ export async function getNotificacionesAdmin(filtros?: {
     const params = new URLSearchParams()
     if (filtros?.pagina) params.set('pagina', String(filtros.pagina))
     const qs = params.toString()
-    return await goGet<{
-      data: Array<Record<string, unknown>>;
-      total: number;
-      pagina: number;
-      totalPaginas: number;
-    }>(qs ? `/api/v1/admin/notificaciones?${qs}` : '/api/v1/admin/notificaciones')
+    const raw = await goApi<Record<string, unknown>>(qs ? `/api/v1/admin/notificaciones?${qs}` : '/api/v1/admin/notificaciones', { raw: true })
+    return {
+      data: (raw?.data ?? []) as Array<Record<string, unknown>>,
+      total: (raw?.total ?? 0) as number,
+      pagina: (raw?.pagina ?? 1) as number,
+      totalPaginas: (raw?.totalPaginas ?? 0) as number,
+    }
   } catch (err) {
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al cargar notificaciones' }

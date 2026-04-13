@@ -1,6 +1,6 @@
 'use server'
 
-import { goGet, goPost, GoAPIError } from '@/lib/go-api-client'
+import { goApi, goPost, GoAPIError } from '@/lib/go-api-client'
 import { revalidatePath } from 'next/cache'
 
 type ResenasResult = {
@@ -20,10 +20,11 @@ export async function getResenasAdmin(filtros?: {
     if (filtros?.busqueda) params.set('busqueda', filtros.busqueda.trim())
     if (filtros?.pagina) params.set('pagina', String(filtros.pagina))
     const qs = params.toString()
-    return await goGet<{
-      data: Array<Record<string, unknown>>;
-      stats: { total: number; promedio: number; distribucion: Record<string, number> };
-    }>(qs ? `/api/v1/admin/resenas?${qs}` : '/api/v1/admin/resenas')
+    const raw = await goApi<Record<string, unknown>>(qs ? `/api/v1/admin/resenas?${qs}` : '/api/v1/admin/resenas', { raw: true })
+    return {
+      data: (raw?.data ?? []) as Array<Record<string, unknown>>,
+      stats: raw?.stats as { total: number; promedio: number; distribucion: Record<string, number> } | undefined,
+    }
   } catch (err) {
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al cargar reseñas' }

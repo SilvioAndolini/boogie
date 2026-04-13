@@ -1,6 +1,6 @@
 'use server'
 
-import { goGet, goPost, goPatch, goDelete, GoAPIError } from '@/lib/go-api-client'
+import { goApi, goGet, goPost, goPatch, goDelete, GoAPIError } from '@/lib/go-api-client'
 import { getUsuarioAutenticado } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
@@ -127,12 +127,13 @@ type AdminCountsResult = {
 
 export async function getUsuariosAdmin(): Promise<UsuariosResult> {
   try {
-    return await goGet<{
-      data: Array<Record<string, unknown>>;
-      total: number;
-      pagina: number;
-      totalPaginas: number;
-    }>('/api/v1/admin/usuarios')
+    const raw = await goApi<Record<string, unknown>>('/api/v1/admin/usuarios', { raw: true })
+    return {
+      data: (raw?.data ?? []) as Array<Record<string, unknown>>,
+      total: (raw?.total ?? 0) as number,
+      pagina: (raw?.pagina ?? 1) as number,
+      totalPaginas: (raw?.totalPaginas ?? 0) as number,
+    }
   } catch (err) {
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al cargar usuarios' }
