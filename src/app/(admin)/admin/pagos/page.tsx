@@ -69,9 +69,11 @@ const fadeUp = {
   visible: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
 }
 
-function formatMoney(n: number, moneda = 'USD') {
-  if (moneda === 'VES') return `Bs. ${n.toLocaleString('es-VE', { minimumFractionDigits: 2 })}`
-  return `$${n.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+function formatMoney(n: number | undefined | null, moneda = 'USD') {
+  const num = Number(n ?? 0)
+  if (!Number.isFinite(num)) return moneda === 'VES' ? 'Bs. 0,00' : '$0.00'
+  if (moneda === 'VES') return `Bs. ${num.toLocaleString('es-VE', { minimumFractionDigits: 2 })}`
+  return `$${num.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
 }
 
 function formatDateTime(s: string) {
@@ -108,7 +110,16 @@ export default function AdminPagosPage() {
       setPagos((resPagos.data || []) as unknown as Pago[])
     }
     if ('PENDIENTE' in resStats) {
-      setStats(resStats as typeof stats)
+      const s = resStats as Record<string, number>
+      setStats({
+        pendientes: s.PENDIENTE ?? 0,
+        enVerificacion: s.EN_VERIFICACION ?? 0,
+        verificados: s.VERIFICADO ?? 0,
+        acreditados: s.AREDITADO ?? 0,
+        rechazados: s.RECHAZADO ?? 0,
+        totalProcesadoUSD: s.TOTAL_PROCESADO_USD ?? 0,
+        totalProcesadoVES: s.TOTAL_PROCESADO_VES ?? 0,
+      })
     }
     setCargando(false)
   }
