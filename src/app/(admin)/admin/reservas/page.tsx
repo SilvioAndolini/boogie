@@ -76,9 +76,9 @@ export default function AdminReservasPage() {
     if (resReservas.error) {
       toast.error(resReservas.error)
     } else {
-      setReservas((resReservas.reservas || []) as unknown as Reserva[])
+      setReservas((resReservas.data || []) as unknown as Reserva[])
     }
-    if ('pendientes' in resStats) {
+    if ('PENDIENTE' in resStats) {
       setStats(resStats as typeof stats)
     }
     setCargando(false)

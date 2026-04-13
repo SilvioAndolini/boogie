@@ -61,11 +61,11 @@ export async function responderOferta(formData: FormData) {
   const { ofertaId, accion, motivoRechazo } = parsed.data
 
   try {
-    const result = await goPost<{ estado: string; fechaExpiracion?: string }>(`/api/v1/ofertas/${ofertaId}/responder`, {
+    const result = await goPost<{ estado: string; fecha_expiracion?: string }>(`/api/v1/ofertas/${ofertaId}/responder`, {
       accion,
       motivoRechazo,
     })
-    return { exito: true, estado: result.estado, fechaExpiracion: result.fechaExpiracion }
+    return { exito: true, estado: result.estado, fechaExpiracion: result.fecha_expiracion }
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : 'Error al responder la oferta'
     return { error: message }

@@ -15,9 +15,9 @@ export async function crearResena(formData: FormData) {
   }
 
   try {
-    const result = await goPost<{ propiedadId: string }>('/api/v1/resenas', datos)
+    const result = await goPost<{ propiedad_id: string }>('/api/v1/resenas', datos)
 
-    revalidatePath(`/propiedades/${result.propiedadId}`)
+    revalidatePath(`/propiedades/${result.propiedad_id}`)
     return { exito: true }
   } catch (err) {
     if (err instanceof GoAPIError) {
@@ -29,9 +29,9 @@ export async function crearResena(formData: FormData) {
 
 export async function responderResena(resenaId: string, respuesta: string) {
   try {
-    const result = await goPost<{ propiedadId: string }>(`/api/v1/resenas/${resenaId}/responder`, { respuesta })
+    const result = await goPost<{ propiedad_id: string }>(`/api/v1/resenas/${resenaId}/responder`, { respuesta })
 
-    revalidatePath(`/propiedades/${result.propiedadId}`)
+    revalidatePath(`/propiedades/${result.propiedad_id}`)
     return { exito: true }
   } catch (err) {
     if (err instanceof GoAPIError) {

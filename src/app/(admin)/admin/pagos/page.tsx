@@ -105,9 +105,9 @@ export default function AdminPagosPage() {
     if (resPagos.error) {
       toast.error(resPagos.error)
     } else {
-      setPagos((resPagos.pagos || []) as unknown as Pago[])
+      setPagos((resPagos.data || []) as unknown as Pago[])
     }
-    if ('pendientes' in resStats) {
+    if ('PENDIENTE' in resStats) {
       setStats(resStats as typeof stats)
     }
     setCargando(false)

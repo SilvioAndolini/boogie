@@ -55,7 +55,7 @@ export default function AdminResenasPage() {
     if (res.error) {
       toast.error(res.error)
     } else {
-      setResenas((res.resenas || []) as unknown as Resena[])
+      setResenas((res.data || []) as unknown as Resena[])
       if (res.stats) setStats(res.stats as typeof stats)
     }
     setCargando(false)

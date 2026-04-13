@@ -87,9 +87,9 @@ export default function AdminUsuariosPage() {
       if (cancelled) return
       if (res.error) {
         toast.error(res.error)
-      } else if (res.usuarios) {
-        setUsuarios(res.usuarios as unknown as Usuario[])
-        setIsCeo(res.isCeo ?? false)
+      } else if (res.data) {
+        setUsuarios(res.data as unknown as Usuario[])
+        setIsCeo(false)
       }
       setCargando(false)
     }).catch(() => {
@@ -103,9 +103,9 @@ export default function AdminUsuariosPage() {
     const res = await getUsuariosAdmin()
     if (res.error) {
       toast.error(res.error)
-    } else if (res.usuarios) {
-      setUsuarios(res.usuarios as unknown as Usuario[])
-      setIsCeo(res.isCeo ?? false)
+    } else if (res.data) {
+      setUsuarios(res.data as unknown as Usuario[])
+      setIsCeo(false)
     }
   }
 

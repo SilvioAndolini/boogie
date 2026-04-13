@@ -3,7 +3,7 @@
 import { goGet, GoAPIError } from '@/lib/go-api-client'
 
 type AuditResult = {
-  logs?: Array<{ id: string; admin_id: string; accion: string; entidad: string; entidad_id: string; detalles: unknown; ip: string; user_agent: string; created_at: string; usuarios: { nombre: string; apellido: string; email: string } }>;
+  data?: Array<{ id: string; admin_id: string; accion: string; entidad: string; entidad_id: string; detalles: unknown; ip: string; user_agent: string; created_at: string; usuarios: { nombre: string; apellido: string; email: string } }>;
   total?: number;
   pagina?: number;
   totalPaginas?: number;
@@ -26,7 +26,7 @@ export async function getAuditLogAdmin(filtros?: {
     if (filtros?.pagina) params.set('pagina', String(filtros.pagina))
     const qs = params.toString()
     return await goGet<{
-      logs: Array<{ id: string; admin_id: string; accion: string; entidad: string; entidad_id: string; detalles: unknown; ip: string; user_agent: string; created_at: string; usuarios: { nombre: string; apellido: string; email: string } }>;
+      data: Array<{ id: string; admin_id: string; accion: string; entidad: string; entidad_id: string; detalles: unknown; ip: string; user_agent: string; created_at: string; usuarios: { nombre: string; apellido: string; email: string } }>;
       total: number;
       pagina: number;
       totalPaginas: number;

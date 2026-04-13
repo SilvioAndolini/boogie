@@ -4,7 +4,7 @@ import { goGet, goPost, GoAPIError } from '@/lib/go-api-client'
 import { revalidatePath } from 'next/cache'
 
 type PagosResult = {
-  pagos?: Array<Record<string, unknown>>;
+  data?: Array<Record<string, unknown>>;
   total?: number;
   pagina?: number;
   totalPaginas?: number;
@@ -12,13 +12,12 @@ type PagosResult = {
 }
 
 type PagosStatsResult = {
-  pendientes?: number;
-  enVerificacion?: number;
-  verificados?: number;
-  acreditados?: number;
-  rechazados?: number;
-  totalProcesadoUSD?: number;
-  totalProcesadoVES?: number;
+  PENDIENTE?: number;
+  EN_VERIFICACION?: number;
+  VERIFICADO?: number;
+  ACREDITADO?: number;
+  RECHAZADO?: number;
+  REEMBOLSADO?: number;
   error?: string;
 }
 
@@ -36,7 +35,7 @@ export async function getPagosAdmin(filtros?: {
     if (filtros?.pagina) params.set('pagina', String(filtros.pagina))
     const qs = params.toString()
     return await goGet<{
-      pagos: Array<Record<string, unknown>>;
+      data: Array<Record<string, unknown>>;
       total: number;
       pagina: number;
       totalPaginas: number;

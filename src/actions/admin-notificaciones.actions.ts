@@ -27,7 +27,7 @@ export async function getNotificacionesAdmin(filtros?: {
     if (filtros?.pagina) params.set('pagina', String(filtros.pagina))
     const qs = params.toString()
     return await goGet<{
-      notificaciones: Array<Record<string, unknown>>;
+      data: Array<Record<string, unknown>>;
       total: number;
       pagina: number;
       totalPaginas: number;

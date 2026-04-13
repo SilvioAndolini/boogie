@@ -4,10 +4,7 @@ import { goGet, goPost, GoAPIError } from '@/lib/go-api-client'
 import { revalidatePath } from 'next/cache'
 
 type ResenasResult = {
-  resenas?: Array<Record<string, unknown>>;
-  total?: number;
-  pagina?: number;
-  totalPaginas?: number;
+  data?: Array<Record<string, unknown>>;
   stats?: { total: number; promedio: number; distribucion: Record<string, number> };
   error?: string;
 }
@@ -24,10 +21,7 @@ export async function getResenasAdmin(filtros?: {
     if (filtros?.pagina) params.set('pagina', String(filtros.pagina))
     const qs = params.toString()
     return await goGet<{
-      resenas: Array<Record<string, unknown>>;
-      total: number;
-      pagina: number;
-      totalPaginas: number;
+      data: Array<Record<string, unknown>>;
       stats: { total: number; promedio: number; distribucion: Record<string, number> };
     }>(qs ? `/api/v1/admin/resenas?${qs}` : '/api/v1/admin/resenas')
   } catch (err) {

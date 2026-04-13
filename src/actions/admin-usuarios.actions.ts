@@ -17,8 +17,8 @@ export async function registrarUsuarioAdmin(formData: FormData) {
   }
 
   try {
-    const result = await goPost('/api/v1/admin/usuarios', datos) as { usuarioId: string }
-    return { exito: true, usuarioId: result.usuarioId }
+    const result = await goPost('/api/v1/admin/usuarios', datos) as { ok?: boolean; mensaje?: string }
+    return { exito: true }
   } catch (err) {
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al registrar usuario' }

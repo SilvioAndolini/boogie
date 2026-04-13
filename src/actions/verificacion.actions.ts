@@ -111,8 +111,10 @@ export async function revisarVerificacion(formData: FormData) {
 }
 
 type UsuariosResult = {
-  usuarios?: Array<Record<string, unknown>>;
-  isCeo?: boolean;
+  data?: Array<Record<string, unknown>>;
+  total?: number;
+  pagina?: number;
+  totalPaginas?: number;
   error?: string;
 }
 
@@ -126,8 +128,10 @@ type AdminCountsResult = {
 export async function getUsuariosAdmin(): Promise<UsuariosResult> {
   try {
     return await goGet<{
-      usuarios: Array<Record<string, unknown>>;
-      isCeo: boolean;
+      data: Array<Record<string, unknown>>;
+      total: number;
+      pagina: number;
+      totalPaginas: number;
     }>('/api/v1/admin/usuarios')
   } catch (err) {
     if (err instanceof GoAPIError) return { error: err.message }

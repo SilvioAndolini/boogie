@@ -4,7 +4,7 @@ import { goGet, goPost, GoAPIError } from '@/lib/go-api-client'
 import { getCotizacionEuro } from '@/lib/services/exchange-rate'
 
 type ReservasResult = {
-  reservas?: Array<Record<string, unknown>>;
+  data?: Array<Record<string, unknown>>;
   total?: number;
   pagina?: number;
   totalPaginas?: number;
@@ -12,11 +12,13 @@ type ReservasResult = {
 }
 
 type ReservasStatsResult = {
-  pendientes?: number;
-  confirmadas?: number;
-  enCurso?: number;
-  completadas?: number;
-  canceladas?: number;
+  PENDIENTE?: number;
+  CONFIRMADA?: number;
+  EN_CURSO?: number;
+  COMPLETADA?: number;
+  CANCELADA_HUESPED?: number;
+  CANCELADA_ANFITRION?: number;
+  RECHAZADA?: number;
   error?: string;
 }
 
@@ -32,7 +34,7 @@ export async function getReservasAdmin(filtros?: {
     if (filtros?.pagina) params.set('pagina', String(filtros.pagina))
     const qs = params.toString()
     return await goGet<{
-      reservas: Array<Record<string, unknown>>;
+      data: Array<Record<string, unknown>>;
       total: number;
       pagina: number;
       totalPaginas: number;
@@ -75,11 +77,13 @@ export async function accionReservaAdmin(formData: FormData) {
 export async function getReservasStatsAdmin(): Promise<ReservasStatsResult> {
   try {
     return await goGet<{
-      pendientes: number;
-      confirmadas: number;
-      enCurso: number;
-      completadas: number;
-      canceladas: number;
+      PENDIENTE: number;
+      CONFIRMADA: number;
+      EN_CURSO: number;
+      COMPLETADA: number;
+      CANCELADA_HUESPED: number;
+      CANCELADA_ANFITRION: number;
+      RECHAZADA: number;
     }>('/api/v1/admin/reservas/stats')
   } catch (err) {
     if (err instanceof GoAPIError) return { error: err.message }
