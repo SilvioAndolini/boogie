@@ -1,0 +1,7 @@
+api.boogie.com.ve {
+    reverse_proxy localhost:8080
+}
+
+www.boogie.com.ve {
+    redir https://boogie.com.ve{uri}
+}

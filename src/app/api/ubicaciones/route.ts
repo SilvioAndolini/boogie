@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { rateLimit, getClientIP } from '@/lib/rate-limit'
+import { useGoBackend } from '@/lib/go-api-client'
 
 export const dynamic = 'force-dynamic'
+
+const GO_BACKEND_URL = process.env.GO_BACKEND_URL || 'http://localhost:8080'
 
 interface LocationSuggestion {
   id: string
@@ -209,6 +212,28 @@ async function searchNominatim(q: string): Promise<LocationSuggestion[]> {
 }
 
 export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url)
+  const q = searchParams.get('q')?.trim()
+
+  if (useGoBackend('exchange')) {
+    try {
+      const res = await fetch(`${GO_BACKEND_URL}/api/v1/ubicaciones?q=${encodeURIComponent(q || '')}`, {
+        headers: { 'Content-Type': 'application/json' },
+        next: { revalidate: 1800 },
+      })
+      if (res.ok) {
+        const json = await res.json()
+        const data = (json as { data?: unknown }).data ?? json
+        return NextResponse.json(data, {
+          headers: {
+            'Cache-Control': 'public, s-maxage=1800, stale-while-revalidate=3600',
+            'Vary': 'Accept-Encoding',
+          },
+        })
+      }
+    } catch {}
+  }
+
   const ip = getClientIP(request)
   const { success, remaining, resetIn } = rateLimit(`ubicaciones:${ip}`, {
     windowMs: 60 * 1000,
@@ -227,9 +252,6 @@ export async function GET(request: NextRequest) {
       }
     )
   }
-
-  const { searchParams } = new URL(request.url)
-  const q = searchParams.get('q')?.trim()
 
   if (!q || q.length < 2) {
     return NextResponse.json({ resultados: [] }, {

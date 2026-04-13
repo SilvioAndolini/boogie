@@ -4,8 +4,18 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getUsuarioAutenticado } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import { getCotizacionEuro } from '@/lib/services/exchange-rate'
+import { useGoBackend, goFetch } from '@/lib/go-api-client'
 
 export async function getTasaBCV() {
+  if (useGoBackend('exchange')) {
+    try {
+      const data = await goFetch<{ tasa: number; fuente: string }>('/exchange-rate')
+      return { tasa: data.tasa, fuente: data.fuente }
+    } catch {
+      const cotizacion = await getCotizacionEuro()
+      return { tasa: cotizacion.tasa, fuente: cotizacion.fuente }
+    }
+  }
   const cotizacion = await getCotizacionEuro()
   return { tasa: cotizacion.tasa, fuente: cotizacion.fuente }
 }
