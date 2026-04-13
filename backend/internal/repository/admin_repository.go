@@ -986,6 +986,7 @@ func (r *AdminRepo) GetDashboardStats(ctx context.Context) (map[string]interface
 	now := time.Now()
 	inicioSemana := time.Date(now.Year(), now.Month(), now.Day()-int(now.Weekday()), 0, 0, 0, 0, now.Location())
 	inicioMes := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+	inicioMesPasado := time.Date(now.Year(), now.Month()-1, 1, 0, 0, 0, 0, now.Location())
 
 	var usuariosTotal, propTotal, propPublicadas, resTotal, resPendientes int
 	r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM usuarios WHERE activo = true`).Scan(&usuariosTotal)
@@ -999,7 +1000,6 @@ func (r *AdminRepo) GetDashboardStats(ctx context.Context) (map[string]interface
 
 	var resMes, resMesPasado int
 	r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM reservas WHERE fecha_creacion >= $1`, inicioMes).Scan(&resMes)
-	inicioMesPasado := time.Date(now.Year(), now.Month()-1, 1, 0, 0, 0, 0, now.Location())
 	r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM reservas WHERE fecha_creacion >= $1 AND fecha_creacion < $2`, inicioMesPasado, inicioMes).Scan(&resMesPasado)
 
 	crecimientoReservas := 0
@@ -1007,11 +1007,171 @@ func (r *AdminRepo) GetDashboardStats(ctx context.Context) (map[string]interface
 		crecimientoReservas = int(float64(resMes-resMesPasado) / float64(resMesPasado) * 100)
 	}
 
+	var ingresosMes, ingresosMesPasado float64
+	r.pool.QueryRow(ctx, `SELECT COALESCE(SUM(monto), 0) FROM pagos WHERE estado IN ('VERIFICADO','ACREDITADO') AND fecha_creacion >= $1`, inicioMes).Scan(&ingresosMes)
+	r.pool.QueryRow(ctx, `SELECT COALESCE(SUM(monto), 0) FROM pagos WHERE estado IN ('VERIFICADO','ACREDITADO') AND fecha_creacion >= $1 AND fecha_creacion < $2`, inicioMesPasado, inicioMes).Scan(&ingresosMesPasado)
+
+	crecimientoIngresos := 0
+	if ingresosMesPasado > 0 {
+		crecimientoIngresos = int((ingresosMes - ingresosMesPasado) / ingresosMesPasado * 100)
+	}
+
+	resHoy := []interface{}{}
+	rows, err := r.pool.Query(ctx, `
+		SELECT r.id, r.codigo, r.total, r.noches, r.cantidad_huespedes, r.moneda,
+			COALESCE(u.id,''), COALESCE(u.nombre,''), COALESCE(u.apellido,''),
+			COALESCE(p.titulo,'')
+		FROM reservas r
+		LEFT JOIN usuarios u ON r.huesped_id = u.id
+		LEFT JOIN propiedades p ON r.propiedad_id = p.id
+		WHERE r.fecha_entrada = $1 AND r.estado IN ('CONFIRMADA','EN_CURSO')
+		ORDER BY r.fecha_creacion DESC`, now.Format("2006-01-02"))
+	if err == nil {
+		defer rows.Close()
+		for rows.Next() {
+			var id, codigo, moneda, uid, unombre, uapellido, ptitulo string
+			var total float64
+			var noches, ch int
+			if err := rows.Scan(&id, &codigo, &total, &noches, &ch, &moneda, &uid, &unombre, &uapellido, &ptitulo); err == nil {
+				resHoy = append(resHoy, map[string]interface{}{
+					"id": id, "codigo": codigo, "total": total, "noches": noches,
+					"cantidad_huespedes": ch, "moneda": moneda,
+					"huesped": map[string]string{"nombre": unombre, "apellido": uapellido},
+					"propiedad": map[string]string{"titulo": ptitulo},
+				})
+			}
+		}
+	}
+
+	ingresosByMonth := []map[string]interface{}{}
+	irows, err := r.pool.Query(ctx, `
+		SELECT TO_CHAR(d, 'Mon') as name, COALESCE(SUM(p.monto), 0) as ingresos
+		FROM generate_series(NOW() - INTERVAL '11 months', NOW(), INTERVAL '1 month') d
+		LEFT JOIN pagos p ON DATE_TRUNC('month', p.fecha_creacion) = DATE_TRUNC('month', d) AND p.estado IN ('VERIFICADO','ACREDITADO')
+		GROUP BY d ORDER BY d`)
+	if err == nil {
+		defer irows.Close()
+		for irows.Next() {
+			var name string
+			var ing float64
+			if err := irows.Scan(&name, &ing); err == nil {
+				ingresosByMonth = append(ingresosByMonth, map[string]interface{}{"name": name, "ingresos": ing})
+			}
+		}
+	}
+
+	reservasByStatus := []map[string]interface{}{}
+	statusColors := map[string]string{
+		"PENDIENTE": "#F59E0B", "CONFIRMADA": "#52B788", "EN_CURSO": "#3B82F6",
+		"COMPLETADA": "#9E9892", "CANCELADA_HUESPED": "#EF4444", "CANCELADA_ANFITRION": "#EF4444", "RECHAZADA": "#EF4444",
+	}
+	srows, err := r.pool.Query(ctx, `SELECT estado, COUNT(*) FROM reservas GROUP BY estado`)
+	if err == nil {
+		defer srows.Close()
+		for srows.Next() {
+			var estado string
+			var count int
+			if err := srows.Scan(&estado, &count); err == nil {
+				fill, ok := statusColors[estado]
+				if !ok {
+					fill = "#9E9892"
+				}
+				reservasByStatus = append(reservasByStatus, map[string]interface{}{"name": estado, "value": count, "fill": fill})
+			}
+		}
+	}
+
+	propiedadesByCiudad := []map[string]interface{}{}
+	prows, err := r.pool.Query(ctx, `SELECT ciudad, COUNT(*) as value FROM propiedades WHERE estado_publicacion = 'PUBLICADA' GROUP BY ciudad ORDER BY value DESC LIMIT 10`)
+	if err == nil {
+		defer prows.Close()
+		for prows.Next() {
+			var name string
+			var val int
+			if err := prows.Scan(&name, &val); err == nil {
+				propiedadesByCiudad = append(propiedadesByCiudad, map[string]interface{}{"name": name, "value": val})
+			}
+		}
+	}
+
+	usersByDay := []map[string]interface{}{}
+	urows, err := r.pool.Query(ctx, `
+		SELECT TO_CHAR(d, 'DD Mon') as name, COUNT(u.id) as usuarios
+		FROM generate_series(NOW() - INTERVAL '13 days', NOW(), INTERVAL '1 day') d
+		LEFT JOIN usuarios u ON DATE(u.fecha_registro) = d::date
+		GROUP BY d ORDER BY d`)
+	if err == nil {
+		defer urows.Close()
+		for urows.Next() {
+			var name string
+			var count int
+			if err := urows.Scan(&name, &count); err == nil {
+				usersByDay = append(usersByDay, map[string]interface{}{"name": name, "usuarios": count})
+			}
+		}
+	}
+
+	reservasRecientes := []interface{}{}
+	rrows, err := r.pool.Query(ctx, `
+		SELECT r.id, r.codigo, r.total, r.estado, r.moneda,
+			r.fecha_entrada, r.fecha_salida, r.fecha_creacion,
+			COALESCE(u.id,''), COALESCE(u.nombre,''), COALESCE(u.apellido,''),
+			COALESCE(p.titulo,'')
+		FROM reservas r
+		LEFT JOIN usuarios u ON r.huesped_id = u.id
+		LEFT JOIN propiedades p ON r.propiedad_id = p.id
+		ORDER BY r.fecha_creacion DESC LIMIT 5`)
+	if err == nil {
+		defer rrows.Close()
+		for rrows.Next() {
+			var id, codigo, estado, moneda, uid, unombre, uapellido, ptitulo string
+			var total float64
+			var fentrada, fsalida, fcreacion time.Time
+			if err := rrows.Scan(&id, &codigo, &total, &estado, &moneda, &fentrada, &fsalida, &fcreacion, &uid, &unombre, &uapellido, &ptitulo); err == nil {
+				reservasRecientes = append(reservasRecientes, map[string]interface{}{
+					"id": id, "codigo": codigo, "total": total, "estado": estado, "moneda": moneda,
+					"fecha_entrada": fentrada.Format("2006-01-02"), "fecha_salida": fsalida.Format("2006-01-02"),
+					"huesped": map[string]string{"nombre": unombre, "apellido": uapellido},
+					"propiedad": map[string]string{"titulo": ptitulo},
+				})
+			}
+		}
+	}
+
+	actividad := []interface{}{}
+	arows, err := r.pool.Query(ctx, `
+		SELECT a.id, a.accion, a.entidad, a.created_at,
+			COALESCE(u.id,''), COALESCE(u.nombre,''), COALESCE(u.apellido,'')
+		FROM admin_audit_log a
+		LEFT JOIN usuarios u ON a.admin_id = u.id
+		ORDER BY a.created_at DESC LIMIT 5`)
+	if err == nil {
+		defer arows.Close()
+		for arows.Next() {
+			var id, accion, entidad, uid, unombre, uapellido string
+			var createdAt time.Time
+			if err := arows.Scan(&id, &accion, &entidad, &createdAt, &uid, &unombre, &uapellido); err == nil {
+				actividad = append(actividad, map[string]interface{}{
+					"id": id, "accion": accion, "entidad": entidad,
+					"created_at": createdAt.Format(time.RFC3339),
+					"admin": map[string]string{"nombre": unombre, "apellido": uapellido},
+				})
+			}
+		}
+	}
+
 	return map[string]interface{}{
-		"usuarios": map[string]interface{}{"total": usuariosTotal, "nuevosSemana": usuariosNuevosSemana},
-		"propiedades": map[string]interface{}{"total": propTotal, "publicadas": propPublicadas},
-		"reservas": map[string]interface{}{"total": resTotal, "pendientes": resPendientes},
+		"usuarios":           map[string]interface{}{"total": usuariosTotal, "nuevosSemana": usuariosNuevosSemana},
+		"propiedades":        map[string]interface{}{"total": propTotal, "publicadas": propPublicadas},
+		"reservas":           map[string]interface{}{"total": resTotal, "pendientes": resPendientes, "hoy": resHoy},
+		"pagos":              map[string]interface{}{"ingresosMes": ingresosMes, "ingresosMesPasado": ingresosMesPasado, "crecimientoIngresos": crecimientoIngresos},
 		"crecimientoReservas": crecimientoReservas,
+		"ingresosByMonth":    ingresosByMonth,
+		"reservasByStatus":   reservasByStatus,
+		"propiedadesByCiudad": propiedadesByCiudad,
+		"usersByDay":         usersByDay,
+		"reservasRecientes":  reservasRecientes,
+		"actividad":          actividad,
 	}, nil
 }
 

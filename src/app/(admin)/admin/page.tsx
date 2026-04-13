@@ -184,8 +184,12 @@ export default function AdminDashboardPage() {
   const loadTables = useCallback(async () => {
     try {
       const res = await getAdminTablesData()
-      if (res && 'reservas' in res) {
-        setTables(res as typeof tables)
+      if (res && 'reservasRecientes' in res) {
+        const raw = res as Record<string, unknown>
+        setTables({
+          reservas: (raw.reservasRecientes as Record<string, unknown>[]) || [],
+          actividad: (raw.actividad as Record<string, unknown>[]) || [],
+        })
       }
     } catch (err) {
       console.error('[AdminDashboard] loadTables error:', err)

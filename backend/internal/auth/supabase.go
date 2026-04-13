@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"math/big"
 	"net/http"
 	"strings"
@@ -48,6 +49,7 @@ type SupabaseVerifier struct {
 	keys        map[string]*ecdsa.PublicKey
 	mu          sync.RWMutex
 	fetchedAt   time.Time
+	FetchRole   func(ctx context.Context, userID string) string
 }
 
 func NewSupabaseVerifier(supabaseURL string) *SupabaseVerifier {
@@ -60,7 +62,7 @@ func NewSupabaseVerifier(supabaseURL string) *SupabaseVerifier {
 }
 
 func (v *SupabaseVerifier) fetchKeys() {
-	url := v.supabaseURL + "/auth/v1/jwks"
+	url := v.supabaseURL + "/auth/v1/.well-known/jwks.json"
 
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Get(url)
@@ -131,8 +133,11 @@ func (v *SupabaseVerifier) VerifyToken(tokenString string) (*UserClaims, error) 
 
 	role := ""
 	if appMeta, ok := claims["app_metadata"].(map[string]interface{}); ok {
-		if r, ok := appMeta["rol"].(string); ok {
-			role = r
+		for _, key := range []string{"rol", "role"} {
+			if r, ok := appMeta[key].(string); ok && r != "" {
+				role = r
+				break
+			}
 		}
 	}
 	if role == "" {
@@ -168,15 +173,23 @@ func (v *SupabaseVerifier) Middleware(next http.Handler) http.Handler {
 
 		claims, err := v.VerifyToken(tokenString)
 		if err != nil {
+			slog.Warn("token verify failed", "error", err)
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte(`{"error":{"code":"AUTH_INVALID_TOKEN","message":"Invalid or expired token"}}`))
 			return
 		}
 
+		role := claims.Role
+		if v.FetchRole != nil {
+			if dbRole := v.FetchRole(r.Context(), claims.ID); dbRole != "" {
+				role = dbRole
+			}
+		}
+
 		ctx := context.WithValue(r.Context(), UserIDKey, claims.ID)
 		ctx = context.WithValue(ctx, UserEmailKey, claims.Email)
-		ctx = context.WithValue(ctx, UserRoleKey, claims.Role)
+		ctx = context.WithValue(ctx, UserRoleKey, role)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -204,8 +217,8 @@ func GetUserRole(ctx context.Context) string {
 
 func RequireAdmin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		role := GetUserRole(r.Context())
-		if role != "ADMIN" {
+		role := strings.ToUpper(GetUserRole(r.Context()))
+		if role != "ADMIN" && role != "CEO" {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusForbidden)
 			w.Write([]byte(`{"error":{"code":"AUTH_NOT_ADMIN","message":"Admin access required"}}`))

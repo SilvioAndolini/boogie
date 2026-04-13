@@ -34,6 +34,18 @@ func main() {
 		slog.Warn("database connection skipped", "error", err)
 	}
 
+	if db != nil {
+		verifier.FetchRole = func(ctx context.Context, userID string) string {
+			var rol string
+			err := db.QueryRow(ctx, "SELECT rol FROM usuarios WHERE id = $1", userID).Scan(&rol)
+			if err != nil {
+				slog.Warn("fetch role failed", "userID", userID, "error", err)
+				return ""
+			}
+			return rol
+		}
+	}
+
 	exchangeSvc := service.NewExchangeService()
 	ubicacionesSvc := service.NewUbicacionesService()
 
