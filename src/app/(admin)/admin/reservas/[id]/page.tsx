@@ -73,7 +73,8 @@ function formatMoney(n: number, moneda = 'USD') {
 }
 
 function formatDate(s: string) {
-  return new Date(s + 'T12:00:00').toLocaleDateString('es-VE', { day: 'numeric', month: 'short', year: 'numeric' })
+  const d = s.includes('T') ? new Date(s) : new Date(s + 'T12:00:00')
+  return d.toLocaleDateString('es-VE', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 function formatDateTime(s: string) {
