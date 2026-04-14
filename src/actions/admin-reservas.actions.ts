@@ -1,6 +1,7 @@
 'use server'
 
 import { goApi, goGet, goPost, GoAPIError } from '@/lib/go-api-client'
+import { revalidatePath } from 'next/cache'
 
 type ReservasResult = {
   data?: Array<Record<string, unknown>>;
@@ -77,6 +78,11 @@ export async function accionReservaAdmin(formData: FormData) {
 
   try {
     await goPost('/api/v1/admin/reservas/accion', { reservaId, accion, motivo })
+    revalidatePath('/admin/reservas')
+    revalidatePath('/admin/pagos')
+    revalidatePath('/dashboard/mis-reservas')
+    revalidatePath('/dashboard/reservas-recibidas')
+    revalidatePath('/dashboard/pagos')
     return { exito: true }
   } catch (err) {
     if (err instanceof GoAPIError) return { error: err.message }

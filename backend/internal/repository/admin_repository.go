@@ -44,6 +44,7 @@ type AdminReserva struct {
 	PrecioPorNoche     float64              `json:"precio_por_noche"`
 	Subtotal           float64              `json:"subtotal"`
 	ComisionPlataforma float64              `json:"comision_plataforma"`
+	ComisionAnfitrion  *float64             `json:"comision_anfitrion"`
 	Total              float64              `json:"total"`
 	Moneda             string               `json:"moneda"`
 	Estado             string               `json:"estado"`
@@ -53,8 +54,10 @@ type AdminReserva struct {
 	FechaCreacion      time.Time            `json:"fecha_creacion"`
 	FechaConfirmacion  *time.Time           `json:"fecha_confirmacion"`
 	FechaCancelacion   *time.Time           `json:"fecha_cancelacion"`
-	Propiedad          *AdminPropiedadShort `json:"propiedad"`
-	Huesped            *AdminUserShort      `json:"huesped"`
+	Propiedad          *AdminPropiedadFull  `json:"propiedad"`
+	Huesped            *AdminUserFull       `json:"huesped"`
+	Pagos              []AdminPagoReserva   `json:"pagos"`
+	Timeline           []AdminTimelineEntry `json:"timeline"`
 }
 
 type AdminPropiedadShort struct {
@@ -71,6 +74,82 @@ type AdminUserShort struct {
 	Apellido  string  `json:"apellido"`
 	Email     string  `json:"email"`
 	AvatarURL *string `json:"avatar_url"`
+}
+
+type AdminUserFull struct {
+	ID        string  `json:"id"`
+	Nombre    string  `json:"nombre"`
+	Apellido  string  `json:"apellido"`
+	Email     string  `json:"email"`
+	Telefono  *string `json:"telefono"`
+	Cedula    *string `json:"cedula"`
+	AvatarURL *string `json:"avatar_url"`
+}
+
+type AdminPropiedadFull struct {
+	ID          string                 `json:"id"`
+	Titulo      string                 `json:"titulo"`
+	Slug        string                 `json:"slug"`
+	Ciudad      string                 `json:"ciudad"`
+	Estado      string                 `json:"estado"`
+	Direccion   *string                `json:"direccion"`
+	Propietario *AdminPropietarioShort `json:"propietario"`
+}
+
+type AdminPropietarioShort struct {
+	ID       string  `json:"id"`
+	Nombre   string  `json:"nombre"`
+	Apellido string  `json:"apellido"`
+	Email    string  `json:"email"`
+	Telefono *string `json:"telefono"`
+}
+
+type AdminPagoReserva struct {
+	ID                string     `json:"id"`
+	Monto             float64    `json:"monto"`
+	Moneda            string     `json:"moneda"`
+	MetodoPago        string     `json:"metodo_pago"`
+	Referencia        string     `json:"referencia"`
+	Comprobante       *string    `json:"comprobante"`
+	Estado            string     `json:"estado"`
+	FechaCreacion     time.Time  `json:"fecha_creacion"`
+	FechaVerificacion *time.Time `json:"fecha_verificacion"`
+	NotasVerificacion *string    `json:"notas_verificacion"`
+}
+
+type AdminTimelineEntry struct {
+	Accion   string                 `json:"accion"`
+	CreadoEn time.Time              `json:"creado_en"`
+	Detalles map[string]interface{} `json:"detalles"`
+	Admin    *AdminTimelineAdmin    `json:"admin"`
+}
+
+type AdminTimelineAdmin struct {
+	Nombre   string `json:"nombre"`
+	Apellido string `json:"apellido"`
+	Email    string `json:"email"`
+}
+
+type AdminReservaListItem struct {
+	ID                 string               `json:"id"`
+	Codigo             string               `json:"codigo"`
+	FechaEntrada       time.Time            `json:"fecha_entrada"`
+	FechaSalida        time.Time            `json:"fecha_salida"`
+	Noches             int                  `json:"noches"`
+	PrecioPorNoche     float64              `json:"precio_por_noche"`
+	Subtotal           float64              `json:"subtotal"`
+	ComisionPlataforma float64              `json:"comision_plataforma"`
+	Total              float64              `json:"total"`
+	Moneda             string               `json:"moneda"`
+	Estado             string               `json:"estado"`
+	CantidadHuespedes  int                  `json:"cantidad_huespedes"`
+	NotasHuesped       *string              `json:"notas_huesped"`
+	NotasInternas      *string              `json:"notas_internas"`
+	FechaCreacion      time.Time            `json:"fecha_creacion"`
+	FechaConfirmacion  *time.Time           `json:"fecha_confirmacion"`
+	FechaCancelacion   *time.Time           `json:"fecha_cancelacion"`
+	Propiedad          *AdminPropiedadShort `json:"propiedad"`
+	Huesped            *AdminUserShort      `json:"huesped"`
 }
 
 type AdminPago struct {
@@ -204,7 +283,7 @@ type Notificacion struct {
 	Usuario       *AdminUserShort `json:"usuario"`
 }
 
-func (r *AdminRepo) GetReservasAdmin(ctx context.Context, estado, busqueda string, pagina, limite int) ([]AdminReserva, int, error) {
+func (r *AdminRepo) GetReservasAdmin(ctx context.Context, estado, busqueda string, pagina, limite int) ([]AdminReservaListItem, int, error) {
 	offset := (pagina - 1) * limite
 
 	where := []string{}
@@ -255,9 +334,9 @@ func (r *AdminRepo) GetReservasAdmin(ctx context.Context, estado, busqueda strin
 	}
 	defer rows.Close()
 
-	var reservas []AdminReserva
+	var reservas []AdminReservaListItem
 	for rows.Next() {
-		var res AdminReserva
+		var res AdminReservaListItem
 		var prop AdminPropiedadShort
 		var huesp AdminUserShort
 		if err := rows.Scan(
@@ -275,7 +354,7 @@ func (r *AdminRepo) GetReservasAdmin(ctx context.Context, estado, busqueda strin
 		reservas = append(reservas, res)
 	}
 	if reservas == nil {
-		reservas = []AdminReserva{}
+		reservas = []AdminReservaListItem{}
 	}
 	return reservas, total, nil
 }
@@ -1414,7 +1493,7 @@ func (r *AdminRepo) GetPropiedadIngresos(ctx context.Context, id string) (map[st
 					"noches": nochesR, "cantidad_huespedes": ch,
 					"fecha_entrada": fentrada.Format("2006-01-02"), "fecha_salida": fsalida.Format("2006-01-02"),
 					"fecha_creacion": fcreacion.Format(time.RFC3339),
-					"huesped": map[string]string{"nombre": unombre, "apellido": uapellido},
+					"huesped":        map[string]string{"nombre": unombre, "apellido": uapellido},
 				})
 			}
 		}
@@ -1422,17 +1501,17 @@ func (r *AdminRepo) GetPropiedadIngresos(ctx context.Context, id string) (map[st
 
 	return map[string]interface{}{
 		"kpis": map[string]interface{}{
-			"totalIngresos":          ingresos,
-			"totalComisiones":        comisionPlat,
+			"totalIngresos":            ingresos,
+			"totalComisiones":          comisionPlat,
 			"totalComisionesAnfitrion": comisionAnf,
-			"ingresosNetos":          ingresos - comisionPlat - comisionAnf,
-			"totalNoches":            noches,
-			"totalHuespedes":         totalHuespedes,
-			"tarifaPromedio":         tarifaPromedio,
-			"totalReservas":          totalReservas,
-			"ingresosMes":            ingresosMes,
-			"ingresosMesPasado":      ingresosMesPasado,
-			"crecimiento":            crecimiento,
+			"ingresosNetos":            ingresos - comisionPlat - comisionAnf,
+			"totalNoches":              noches,
+			"totalHuespedes":           totalHuespedes,
+			"tarifaPromedio":           tarifaPromedio,
+			"totalReservas":            totalReservas,
+			"ingresosMes":              ingresosMes,
+			"ingresosMesPasado":        ingresosMesPasado,
+			"crecimiento":              crecimiento,
 		},
 		"ingresosByMonth": ingresosByMonth,
 		"reservas":        reservas,
@@ -1441,30 +1520,123 @@ func (r *AdminRepo) GetPropiedadIngresos(ctx context.Context, id string) (map[st
 
 func (r *AdminRepo) GetReservaByIDFull(ctx context.Context, id string) (*AdminReserva, error) {
 	var res AdminReserva
-	var prop AdminPropiedadShort
-	var huesp AdminUserShort
+	var prop AdminPropiedadFull
+	var huesp AdminUserFull
+	var propietario AdminPropietarioShort
 	err := r.pool.QueryRow(ctx, `
 		SELECT r.id, r.codigo, r.fecha_entrada, r.fecha_salida, r.noches,
-			r.precio_por_noche, r.subtotal, r.comision_plataforma, r.total, r.moneda,
+			r.precio_por_noche, r.subtotal, r.comision_plataforma, r.comision_anfitrion, r.total, r.moneda,
 			r.estado, r.cantidad_huespedes, r.notas_huesped, r.notas_internas,
 			r.fecha_creacion, r.fecha_confirmacion, r.fecha_cancelacion,
-			COALESCE(p.id,''), COALESCE(p.titulo,''), COALESCE(p.slug,''), COALESCE(p.ciudad,''), COALESCE(p.estado,''),
-			COALESCE(u.id,''), COALESCE(u.nombre,''), COALESCE(u.apellido,''), COALESCE(u.email,''), u.avatar_url
+			COALESCE(p.id,''), COALESCE(p.titulo,''), COALESCE(p.slug,''), COALESCE(p.ciudad,''), COALESCE(p.estado,''), p.direccion,
+			COALESCE(u.id,''), COALESCE(u.nombre,''), COALESCE(u.apellido,''), COALESCE(u.email,''), u.telefono, u.cedula, u.avatar_url,
+			COALESCE(a.id,''), COALESCE(a.nombre,''), COALESCE(a.apellido,''), COALESCE(a.email,''), a.telefono
 		FROM reservas r
 		LEFT JOIN propiedades p ON r.propiedad_id = p.id
 		LEFT JOIN usuarios u ON r.huesped_id = u.id
+		LEFT JOIN usuarios a ON p.usuario_id = a.id
 		WHERE r.id = $1`, id).Scan(
 		&res.ID, &res.Codigo, &res.FechaEntrada, &res.FechaSalida, &res.Noches,
-		&res.PrecioPorNoche, &res.Subtotal, &res.ComisionPlataforma, &res.Total, &res.Moneda,
+		&res.PrecioPorNoche, &res.Subtotal, &res.ComisionPlataforma, &res.ComisionAnfitrion, &res.Total, &res.Moneda,
 		&res.Estado, &res.CantidadHuespedes, &res.NotasHuesped, &res.NotasInternas,
 		&res.FechaCreacion, &res.FechaConfirmacion, &res.FechaCancelacion,
-		&prop.ID, &prop.Titulo, &prop.Slug, &prop.Ciudad, &prop.Estado,
-		&huesp.ID, &huesp.Nombre, &huesp.Apellido, &huesp.Email, &huesp.AvatarURL,
+		&prop.ID, &prop.Titulo, &prop.Slug, &prop.Ciudad, &prop.Estado, &prop.Direccion,
+		&huesp.ID, &huesp.Nombre, &huesp.Apellido, &huesp.Email, &huesp.Telefono, &huesp.Cedula, &huesp.AvatarURL,
+		&propietario.ID, &propietario.Nombre, &propietario.Apellido, &propietario.Email, &propietario.Telefono,
 	)
 	if err != nil {
 		return nil, err
 	}
+	if propietario.ID != "" {
+		prop.Propietario = &propietario
+	}
 	res.Propiedad = &prop
 	res.Huesped = &huesp
+
+	// Fetch pagos for this reserva
+	pagos, err := r.getPagosByReservaID(ctx, id)
+	if err == nil {
+		res.Pagos = pagos
+	} else {
+		res.Pagos = []AdminPagoReserva{}
+	}
+
+	// Fetch timeline from admin_audit_log
+	timeline, err := r.getTimelineByReservaID(ctx, id)
+	if err == nil {
+		res.Timeline = timeline
+	} else {
+		res.Timeline = []AdminTimelineEntry{}
+	}
+
 	return &res, nil
+}
+
+func (r *AdminRepo) getPagosByReservaID(ctx context.Context, reservaID string) ([]AdminPagoReserva, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT p.id, p.monto, p.moneda, p.metodo_pago, COALESCE(p.referencia,''), p.comprobante,
+			p.estado, p.fecha_creacion, p.fecha_verificacion, p.notas_verificacion
+		FROM pagos p
+		WHERE p.reserva_id = $1
+		ORDER BY p.fecha_creacion DESC`, reservaID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var pagos []AdminPagoReserva
+	for rows.Next() {
+		var p AdminPagoReserva
+		if err := rows.Scan(
+			&p.ID, &p.Monto, &p.Moneda, &p.MetodoPago, &p.Referencia, &p.Comprobante,
+			&p.Estado, &p.FechaCreacion, &p.FechaVerificacion, &p.NotasVerificacion,
+		); err != nil {
+			return nil, err
+		}
+		pagos = append(pagos, p)
+	}
+	if pagos == nil {
+		pagos = []AdminPagoReserva{}
+	}
+	return pagos, nil
+}
+
+func (r *AdminRepo) getTimelineByReservaID(ctx context.Context, reservaID string) ([]AdminTimelineEntry, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT a.accion, a.created_at, a.detalles,
+			COALESCE(u.id,''), COALESCE(u.nombre,''), COALESCE(u.apellido,''), COALESCE(u.email,'')
+		FROM admin_audit_log a
+		LEFT JOIN usuarios u ON a.admin_id = u.id
+		WHERE a.entidad_id = $1
+		ORDER BY a.created_at DESC`, reservaID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var entries []AdminTimelineEntry
+	for rows.Next() {
+		var e AdminTimelineEntry
+		var detallesJSON []byte
+		var adminID, adminNombre, adminApellido, adminEmail string
+		if err := rows.Scan(&e.Accion, &e.CreadoEn, &detallesJSON,
+			&adminID, &adminNombre, &adminApellido, &adminEmail,
+		); err != nil {
+			return nil, err
+		}
+		if detallesJSON != nil {
+			_ = json.Unmarshal(detallesJSON, &e.Detalles)
+		}
+		if e.Detalles == nil {
+			e.Detalles = map[string]interface{}{}
+		}
+		if adminID != "" {
+			e.Admin = &AdminTimelineAdmin{Nombre: adminNombre, Apellido: adminApellido, Email: adminEmail}
+		}
+		entries = append(entries, e)
+	}
+	if entries == nil {
+		entries = []AdminTimelineEntry{}
+	}
+	return entries, nil
 }

@@ -16,6 +16,7 @@ export async function crearReserva(rawData: {
     const reserva = await goPost<ReservaConPropiedad>('/api/v1/reservas', rawData)
 
     revalidatePath('/dashboard/mis-reservas')
+    revalidatePath('/dashboard/reservas-recibidas')
     revalidatePath(`/propiedades/${rawData.propiedadId}`)
 
     return { exito: true, datos: reserva }
@@ -36,6 +37,9 @@ export async function cancelarReserva(
 
     revalidatePath('/dashboard/mis-reservas')
     revalidatePath('/dashboard/reservas-recibidas')
+    revalidatePath('/dashboard/pagos')
+    revalidatePath('/admin/reservas')
+    revalidatePath('/admin/pagos')
 
     return { exito: true, datos: result }
   } catch (err) {
@@ -60,6 +64,9 @@ export async function confirmarORechazarReserva(
 
     revalidatePath('/dashboard/reservas-recibidas')
     revalidatePath('/dashboard/mis-reservas')
+    revalidatePath('/dashboard/pagos')
+    revalidatePath('/admin/reservas')
+    revalidatePath('/admin/pagos')
 
     return { exito: true }
   } catch (err) {

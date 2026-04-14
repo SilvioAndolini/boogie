@@ -2,6 +2,7 @@
 
 import { getUsuarioAutenticado } from '@/lib/auth'
 import { goPost } from '@/lib/go-api-client'
+import { revalidatePath } from 'next/cache'
 
 export async function registrarPagoReserva(datos: {
   reservaId: string
@@ -48,6 +49,9 @@ export async function registrarPagoReserva(datos: {
     return { error: message }
   }
 
+  revalidatePath('/dashboard/mis-reservas')
+  revalidatePath('/dashboard/reservas-recibidas')
+  revalidatePath('/dashboard/pagos')
   return { exito: true }
 }
 
@@ -121,6 +125,11 @@ export async function crearReservaConPago(datos: {
       comprobanteUrl: comprobanteUrl,
       storeItems,
     })
+    revalidatePath('/dashboard/mis-reservas')
+    revalidatePath('/dashboard/reservas-recibidas')
+    revalidatePath('/dashboard/pagos')
+    revalidatePath('/admin/reservas')
+    revalidatePath('/admin/pagos')
     return { exito: true, reservaId: (reserva as Record<string, unknown>).id as string }
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : 'Error al crear la reserva'

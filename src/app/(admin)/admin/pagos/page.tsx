@@ -6,6 +6,7 @@ import {
   CreditCard, Search, Loader2, CheckCircle2, XCircle,
   Clock, DollarSign, TrendingUp, ArrowRight, ShieldCheck,
   ChevronDown, FileText, Smartphone, Building2, Home, ExternalLink, Coins,
+  Receipt,
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
@@ -97,6 +98,7 @@ export default function AdminPagosPage() {
   const [filtroMetodo, setFiltroMetodo] = useState<string>('TODOS')
   const [accionando, setAccionando] = useState<string | null>(null)
   const [pagoExpandido, setPagoExpandido] = useState<string | null>(null)
+  const [comprobantePreview, setComprobantePreview] = useState<string | null>(null)
   const [tasaBCV, setTasaBCV] = useState<number | null>(null)
 
   const cargarDatos = async () => {
@@ -264,7 +266,7 @@ export default function AdminPagosPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
                       <p className="font-semibold text-[#1A1A1A] truncate text-sm">
-                        {huesped ? `${huesped.nombre} ${huesped.apellido}` : '—'}
+                        {reserva?.codigo ? `#${reserva.codigo}` : p.referencia ? `Ref. ${p.referencia}` : `Pago ${p.id.slice(0, 8)}`}
                       </p>
                       <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide ${ESTADO_PAGO_COLORS[p.estado]}`}>
                         {ESTADO_PAGO_LABELS[p.estado]}
@@ -274,6 +276,12 @@ export default function AdminPagosPage() {
                       <span className="rounded bg-[#F8F6F3] px-1.5 py-0.5 font-medium">
                         {METODOS_PAGO[p.metodo_pago as keyof typeof METODOS_PAGO] || p.metodo_pago}
                       </span>
+                      {huesped && (
+                        <>
+                          <span className="text-[#E8E4DF]">·</span>
+                          <span className="truncate">{huesped.nombre} {huesped.apellido}</span>
+                        </>
+                      )}
                       {reserva?.propiedades && (
                         <>
                           <span className="text-[#E8E4DF]">·</span>
@@ -283,7 +291,16 @@ export default function AdminPagosPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 shrink-0">
+                  <div className="flex items-center gap-2 shrink-0">
+                    {p.comprobante && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setComprobantePreview(p.comprobante) }}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E8E4DF] text-[#9E9892] hover:text-[#1B4332] hover:border-[#1B4332]/30 transition-colors"
+                        title="Ver comprobante"
+                      >
+                        <Receipt className="h-3.5 w-3.5" />
+                      </button>
+                    )}
                     <div className="text-right">
                       <p className="text-sm font-bold text-[#1A1A1A]">{formatMoney(Number(p.monto), p.moneda)}</p>
                       {montoVES && (
@@ -479,6 +496,45 @@ export default function AdminPagosPage() {
           <p className="text-xs mt-1">Intenta ajustar los filtros o la búsqueda</p>
         </div>
       )}
+
+      <AnimatePresence>
+        {comprobantePreview && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+            onClick={() => setComprobantePreview(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              className="relative max-h-[90vh] max-w-3xl w-full overflow-hidden rounded-2xl bg-white shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b border-[#E8E4DF] px-5 py-3">
+                <p className="text-sm font-semibold text-[#1A1A1A]">Comprobante</p>
+                <button
+                  onClick={() => setComprobantePreview(null)}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-[#9E9892] hover:bg-[#F8F6F3] hover:text-[#1A1A1A] transition-colors"
+                >
+                  <XCircle className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="overflow-auto max-h-[calc(90vh-52px)] p-4">
+                <img
+                  src={comprobantePreview}
+                  alt="Comprobante de pago"
+                  className="w-full h-auto rounded-lg"
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   )
 }

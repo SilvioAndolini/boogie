@@ -65,6 +65,10 @@ export async function verificarPagoAdmin(formData: FormData) {
   try {
     await goPost('/api/v1/admin/pagos/verificar', { pagoId, accion, notasVerificacion })
     revalidatePath('/admin/pagos')
+    revalidatePath('/admin/reservas')
+    revalidatePath('/dashboard/mis-reservas')
+    revalidatePath('/dashboard/reservas-recibidas')
+    revalidatePath('/dashboard/pagos')
     return { exito: true }
   } catch (err) {
     if (err instanceof GoAPIError) return { error: err.message }

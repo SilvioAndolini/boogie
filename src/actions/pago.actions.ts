@@ -57,6 +57,7 @@ export async function verificarPago(pagoId: string, aprobado: boolean, notas?: s
   }
 
   revalidatePath('/dashboard/reservas-recibidas')
+  revalidatePath('/dashboard/mis-reservas')
   revalidatePath('/dashboard/pagos')
   return { exito: true }
 }
