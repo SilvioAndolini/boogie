@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"log/slog"
 	"net/http"
 
@@ -98,7 +99,7 @@ func (h *PagoHandler) RegistrarConComprobante(w http.ResponseWriter, r *http.Req
 	}
 
 	var req registrarPagoComprobanteRequest
-	if err := DecodeJSON(r, &req); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "JSON invalido")
 		return
 	}
