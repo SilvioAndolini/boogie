@@ -149,14 +149,15 @@ export async function actualizarRolUsuario(formData: FormData) {
   const reputacion = (formData.get('reputacion') as string) || undefined
   const reputacion_manual = (formData.get('reputacion_manual') as string) || undefined
 
+  const body: Record<string, unknown> = {}
+  if (rol) body.rol = rol
+  if (activo !== undefined) body.activo = activo === 'true'
+  if (plan) body.plan = plan
+  if (reputacion) body.reputacion = parseFloat(reputacion)
+  if (reputacion_manual) body.reputacion_manual = reputacion_manual
+
   try {
-    await goPatch(`/api/v1/admin/usuarios/${usuarioId}`, {
-      rol,
-      activo,
-      plan,
-      reputacion,
-      reputacion_manual,
-    })
+    await goPatch(`/api/v1/admin/usuarios/${usuarioId}`, body)
     revalidatePath('/admin/usuarios')
     return { exito: true }
   } catch (err) {
