@@ -148,9 +148,9 @@ export async function getReservasRecibidas(): Promise<ReservaConPropiedad[]> {
 
 export async function getReservaStoreItems(reservaId: string) {
   try {
-    return await goGet<Array<Record<string, unknown>>>(`/api/v1/reservas/${reservaId}/store-items`)
-  } catch (err) {
-    console.error('[getReservaStoreItems] Error:', err)
+    const items = await goGet<Array<Record<string, unknown>>>(`/api/v1/reservas/${reservaId}/store-items`)
+    return Array.isArray(items) ? items : []
+  } catch {
     return []
   }
 }
