@@ -28,8 +28,8 @@ interface Reserva {
   cantidad_huespedes: number
   notas_huesped: string | null
   fecha_creacion: string
-  propiedades: { id: string; titulo: string; slug: string; ciudad: string } | null
-  usuarios: { id: string; nombre: string; apellido: string; email: string } | null
+  propiedad: { id: string; titulo: string; slug: string; ciudad: string } | null
+  huesped: { id: string; nombre: string; apellido: string; email: string } | null
 }
 
 const ESTADO_ICONS: Record<string, typeof Clock> = {
@@ -187,8 +187,8 @@ export default function AdminReservasPage() {
       <motion.div variants={stagger} className="space-y-2">
         {reservas.map((r) => {
           const EstadoIcon = ESTADO_ICONS[r.estado] || Clock
-          const prop = r.propiedades
-          const huesped = r.usuarios
+          const prop = r.propiedad
+          const huesped = r.huesped
           const esPendiente = r.estado === 'PENDIENTE'
 
           return (

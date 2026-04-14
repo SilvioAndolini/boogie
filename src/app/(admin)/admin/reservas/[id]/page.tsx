@@ -53,11 +53,11 @@ interface ReservaDetalle {
   fecha_creacion: string
   fecha_confirmacion: string | null
   fecha_cancelacion: string | null
-  propiedades: {
+  propiedad: {
     id: string; titulo: string; slug: string; ciudad: string; estado: string; direccion: string
-    usuarios: { id: string; nombre: string; apellido: string; email: string; telefono: string | null } | null
+    propietario: { id: string; nombre: string; apellido: string; email: string; telefono: string | null } | null
   } | null
-  usuarios: { id: string; nombre: string; apellido: string; email: string; telefono: string | null; cedula: string | null } | null
+  huesped: { id: string; nombre: string; apellido: string; email: string; telefono: string | null; cedula: string | null } | null
   pagos: Pago[] | null
 }
 
@@ -127,9 +127,9 @@ export default function AdminReservaDetallePage() {
   }
 
   const r = data.reserva
-  const prop = r.propiedades
-  const huesped = r.usuarios
-  const anfitrion = prop?.usuarios
+  const prop = r.propiedad
+  const huesped = r.huesped
+  const anfitrion = prop?.propietario
   const pagos = r.pagos || []
   const esPendiente = r.estado === 'PENDIENTE'
   const esConfirmada = r.estado === 'CONFIRMADA'
@@ -546,7 +546,7 @@ export default function AdminReservaDetallePage() {
                     <div className="min-w-0">
                       <p className="text-[#1A1A1A] font-medium">{entry.accion.replace(/_/g, ' ')}</p>
                       <p className="text-[#9E9892]">
-                        {entry.usuarios ? `${entry.usuarios.nombre} ${entry.usuarios.apellido}` : 'Admin'} · {formatDateTime(entry.creado_en)}
+                        {entry.admin ? `${entry.admin.nombre} ${entry.admin.apellido}` : 'Admin'} · {formatDateTime(entry.creado_en)}
                       </p>
                     </div>
                   </div>
