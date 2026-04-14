@@ -116,33 +116,39 @@ export function BookingCalendar({
     if (!fechaEntrada || (fechaEntrada && fechaSalida)) {
       onFechaEntradaChange?.(fecha)
       onFechaSalidaChange?.(undefined as unknown as Date)
-    } else {
-      const entTs = soloFecha(fechaEntrada)
-      if (ts > entTs && !rangoTieneBloqueados(entTs, ts)) {
-        if (propiedadId) {
-          setVerificando(true)
-          try {
-            const verif = await verificarDisponibilidad(propiedadId, fechaEntrada, fecha)
-            if (!verif.disponible) {
-              onFechaEntradaChange?.(fecha)
-              onFechaSalidaChange?.(undefined as unknown as Date)
-              return
-            }
-          } catch {
-            return
-          } finally {
-            setVerificando(false)
-          }
+      return
+    }
+
+    const entTs = soloFecha(fechaEntrada)
+
+    if (ts <= entTs) {
+      onFechaEntradaChange?.(fecha)
+      onFechaSalidaChange?.(undefined as unknown as Date)
+      return
+    }
+
+    if (rangoTieneBloqueados(entTs, ts)) {
+      onFechaEntradaChange?.(fecha)
+      onFechaSalidaChange?.(undefined as unknown as Date)
+      return
+    }
+
+    if (propiedadId) {
+      setVerificando(true)
+      try {
+        const verif = await verificarDisponibilidad(propiedadId, fechaEntrada, fecha)
+        if (!verif.disponible) {
+          return
         }
+      } catch {
         onFechaSalidaChange?.(fecha)
-      } else if (ts > entTs) {
-        onFechaEntradaChange?.(fecha)
-        onFechaSalidaChange?.(undefined as unknown as Date)
-      } else {
-        onFechaEntradaChange?.(fecha)
-        onFechaSalidaChange?.(undefined as unknown as Date)
+        return
+      } finally {
+        setVerificando(false)
       }
     }
+
+    onFechaSalidaChange?.(fecha)
   }
 
   const hoyTs = soloFecha(new Date())
