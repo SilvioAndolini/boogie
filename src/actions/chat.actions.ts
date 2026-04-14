@@ -2,7 +2,7 @@
 
 import { getUsuarioAutenticado } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { goGet, goPost } from '@/lib/go-api-client'
+import { goGet, goPost, goPut, goDelete, useGoBackend } from '@/lib/go-api-client'
 import { Conversacion, Mensaje, MensajeRapido } from '@/types/chat'
 import {
   QUICK_MESSAGES_DEFAULTS_ANFITRION,
@@ -23,6 +23,37 @@ export async function getConversacionInfo(
 }> {
   const user = await getUsuarioAutenticado()
   if (!user) return { exito: false, error: 'No autenticado' }
+
+  if (useGoBackend('chat')) {
+    try {
+      const info = await goGet<{
+        otro_id: string
+        otro_nombre: string
+        otro_apellido: string
+        otro_avatar_url: string | null
+        propiedad_id: string | null
+        propiedad_titulo: string | null
+      }>(`/api/v1/chat/conversaciones/${conversacionId}`)
+
+      await seedMensajesRapidos('')
+
+      return {
+        exito: true,
+        miId: user.id,
+        otroUsuario: {
+          id: info.otro_id,
+          nombre: info.otro_nombre,
+          apellido: info.otro_apellido,
+          avatar_url: info.otro_avatar_url,
+        },
+        propiedad: info.propiedad_id
+          ? { id: info.propiedad_id, titulo: info.propiedad_titulo }
+          : null,
+      }
+    } catch (err: any) {
+      return { exito: false, error: err.message || 'Conversacion no encontrada' }
+    }
+  }
 
   const admin = createAdminClient()
 
@@ -185,6 +216,15 @@ export async function subirImagenChat(formData: FormData): Promise<{ exito: bool
   if (!archivo) return { exito: false, error: 'No se encontró imagen' }
   if (archivo.size > IMAGEN_CHAT_MAX_SIZE) return { exito: false, error: 'Imagen muy grande (máx 5MB)' }
 
+  if (useGoBackend('chat')) {
+    try {
+      const result = await goPost<{ ok: boolean; url: string }>('/api/v1/chat/imagen', formData)
+      return { exito: true, url: result.url }
+    } catch (err: any) {
+      return { exito: false, error: err.message || 'Error al subir imagen' }
+    }
+  }
+
   const admin = createAdminClient()
   const ext = archivo.name.split('.').pop() || 'jpg'
   const path = `${user.id}/${Date.now()}.${ext}`
@@ -216,6 +256,15 @@ export async function getMensajesRapidos(): Promise<{ exito: boolean; datos?: Me
   const user = await getUsuarioAutenticado()
   if (!user) return { exito: false, error: 'No autenticado' }
 
+  if (useGoBackend('chat')) {
+    try {
+      const datos = await goGet<MensajeRapido[]>('/api/v1/chat/mensajes-rapidos')
+      return { exito: true, datos: datos ?? [] }
+    } catch (err: any) {
+      return { exito: false, error: err.message || 'Error al obtener mensajes rapidos' }
+    }
+  }
+
   const admin = createAdminClient()
 
   const { data } = await admin
@@ -235,6 +284,13 @@ export async function getMensajesRapidos(): Promise<{ exito: boolean; datos?: Me
 export async function seedMensajesRapidos(rol: string): Promise<void> {
   const user = await getUsuarioAutenticado()
   if (!user) return
+
+  if (useGoBackend('chat')) {
+    try {
+      await goPost('/api/v1/chat/mensajes-rapidos/seed', { rol: rol || 'BOOGER' })
+    } catch {}
+    return
+  }
 
   const admin = createAdminClient()
 
@@ -267,6 +323,16 @@ export async function actualizarMensajeRapido(
   const user = await getUsuarioAutenticado()
   if (!user) return { exito: false, error: 'No autenticado' }
 
+  if (useGoBackend('chat')) {
+    try {
+      await goPut(`/api/v1/chat/mensajes-rapidos/${id}`, { contenido })
+      revalidatePath('/dashboard/mensajes')
+      return { exito: true }
+    } catch (err: any) {
+      return { exito: false, error: err.message || 'Error al actualizar' }
+    }
+  }
+
   const admin = createAdminClient()
   const { error } = await admin
     .from('mensajes_rapidos')
@@ -285,6 +351,15 @@ export async function crearMensajeRapido(
 ): Promise<{ exito: boolean; datos?: MensajeRapido; error?: string }> {
   const user = await getUsuarioAutenticado()
   if (!user) return { exito: false, error: 'No autenticado' }
+
+  if (useGoBackend('chat')) {
+    try {
+      const datos = await goPost<MensajeRapido>('/api/v1/chat/mensajes-rapidos', { contenido, tipo })
+      return { exito: true, datos }
+    } catch (err: any) {
+      return { exito: false, error: err.message || 'Error al crear' }
+    }
+  }
 
   const admin = createAdminClient()
 
@@ -310,6 +385,16 @@ export async function crearMensajeRapido(
 export async function eliminarMensajeRapido(id: string): Promise<{ exito: boolean; error?: string }> {
   const user = await getUsuarioAutenticado()
   if (!user) return { exito: false, error: 'No autenticado' }
+
+  if (useGoBackend('chat')) {
+    try {
+      await goDelete(`/api/v1/chat/mensajes-rapidos/${id}`)
+      revalidatePath('/dashboard/mensajes')
+      return { exito: true }
+    } catch (err: any) {
+      return { exito: false, error: err.message || 'Error al eliminar' }
+    }
+  }
 
   const admin = createAdminClient()
   const { error } = await admin

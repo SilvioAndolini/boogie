@@ -2,6 +2,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin, logAdminAction } from '@/lib/admin-auth'
+import { goGet, goPost, goPut, goDelete, useGoBackend } from '@/lib/go-api-client'
 import { revalidatePath } from 'next/cache'
 
 export interface SeccionDestacada {
@@ -19,6 +20,16 @@ export interface SeccionDestacada {
 }
 
 export async function getSeccionesDestacadasPublicas() {
+  if (useGoBackend('secciones')) {
+    try {
+      const data = await goGet<(SeccionDestacada & { propiedades: unknown[] })[]>('/api/v1/secciones-destacadas')
+      return data || []
+    } catch (err) {
+      console.error('[getSeccionesDestacadasPublicas] Go error:', err)
+      return []
+    }
+  }
+
   try {
     const admin = createAdminClient()
 
@@ -182,8 +193,17 @@ export async function getSeccionesDestacadasPublicas() {
 }
 
 export async function getSeccionesDestacadasAdmin() {
-  const auth = await requireAdmin()
-  if (auth.error) return { error: auth.error }
+  const authResult = await requireAdmin()
+  if (authResult.error) return { error: authResult.error }
+
+  if (useGoBackend('secciones')) {
+    try {
+      const secciones = await goGet<SeccionDestacada[]>('/api/v1/admin/secciones-destacadas')
+      return { secciones: secciones || [] }
+    } catch (err: any) {
+      return { error: err.message || 'Error al cargar secciones' }
+    }
+  }
 
   const admin = createAdminClient()
   const { data, error } = await admin
@@ -196,8 +216,8 @@ export async function getSeccionesDestacadasAdmin() {
 }
 
 export async function actualizarSeccionDestacada(formData: FormData) {
-  const auth = await requireAdmin()
-  if (auth.error) return { error: auth.error }
+  const authResult = await requireAdmin()
+  if (authResult.error) return { error: authResult.error }
 
   const id = formData.get('id') as string
   const titulo = (formData.get('titulo') as string)?.trim()
@@ -214,6 +234,32 @@ export async function actualizarSeccionDestacada(formData: FormData) {
   const propiedad_ids = propiedad_ids_raw
     ? propiedad_ids_raw.split(',').filter(Boolean)
     : []
+
+  if (useGoBackend('secciones')) {
+    try {
+      const body = {
+        id: id || undefined,
+        titulo,
+        subtitulo,
+        tipo_filtro,
+        filtro_estado: tipo_filtro !== 'MANUAL' ? filtro_estado : null,
+        filtro_ciudad: tipo_filtro !== 'MANUAL' ? filtro_ciudad : null,
+        propiedad_ids: tipo_filtro === 'MANUAL' ? propiedad_ids : [],
+        orden,
+        activa,
+      }
+      if (id) {
+        await goPut('/api/v1/admin/secciones-destacadas', body)
+      } else {
+        await goPost('/api/v1/admin/secciones-destacadas', body)
+      }
+      revalidatePath('/')
+      revalidatePath('/admin/secciones')
+      return { exito: true }
+    } catch (err: any) {
+      return { error: err.message || 'Error al guardar seccion' }
+    }
+  }
 
   const admin = createAdminClient()
 
@@ -265,11 +311,22 @@ export async function actualizarSeccionDestacada(formData: FormData) {
 }
 
 export async function eliminarSeccionDestacada(formData: FormData) {
-  const auth = await requireAdmin()
-  if (auth.error) return { error: auth.error }
+  const authResult = await requireAdmin()
+  if (authResult.error) return { error: authResult.error }
 
   const id = formData.get('id') as string
   if (!id) return { error: 'ID requerido' }
+
+  if (useGoBackend('secciones')) {
+    try {
+      await goDelete(`/api/v1/admin/secciones-destacadas?id=${id}`)
+      revalidatePath('/')
+      revalidatePath('/admin/secciones')
+      return { exito: true }
+    } catch (err: any) {
+      return { error: err.message || 'Error al eliminar sección' }
+    }
+  }
 
   const admin = createAdminClient()
   const { error } = await admin
@@ -291,8 +348,19 @@ export async function eliminarSeccionDestacada(formData: FormData) {
 }
 
 export async function buscarPropiedadesAdmin(query: string) {
-  const auth = await requireAdmin()
-  if (auth.error) return []
+  const authResult = await requireAdmin()
+  if (authResult.error) return []
+
+  if (useGoBackend('secciones')) {
+    try {
+      const data = await goGet<{ id: string; titulo: string; ciudad: string | null; estado: string | null; imagen: string | null }[]>(
+        `/api/v1/admin/secciones-destacadas/propiedades?q=${encodeURIComponent(query || '')}`
+      )
+      return data || []
+    } catch {
+      return []
+    }
+  }
 
   const admin = createAdminClient()
   let q = admin
@@ -316,8 +384,19 @@ export async function buscarPropiedadesAdmin(query: string) {
 }
 
 export async function listarPropiedadesPublicadas() {
-  const auth = await requireAdmin()
-  if (auth.error) return []
+  const authResult = await requireAdmin()
+  if (authResult.error) return []
+
+  if (useGoBackend('secciones')) {
+    try {
+      const data = await goGet<{ id: string; titulo: string; ciudad: string | null; estado: string | null; imagen: string | null }[]>(
+        `/api/v1/admin/secciones-destacadas/propiedades?q=`
+      )
+      return data || []
+    } catch {
+      return []
+    }
+  }
 
   const admin = createAdminClient()
   const { data, error } = await admin
@@ -341,10 +420,19 @@ export async function listarPropiedadesPublicadas() {
 }
 
 export async function getPropiedadesPorIds(ids: string[]) {
-  const auth = await requireAdmin()
-  if (auth.error) return []
+  const authResult = await requireAdmin()
+  if (authResult.error) return []
 
   if (!ids.length) return []
+
+  if (useGoBackend('secciones')) {
+    try {
+      const data = await goGet(`/api/v1/admin/secciones-destacadas/propiedades/por-ids?ids=${ids.join(',')}`)
+      return data || []
+    } catch {
+      return []
+    }
+  }
 
   const admin = createAdminClient()
   const { data } = await admin
@@ -362,8 +450,20 @@ export async function getPropiedadesPorIds(ids: string[]) {
 }
 
 export async function previsualizarPropiedadesPorUbicacion(tipoFiltro: string, filtroEstado?: string | null, filtroCiudad?: string | null) {
-  const auth = await requireAdmin()
-  if (auth.error) return []
+  const authResult = await requireAdmin()
+  if (authResult.error) return []
+
+  if (useGoBackend('secciones')) {
+    try {
+      const params = new URLSearchParams({ tipoFiltro })
+      if (filtroEstado) params.set('filtroEstado', filtroEstado)
+      if (filtroCiudad) params.set('filtroCiudad', filtroCiudad)
+      const data = await goGet(`/api/v1/admin/secciones-destacadas/propiedades/preview?${params}`)
+      return data || []
+    } catch {
+      return []
+    }
+  }
 
   const admin = createAdminClient()
   let query = admin

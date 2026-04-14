@@ -1,12 +1,22 @@
 'use server'
 
-import { createAdminClient } from '@/lib/supabase/admin'
 import { getUsuarioAutenticado } from '@/lib/auth'
+import { goGet, goPost, goDelete, useGoBackend } from '@/lib/go-api-client'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 
 export async function getMetodosPago() {
   const user = await getUsuarioAutenticado()
   if (!user) return { error: 'No autenticado' }
+
+  if (useGoBackend('metodos-pago')) {
+    try {
+      const metodos = await goGet('/api/v1/metodos-pago')
+      return { metodos }
+    } catch (err: any) {
+      return { error: err.message || 'Error al consultar metodos de pago' }
+    }
+  }
 
   const supabase = createAdminClient()
   const { data, error } = await supabase
@@ -35,6 +45,16 @@ export async function crearMetodoPago(datos: {
 }) {
   const user = await getUsuarioAutenticado()
   if (!user) return { error: 'No autenticado' }
+
+  if (useGoBackend('metodos-pago')) {
+    try {
+      const metodo = await goPost('/api/v1/metodos-pago', datos)
+      revalidatePath('/dashboard/pagos/configuracion')
+      return { metodo }
+    } catch (err: any) {
+      return { error: err.message || 'Error al guardar el metodo de pago' }
+    }
+  }
 
   const supabase = createAdminClient()
 
@@ -79,6 +99,16 @@ export async function crearMetodoPago(datos: {
 export async function eliminarMetodoPago(id: string) {
   const user = await getUsuarioAutenticado()
   if (!user) return { error: 'No autenticado' }
+
+  if (useGoBackend('metodos-pago')) {
+    try {
+      await goDelete(`/api/v1/metodos-pago/${id}`)
+      revalidatePath('/dashboard/pagos/configuracion')
+      return { exito: true }
+    } catch (err: any) {
+      return { error: err.message || 'Error al eliminar el metodo de pago' }
+    }
+  }
 
   const supabase = createAdminClient()
   const { error } = await supabase

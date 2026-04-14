@@ -64,3 +64,66 @@ func (s *ChatService) EnviarMensaje(ctx context.Context, conversacionID, userID,
 func (s *ChatService) CountNoLeidos(ctx context.Context, userID string) (int, error) {
 	return s.repo.CountNoLeidos(ctx, userID)
 }
+
+func (s *ChatService) GetConversacionInfo(ctx context.Context, convID, userID string) (*repository.ConversacionInfo, error) {
+	return s.repo.GetConversacionInfo(ctx, convID, userID)
+}
+
+func (s *ChatService) GetMensajesRapidos(ctx context.Context, userID string) ([]repository.MensajeRapido, error) {
+	return s.repo.GetMensajesRapidos(ctx, userID)
+}
+
+func (s *ChatService) SeedMensajesRapidos(ctx context.Context, userID, rol string) error {
+	exists, err := s.repo.ExistsMensajesRapidos(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("error al verificar mensajes rapidos")
+	}
+	if exists {
+		return nil
+	}
+
+	var mensajes []string
+	tipo := "ambos"
+	if rol == "ANFITRION" || rol == "AMBOS" {
+		tipo = "anfitrion"
+		mensajes = []string{
+			"Bienvenido a mi propiedad",
+			"Gracias por tu estancia",
+			"El check-in es a las 3pm",
+			"El check-out es a las 11am",
+			"Cualquier duda estoy disponible",
+		}
+	} else {
+		tipo = "booger"
+		mensajes = []string{
+			"Hola, me interesa tu propiedad",
+			"Gracias por la informacion",
+			"Confirmo mi reserva",
+			"En camino al alojamiento",
+			"Excelente estancia, gracias",
+		}
+	}
+	return s.repo.SeedMensajesRapidos(ctx, userID, tipo, mensajes)
+}
+
+func (s *ChatService) CrearMensajeRapido(ctx context.Context, userID, contenido, tipo string) (*repository.MensajeRapido, error) {
+	if contenido == "" {
+		return nil, fmt.Errorf("contenido es requerido")
+	}
+	maxOrden, err := s.repo.GetMaxOrdenMensajeRapido(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("error al obtener orden")
+	}
+	return s.repo.InsertMensajeRapido(ctx, userID, contenido, tipo, maxOrden+1)
+}
+
+func (s *ChatService) ActualizarMensajeRapido(ctx context.Context, id, userID, contenido string) error {
+	if contenido == "" {
+		return fmt.Errorf("contenido es requerido")
+	}
+	return s.repo.UpdateMensajeRapido(ctx, id, userID, contenido)
+}
+
+func (s *ChatService) EliminarMensajeRapido(ctx context.Context, id, userID string) error {
+	return s.repo.DeleteMensajeRapido(ctx, id, userID)
+}

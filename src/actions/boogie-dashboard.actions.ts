@@ -2,12 +2,39 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getUsuarioAutenticado } from '@/lib/auth'
-import { goGet } from '@/lib/go-api-client'
+import { goGet, goPost, goDelete, useGoBackend } from '@/lib/go-api-client'
 import { revalidatePath } from 'next/cache'
 
 export async function getBoogieDashboard(propiedadId: string) {
   const user = await getUsuarioAutenticado()
   if (!user) return { error: 'No autenticado' }
+
+  if (useGoBackend('dashboard')) {
+    try {
+      const data = await goGet<Record<string, unknown>>(`/api/v1/propiedades/${propiedadId}/dashboard`)
+      const propiedad = (data.propiedad as Record<string, unknown>) || {}
+      propiedad.capacidad_maxima = propiedad.capacidad
+      propiedad.habitaciones = propiedad.dormitorios
+      propiedad.horario_checkin = propiedad.check_in
+      propiedad.horario_checkout = propiedad.check_out
+      propiedad.cantidad_resenas = propiedad.cantidad_resenas ?? propiedad.total_resenas ?? 0
+      propiedad.amenidades = data.amenidades
+
+      return {
+        propiedad,
+        reservas: data.reservas || [],
+        gastos: data.gastos || [],
+        fechasBloqueadas: data.fechasBloqueadas || [],
+        preciosEspeciales: data.preciosEspeciales || [],
+        kpis: data.kpis,
+        ingresosByMonth: data.ingresosByMonth || {},
+        gastosByMonth: data.gastosByMonth || {},
+        ocupadas: data.ocupadas || [],
+      }
+    } catch (err: any) {
+      return { error: err.message || 'Boogie no encontrado' }
+    }
+  }
 
   let propiedad: Record<string, unknown> | null = null
   try {
@@ -162,6 +189,18 @@ export async function crearGastoMantenimiento(formData: FormData) {
     return { error: 'Todos los campos son requeridos' }
   }
 
+  if (useGoBackend('dashboard')) {
+    try {
+      await goPost(`/api/v1/propiedades/${propiedadId}/gastos`, {
+        descripcion, monto, moneda, categoria, fecha,
+      })
+      revalidatePath(`/dashboard/mis-propiedades/${propiedadId}`)
+      return { exito: true }
+    } catch (err: any) {
+      return { error: err.message || 'Error al crear el gasto' }
+    }
+  }
+
   const supabase = createAdminClient()
 
   const { data: prop } = await supabase
@@ -196,6 +235,16 @@ export async function crearGastoMantenimiento(formData: FormData) {
 export async function eliminarGastoMantenimiento(gastoId: string, propiedadId: string) {
   const user = await getUsuarioAutenticado()
   if (!user) return { error: 'No autenticado' }
+
+  if (useGoBackend('dashboard')) {
+    try {
+      await goDelete(`/api/v1/propiedades/${propiedadId}/gastos/${gastoId}`)
+      revalidatePath(`/dashboard/mis-propiedades/${propiedadId}`)
+      return { exito: true }
+    } catch (err: any) {
+      return { error: err.message || 'Error al eliminar el gasto' }
+    }
+  }
 
   const supabase = createAdminClient()
 

@@ -59,6 +59,13 @@ type ChatHandlers struct {
 	GetMensajes             http.HandlerFunc
 	EnviarMensaje           http.HandlerFunc
 	CountNoLeidos           http.HandlerFunc
+	GetConversacionInfo     http.HandlerFunc
+	GetMensajesRapidos      http.HandlerFunc
+	CrearMensajeRapido      http.HandlerFunc
+	ActualizarMensajeRapido http.HandlerFunc
+	EliminarMensajeRapido   http.HandlerFunc
+	SeedMensajesRapidos     http.HandlerFunc
+	SubirImagen             http.HandlerFunc
 }
 
 type OfertaHandlers struct {
@@ -81,6 +88,28 @@ type PropiedadesHandlers struct {
 	MisPropiedades http.HandlerFunc
 	UpdateEstado   http.HandlerFunc
 	Delete         http.HandlerFunc
+}
+
+type MetodoPagoHandlers struct {
+	List     http.HandlerFunc
+	Crear    http.HandlerFunc
+	Eliminar http.HandlerFunc
+}
+
+type DashboardHandlers struct {
+	GetDashboard  http.HandlerFunc
+	CrearGasto    http.HandlerFunc
+	EliminarGasto http.HandlerFunc
+}
+
+type SeccionesHandlers struct {
+	GetPublicas         http.HandlerFunc
+	GetAdmin            http.HandlerFunc
+	Upsert              http.HandlerFunc
+	Delete              http.HandlerFunc
+	SearchPropiedades   http.HandlerFunc
+	GetPropiedadesByIDs http.HandlerFunc
+	PreviewPropiedades  http.HandlerFunc
 }
 
 type ReservaHandlers struct {
@@ -135,17 +164,20 @@ type AdminHandlers struct {
 }
 
 type AuthHandlers struct {
-	Login           http.HandlerFunc
-	LoginAdmin      http.HandlerFunc
-	SendOtpEmail    http.HandlerFunc
-	SendOtpSms      http.HandlerFunc
-	VerifyOtp       http.HandlerFunc
-	Register        http.HandlerFunc
-	ResetPassword   http.HandlerFunc
-	GoogleOAuthURL  http.HandlerFunc
-	GoogleCallback  http.HandlerFunc
-	CompletarPerfil http.HandlerFunc
-	Me              http.HandlerFunc
+	Login             http.HandlerFunc
+	LoginAdmin        http.HandlerFunc
+	SendOtpEmail      http.HandlerFunc
+	SendOtpSms        http.HandlerFunc
+	VerifyOtp         http.HandlerFunc
+	Register          http.HandlerFunc
+	ResetPassword     http.HandlerFunc
+	GoogleOAuthURL    http.HandlerFunc
+	GoogleCallback    http.HandlerFunc
+	CompletarPerfil   http.HandlerFunc
+	Me                http.HandlerFunc
+	ActualizarPerfil  http.HandlerFunc
+	CambiarContrasena http.HandlerFunc
+	SubirAvatar       http.HandlerFunc
 }
 
 type RouterOpts struct {
@@ -158,6 +190,9 @@ type RouterOpts struct {
 	OfertaHandlers       *OfertaHandlers
 	TiendaHandlers       *TiendaHandlers
 	PropiedadesHandlers  *PropiedadesHandlers
+	MetodoPagoHandlers   *MetodoPagoHandlers
+	DashboardHandlers    *DashboardHandlers
+	SeccionesHandlers    *SeccionesHandlers
 	ReservaHandlers      *ReservaHandlers
 	AdminHandlers        *AdminHandlers
 	AuthHandlers         *AuthHandlers
@@ -222,6 +257,15 @@ func New(opts *RouterOpts) http.Handler {
 			})
 		}
 
+		if opts.MetodoPagoHandlers != nil {
+			r.Route("/metodos-pago", func(r chi.Router) {
+				r.Use(opts.AuthVerifier.Middleware)
+				r.Get("/", opts.MetodoPagoHandlers.List)
+				r.Post("/", opts.MetodoPagoHandlers.Crear)
+				r.Delete("/{id}", opts.MetodoPagoHandlers.Eliminar)
+			})
+		}
+
 		if opts.ResenaHandlers != nil {
 			r.Route("/resenas", func(r chi.Router) {
 				r.Group(func(r chi.Router) {
@@ -248,9 +292,16 @@ func New(opts *RouterOpts) http.Handler {
 				r.Use(opts.AuthVerifier.Middleware)
 				r.Get("/conversaciones", opts.ChatHandlers.GetConversaciones)
 				r.Post("/conversaciones", opts.ChatHandlers.GetOrCreateConversacion)
+				r.Get("/conversaciones/{id}", opts.ChatHandlers.GetConversacionInfo)
 				r.Get("/mensajes", opts.ChatHandlers.GetMensajes)
 				r.Post("/mensajes", opts.ChatHandlers.EnviarMensaje)
 				r.Get("/no-leidos", opts.ChatHandlers.CountNoLeidos)
+				r.Get("/mensajes-rapidos", opts.ChatHandlers.GetMensajesRapidos)
+				r.Post("/mensajes-rapidos", opts.ChatHandlers.CrearMensajeRapido)
+				r.Post("/mensajes-rapidos/seed", opts.ChatHandlers.SeedMensajesRapidos)
+				r.Put("/mensajes-rapidos/{id}", opts.ChatHandlers.ActualizarMensajeRapido)
+				r.Delete("/mensajes-rapidos/{id}", opts.ChatHandlers.EliminarMensajeRapido)
+				r.Post("/imagen", opts.ChatHandlers.SubirImagen)
 			})
 		}
 
@@ -296,6 +347,11 @@ func New(opts *RouterOpts) http.Handler {
 						})
 						r.Get("/editar", opts.PropiedadesHandlers.GetByID)
 						r.Delete("/", opts.PropiedadesHandlers.Delete)
+						if opts.DashboardHandlers != nil {
+							r.Get("/dashboard", opts.DashboardHandlers.GetDashboard)
+							r.Post("/gastos", opts.DashboardHandlers.CrearGasto)
+							r.Delete("/gastos/{gastoId}", opts.DashboardHandlers.EliminarGasto)
+						}
 						r.Get("/reservas", func(w http.ResponseWriter, r *http.Request) {
 							w.WriteHeader(http.StatusNotImplemented)
 						})
@@ -305,6 +361,10 @@ func New(opts *RouterOpts) http.Handler {
 					})
 				})
 			})
+		}
+
+		if opts.SeccionesHandlers != nil {
+			r.Get("/secciones-destacadas", opts.SeccionesHandlers.GetPublicas)
 		}
 
 		if opts.ReservaHandlers != nil {
@@ -345,6 +405,17 @@ func New(opts *RouterOpts) http.Handler {
 				if opts.TiendaHandlers != nil {
 					r.Get("/tienda/productos", opts.TiendaHandlers.GetAllProductos)
 					r.Get("/tienda/servicios", opts.TiendaHandlers.GetAllServicios)
+				}
+
+				if opts.SeccionesHandlers != nil {
+					r.Get("/secciones-destacadas", opts.SeccionesHandlers.GetAdmin)
+					r.Post("/secciones-destacadas", opts.SeccionesHandlers.Upsert)
+					r.Put("/secciones-destacadas", opts.SeccionesHandlers.Upsert)
+					r.Delete("/secciones-destacadas", opts.SeccionesHandlers.Delete)
+					r.Get("/secciones-destacadas/propiedades", opts.SeccionesHandlers.SearchPropiedades)
+					r.Get("/secciones-destacadas/propiedades/publicadas", opts.SeccionesHandlers.SearchPropiedades)
+					r.Get("/secciones-destacadas/propiedades/por-ids", opts.SeccionesHandlers.GetPropiedadesByIDs)
+					r.Get("/secciones-destacadas/propiedades/preview", opts.SeccionesHandlers.PreviewPropiedades)
 				}
 
 				if opts.AdminHandlers != nil {
@@ -405,6 +476,9 @@ func New(opts *RouterOpts) http.Handler {
 				r.Use(opts.AuthVerifier.Middleware)
 				r.Post("/auth/completar-perfil", opts.AuthHandlers.CompletarPerfil)
 				r.Get("/auth/me", opts.AuthHandlers.Me)
+				r.Put("/auth/perfil", opts.AuthHandlers.ActualizarPerfil)
+				r.Post("/auth/password", opts.AuthHandlers.CambiarContrasena)
+				r.Post("/auth/avatar", opts.AuthHandlers.SubirAvatar)
 			})
 		}
 	})

@@ -1,8 +1,12 @@
 package handler
 
 import (
+	"encoding/json"
+	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
+	"path/filepath"
 	"strings"
 
 	"github.com/boogie/backend/internal/auth"
@@ -10,12 +14,12 @@ import (
 )
 
 type AuthHandler struct {
-	authClient   *auth.SupabaseAuthClient
-	verifier     *auth.SupabaseVerifier
-	repo         *repository.AuthRepo
-	supabaseURL  string
-	serviceKey   string
-	appURL       string
+	authClient  *auth.SupabaseAuthClient
+	verifier    *auth.SupabaseVerifier
+	repo        *repository.AuthRepo
+	supabaseURL string
+	serviceKey  string
+	appURL      string
 }
 
 func NewAuthHandler(
@@ -60,13 +64,8 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	JSON(w, http.StatusOK, resp)
 }
 
-type loginAdminRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
-
 func (h *AuthHandler) LoginAdmin(w http.ResponseWriter, r *http.Request) {
-	var req loginAdminRequest
+	var req loginRequest
 	if err := DecodeJSON(r, &req); err != nil {
 		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "JSON invalido")
 		return
@@ -142,11 +141,7 @@ func (h *AuthHandler) SendOtpSms(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	codigoPais := req.CodigoPais
-	if codigoPais == "" {
-		codigoPais = "+58"
-	}
-	telefono := codigoPais + strings.ReplaceAll(req.Telefono, "-", "")
+	telefono := normalizarTelefono(req.Telefono, req.CodigoPais)
 
 	if err := h.authClient.SendOTPSms(r.Context(), telefono); err != nil {
 		slog.Error("[auth/otp-sms] error", "error", err)
@@ -190,16 +185,16 @@ func (h *AuthHandler) VerifyOtp(w http.ResponseWriter, r *http.Request) {
 }
 
 type registerRequest struct {
-	Nombre          string  `json:"nombre"`
-	Apellido        string  `json:"apellido"`
-	Email           string  `json:"email"`
-	Password        string  `json:"password"`
-	ConfirmPassword string  `json:"confirmPassword"`
-	TipoDocumento   string  `json:"tipoDocumento"`
-	NumeroDocumento string  `json:"numeroDocumento"`
-	Telefono        string  `json:"telefono"`
-	CodigoPais      string  `json:"codigoPais"`
-	Otp             string  `json:"otp"`
+	Nombre          string `json:"nombre"`
+	Apellido        string `json:"apellido"`
+	Email           string `json:"email"`
+	Password        string `json:"password"`
+	ConfirmPassword string `json:"confirmPassword"`
+	TipoDocumento   string `json:"tipoDocumento"`
+	NumeroDocumento string `json:"numeroDocumento"`
+	Telefono        string `json:"telefono"`
+	CodigoPais      string `json:"codigoPais"`
+	Otp             string `json:"otp"`
 }
 
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
@@ -237,16 +232,8 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 	userID := otpResp.User.ID
 
-	codigoPais := req.CodigoPais
-	if codigoPais == "" {
-		codigoPais = "+58"
-	}
-	telefonoCompleto := codigoPais + strings.ReplaceAll(req.Telefono, "-", "")
-
-	documento := normalizarCedula(req.NumeroDocumento)
-	if req.TipoDocumento == "PASAPORTE" {
-		documento = strings.ToUpper(req.NumeroDocumento)
-	}
+	telefonoCompleto := normalizarTelefono(req.Telefono, req.CodigoPais)
+	documento := normalizarDocumento(req.NumeroDocumento, req.TipoDocumento)
 
 	if h.repo == nil {
 		slog.Error("[auth/register] no database available for profile creation")
@@ -264,20 +251,6 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		"userId":  userID,
 		"mensaje": "Registro exitoso",
 	})
-}
-
-func normalizarCedula(valor string) string {
-	limpio := strings.ToUpper(strings.TrimSpace(valor))
-	limpio = strings.Map(func(r rune) rune {
-		if (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
-			return r
-		}
-		return -1
-	}, limpio)
-	if len(limpio) > 0 && (limpio[0] == 'V' || limpio[0] == 'E' || limpio[0] == 'P' || limpio[0] == 'G' || limpio[0] == 'J') {
-		return string(limpio[0]) + "-" + limpio[1:]
-	}
-	return "V-" + limpio
 }
 
 type resetPasswordRequest struct {
@@ -329,7 +302,6 @@ func (h *AuthHandler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Info("[auth/google-callback] Processing code", "code_len", len(code))
 	JSON(w, http.StatusOK, map[string]interface{}{"ok": true, "mensaje": "Callback recibido. El frontend debe intercambiar el code con Supabase directamente."})
 }
 
@@ -367,16 +339,8 @@ func (h *AuthHandler) CompletarPerfil(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	codigoPais := req.CodigoPais
-	if codigoPais == "" {
-		codigoPais = "+58"
-	}
-	telefonoCompleto := codigoPais + strings.ReplaceAll(req.Telefono, "-", "")
-
-	documento := normalizarCedula(req.NumeroDocumento)
-	if req.TipoDocumento == "PASAPORTE" {
-		documento = strings.ToUpper(req.NumeroDocumento)
-	}
+	telefonoCompleto := normalizarTelefono(req.Telefono, req.CodigoPais)
+	documento := normalizarDocumento(req.NumeroDocumento, req.TipoDocumento)
 
 	if h.repo == nil {
 		ErrorJSON(w, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE", "Base de datos no disponible")
@@ -398,6 +362,11 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if h.repo == nil {
+		ErrorJSON(w, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE", "Base de datos no disponible")
+		return
+	}
+
 	profile, err := h.repo.GetUserProfile(r.Context(), userID)
 	if err != nil {
 		slog.Error("[auth/me] error", "error", err, "userID", userID)
@@ -406,4 +375,192 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 	}
 
 	JSON(w, http.StatusOK, profile)
+}
+
+type actualizarPerfilRequest struct {
+	Nombre              string  `json:"nombre"`
+	Apellido            string  `json:"apellido"`
+	Telefono            *string `json:"telefono"`
+	Bio                 *string `json:"bio"`
+	MetodoPagoPreferido *string `json:"metodoPagoPreferido"`
+	Tiktok              *string `json:"tiktok"`
+	Instagram           *string `json:"instagram"`
+}
+
+func (h *AuthHandler) ActualizarPerfil(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetUserID(r.Context())
+	if userID == "" {
+		ErrorJSON(w, http.StatusUnauthorized, "AUTH_REQUIRED", "No autenticado")
+		return
+	}
+
+	var req actualizarPerfilRequest
+	if err := DecodeJSON(r, &req); err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "JSON invalido")
+		return
+	}
+	if req.Nombre == "" || req.Apellido == "" {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_NAME", "nombre y apellido son requeridos")
+		return
+	}
+
+	if h.repo == nil {
+		ErrorJSON(w, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE", "Base de datos no disponible")
+		return
+	}
+
+	if err := h.repo.UpdatePerfilCompleto(r.Context(), userID, map[string]interface{}{
+		"nombre":                req.Nombre,
+		"apellido":              req.Apellido,
+		"telefono":              req.Telefono,
+		"bio":                   req.Bio,
+		"metodo_pago_preferido": req.MetodoPagoPreferido,
+		"tiktok":                req.Tiktok,
+		"instagram":             req.Instagram,
+	}); err != nil {
+		slog.Error("[auth/perfil] update error", "error", err, "userID", userID)
+		ErrorJSON(w, http.StatusInternalServerError, "UPDATE_ERROR", "Error al guardar cambios")
+		return
+	}
+
+	if err := h.authClient.UpdateUserMetadata(r.Context(), h.serviceKey, userID, map[string]interface{}{
+		"nombre":   req.Nombre,
+		"apellido": req.Apellido,
+		"telefono": req.Telefono,
+	}); err != nil {
+		slog.Warn("[auth/perfil] metadata update failed", "error", err)
+	}
+
+	JSON(w, http.StatusOK, map[string]interface{}{"ok": true, "mensaje": "Perfil actualizado"})
+}
+
+type cambiarContrasenaRequest struct {
+	PasswordNueva string `json:"passwordNueva"`
+}
+
+func (h *AuthHandler) CambiarContrasena(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetUserID(r.Context())
+	if userID == "" {
+		ErrorJSON(w, http.StatusUnauthorized, "AUTH_REQUIRED", "No autenticado")
+		return
+	}
+
+	var req cambiarContrasenaRequest
+	if err := DecodeJSON(r, &req); err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "JSON invalido")
+		return
+	}
+	if req.PasswordNueva == "" || len(req.PasswordNueva) < 8 {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_PASSWORD", "La contrasena debe tener al menos 8 caracteres")
+		return
+	}
+
+	if err := h.authClient.UpdateUserPassword(r.Context(), h.serviceKey, userID, req.PasswordNueva); err != nil {
+		slog.Error("[auth/password] error", "error", err, "userID", userID)
+		ErrorJSON(w, http.StatusBadRequest, "PASSWORD_ERROR", err.Error())
+		return
+	}
+
+	JSON(w, http.StatusOK, map[string]interface{}{"ok": true, "mensaje": "Contrasena actualizada"})
+}
+
+const avatarMaxSize = 2 << 20
+
+func (h *AuthHandler) SubirAvatar(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetUserID(r.Context())
+	if userID == "" {
+		ErrorJSON(w, http.StatusUnauthorized, "AUTH_REQUIRED", "No autenticado")
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, avatarMaxSize+1024)
+	if err := r.ParseMultipartForm(avatarMaxSize); err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "FILE_TOO_LARGE", "La imagen no debe superar 2 MB")
+		return
+	}
+
+	file, header, err := r.FormFile("avatar")
+	if err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_FILE", "No se selecciono ninguna imagen")
+		return
+	}
+	defer file.Close()
+
+	contentType := header.Header.Get("Content-Type")
+	allowed := map[string]bool{"image/jpeg": true, "image/png": true, "image/webp": true}
+	if !allowed[contentType] {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_TYPE", "Formato no permitido. Usa JPG, PNG o WebP")
+		return
+	}
+
+	ext := filepath.Ext(header.Filename)
+	if ext == "" {
+		ext = ".webp"
+	}
+	storagePath := fmt.Sprintf("avatares/%s/%d%s", userID, r.Context().Value("requestID"), ext)
+
+	fileBytes, err := io.ReadAll(file)
+	if err != nil {
+		ErrorJSON(w, http.StatusInternalServerError, "READ_ERROR", "Error al leer archivo")
+		return
+	}
+
+	publicURL, err := h.authClient.UploadStorage(r.Context(), h.supabaseURL, h.serviceKey, "imagenes", storagePath, fileBytes, contentType)
+	if err != nil {
+		slog.Error("[auth/avatar] upload error", "error", err, "userID", userID)
+		ErrorJSON(w, http.StatusInternalServerError, "UPLOAD_ERROR", "Error al subir imagen")
+		return
+	}
+
+	if h.repo == nil {
+		ErrorJSON(w, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE", "Base de datos no disponible")
+		return
+	}
+	if err := h.repo.UpdateAvatarURL(r.Context(), userID, publicURL); err != nil {
+		slog.Error("[auth/avatar] db update error", "error", err, "userID", userID)
+		ErrorJSON(w, http.StatusInternalServerError, "DB_ERROR", "Error al actualizar avatar")
+		return
+	}
+
+	if err := h.authClient.UpdateUserMetadata(r.Context(), h.serviceKey, userID, map[string]interface{}{
+		"avatar_url": publicURL,
+	}); err != nil {
+		slog.Warn("[auth/avatar] metadata update failed", "error", err)
+	}
+
+	JSON(w, http.StatusOK, map[string]interface{}{
+		"ok":  true,
+		"url": fmt.Sprintf("%s?t=%d", publicURL, json.Number(fmt.Sprintf("%d", 0))),
+	})
+}
+
+// normalizarTelefono combines codigo pais + telefono, stripping dashes.
+func normalizarTelefono(telefono, codigoPais string) string {
+	pais := codigoPais
+	if pais == "" {
+		pais = "+58"
+	}
+	return pais + strings.ReplaceAll(telefono, "-", "")
+}
+
+// normalizarDocumento normalizes a document number based on type.
+func normalizarDocumento(numero, tipo string) string {
+	if tipo == "PASAPORTE" {
+		return strings.ToUpper(numero)
+	}
+	return normalizarCedula(numero)
+}
+
+func normalizarCedula(valor string) string {
+	limpio := strings.ToUpper(strings.TrimSpace(valor))
+	limpio = strings.Map(func(r rune) rune {
+		if (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+			return r
+		}
+		return -1
+	}, limpio)
+	if len(limpio) > 0 && (limpio[0] == 'V' || limpio[0] == 'E' || limpio[0] == 'P' || limpio[0] == 'G' || limpio[0] == 'J') {
+		return string(limpio[0]) + "-" + limpio[1:]
+	}
+	return "V-" + limpio
 }

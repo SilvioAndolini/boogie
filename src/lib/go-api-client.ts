@@ -111,6 +111,10 @@ export type GoModule =
   | 'ofertas'
   | 'wallet'
   | 'tienda'
+  | 'metodos-pago'
+  | 'perfil'
+  | 'dashboard'
+  | 'secciones'
 
 export function useGoBackend(module: GoModule): boolean {
   const flags: Record<GoModule, boolean> = {
@@ -127,6 +131,10 @@ export function useGoBackend(module: GoModule): boolean {
     ofertas: process.env.GO_BACKEND_OFERTAS === 'true',
     wallet: process.env.GO_BACKEND_WALLET === 'true',
     tienda: process.env.GO_BACKEND_TIENDA === 'true',
+    'metodos-pago': process.env.GO_BACKEND_METODOS_PAGO === 'true',
+    perfil: process.env.GO_BACKEND_PERFIL === 'true',
+    dashboard: process.env.GO_BACKEND_DASHBOARD === 'true',
+    secciones: process.env.GO_BACKEND_SECCIONES === 'true',
   }
   return flags[module] ?? false
 }

@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { getUsuarioAutenticado } from '@/lib/auth'
 import { perfilSchema } from '@/lib/validations'
-import { goGet, GoAPIError } from '@/lib/go-api-client'
+import { goGet, goPost, goPut, useGoBackend } from '@/lib/go-api-client'
 import { revalidatePath } from 'next/cache'
 
 const AVATAR_MAX_SIZE = 2 * 1024 * 1024
@@ -17,11 +17,8 @@ export async function getPerfilUsuario() {
     return { error: 'No autenticado' }
   }
 
-  console.log('[getPerfilUsuario] User ID:', user.id, '| email:', user.email)
-
   try {
     const perfil = await goGet('/api/v1/auth/me')
-    console.log('[getPerfilUsuario] Perfil encontrado:', JSON.stringify({ nombre: (perfil as Record<string, unknown>).nombre, apellido: (perfil as Record<string, unknown>).apellido, email: (perfil as Record<string, unknown>).email, telefono: (perfil as Record<string, unknown>).telefono }))
     return { perfil }
   } catch (err) {
     console.error('[getPerfilUsuario] Go API error:', err instanceof Error ? err.message : err)
@@ -46,6 +43,16 @@ export async function actualizarPerfil(formData: FormData) {
   const validacion = perfilSchema.safeParse(datos)
   if (!validacion.success) {
     return { error: validacion.error.issues[0].message }
+  }
+
+  if (useGoBackend('perfil')) {
+    try {
+      await goPut('/api/v1/auth/perfil', datos)
+      revalidatePath('/dashboard/perfil')
+      return { exito: true }
+    } catch (err: any) {
+      return { error: err.message || 'Error al guardar los cambios' }
+    }
   }
 
   try {
@@ -88,6 +95,15 @@ export async function cambiarContrasena(formData: FormData) {
     return { error: 'La contraseña debe tener al menos 8 caracteres' }
   }
 
+  if (useGoBackend('perfil')) {
+    try {
+      await goPost('/api/v1/auth/password', { passwordNueva })
+      return { exito: true }
+    } catch (err: any) {
+      return { error: err.message || 'Error al cambiar la contraseña' }
+    }
+  }
+
   const supabase = await createClient()
   const { error } = await supabase.auth.updateUser({
     password: passwordNueva,
@@ -114,6 +130,16 @@ export async function subirAvatar(formData: FormData) {
 
   if (file.size > AVATAR_MAX_SIZE) {
     return { error: 'La imagen no debe superar 2 MB' }
+  }
+
+  if (useGoBackend('perfil')) {
+    try {
+      const result = await goPost<{ ok: boolean; url: string }>('/api/v1/auth/avatar', formData)
+      revalidatePath('/dashboard/perfil')
+      return { exito: true, url: result.url }
+    } catch (err: any) {
+      return { error: err.message || 'Error al subir la imagen' }
+    }
   }
 
   const admin = createAdminClient()

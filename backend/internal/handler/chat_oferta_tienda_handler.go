@@ -1,8 +1,12 @@
 package handler
 
 import (
+	"context"
+	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -12,12 +16,26 @@ import (
 	"github.com/boogie/backend/internal/service"
 )
 
+type StorageUploader interface {
+	UploadStorage(ctx context.Context, supabaseURL, serviceKey, bucket, path string, fileData []byte, contentType string) (string, error)
+}
+
 type ChatHandler struct {
-	svc *service.ChatService
+	svc         *service.ChatService
+	storage     StorageUploader
+	supabaseURL string
+	serviceKey  string
 }
 
 func NewChatHandler(svc *service.ChatService) *ChatHandler {
 	return &ChatHandler{svc: svc}
+}
+
+func (h *ChatHandler) WithStorage(uploader StorageUploader, supabaseURL, serviceKey string) *ChatHandler {
+	h.storage = uploader
+	h.supabaseURL = supabaseURL
+	h.serviceKey = serviceKey
+	return h
 }
 
 func (h *ChatHandler) GetConversaciones(w http.ResponseWriter, r *http.Request) {
@@ -150,6 +168,213 @@ func (h *ChatHandler) CountNoLeidos(w http.ResponseWriter, r *http.Request) {
 
 	count, _ := h.svc.CountNoLeidos(r.Context(), userID)
 	JSON(w, http.StatusOK, map[string]interface{}{"noLeidos": count})
+}
+
+func (h *ChatHandler) GetConversacionInfo(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetUserID(r.Context())
+	if userID == "" {
+		ErrorJSON(w, http.StatusUnauthorized, "AUTH_REQUIRED", "No autenticado")
+		return
+	}
+
+	convID := chi.URLParam(r, "id")
+	if convID == "" {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_ID", "ID de conversacion requerido")
+		return
+	}
+
+	info, err := h.svc.GetConversacionInfo(r.Context(), convID, userID)
+	if err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "CONV_ERROR", err.Error())
+		return
+	}
+
+	JSON(w, http.StatusOK, info)
+}
+
+func (h *ChatHandler) GetMensajesRapidos(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetUserID(r.Context())
+	if userID == "" {
+		ErrorJSON(w, http.StatusUnauthorized, "AUTH_REQUIRED", "No autenticado")
+		return
+	}
+
+	mensajes, err := h.svc.GetMensajesRapidos(r.Context(), userID)
+	if err != nil {
+		slog.Error("[chat/mensajes-rapidos] list error", "error", err)
+		ErrorJSON(w, http.StatusInternalServerError, "LIST_ERROR", "Error al obtener mensajes rapidos")
+		return
+	}
+
+	JSON(w, http.StatusOK, mensajes)
+}
+
+type crearMensajeRapidoRequest struct {
+	Contenido string `json:"contenido"`
+	Tipo      string `json:"tipo"`
+}
+
+func (h *ChatHandler) CrearMensajeRapido(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetUserID(r.Context())
+	if userID == "" {
+		ErrorJSON(w, http.StatusUnauthorized, "AUTH_REQUIRED", "No autenticado")
+		return
+	}
+
+	var req crearMensajeRapidoRequest
+	if err := DecodeJSON(r, &req); err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "JSON invalido")
+		return
+	}
+
+	tipo := req.Tipo
+	if tipo == "" {
+		tipo = "ambos"
+	}
+
+	msg, err := h.svc.CrearMensajeRapido(r.Context(), userID, req.Contenido, tipo)
+	if err != nil {
+		slog.Error("[chat/mensajes-rapidos] crear error", "error", err)
+		ErrorJSON(w, http.StatusBadRequest, "CREAR_ERROR", err.Error())
+		return
+	}
+
+	JSON(w, http.StatusCreated, msg)
+}
+
+type actualizarMensajeRapidoRequest struct {
+	Contenido string `json:"contenido"`
+}
+
+func (h *ChatHandler) ActualizarMensajeRapido(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetUserID(r.Context())
+	if userID == "" {
+		ErrorJSON(w, http.StatusUnauthorized, "AUTH_REQUIRED", "No autenticado")
+		return
+	}
+
+	id := chi.URLParam(r, "id")
+	if id == "" {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_ID", "ID requerido")
+		return
+	}
+
+	var req actualizarMensajeRapidoRequest
+	if err := DecodeJSON(r, &req); err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "JSON invalido")
+		return
+	}
+
+	if err := h.svc.ActualizarMensajeRapido(r.Context(), id, userID, req.Contenido); err != nil {
+		slog.Error("[chat/mensajes-rapidos] actualizar error", "error", err)
+		ErrorJSON(w, http.StatusBadRequest, "UPDATE_ERROR", err.Error())
+		return
+	}
+
+	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+}
+
+func (h *ChatHandler) EliminarMensajeRapido(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetUserID(r.Context())
+	if userID == "" {
+		ErrorJSON(w, http.StatusUnauthorized, "AUTH_REQUIRED", "No autenticado")
+		return
+	}
+
+	id := chi.URLParam(r, "id")
+	if id == "" {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_ID", "ID requerido")
+		return
+	}
+
+	if err := h.svc.EliminarMensajeRapido(r.Context(), id, userID); err != nil {
+		slog.Error("[chat/mensajes-rapidos] eliminar error", "error", err)
+		ErrorJSON(w, http.StatusBadRequest, "DELETE_ERROR", err.Error())
+		return
+	}
+
+	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+}
+
+type seedMensajesRapidosRequest struct {
+	Rol string `json:"rol"`
+}
+
+func (h *ChatHandler) SeedMensajesRapidos(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetUserID(r.Context())
+	if userID == "" {
+		ErrorJSON(w, http.StatusUnauthorized, "AUTH_REQUIRED", "No autenticado")
+		return
+	}
+
+	var req seedMensajesRapidosRequest
+	if err := DecodeJSON(r, &req); err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "JSON invalido")
+		return
+	}
+
+	rol := req.Rol
+	if rol == "" {
+		rol = "BOOGER"
+	}
+
+	if err := h.svc.SeedMensajesRapidos(r.Context(), userID, rol); err != nil {
+		slog.Error("[chat/mensajes-rapidos] seed error", "error", err)
+		ErrorJSON(w, http.StatusBadRequest, "SEED_ERROR", err.Error())
+		return
+	}
+
+	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+}
+
+const chatImagenMaxSize = 5 << 20
+
+func (h *ChatHandler) SubirImagen(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetUserID(r.Context())
+	if userID == "" {
+		ErrorJSON(w, http.StatusUnauthorized, "AUTH_REQUIRED", "No autenticado")
+		return
+	}
+
+	if h.storage == nil {
+		ErrorJSON(w, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE", "Storage no configurado")
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, chatImagenMaxSize+1024)
+	if err := r.ParseMultipartForm(chatImagenMaxSize); err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "FILE_TOO_LARGE", "Imagen muy grande (max 5MB)")
+		return
+	}
+
+	file, header, err := r.FormFile("imagen")
+	if err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_FILE", "No se encontro imagen")
+		return
+	}
+	defer file.Close()
+
+	contentType := header.Header.Get("Content-Type")
+	ext := filepath.Ext(header.Filename)
+	if ext == "" {
+		ext = ".jpg"
+	}
+	storagePath := fmt.Sprintf("%s/%d%s", userID, time.Now().UnixMilli(), ext)
+
+	fileBytes, err := io.ReadAll(file)
+	if err != nil {
+		ErrorJSON(w, http.StatusInternalServerError, "READ_ERROR", "Error al leer archivo")
+		return
+	}
+
+	publicURL, err := h.storage.UploadStorage(r.Context(), h.supabaseURL, h.serviceKey, "imagenes-chat", storagePath, fileBytes, contentType)
+	if err != nil {
+		slog.Error("[chat/imagen] upload error", "error", err, "userID", userID)
+		ErrorJSON(w, http.StatusInternalServerError, "UPLOAD_ERROR", "Error al subir imagen")
+		return
+	}
+
+	JSON(w, http.StatusOK, map[string]interface{}{"ok": true, "url": publicURL})
 }
 
 type OfertaHandler struct {

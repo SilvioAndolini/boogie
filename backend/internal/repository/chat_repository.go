@@ -3,8 +3,10 @@ package repository
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
+	"github.com/boogie/backend/internal/domain/idgen"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -93,7 +95,9 @@ func (r *ChatRepo) GetOrCreateConversacion(ctx context.Context, userID, otroID s
 
 	if err == nil {
 		if propiedadID != nil && c.PropiedadID == nil {
-			r.pool.Exec(ctx, `UPDATE conversaciones SET propiedad_id = $2 WHERE id = $1`, c.ID, *propiedadID)
+			if _, err := r.pool.Exec(ctx, `UPDATE conversaciones SET propiedad_id = $2 WHERE id = $1`, c.ID, *propiedadID); err != nil {
+				slog.Error("[chat-repo] update propiedad_id", "error", err, "convID", c.ID)
+			}
 		}
 		return &c, nil
 	}
@@ -126,9 +130,13 @@ func (r *ChatRepo) GetConversacionByID(ctx context.Context, id string) (*Convers
 
 func (r *ChatRepo) IsParticipant(ctx context.Context, conversacionID, userID string) bool {
 	var exists bool
-	r.pool.QueryRow(ctx, `
+	err := r.pool.QueryRow(ctx, `
 		SELECT EXISTS(SELECT 1 FROM conversaciones WHERE id = $1 AND (participante_1 = $2 OR participante_2 = $2))
 	`, conversacionID, userID).Scan(&exists)
+	if err != nil {
+		slog.Error("[chat-repo] IsParticipant check", "error", err, "convID", conversacionID)
+		return false
+	}
 	return exists
 }
 
@@ -173,7 +181,9 @@ func (r *ChatRepo) InsertMensaje(ctx context.Context, conversacionID, remitenteI
 
 	var nombre string
 	var avatar *string
-	r.pool.QueryRow(ctx, `SELECT nombre, avatar_url FROM usuarios WHERE id = $1`, remitenteID).Scan(&nombre, &avatar)
+	if err := r.pool.QueryRow(ctx, `SELECT nombre, avatar_url FROM usuarios WHERE id = $1`, remitenteID).Scan(&nombre, &avatar); err != nil {
+		slog.Error("[chat-repo] fetch remitente nombre", "error", err, "remitenteID", remitenteID)
+	}
 	m.RemitenteNombre = nombre
 	m.RemitenteAvatar = avatar
 
@@ -181,9 +191,11 @@ func (r *ChatRepo) InsertMensaje(ctx context.Context, conversacionID, remitenteI
 	if len(preview) > 50 {
 		preview = preview[:50] + "..."
 	}
-	r.pool.Exec(ctx, `
+	if _, err := r.pool.Exec(ctx, `
 		UPDATE conversaciones SET ultimo_mensaje_at = NOW(), ultimo_mensaje_preview = $2, updated_at = NOW() WHERE id = $1
-	`, conversacionID, preview)
+	`, conversacionID, preview); err != nil {
+		slog.Error("[chat-repo] update conversacion preview", "error", err, "convID", conversacionID)
+	}
 
 	return &m, nil
 }
@@ -203,4 +215,152 @@ func (r *ChatRepo) CountNoLeidos(ctx context.Context, userID string) (int, error
 		WHERE (c.participante_1 = $1 OR c.participante_2 = $1) AND m.remitente_id != $1 AND m.leido = false
 	`, userID).Scan(&count)
 	return count, err
+}
+
+type ConversacionInfo struct {
+	ID              string  `json:"id"`
+	Participante1   string  `json:"participante_1"`
+	Participante2   string  `json:"participante_2"`
+	OtroID          string  `json:"otro_id"`
+	OtroNombre      string  `json:"otro_nombre"`
+	OtroApellido    string  `json:"otro_apellido"`
+	OtroAvatarURL   *string `json:"otro_avatar_url"`
+	PropiedadID     *string `json:"propiedad_id"`
+	PropiedadTitulo *string `json:"propiedad_titulo"`
+}
+
+func (r *ChatRepo) GetConversacionInfo(ctx context.Context, convID, userID string) (*ConversacionInfo, error) {
+	var info ConversacionInfo
+	err := r.pool.QueryRow(ctx, `
+		SELECT c.id, c.participante_1, c.participante_2,
+		       CASE WHEN c.participante_1 = $2 THEN c.participante_2 ELSE c.participante_1 END,
+		       u.nombre, u.apellido, u.avatar_url,
+		       c.propiedad_id, p.titulo
+		FROM conversaciones c
+		LEFT JOIN usuarios u ON u.id = CASE WHEN c.participante_1 = $2 THEN c.participante_2 ELSE c.participante_1 END
+		LEFT JOIN propiedades p ON p.id = c.propiedad_id
+		WHERE c.id = $1 AND (c.participante_1 = $2 OR c.participante_2 = $2)
+	`, convID, userID).Scan(
+		&info.ID, &info.Participante1, &info.Participante2,
+		&info.OtroID, &info.OtroNombre, &info.OtroApellido, &info.OtroAvatarURL,
+		&info.PropiedadID, &info.PropiedadTitulo,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("conversacion no encontrada o sin permisos")
+	}
+	return &info, nil
+}
+
+type MensajeRapido struct {
+	ID        string `json:"id"`
+	UsuarioID string `json:"usuario_id"`
+	Contenido string `json:"contenido"`
+	Tipo      string `json:"tipo"`
+	Orden     int    `json:"orden"`
+	Activo    bool   `json:"activo"`
+}
+
+func (r *ChatRepo) GetMensajesRapidos(ctx context.Context, userID string) ([]MensajeRapido, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT id, usuario_id, contenido, tipo, orden, activo
+		FROM mensajes_rapidos
+		WHERE usuario_id = $1 AND activo = true
+		ORDER BY orden ASC
+	`, userID)
+	if err != nil {
+		return nil, fmt.Errorf("get mensajes_rapidos: %w", err)
+	}
+	defer rows.Close()
+
+	var results []MensajeRapido
+	for rows.Next() {
+		var m MensajeRapido
+		if err := rows.Scan(&m.ID, &m.UsuarioID, &m.Contenido, &m.Tipo, &m.Orden, &m.Activo); err != nil {
+			return nil, fmt.Errorf("scan mensaje_rapido: %w", err)
+		}
+		results = append(results, m)
+	}
+	if results == nil {
+		results = []MensajeRapido{}
+	}
+	return results, nil
+}
+
+func (r *ChatRepo) ExistsMensajesRapidos(ctx context.Context, userID string) (bool, error) {
+	var exists bool
+	err := r.pool.QueryRow(ctx, `
+		SELECT EXISTS(SELECT 1 FROM mensajes_rapidos WHERE usuario_id = $1)
+	`, userID).Scan(&exists)
+	return exists, err
+}
+
+func (r *ChatRepo) SeedMensajesRapidos(ctx context.Context, userID, tipo string, mensajes []string) error {
+	if len(mensajes) == 0 {
+		return nil
+	}
+	for i, contenido := range mensajes {
+		id := idgen.New()
+		_, err := r.pool.Exec(ctx, `
+			INSERT INTO mensajes_rapidos (id, usuario_id, contenido, tipo, orden, activo)
+			VALUES ($1, $2, $3, $4, $5, true)
+		`, id, userID, contenido, tipo, i)
+		if err != nil {
+			return fmt.Errorf("seed mensaje_rapido: %w", err)
+		}
+	}
+	return nil
+}
+
+func (r *ChatRepo) InsertMensajeRapido(ctx context.Context, userID, contenido, tipo string, orden int) (*MensajeRapido, error) {
+	id := idgen.New()
+	var m MensajeRapido
+	err := r.pool.QueryRow(ctx, `
+		INSERT INTO mensajes_rapidos (id, usuario_id, contenido, tipo, orden, activo)
+		VALUES ($1, $2, $3, $4, $5, true)
+		RETURNING id, usuario_id, contenido, tipo, orden, activo
+	`, id, userID, contenido, tipo, orden).Scan(&m.ID, &m.UsuarioID, &m.Contenido, &m.Tipo, &m.Orden, &m.Activo)
+	if err != nil {
+		return nil, fmt.Errorf("insert mensaje_rapido: %w", err)
+	}
+	return &m, nil
+}
+
+func (r *ChatRepo) UpdateMensajeRapido(ctx context.Context, id, userID, contenido string) error {
+	tag, err := r.pool.Exec(ctx, `
+		UPDATE mensajes_rapidos SET contenido = $1 WHERE id = $2 AND usuario_id = $3
+	`, contenido, id, userID)
+	if err != nil {
+		return fmt.Errorf("update mensaje_rapido: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("mensaje rapido no encontrado")
+	}
+	return nil
+}
+
+func (r *ChatRepo) DeleteMensajeRapido(ctx context.Context, id, userID string) error {
+	tag, err := r.pool.Exec(ctx, `
+		DELETE FROM mensajes_rapidos WHERE id = $1 AND usuario_id = $2
+	`, id, userID)
+	if err != nil {
+		return fmt.Errorf("delete mensaje_rapido: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("mensaje rapido no encontrado")
+	}
+	return nil
+}
+
+func (r *ChatRepo) GetMaxOrdenMensajeRapido(ctx context.Context, userID string) (int, error) {
+	var maxOrden *int
+	err := r.pool.QueryRow(ctx, `
+		SELECT MAX(orden) FROM mensajes_rapidos WHERE usuario_id = $1
+	`, userID).Scan(&maxOrden)
+	if err != nil {
+		return 0, err
+	}
+	if maxOrden == nil {
+		return 0, nil
+	}
+	return *maxOrden, nil
 }

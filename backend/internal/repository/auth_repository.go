@@ -76,3 +76,22 @@ func (r *AuthRepo) GetUserProfile(ctx context.Context, userID string) (map[strin
 		"instagram":             instagram,
 	}, nil
 }
+
+func (r *AuthRepo) UpdatePerfilCompleto(ctx context.Context, userID string, campos map[string]interface{}) error {
+	_, err := r.pool.Exec(ctx, `
+		UPDATE usuarios SET
+			nombre = $1, apellido = $2, telefono = $3, bio = $4,
+			metodo_pago_preferido = $5, tiktok = $6, instagram = $7
+		WHERE id = $8`,
+		campos["nombre"], campos["apellido"], campos["telefono"],
+		campos["bio"], campos["metodo_pago_preferido"],
+		campos["tiktok"], campos["instagram"], userID)
+	return err
+}
+
+func (r *AuthRepo) UpdateAvatarURL(ctx context.Context, userID, avatarURL string) error {
+	_, err := r.pool.Exec(ctx, `
+		UPDATE usuarios SET avatar_url = $1 WHERE id = $2`,
+		avatarURL, userID)
+	return err
+}

@@ -37,8 +37,8 @@ func main() {
 
 	if db != nil {
 		verifier.FetchRole = func(ctx context.Context, userID string) string {
-			var rol string
-			err := db.QueryRow(ctx, "SELECT rol FROM usuarios WHERE id = $1", userID).Scan(&rol)
+			authRepo := repository.NewAuthRepo(db)
+			rol, err := authRepo.GetUserRole(ctx, userID)
 			if err != nil {
 				slog.Warn("fetch role failed", "userID", userID, "error", err)
 				return ""
@@ -62,9 +62,12 @@ func main() {
 			CallbackSecret:  cfg.CryptapiCallbackSecret,
 			CallbackBaseURL: cfg.AppURL,
 		}, cfg.ComisionPlataformaHuesped, cfg.ComisionPlataformaAnfitrion)
-		reservaSvc := service.NewReservaDisponibilidad(db)
-		cryptoHandler = handler.NewCryptoHandler(cryptoSvc, reservaSvc, db)
-		metamapHandler = handler.NewMetamapHandler(db, cfg.MetamapWebhookSecret)
+		reservaDisponSvc := service.NewReservaDisponibilidad(db)
+		cryptoRepo := repository.NewCryptoRepo(db)
+		cryptoHandler = handler.NewCryptoHandler(cryptoSvc, reservaDisponSvc, cryptoRepo)
+
+		metamapRepo := repository.NewMetamapRepo(db)
+		metamapHandler = handler.NewMetamapHandler(metamapRepo, cfg.MetamapWebhookSecret)
 	}
 
 	var pagoHandlers *router.PagoHandlers
@@ -76,6 +79,9 @@ func main() {
 	var tiendaHandlers *router.TiendaHandlers
 	var adminHandlers *router.AdminHandlers
 	var authHandlers *router.AuthHandlers
+	var metodoPagoHandlers *router.MetodoPagoHandlers
+	var dashboardHandlers *router.DashboardHandlers
+	var seccionesHandlers *router.SeccionesHandlers
 	var propiedadesHandlers *router.PropiedadesHandlers
 	var reservaHandlers *router.ReservaHandlers
 
@@ -89,17 +95,20 @@ func main() {
 	authH := handler.NewAuthHandler(authClient, verifier, authRepo, cfg.SupabaseURL, cfg.SupabaseSecretKey, cfg.AppURL)
 
 	authHandlers = &router.AuthHandlers{
-		Login:           authH.Login,
-		LoginAdmin:      authH.LoginAdmin,
-		SendOtpEmail:    authH.SendOtpEmail,
-		SendOtpSms:      authH.SendOtpSms,
-		VerifyOtp:       authH.VerifyOtp,
-		Register:        authH.Register,
-		ResetPassword:   authH.ResetPassword,
-		GoogleOAuthURL:  authH.GoogleOAuthURL,
-		GoogleCallback:  authH.GoogleCallback,
-		CompletarPerfil: authH.CompletarPerfil,
-		Me:              authH.Me,
+		Login:             authH.Login,
+		LoginAdmin:        authH.LoginAdmin,
+		SendOtpEmail:      authH.SendOtpEmail,
+		SendOtpSms:        authH.SendOtpSms,
+		VerifyOtp:         authH.VerifyOtp,
+		Register:          authH.Register,
+		ResetPassword:     authH.ResetPassword,
+		GoogleOAuthURL:    authH.GoogleOAuthURL,
+		GoogleCallback:    authH.GoogleCallback,
+		CompletarPerfil:   authH.CompletarPerfil,
+		Me:                authH.Me,
+		ActualizarPerfil:  authH.ActualizarPerfil,
+		CambiarContrasena: authH.CambiarContrasena,
+		SubirAvatar:       authH.SubirAvatar,
 	}
 
 	if db != nil {
@@ -126,6 +135,16 @@ func main() {
 			Activar:       walletHandler.Activar,
 			Recarga:       walletHandler.Recarga,
 			Transacciones: walletHandler.Transacciones,
+		}
+
+		metodoPagoRepo := repository.NewMetodoPagoRepo(db)
+		metodoPagoSvc := service.NewMetodoPagoService(metodoPagoRepo)
+		metodoPagoH := handler.NewMetodoPagoHandler(metodoPagoSvc)
+
+		metodoPagoHandlers = &router.MetodoPagoHandlers{
+			List:     metodoPagoH.List,
+			Crear:    metodoPagoH.Crear,
+			Eliminar: metodoPagoH.Eliminar,
 		}
 
 		resenaRepo := repository.NewResenaRepo(db)
@@ -160,6 +179,7 @@ func main() {
 		tiendaSvc := service.NewTiendaService(tiendaRepo)
 
 		chatH := handler.NewChatHandler(chatSvc)
+		chatH.WithStorage(authClient, cfg.SupabaseURL, cfg.SupabaseSecretKey)
 		ofertaH := handler.NewOfertaHandler(ofertaSvc)
 		tiendaH := handler.NewTiendaHandler(tiendaSvc)
 
@@ -169,6 +189,13 @@ func main() {
 			GetMensajes:             chatH.GetMensajes,
 			EnviarMensaje:           chatH.EnviarMensaje,
 			CountNoLeidos:           chatH.CountNoLeidos,
+			GetConversacionInfo:     chatH.GetConversacionInfo,
+			GetMensajesRapidos:      chatH.GetMensajesRapidos,
+			CrearMensajeRapido:      chatH.CrearMensajeRapido,
+			ActualizarMensajeRapido: chatH.ActualizarMensajeRapido,
+			EliminarMensajeRapido:   chatH.EliminarMensajeRapido,
+			SeedMensajesRapidos:     chatH.SeedMensajesRapidos,
+			SubirImagen:             chatH.SubirImagen,
 		}
 
 		ofertaHandlers = &router.OfertaHandlers{
@@ -242,6 +269,30 @@ func main() {
 			Delete:         propiedadesH.Delete,
 		}
 
+		dashboardRepo := repository.NewDashboardRepo(db)
+		dashboardSvc := service.NewDashboardService(dashboardRepo)
+		dashboardH := handler.NewDashboardHandler(dashboardSvc, propiedadesSvc)
+
+		dashboardHandlers = &router.DashboardHandlers{
+			GetDashboard:  dashboardH.GetDashboard,
+			CrearGasto:    dashboardH.CrearGasto,
+			EliminarGasto: dashboardH.EliminarGasto,
+		}
+
+		seccionesRepo := repository.NewSeccionesRepo(db)
+		seccionesSvc := service.NewSeccionesService(seccionesRepo)
+		seccionesH := handler.NewSeccionesHandler(seccionesSvc)
+
+		seccionesHandlers = &router.SeccionesHandlers{
+			GetPublicas:         seccionesH.GetPublicas,
+			GetAdmin:            seccionesH.GetAdmin,
+			Upsert:              seccionesH.Upsert,
+			Delete:              seccionesH.Delete,
+			SearchPropiedades:   seccionesH.SearchPropiedades,
+			GetPropiedadesByIDs: seccionesH.GetPropiedadesByIDs,
+			PreviewPropiedades:  seccionesH.PreviewPropiedades,
+		}
+
 		reservaRepo := repository.NewReservaRepo(db)
 		reservaSvc := service.NewReservaService(reservaRepo, cfg.ComisionPlataformaHuesped, cfg.ComisionPlataformaAnfitrion)
 		reservaDisponSvc := service.NewReservaDisponibilidad(db)
@@ -272,6 +323,7 @@ func main() {
 			},
 			PagoHandlers:         pagoHandlers,
 			WalletHandlers:       walletHandlers,
+			MetodoPagoHandlers:   metodoPagoHandlers,
 			ResenaHandlers:       resenaHandlers,
 			VerificacionHandlers: verifHandlers,
 			ChatHandlers:         chatHandlers,
@@ -280,6 +332,8 @@ func main() {
 			AdminHandlers:        adminHandlers,
 			AuthHandlers:         authHandlers,
 			PropiedadesHandlers:  propiedadesHandlers,
+			DashboardHandlers:    dashboardHandlers,
+			SeccionesHandlers:    seccionesHandlers,
 			ReservaHandlers:      reservaHandlers,
 			AuthVerifier:         verifier,
 			AppURL:               cfg.AppURL,
