@@ -22,14 +22,14 @@ export async function getBoogieDashboard(propiedadId: string) {
 
       return {
         propiedad,
-        reservas: data.reservas || [],
-        gastos: data.gastos || [],
-        fechasBloqueadas: data.fechasBloqueadas || [],
-        preciosEspeciales: data.preciosEspeciales || [],
+        reservas: (data.reservas as Record<string, unknown>[]) || [],
+        gastos: (data.gastos as Record<string, unknown>[]) || [],
+        fechasBloqueadas: (data.fechasBloqueadas as Record<string, unknown>[]) || [],
+        preciosEspeciales: (data.preciosEspeciales as Record<string, unknown>[]) || [],
         kpis: data.kpis,
-        ingresosByMonth: data.ingresosByMonth || {},
-        gastosByMonth: data.gastosByMonth || {},
-        ocupadas: data.ocupadas || [],
+        ingresosByMonth: (data.ingresosByMonth as Record<string, number>) || {},
+        gastosByMonth: (data.gastosByMonth as Record<string, number>) || {},
+        ocupadas: (data.ocupadas as Record<string, unknown>[]) || [],
       }
     } catch (err: any) {
       return { error: err.message || 'Boogie no encontrado' }
