@@ -2,9 +2,8 @@
 
 import { revalidatePath } from 'next/cache'
 import { goGet, goPost, GoAPIError } from '@/lib/go-api-client'
-import type { PoliticaCancelacion, MetodoPagoEnum, EstadoPago } from '@/types'
+import type { PoliticaCancelacion, MetodoPagoEnum, EstadoPago, Moneda, EstadoReserva } from '@/types'
 import type { ResultadoAccion, ReservaConPropiedad } from '@/types/reserva'
-import type { EstadoReserva } from '@/types'
 
 export async function crearReserva(rawData: {
   propiedadId: string
@@ -81,22 +80,22 @@ export async function getMisReservas(): Promise<ReservaConPropiedad[]> {
       fechaEntrada: r.fecha_entrada as string,
       fechaSalida: r.fecha_salida as string,
       noches: r.noches as number,
-      precioPorNoche: r.precio_por_noche as string,
-      subtotal: r.subtotal as string,
-      comisionPlataforma: r.comision_plataforma as string,
-      total: r.total as string,
-      moneda: r.moneda as string,
+      precioPorNoche: String(r.precio_por_noche),
+      subtotal: String(r.subtotal),
+      comisionPlataforma: String(r.comision_plataforma),
+      total: String(r.total),
+      moneda: r.moneda as Moneda,
       cantidadHuespedes: r.cantidad_huespedes as number,
-      estado: r.estado as string,
+      estado: r.estado as EstadoReserva,
       notasHuesped: r.notas_huesped as string | null,
-      fechaCreacion: r.fecha_creacion as string || r.created_at as string,
+      fechaCreacion: (r.fecha_creacion || r.created_at) as string,
       fechaConfirmacion: r.fecha_confirmacion as string | null,
       fechaCancelacion: r.fecha_cancelacion as string | null,
       propiedad: {
         id: r.propiedad_id as string,
-        titulo: r.propiedad_titulo as string || 'Propiedad',
-        direccion: r.propiedad_direccion as string || '',
-        politicaCancelacion: (r.propiedad_politica_cancelacion as string || 'FLEXIBLE') as any,
+        titulo: (r.propiedad_titulo || 'Propiedad') as string,
+        direccion: (r.propiedad_direccion || '') as string,
+        politicaCancelacion: (r.propiedad_politica_cancelacion || 'FLEXIBLE') as PoliticaCancelacion,
         imagenPrincipal: r.propiedad_imagen_principal as string | undefined,
       },
     }))
@@ -116,28 +115,28 @@ export async function getReservasRecibidas(): Promise<ReservaConPropiedad[]> {
       fechaEntrada: r.fecha_entrada as string,
       fechaSalida: r.fecha_salida as string,
       noches: r.noches as number,
-      precioPorNoche: r.precio_por_noche as string,
-      subtotal: r.subtotal as string,
-      comisionPlataforma: r.comision_plataforma as string,
-      total: r.total as string,
-      moneda: r.moneda as string,
+      precioPorNoche: String(r.precio_por_noche),
+      subtotal: String(r.subtotal),
+      comisionPlataforma: String(r.comision_plataforma),
+      total: String(r.total),
+      moneda: r.moneda as Moneda,
       cantidadHuespedes: r.cantidad_huespedes as number,
-      estado: r.estado as string,
+      estado: r.estado as EstadoReserva,
       notasHuesped: r.notas_huesped as string | null,
-      fechaCreacion: r.fecha_creacion as string || r.created_at as string,
+      fechaCreacion: (r.fecha_creacion || r.created_at) as string,
       fechaConfirmacion: r.fecha_confirmacion as string | null,
       fechaCancelacion: r.fecha_cancelacion as string | null,
       propiedad: {
         id: r.propiedad_id as string,
-        titulo: r.propiedad_titulo as string || 'Propiedad',
+        titulo: (r.propiedad_titulo || 'Propiedad') as string,
         direccion: '',
-        politicaCancelacion: 'FLEXIBLE' as any,
+        politicaCancelacion: 'FLEXIBLE' as PoliticaCancelacion,
         imagenPrincipal: r.propiedad_imagen_principal as string | undefined,
       },
       huesped: {
         id: r.huesped_id as string,
-        nombre: r.huesped_nombre as string || '',
-        apellido: r.huesped_apellido as string || '',
+        nombre: (r.huesped_nombre || '') as string,
+        apellido: (r.huesped_apellido || '') as string,
         avatarUrl: r.huesped_avatar_url as string | null,
       },
     }))
