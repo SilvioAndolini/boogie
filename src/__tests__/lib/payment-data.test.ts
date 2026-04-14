@@ -9,7 +9,6 @@ describe('getDatosPago', () => {
     expect(data).toHaveProperty('ZELLE')
     expect(data).toHaveProperty('EFECTIVO_FARMATODO')
     expect(data).toHaveProperty('USDT')
-    expect(data).toHaveProperty('TARJETA_INTERNACIONAL')
   })
 
   it('TRANSFERENCIA_BANCARIA tiene banco, cuenta, titular, cedula', async () => {

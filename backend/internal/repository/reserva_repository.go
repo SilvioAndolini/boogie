@@ -325,7 +325,7 @@ func (r *ReservaRepo) GetPropiedadForReserva(ctx context.Context, propiedadID st
 
 	err := r.pool.QueryRow(ctx, `
 		SELECT id, titulo, precio_por_noche, moneda, propietario_id, estado_publicacion,
-		       COALESCE(capacidad_maxima, capacidad, 1),
+		       COALESCE(capacidad_maxima, 1),
 		       COALESCE(estancia_minima, 1), COALESCE(estancia_maxima, 365)
 		FROM propiedades WHERE id = $1
 	`, propiedadID).Scan(

@@ -55,7 +55,7 @@ describe('reserva.actions - estructura de datos', () => {
   })
 
   it('el tipo MetodoPagoEnum tiene todos los metodos esperados', () => {
-    const metodos = ['TRANSFERENCIA_BANCARIA', 'PAGO_MOVIL', 'ZELLE', 'EFECTIVO_FARMATODO', 'USDT', 'TARJETA_INTERNACIONAL', 'EFECTIVO', 'CRIPTO']
+    const metodos = ['TRANSFERENCIA_BANCARIA', 'PAGO_MOVIL', 'ZELLE', 'EFECTIVO_FARMATODO', 'USDT', 'EFECTIVO', 'CRIPTO', 'WALLET']
     expect(metodos).toHaveLength(8)
   })
 })

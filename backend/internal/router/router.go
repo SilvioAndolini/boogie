@@ -24,13 +24,11 @@ type Handlers struct {
 }
 
 type PagoHandlers struct {
-	RegistrarSimple       http.HandlerFunc
-	RegistrarComprobante  http.HandlerFunc
-	Verificar             http.HandlerFunc
-	MisPagos              http.HandlerFunc
-	PaymentData           http.HandlerFunc
-	CardCreate            http.HandlerFunc
-	CardCallback          http.HandlerFunc
+	RegistrarSimple      http.HandlerFunc
+	RegistrarComprobante http.HandlerFunc
+	Verificar            http.HandlerFunc
+	MisPagos             http.HandlerFunc
+	PaymentData          http.HandlerFunc
 }
 
 type WalletHandlers struct {
@@ -47,32 +45,32 @@ type ResenaHandlers struct {
 }
 
 type VerificacionHandlers struct {
-	GetByUser       http.HandlerFunc
-	IniciarMetaMap  http.HandlerFunc
-	SubirDocumento  http.HandlerFunc
-	ListAll         http.HandlerFunc
-	Revisar         http.HandlerFunc
-	AdminCounts     http.HandlerFunc
+	GetByUser      http.HandlerFunc
+	IniciarMetaMap http.HandlerFunc
+	SubirDocumento http.HandlerFunc
+	ListAll        http.HandlerFunc
+	Revisar        http.HandlerFunc
+	AdminCounts    http.HandlerFunc
 }
 
 type ChatHandlers struct {
-	GetConversaciones    http.HandlerFunc
+	GetConversaciones       http.HandlerFunc
 	GetOrCreateConversacion http.HandlerFunc
-	GetMensajes          http.HandlerFunc
-	EnviarMensaje        http.HandlerFunc
-	CountNoLeidos        http.HandlerFunc
+	GetMensajes             http.HandlerFunc
+	EnviarMensaje           http.HandlerFunc
+	CountNoLeidos           http.HandlerFunc
 }
 
 type OfertaHandlers struct {
-	Crear       http.HandlerFunc
-	Responder   http.HandlerFunc
+	Crear        http.HandlerFunc
+	Responder    http.HandlerFunc
 	GetRecibidas http.HandlerFunc
 	GetEnviadas  http.HandlerFunc
 }
 
 type TiendaHandlers struct {
-	GetProductos   http.HandlerFunc
-	GetServicios   http.HandlerFunc
+	GetProductos    http.HandlerFunc
+	GetServicios    http.HandlerFunc
 	GetAllProductos http.HandlerFunc
 	GetAllServicios http.HandlerFunc
 }
@@ -86,54 +84,54 @@ type PropiedadesHandlers struct {
 }
 
 type ReservaHandlers struct {
-	Crear             http.HandlerFunc
-	GetByID           http.HandlerFunc
-	MisReservas       http.HandlerFunc
-	ReservasRecibidas http.HandlerFunc
+	Crear              http.HandlerFunc
+	GetByID            http.HandlerFunc
+	MisReservas        http.HandlerFunc
+	ReservasRecibidas  http.HandlerFunc
 	ConfirmarORechazar http.HandlerFunc
-	Cancelar          http.HandlerFunc
-	Disponibilidad    http.HandlerFunc
+	Cancelar           http.HandlerFunc
+	Disponibilidad     http.HandlerFunc
 }
 
 type AdminHandlers struct {
-	GetDashboard          http.HandlerFunc
-	GetReservas           http.HandlerFunc
-	GetReservasStats      http.HandlerFunc
-	AccionReserva         http.HandlerFunc
-	GetReservaByID        http.HandlerFunc
-	GetPagos              http.HandlerFunc
-	GetPagosStats         http.HandlerFunc
-	VerificarPago         http.HandlerFunc
-	GetPropiedades        http.HandlerFunc
-	GetPropiedadByID      http.HandlerFunc
-	UpdatePropiedad       http.HandlerFunc
-	DeletePropiedad       http.HandlerFunc
-	GetCiudades           http.HandlerFunc
-	GetPropiedadIngresos  http.HandlerFunc
-	GetResenas            http.HandlerFunc
-	ModerarResena         http.HandlerFunc
-	GetUsuarios           http.HandlerFunc
-	CrearUsuario          http.HandlerFunc
-	UpdateUsuario         http.HandlerFunc
-	DeleteUsuario         http.HandlerFunc
-	GetCupones            http.HandlerFunc
-	GetCuponByID          http.HandlerFunc
-	CrearCupon            http.HandlerFunc
-	EditarCupon           http.HandlerFunc
-	ToggleCuponActivo     http.HandlerFunc
-	DeleteCupon           http.HandlerFunc
-	GetCuponUsos          http.HandlerFunc
-	GetComisiones         http.HandlerFunc
-	UpdateComisiones      http.HandlerFunc
-	GetAuditLog           http.HandlerFunc
-	GetNotificaciones     http.HandlerFunc
-	EnviarNotificacion    http.HandlerFunc
-	CrearProductoStore    http.HandlerFunc
+	GetDashboard            http.HandlerFunc
+	GetReservas             http.HandlerFunc
+	GetReservasStats        http.HandlerFunc
+	AccionReserva           http.HandlerFunc
+	GetReservaByID          http.HandlerFunc
+	GetPagos                http.HandlerFunc
+	GetPagosStats           http.HandlerFunc
+	VerificarPago           http.HandlerFunc
+	GetPropiedades          http.HandlerFunc
+	GetPropiedadByID        http.HandlerFunc
+	UpdatePropiedad         http.HandlerFunc
+	DeletePropiedad         http.HandlerFunc
+	GetCiudades             http.HandlerFunc
+	GetPropiedadIngresos    http.HandlerFunc
+	GetResenas              http.HandlerFunc
+	ModerarResena           http.HandlerFunc
+	GetUsuarios             http.HandlerFunc
+	CrearUsuario            http.HandlerFunc
+	UpdateUsuario           http.HandlerFunc
+	DeleteUsuario           http.HandlerFunc
+	GetCupones              http.HandlerFunc
+	GetCuponByID            http.HandlerFunc
+	CrearCupon              http.HandlerFunc
+	EditarCupon             http.HandlerFunc
+	ToggleCuponActivo       http.HandlerFunc
+	DeleteCupon             http.HandlerFunc
+	GetCuponUsos            http.HandlerFunc
+	GetComisiones           http.HandlerFunc
+	UpdateComisiones        http.HandlerFunc
+	GetAuditLog             http.HandlerFunc
+	GetNotificaciones       http.HandlerFunc
+	EnviarNotificacion      http.HandlerFunc
+	CrearProductoStore      http.HandlerFunc
 	ActualizarProductoStore http.HandlerFunc
-	EliminarProductoStore http.HandlerFunc
-	CrearServicioStore    http.HandlerFunc
+	EliminarProductoStore   http.HandlerFunc
+	CrearServicioStore      http.HandlerFunc
 	ActualizarServicioStore http.HandlerFunc
-	EliminarServicioStore http.HandlerFunc
+	EliminarServicioStore   http.HandlerFunc
 }
 
 type AuthHandlers struct {
@@ -151,22 +149,22 @@ type AuthHandlers struct {
 }
 
 type RouterOpts struct {
-	Handlers              *Handlers
-	PagoHandlers          *PagoHandlers
-	WalletHandlers        *WalletHandlers
-	ResenaHandlers        *ResenaHandlers
-	VerificacionHandlers  *VerificacionHandlers
-	ChatHandlers          *ChatHandlers
-	OfertaHandlers        *OfertaHandlers
-	TiendaHandlers        *TiendaHandlers
-	PropiedadesHandlers   *PropiedadesHandlers
-	ReservaHandlers       *ReservaHandlers
-	AdminHandlers         *AdminHandlers
-	AuthHandlers          *AuthHandlers
-	AuthVerifier          *auth.SupabaseVerifier
-	AppURL                string
-	ExchangeLimiter       *handlermw.IPRateLimiter
-	UbicacionesLimiter    *handlermw.IPRateLimiter
+	Handlers             *Handlers
+	PagoHandlers         *PagoHandlers
+	WalletHandlers       *WalletHandlers
+	ResenaHandlers       *ResenaHandlers
+	VerificacionHandlers *VerificacionHandlers
+	ChatHandlers         *ChatHandlers
+	OfertaHandlers       *OfertaHandlers
+	TiendaHandlers       *TiendaHandlers
+	PropiedadesHandlers  *PropiedadesHandlers
+	ReservaHandlers      *ReservaHandlers
+	AdminHandlers        *AdminHandlers
+	AuthHandlers         *AuthHandlers
+	AuthVerifier         *auth.SupabaseVerifier
+	AppURL               string
+	ExchangeLimiter      *handlermw.IPRateLimiter
+	UbicacionesLimiter   *handlermw.IPRateLimiter
 }
 
 func New(opts *RouterOpts) http.Handler {
@@ -212,15 +210,6 @@ func New(opts *RouterOpts) http.Handler {
 			})
 
 			r.Get("/payment-data", opts.PagoHandlers.PaymentData)
-
-			r.Route("/payments/card", func(r chi.Router) {
-				r.Group(func(r chi.Router) {
-					r.Use(opts.AuthVerifier.Middleware)
-					r.Post("/create", opts.PagoHandlers.CardCreate)
-				})
-				r.Get("/callback", opts.PagoHandlers.CardCallback)
-				r.Post("/callback", opts.PagoHandlers.CardCallback)
-			})
 		}
 
 		if opts.WalletHandlers != nil {

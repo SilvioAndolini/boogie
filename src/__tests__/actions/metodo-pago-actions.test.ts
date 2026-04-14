@@ -19,7 +19,7 @@ describe('metodo-pago.actions - validaciones', () => {
   it('tipos de metodo de pago validos', () => {
     const tipos = [
       'TRANSFERENCIA_BANCARIA', 'PAGO_MOVIL', 'ZELLE',
-      'EFECTIVO_FARMATODO', 'USDT', 'TARJETA_INTERNACIONAL', 'EFECTIVO', 'CRIPTO',
+      'EFECTIVO_FARMATODO', 'USDT', 'EFECTIVO', 'CRIPTO', 'WALLET',
     ]
     expect(tipos).toHaveLength(8)
   })

@@ -41,7 +41,7 @@ Implementar un sistema de reservas robusto, seguro y completo para la plataforma
 - Protección contra race conditions
 
 **Excluido (v1.0):**
-- Pagos automáticos con pasarelas (Stripe, etc.)
+- Pagos automáticos con pasarelas
 - Notificaciones por email/push en tiempo real
 - Sistema de mensajes entre usuarios
 - KYC/Verificación de identidad

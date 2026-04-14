@@ -8,7 +8,30 @@ Tu hogar lejos de casa. Boogie conecta anfitriones y huéspedes en toda Venezuel
 
 ---
 
+## Arquitectura
+
+El proyecto tiene una arquitectura de dos componentes:
+
+| Componente | Stack | Descripción |
+|---|---|---|
+| **Frontend** | Next.js 16 (App Router) | Aplicación web full-stack con React |
+| **Backend** | Go + Chi | API REST para lógica de negocio pesada |
+
+### Flujo de datos
+
+```
+Browser → Next.js (Server Actions/API Routes)
+              ↓
+         Go Backend (Puerto 8080)
+              ↓
+         PostgreSQL (Supabase)
+```
+
+---
+
 ## Stack Tecnológico
+
+### Frontend (Next.js)
 
 | Tecnología | Propósito |
 |---|---|
@@ -24,6 +47,16 @@ Tu hogar lejos de casa. Boogie conecta anfitriones y huéspedes en toda Venezuel
 | Recharts | Gráficos y charts |
 | Vitest + Playwright | Tests unitarios y E2E |
 
+### Backend (Go)
+
+| Tecnología | Propósito |
+|---|---|
+| Go 1.24+ | Runtime del API server |
+| Chi v5 | Router HTTP minimalist |
+| pgx/v5 | Driver PostgreSQL |
+| JWT | Autenticación con Supabase |
+| rs/cors | CORS middleware |
+
 ---
 
 ## Inicio Rápido
@@ -31,10 +64,11 @@ Tu hogar lejos de casa. Boogie conecta anfitriones y huéspedes en toda Venezuel
 ### Prerrequisitos
 
 - Node.js 20+
+- Go 1.24+
 - npm 10+
 - Cuenta en Supabase (gratis)
 
-### Instalación
+### Instalación Frontend
 
 ```bash
 npm install
@@ -44,10 +78,17 @@ npm run db:seed               # Seed de amenidades básicas
 npm run dev                   # http://localhost:3000
 ```
 
+### Instalación Backend
+
+```bash
+cd backend
+go mod download
+go run cmd/server/main.go    # http://localhost:8080
+```
+
 ### Variables de Entorno Esenciales
 
-Ver `.env.example` para la lista completa.
-
+**Frontend** (`.env.local`):
 | Variable | Descripción |
 |---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | URL del proyecto Supabase |
@@ -56,8 +97,18 @@ Ver `.env.example` para la lista completa.
 | `SUPABASE_SECRET_KEY` | Service role key (solo backend, **nunca exponer al cliente**) |
 | `DATABASE_URL` | Connection string PostgreSQL |
 
+**Backend** (variables de entorno o `.env` en carpeta `backend/`):
+| Variable | Descripción |
+|---|---|
+| `PORT` | Puerto del servidor (default: 8080) |
+| `APP_URL` | URL de la app frontend (para CORS) |
+| `SUPABASE_URL` | URL de Supabase |
+| `SUPABASE_SECRET_KEY` | Service role key |
+| `DATABASE_URL` | Connection string PostgreSQL |
+
 ### Scripts Disponibles
 
+**Frontend:**
 ```bash
 npm run dev          # Servidor de desarrollo (puerto 3000)
 npm run build        # Build de producción (genera Prisma + compila Next)
@@ -65,16 +116,25 @@ npm run start        # Servidor de producción
 npm run lint         # Linting con ESLint
 npm run format       # Formateo con Prettier
 npm run test         # Tests unitarios (Vitest)
-npm run test:watch   # Tests en modo watch
 npm run db:migrate   # Crear migración Prisma
 npm run db:push      # Push schema sin migración
 npm run db:seed      # Ejecutar seed
 npm run db:studio    # Prisma Studio (visualizador de BD)
 ```
 
+**Backend:**
+```bash
+cd backend
+go run cmd/server/main.go   # Ejecutar servidor
+go build ./...              # Compilar
+go test ./...              # Tests
+```
+
 ---
 
 ## Arquitectura del Proyecto
+
+### Frontend (`/`)
 
 ```
 src/
@@ -83,7 +143,7 @@ src/
 │   ├── (main)/             # Rutas públicas (landing, propiedades, zonas)
 │   ├── (panel)/            # Dashboard del usuario (protegido)
 │   ├── (admin)/            # Panel de administración (protegido, rol ADMIN)
-│   ├── api/                # API Routes (webhooks, exchange rate, etc.)
+│   ├── api/                # API Routes (exchange rate, webhooks, etc.)
 │   ├── layout.tsx          # Root layout (providers, fonts, metadata)
 │   ├── template.tsx        # Page transition wrapper (client)
 │   ├── error.tsx           # Error boundary global
@@ -113,26 +173,227 @@ src/
 └── generated/              # Tipos generados por Prisma (no editar a mano)
 ```
 
-> **Nota**: Los grupos de rutas entre paréntesis `(auth)`, `(main)`, `(panel)`, `(admin)` comparten layouts. No afectan la URL.
+### Backend (`/backend`)
+
+```
+backend/
+├── cmd/
+│   └── server/
+│       └── main.go         # Entry point
+│
+├── internal/
+│   ├── auth/               # Autenticación Supabase (JWKS verification)
+│   ├── config/            # Carga de configuración desde env
+│   ├── domain/
+│   │   ├── enums/         # Enums: Rol, EstadoReserva, MetodoPago, etc.
+│   │   └── models/        # Structs: Usuario, Propiedad, Reserva, Pago, etc.
+│   ├── handler/           # HTTP handlers (auth, pagos, reservas, admin)
+│   │   ├── middleware.go  # Logging, recovery, rate limiting
+│   │   ├── response.go    # Helpers JSON responses
+│   │   └── *_test.go      # Tests de handlers
+│   ├── repository/        # Acceso a datos (queries SQL directas con pgx)
+│   │   ├── db.go         # Pool de conexión PostgreSQL
+│   │   ├── queries/      # Queries SQL parametrizadas
+│   │   └── *_repo.go     # Repos por entidad
+│   ├── router/           # Configuración de rutas Chi
+│   │   └── router.go     # Definición de todas las rutas /api/v1/*
+│   └── service/          # Lógica de negocio
+│       ├── auth_service.go
+│       ├── propiedades_service.go
+│       ├── reserva_service.go
+│       ├── pago_service.go
+│       ├── crypto_service.go
+│       └── admin_service.go
+│
+├── go.mod
+└── go.sum
+```
 
 ---
 
-## Mapa de Rutas
+## API Endpoints (Backend Go)
+
+### Autenticación
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| POST | `/api/v1/auth/login` | Login email/password |
+| POST | `/api/v1/auth/login-admin` | Login exclusivo admins |
+| POST | `/api/v1/auth/otp/email` | Enviar OTP por email |
+| POST | `/api/v1/auth/otp/sms` | Enviar OTP por SMS |
+| POST | `/api/v1/auth/otp/verify` | Verificar OTP y registrar |
+| POST | `/api/v1/auth/register` | Registro directo |
+| POST | `/api/v1/auth/reset-password` | Recuperar contraseña |
+| GET | `/api/v1/auth/google` | URL OAuth Google |
+| GET | `/api/v1/auth/google/callback` | Callback OAuth Google |
+| POST | `/api/v1/auth/completar-perfil` | Completar perfil post-OAuth |
+| GET | `/api/v1/auth/me` | Usuario autenticado |
+
+### Reservas
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/v1/reservas/disponibilidad` | Verificar disponibilidad |
+| POST | `/api/v1/reservas` | Crear reserva |
+| GET | `/api/v1/reservas/mias` | Mis reservas (huésped) |
+| GET | `/api/v1/reservas/recibidas` | Reservas recibidas (anfitrión) |
+| GET | `/api/v1/reservas/{id}` | Detalle de reserva |
+| POST | `/api/v1/reservas/{id}/cancelar` | Cancelar reserva |
+| POST | `/api/v1/reservas/{id}/confirmar` | Confirmar reserva |
+| POST | `/api/v1/reservas/{id}/rechazar` | Rechazar reserva |
+
+### Pagos
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| POST | `/api/v1/pagos/registrar` | Registrar pago simple |
+| POST | `/api/v1/pagos/registrar-comprobante` | Registrar con comprobante |
+| POST | `/api/v1/pagos/{id}/verificar` | Verificar pago |
+| GET | `/api/v1/pagos/mis-pagos` | Historial de pagos |
+| GET | `/api/v1/payment-data` | Datos de cuentas de pago |
+| POST | `/api/v1/payments/card/create` | Crear pago con tarjeta |
+| GET | `/api/v1/payments/card/callback` | Callback de tarjeta |
+
+### Wallet
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/v1/wallet/` | Obtener wallet del usuario |
+| POST | `/api/v1/wallet/activar` | Activar wallet |
+| POST | `/api/v1/wallet/recarga` | Crear recarga |
+| GET | `/api/v1/wallet/{walletId}/transacciones` | Historial de transacciones |
+
+### Propiedades
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/v1/propiedades/publicas` | Búsqueda pública con filtros |
+| GET | `/api/v1/propiedades/buscar` | Búsqueda avanzada |
+| GET | `/api/v1/propiedades/{id}` | Detalle de propiedad |
+| GET | `/api/v1/propiedades/mias` | Mis propiedades (anfitrión) |
+| PATCH | `/api/v1/propiedades/{id}/estado` | Cambiar estado de publicación |
+| DELETE | `/api/v1/propiedades/{id}` | Eliminar propiedad |
+
+### Reseñas
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| POST | `/api/v1/resenas` | Crear reseña |
+| POST | `/api/v1/resenas/{id}/responder` | Responder reseña |
+| GET | `/api/v1/propiedades/{propiedadId}/resenas` | Listar reseñas de propiedad |
+
+### Verificación
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/v1/verificacion` | Estado de verificación del usuario |
+| POST | `/api/v1/verificacion/iniciar-metamap` | Iniciar verificación MetaMap |
+| POST | `/api/v1/verificacion/subir-documento` | Subir documento manual |
+| GET | `/api/v1/admin/verificaciones` | Listar todas (admin) |
+| POST | `/api/v1/admin/verificaciones/{id}/revisar` | Revisar verificación |
+| GET | `/api/v1/admin/counts` | Estadísticas de verificaciones |
+
+### Chat y Ofertas
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/v1/chat/conversaciones` | Listar conversaciones |
+| POST | `/api/v1/chat/conversaciones` | Crear/obtener conversación |
+| GET | `/api/v1/chat/mensajes` | Mensajes de conversación |
+| POST | `/api/v1/chat/mensajes` | Enviar mensaje |
+| GET | `/api/v1/chat/no-leidos` | Contar mensajes no leídos |
+| POST | `/api/v1/ofertas` | Crear oferta |
+| POST | `/api/v1/ofertas/{id}/responder` | Responder oferta |
+| GET | `/api/v1/ofertas/recibidas` | Ofertas recibidas |
+| GET | `/api/v1/ofertas/enviadas` | Ofertas enviadas |
+
+### Tienda (Boogie Store)
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/v1/tienda/productos` | Productos públicos |
+| GET | `/api/v1/tienda/servicios` | Servicios públicos |
+| GET | `/api/v1/admin/tienda/productos` | Todos los productos (admin) |
+| GET | `/api/v1/admin/tienda/servicios` | Todos los servicios (admin) |
+| POST | `/api/v1/admin/store/productos` | Crear producto |
+| PATCH | `/api/v1/admin/store/productos/{id}` | Actualizar producto |
+| DELETE | `/api/v1/admin/store/productos/{id}` | Eliminar producto |
+| POST | `/api/v1/admin/store/servicios` | Crear servicio |
+| PATCH | `/api/v1/admin/store/servicios/{id}` | Actualizar servicio |
+| DELETE | `/api/v1/admin/store/servicios/{id}` | Eliminar servicio |
+
+### Admin
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/v1/admin/dashboard` | Dashboard con KPIs |
+| GET | `/api/v1/admin/reservas` | Gestión de reservas |
+| GET | `/api/v1/admin/reservas/stats` | Estadísticas de reservas |
+| POST | `/api/v1/admin/reservas/accion` | Acción sobre reserva |
+| GET | `/api/v1/admin/reservas/{id}` | Detalle de reserva |
+| GET | `/api/v1/admin/pagos` | Gestión de pagos |
+| GET | `/api/v1/admin/pagos/stats` | Estadísticas de pagos |
+| POST | `/api/v1/admin/pagos/verificar` | Verificar pago |
+| GET | `/api/v1/admin/propiedades` | Gestión de propiedades |
+| GET | `/api/v1/admin/propiedades/ciudades` | Ciudades con propiedades |
+| GET | `/api/v1/admin/propiedades/{id}` | Detalle de propiedad |
+| GET | `/api/v1/admin/propiedades/{id}/ingresos` | Ingresos de propiedad |
+| PATCH | `/api/v1/admin/propiedades` | Actualizar propiedad |
+| DELETE | `/api/v1/admin/propiedades/{id}` | Eliminar propiedad |
+| GET | `/api/v1/admin/resenas` | Gestión de reseñas |
+| POST | `/api/v1/admin/resenas/moderar` | Moderar reseña |
+| GET | `/api/v1/admin/usuarios` | Gestión de usuarios |
+| POST | `/api/v1/admin/usuarios` | Crear usuario |
+| PATCH | `/api/v1/admin/usuarios/{id}` | Actualizar usuario |
+| DELETE | `/api/v1/admin/usuarios/{id}` | Eliminar usuario |
+| GET | `/api/v1/admin/cupones` | Listar cupones |
+| GET | `/api/v1/admin/cupones/{id}` | Detalle de cupón |
+| POST | `/api/v1/admin/cupones` | Crear cupón |
+| PUT | `/api/v1/admin/cupones` | Editar cupón |
+| PATCH | `/api/v1/admin/cupones/{id}/activo` | Activar/desactivar cupón |
+| DELETE | `/api/v1/admin/cupones/{id}` | Eliminar cupón |
+| GET | `/api/v1/admin/cupon-usos` | Usos de cupones |
+| GET | `/api/v1/admin/comisiones` | Ver comisiones |
+| PUT | `/api/v1/admin/comisiones` | Actualizar comisiones |
+| GET | `/api/v1/admin/auditoria` | Log de auditoría |
+| GET | `/api/v1/admin/notificaciones` | Notificaciones |
+| POST | `/api/v1/admin/notificaciones` | Enviar notificación |
+
+### Servicios públicos
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/v1/exchange-rate` | Cotización EUR/VES (rate limited) |
+| GET | `/api/v1/ubicaciones` | Búsqueda de ubicaciones (rate limited) |
+| GET | `/healthz` | Health check |
+
+### Webhooks
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| POST | `/api/v1/crypto/create` | Crear dirección USDT (auth requerida) |
+| GET | `/api/v1/crypto/callback` | Callback CryptAPI |
+| POST | `/api/v1/crypto/callback` | Callback CryptAPI (POST) |
+| POST | `/api/v1/metamap/webhook` | Webhook MetaMap |
+
+---
+
+## Mapa de Rutas Frontend
 
 ### Rutas Públicas `(main)`
 
-| Ruta | Componente | Tipo | Descripción |
-|---|---|---|---|
-| `/` | `page.tsx` | Server | Landing page (hero, zonas, CTAs) |
-| `/propiedades` | `page.tsx` | Server | Catálogo con filtros y paginación |
-| `/propiedades/[id]` | `page.tsx` | Server | Detalle de propiedad |
-| `/propiedades/[id]/reservar` | `page.tsx` | Client | Flujo de reserva (4 pasos) |
-| `/propiedades/buscar` | `page.tsx` | Server | Búsqueda avanzada |
-| `/zonas` | `page.tsx` | Server | Exploración por estados |
-| `/zonas/[slug]` | `page.tsx` | Server | Propiedades de un estado |
-| `/como-funciona` | `page.tsx` | Server | Cómo funciona Boogie |
-| `/nosotros` | `page.tsx` | Server | Sobre nosotros |
-| `/guia-anfitrion` | `page.tsx` | Server | Guía para anfitriones |
+| Ruta | Descripción |
+|---|---|
+| `/` | Landing page (hero, zonas, CTAs) |
+| `/propiedades` | Catálogo con filtros y paginación |
+| `/propiedades/[slug]` | Detalle de propiedad |
+| `/propiedades/[slug]/reservar` | Flujo de reserva (4 pasos) |
+| `/propiedades/buscar` | Búsqueda avanzada |
+| `/zonas` | Exploración por estados |
+| `/zonas/[slug]` | Propiedades de un estado |
+| `/como-funciona` | Cómo funciona Boogie |
+| `/nosotros` | Sobre nosotros |
+| `/guia-anfitrion` | Guía para anfitriones |
 
 ### Rutas de Autenticación `(auth)`
 
@@ -176,219 +437,9 @@ src/
 | `/admin/verificaciones` | Verificaciones de identidad |
 | `/admin/boogie-store` | Gestión del store |
 | `/admin/secciones` | Secciones destacadas (landing) |
+| `/admin/cupones` | Gestión de cupones |
 | `/admin/auditoria` | Log de auditoría |
 | `/admin/configuracion` | Configuración global |
-
-### API Routes
-
-| Ruta | Método | Descripción |
-|---|---|---|
-| `/api/crypto/create` | POST | Crear dirección de depósito USDT (CryptAPI) |
-| `/api/crypto/callback` | GET/POST | Webhook de confirmación de pago cripto |
-| `/api/exchange-rate` | GET | Cotización EUR/VES (BCV) con rate limiting |
-| `/api/metamap/webhook` | POST | Webhook de verificación de identidad (MetaMap) |
-| `/api/payment-data` | GET | Datos de cuentas de pago de la plataforma |
-| `/api/ubicaciones` | GET | Geocoding de ubicaciones venezolanas |
-
----
-
-## Server Actions
-
-Todas las operaciones de datos se realizan mediante Server Actions en `src/actions/`. Estos son los archivos principales y sus funciones exportadas:
-
-### Autenticación
-
-| Archivo | Funciones | Descripción |
-|---|---|---|
-| `auth.actions.ts` | `enviarOtpEmail`, `enviarOtpSms`, `verificarOtpYRegistrar`, `iniciarSesion`, `iniciarSesionAdmin`, `cerrarSesion`, `recuperarContrasena` | Flujo completo de auth con OTP |
-| `auth-google.actions.ts` | `loginWithGoogle` | Inicio de OAuth con Google |
-| `auth-perfil.actions.ts` | `completarPerfilGoogle` | Completar perfil tras Google OAuth |
-
-### Perfil
-
-| Archivo | Funciones |
-|---|---|
-| `perfil.actions.ts` | `getPerfilUsuario`, `actualizarPerfil`, `cambiarContrasena`, `subirAvatar` |
-
-### Propiedades
-
-| Archivo | Funciones | Descripción |
-|---|---|---|
-| `propiedad.actions.ts` | `crearPropiedad`, `actualizarPropiedad`, `eliminarPropiedad`, `actualizarEstadoPropiedad`, `getBoogieParaEditar`, `getMisPropiedades`, `getPropiedadesPublicas`, `getPropiedadPorId` | CRUD + búsqueda pública con filtros y geolocalización |
-
-**Búsqueda pública** (`getPropiedadesPublicas`): Soporta filtros por ubicación, rango de precio, huéspedes, tipo, amenidades y proximidad geográfica (algoritmo Haversine, radio 25km).
-
-### Reservas
-
-| Archivo | Funciones |
-|---|---|
-| `reserva.actions.ts` | `crearReserva`, `cancelarReserva`, `confirmarORechazarReserva`, `getMisReservas`, `getReservasRecibidas`, `getReservaPorId`, `getReservaStoreItems` |
-
-### Pagos
-
-| Archivo | Funciones |
-|---|---|
-| `pago.actions.ts` | `registrarPago`, `verificarPago`, `getMisPagos` |
-| `pago-reserva.actions.ts` | `registrarPagoReserva` (con comprobante en base64) |
-| `metodo-pago.actions.ts` | `getMetodosPago`, `crearMetodoPago`, `eliminarMetodoPago` |
-| `wallet.actions.ts` | `getTasaBCV`, `crearRecargaWallet`, `getWallet`, `activarWallet`, `getWalletTransacciones` |
-
-### Reseñas, Store, Dashboard
-
-| Archivo | Funciones |
-|---|---|
-| `review.actions.ts` | `crearResena`, `responderResena` |
-| `boogie-store.actions.ts` | `getProductosStore`, `getServiciosStore` |
-| `boogie-dashboard.actions.ts` | `getBoogieDashboard`, `crearGastoMantenimiento`, `eliminarGastoMantenimiento` |
-| `secciones-destacadas.actions.ts` | `getSeccionesDestacadasPublicas`, `getSeccionesDestacadasAdmin`, `actualizarSeccionDestacada`, `eliminarSeccionDestacada`, `buscarPropiedadesAdmin`, `listarPropiedadesPublicadas` |
-| `verificacion.actions.ts` | `getVerificacionUsuario`, `iniciarVerificacionMetaMap`, `subirDocumentoManual`, `getVerificacionesPendientes`, `revisarVerificacion`, `getUsuariosAdmin`, `actualizarRolUsuario`, `eliminarUsuarioAdmin`, `getAdminCounts` |
-
-### Admin
-
-| Archivo | Funciones |
-|---|---|
-| `admin-dashboard.actions.ts` | `getAdminStats`, `getAdminChartsData`, `getAdminTablesData` |
-| `admin-propiedades.actions.ts` | `getPropiedadesAdmin`, `getPropiedadDetalleAdmin`, `actualizarPropiedadAdmin`, `eliminarPropiedadAdmin`, `getPropiedadIngresos`, `getCiudadesPropiedades` |
-| `admin-reservas.actions.ts` | `getReservasAdmin`, `getReservaDetalleAdmin`, `accionReservaAdmin`, `getReservasStatsAdmin` |
-| `admin-pagos.actions.ts` | `getPagosAdmin`, `getPagosStatsAdmin`, `verificarPagoAdmin` |
-| `admin-resenas.actions.ts` | `getResenasAdmin`, `moderarResenaAdmin` |
-| `admin-usuarios.actions.ts` | `registrarUsuarioAdmin` |
-| `admin-auditoria.actions.ts` | `getAuditLogAdmin` |
-| `admin-notificaciones.actions.ts` | `enviarNotificacionAdmin`, `getNotificacionesAdmin` |
-
----
-
-## Componentes Principales
-
-### Layout
-
-| Componente | Archivo | Descripción |
-|---|---|---|
-| `Navbar` | `components/layout/navbar.tsx` | Barra de navegación con auth state y exchange rate |
-| `Sidebar` | `components/layout/sidebar.tsx` | Sidebar del dashboard de usuario |
-| `Footer` | `components/layout/footer.tsx` | Footer con links y redes sociales |
-
-### Propiedades
-
-| Componente | Archivo | Descripción |
-|---|---|---|
-| `PropertyCard` | `components/propiedades/property-card.tsx` | Card de propiedad en grid |
-| `PropertyGrid` | `components/propiedades/property-grid.tsx` | Grid responsive de propiedades |
-| `PropertyGallery` | `components/propiedades/property-gallery.tsx` | Galería de imágenes asimétrica |
-| `PropertyLightbox` | `components/propiedades/property-lightbox.tsx` | Lightbox de pantalla completa |
-| `PropertyFilters` | `components/propiedades/property-filters.tsx` | Filtros de búsqueda |
-| `PropertyMap` | `components/propiedades/property-map.tsx` | Mapa con marcadores (MapLibre) |
-| `BookingWidget` | `components/reservas/booking-widget.tsx` | Widget de reserva en sidebar |
-| `BookingCalendar` | `components/reservas/booking-calendar.tsx` | Calendario de disponibilidad |
-| `HostCard` | `components/propiedades/host-card.tsx` | Card del anfitrión con reputación |
-
-### Pagos
-
-| Componente | Archivo | Descripción |
-|---|---|---|
-| `PaymentMethodSelector` | `components/pagos/payment-method-selector.tsx` | Selector de método de pago |
-| `PaymentForm` | `components/pagos/payment-form.tsx` | Formulario dinámico según método |
-| `CryptoPayment` | `components/pagos/crypto-payment.tsx` | Pago USDT con QR y countdown |
-
-### Landing
-
-| Componente | Archivo |
-|---|---|
-| `HeroSection` | `components/landing/hero-section.tsx` |
-| `ZonasSection` | `components/landing/zonas-section.tsx` |
-| `StepsSection` | `components/landing/steps-section.tsx` |
-| `PaymentsSection` | `components/landing/payments-section.tsx` |
-| `CtaSection` | `components/landing/cta-section.tsx` |
-
-### Boogie Store
-
-| Componente | Archivo | Descripción |
-|---|---|---|
-| `BoogieStore` | `components/reservas/boogie-store.tsx` | Tienda de productos/servicios adicionales en el flujo de reserva |
-
-### Shared
-
-| Componente | Archivo | Descripción |
-|---|---|---|
-| `ConfirmationDialog` | `components/shared/confirmation-dialog.tsx` | Diálogo de confirmación genérico |
-| `EmptyState` | `components/shared/empty-state.tsx` | Estado vacío con ícono y texto |
-| `ErrorMessage` | `components/shared/error-message.tsx` | Mensaje de error estilizado |
-| `RatingStars` | `components/shared/rating-stars.tsx` | Estrellas de calificación |
-| `PriceDisplay` | `components/shared/price-display.tsx` | Precio con conversión de moneda |
-| `ExchangeRateBadge` | `components/shared/exchange-rate-badge.tsx` | Badge con tasa BCV |
-
-### Admin
-
-| Componente | Archivo |
-|---|---|
-| `AdminSidebarDesktop` / `AdminSidebarMobile` | `components/admin/admin-sidebar.tsx` |
-| `AdminHeader` | `components/admin/admin-header.tsx` |
-| `AdminStatCard` | `components/admin/admin-stat-card.tsx` |
-| `AdminFilterBar` | `components/admin/admin-filter-bar.tsx` |
-| `AdminConfirmDialog` | `components/admin/admin-confirm-dialog.tsx` |
-
----
-
-## Librerías y Utilidades (`src/lib/`)
-
-### Supabase - Tres clientes distintos
-
-| Archivo | Función | Uso |
-|---|---|---|
-| `supabase/client.ts` | `createClient()` | Componentes del navegador (browser) |
-| `supabase/server.ts` | `createClient()` | Server Components y Server Actions (cookies) |
-| `supabase/admin.ts` | `createAdminClient()` | Operaciones privilegiadas (bypassea RLS) |
-
-> **Importante**: `createAdminClient()` usa la service role key. Nunca importar en componentes del cliente.
-
-### Autenticación
-
-| Archivo | Funciones | Descripción |
-|---|---|---|
-| `lib/auth.ts` | `getUsuarioAutenticado()`, `getUsuarioAutenticadoConSesion()` | Obtener usuario actual en Server Components/Actions |
-| `lib/admin-auth.ts` | `requireAdmin()`, `logAdminAction()` | Verificar rol admin y registrar acciones en audit log |
-
-### Validación
-
-| Archivo | Descripción |
-|---|---|
-| `lib/validations.ts` | Esquemas Zod para auth, propiedades, reservas, pagos, reseñas, perfil. Infiere tipos como `RegistroInput`, `PropiedadInput`, etc. |
-| `lib/admin-validations.ts` | Esquemas Zod para acciones de admin |
-
-### Lógica de Reservas
-
-| Archivo | Funciones | Descripción |
-|---|---|---|
-| `lib/reservas/calculos.ts` | `calcularPrecioReserva`, `calcularReembolsoCompleto` | Desglose de precios y reembolsos |
-| `lib/reservas/disponibilidad.ts` | `verificarDisponibilidad` | Verifica solapamiento de reservas y fechas bloqueadas |
-| `lib/reservas/estados.ts` | `puedeTransicionar`, `esEstadoFinal`, `sePuedeCancelar` | Máquina de estados de reservas |
-
-### Otras Utilidades
-
-| Archivo | Descripción |
-|---|---|
-| `lib/format.ts` | Formateo de precios (`formatPrecio`), fechas, teléfonos, cédulas, iniciales |
-| `lib/constants.ts` | Comisiones (6% huésped, 3% anfitrión), planes, tipos de propiedad, estados venezolanos, métodos de pago, límites |
-| `lib/cache.ts` | `unstable_cache` wrapper con tags y tiempos de invalidación |
-| `lib/slug.ts` | Generación de slugs con sufijo aleatorio |
-| `lib/rate-limit.ts` | Rate limiting en memoria para API routes |
-| `lib/image-optimize.ts` | Compresión de imágenes cliente-side (WebP, max 1920x1440, ~400KB) |
-| `lib/payment-data.ts` | Datos de cuentas bancarias de la plataforma (desde env vars) |
-| `lib/store-constants.ts` | Tipos y categorías del Boogie Store |
-| `lib/server-action.ts` | Tipos helper para respuestas de actions: `exito(datos)`, `error(mensaje)` |
-| `lib/crypto/cryptapi.ts` | Integración con CryptAPI para pagos USDT TRC20 |
-| `lib/services/exchange-rate.ts` | Cotización EUR/VES con fallbacks |
-
-### Custom Hooks
-
-| Hook | Descripción |
-|---|---|
-| `useDebounce(valor, delay)` | Debounce genérico |
-| `useMediaQuery(query)` | Detección de media queries |
-| `useIsMobile()` | `max-width: 767px` |
-| `useIsTablet()` | `768px - 1023px` |
-| `useIsDesktop()` | `min-width: 1024px` |
-| `useSearch()` | Estado de búsqueda con debounce |
 
 ---
 
@@ -403,17 +454,17 @@ Usuario ─────────┬── Propiedad (1:N) ──── Imagen
   rol: BOOGER /  │                    ├── PropiedadAmenidad (N:M via Amenidad)
   ANFITRION /    │                    ├── Reserva (1:N)
   AMBOS / ADMIN  │                    ├── FechaBloqueada (1:N)
-                 │                    └── PrecioEspecial (1:N)
-                 │
-                 ├── Reserva (1:N como huésped)
-                 │      ├── Pago (1:N)
-                 │      └── ReservaStoreItem (1:N)
-                 │
-                 ├── Resena (1:N)
-                 ├── MetodoPago (1:N)
-                 ├── Notificacion (1:N)
-                 ├── Wallet (1:1) ──── WalletTransaccion (1:N)
-                 └── VerificacionDocumento (1:1)
+                  │                    └── PrecioEspecial (1:N)
+                  │
+                  ├── Reserva (1:N como huésped)
+                  │      ├── Pago (1:N)
+                  │      └── ReservaStoreItem (1:N)
+                  │
+                  ├── Resena (1:N)
+                  ├── MetodoPago (1:N)
+                  ├── Notificacion (1:N)
+                  ├── Wallet (1:1) ──── WalletTransaccion (1:N)
+                  └── VerificacionDocumento (1:1)
 ```
 
 ### Enums Clave
@@ -427,67 +478,6 @@ Usuario ─────────┬── Propiedad (1:N) ──── Imagen
 | `MetodoPagoEnum` | `TRANSFERENCIA_BANCARIA`, `PAGO_MOVIL`, `ZELLE`, `EFECTIVO_FARMATODO`, `USDT`, `TARJETA_INTERNACIONAL`, `CRIPTO`, `EFECTIVO` |
 | `PoliticaCancelacion` | `FLEXIBLE`, `MODERADA`, `ESTRICTA` |
 | `Moneda` | `USD`, `VES` |
-
-### Migraciones de Supabase
-
-Las migraciones SQL están en `supabase/migrations/`:
-
-| # | Archivo | Descripción |
-|---|---|---|
-| 001 | `001_verificaciones_documento.sql` | Tabla de verificación de identidad |
-| 002 | `002_gastos_mantenimiento.sql` | Gastos de mantenimiento |
-| 003 | `003_wallets.sql` | Wallets y transacciones |
-| 004 | `004_admin_audit_log.sql` | Log de auditoría |
-| 005 | `005_cascade_delete_usuarios.sql` | Cascade delete |
-| 006 | `006_rename_huesped_to_booger.sql` | Renombrado de rol |
-| 007 | `007_add_resena_oculta.sql` | Flag de reseña oculta |
-| 008 | `008_plan_suscripcion.sql` | Plan de suscripción |
-| 009 | `009_secciones_destacadas.sql` | Secciones destacadas |
-| 010 | `010_boogie_store.sql` | Store (productos y servicios) |
-| 011 | `011_imagenes_categoria.sql` | Categoría en imágenes |
-| 012 | `012_reputacion_anfitrion.sql` | Reputación de anfitrión |
-| 013 | `013_crypto_payments.sql` | Campos de pago cripto |
-| 014 | `014_performance_indexes.sql` | Índices de performance |
-
----
-
-## Flujos Principales
-
-### Autenticación
-
-1. **Email/Password**: Registro con OTP (email o SMS) -> Verificación -> Perfil completo
-2. **Google OAuth**: Login con Google -> Si no tiene perfil, redirige a `/completar-perfil`
-3. **Middleware** (`src/middleware.ts`): Protege rutas, fuerza completar perfil, verifica rol admin
-
-### Reserva (4 pasos)
-
-1. **Resumen**: Muestra propiedad, fechas, noches, desglose de precios
-2. **Boogie Store**: Productos/servicios adicionales (opcional)
-3. **Pago**: Selección de método + formulario de pago (7 métodos + cripto)
-4. **Confirmación**: Reserva creada, pago en verificación
-
-La reserva se crea al confirmar el pago (`crearReserva`), y se asocia el comprobante de pago con `registrarPagoReserva`.
-
-### Pagos
-
-Los pagos son verificados manualmente por el anfitrión (o admin). El flujo:
-
-1. Huésped envía comprobante (referencia, banco, foto)
-2. Estado inicial: `PENDIENTE`
-3. Anfitrión verifica -> `VERIFICADO`
-4. Se confirma la reserva automáticamente si estaba `PENDIENTE`
-
-**Cripto (USDT TRC20)**: Flujo automático vía CryptAPI. Se genera una dirección de depósito y el webhook `/api/crypto/callback` confirma el pago en blockchain.
-
-### Caché
-
-Se usa `unstable_cache` de Next.js con tags para invalidación selectiva:
-
-- `CACHE_TAGS.PROPIEDADES` -> Invalida todas las propiedades
-- `CACHE_TAGS.PROPIEDAD(id)` -> Invalida una propiedad específica
-- Tiempos: listado 60s, detalle 300s, zonas 3600s
-
-La función `invalidatePropiedadCache(propiedadId)` se llama al crear/editar/eliminar propiedades.
 
 ---
 
@@ -507,76 +497,58 @@ La función `invalidatePropiedadCache(propiedadId)` se llama al crear/editar/eli
 | Texto secundario | `#6B6560` | Labels, descripciones |
 | Texto terciario | `#9E9892` | Placeholders, hints |
 
-**Convención de colores**: Se usan directamente como valores Tailwind (ej: `text-[#1B4332]`, `bg-[#FEFCF9]`). No hay design tokens en config.
-
----
-
-## Convenciones del Proyecto
-
-### Server vs Client Components
-
-- Las páginas que solo leen datos son **Server Components** (la mayoría)
-- Se marca `'use client'` cuando hay interactividad (useState, useEffect, onClick, etc.)
-- Las Server Actions (`'use server'`) viven en `src/actions/`
-
-### Estructura de una Server Action
-
-```typescript
-// src/actions/ejemplo.actions.ts
-'use server'
-
-import { getUsuarioAutenticado } from '@/lib/auth'
-import { createAdminClient } from '@/lib/supabase/admin'
-
-export async function miAccion(datos: MiInput) {
-  const user = await getUsuarioAutenticado()
-  if (!user) return { error: { mensaje: 'No autenticado' } }
-
-  const supabase = createAdminClient()
-  const { data, error } = await supabase.from('tabla').insert(datos)
-
-  if (error) return { error: { mensaje: error.message } }
-  return { exito: true, datos: data }
-}
-```
-
-### Nombres en la Base de Datos
-
-Supabase usa **snake_case** (ej: `precio_por_noche`, `estado_publicacion`). Los tipos TypeScript mapean a **camelCase** (ej: `precioPorNoche`, `estadoPublicacion`). La conversión se hace manualmente en cada action.
-
-### Tipos
-
-- Tipos globales: `src/types/index.ts` (enums, `Rol`, `Moneda`, `MetodoPagoEnum`, etc.)
-- Tipos de reserva: `src/types/reserva.ts` (`ResultadoAccion`, `ReservaConPropiedad`, labels, colores)
-- Tipos generados: `src/generated/prisma/models/` (auto-generados por Prisma)
-
-### Testing
-
-Los tests están en `src/__tests__/` usando Vitest:
-
-```
-src/__tests__/
-├── actions/          # Tests de server actions
-├── auth/             # Tests de auth y middleware
-├── lib/reservas/     # Tests de lógica de reservas
-├── validations/      # Tests de schemas Zod
-├── format.test.ts
-└── server-action.test.ts
-```
-
 ---
 
 ## Deployment
 
-El proyecto está desplegado en **Vercel** y configurado para deployment automático desde la rama `master`.
+### Frontend (Vercel)
+
+Desplegado en **Vercel** con deployment automático desde la rama `master`.
 
 ```bash
-# Deploy manual
-npm install -g vercel
-vercel
+npm run build   # Genera Prisma + compila Next
 ```
 
-El build script (`npm run build`) genera los tipos de Prisma antes de compilar Next.js.
+### Backend (Go)
+
+El backend se ejecuta como un servicio separado en el puerto 8080.
+
+**Variables de entorno requeridas:**
+- `PORT` (default: 8080)
+- `APP_URL` (URL del frontend para CORS)
+- `SUPABASE_URL`
+- `SUPABASE_SECRET_KEY`
+- `DATABASE_URL`
+
+---
+
+## Testing
+
+### Frontend (Vitest)
+
+```bash
+npm run test         # Tests unitarios
+npm run test:watch   # Modo watch
+```
+
+Tests en `src/__tests__/` covering:
+- Server actions
+- Auth y middleware
+- Lógica de reservas
+- Validaciones Zod
+
+### Backend (Go)
+
+```bash
+cd backend
+go test ./...         # Todos los tests
+go test -v ./...      # Verbose
+```
+
+Tests en `backend/internal/**/*_test.go` covering:
+- Handlers
+- Services
+- Repository logic
 
 ---
 

@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion'
 import {
-  Smartphone, Building2, CircleDollarSign, CreditCard, Wallet, Coins,
+  Smartphone, Building2, CircleDollarSign, Wallet, Coins,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { METODOS_PAGO } from '@/lib/constants'
@@ -29,16 +29,16 @@ const METODO_META: Record<MetodoPagoEnum, { icon: typeof Smartphone; color: stri
   ZELLE: { icon: CircleDollarSign, color: '#7C3AED', bg: 'bg-violet-50', activeBg: 'bg-violet-100', ring: 'ring-violet-600' },
   EFECTIVO_FARMATODO: { icon: Wallet, color: '#DC2626', bg: 'bg-red-50', activeBg: 'bg-red-100', ring: 'ring-red-600' },
   USDT: { icon: CircleDollarSign, color: '#059669', bg: 'bg-teal-50', activeBg: 'bg-teal-100', ring: 'ring-teal-600' },
-  TARJETA_INTERNACIONAL: { icon: CreditCard, color: '#1D4ED8', bg: 'bg-indigo-50', activeBg: 'bg-indigo-100', ring: 'ring-indigo-600' },
   EFECTIVO: { icon: Wallet, color: '#B45309', bg: 'bg-amber-50', activeBg: 'bg-amber-100', ring: 'ring-amber-600' },
   CRIPTO: { icon: Coins, color: '#1B4332', bg: 'bg-emerald-50', activeBg: 'bg-[#D8F3DC]', ring: 'ring-[#1B4332]' },
+  WALLET: { icon: Wallet, color: '#1B4332', bg: 'bg-emerald-50', activeBg: 'bg-[#D8F3DC]', ring: 'ring-[#1B4332]' },
 }
 
 const METODOS_DISPONIBLES: MetodoPagoEnum[] = [
   'PAGO_MOVIL',
   'CRIPTO',
+  'WALLET',
   'EFECTIVO_FARMATODO',
-  'TARJETA_INTERNACIONAL',
 ]
 
 export function PaymentMethodSelector({ onSelect, selected }: PaymentMethodSelectorProps) {

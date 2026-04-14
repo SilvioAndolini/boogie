@@ -108,7 +108,7 @@ export const pagoSchema = z.object({
   reservaId: z.string(),
   metodoPago: z.enum([
     'TRANSFERENCIA_BANCARIA', 'PAGO_MOVIL', 'ZELLE',
-    'EFECTIVO_FARMATODO', 'USDT', 'TARJETA_INTERNACIONAL', 'EFECTIVO', 'CRIPTO'
+    'EFECTIVO_FARMATODO', 'USDT', 'EFECTIVO', 'CRIPTO', 'WALLET'
   ]),
   referencia: z.string().optional(),
   monto: z.coerce.number().min(1),
@@ -132,7 +132,7 @@ export const perfilSchema = z.object({
   telefono: z.string().optional(),
   bio: z.string().max(500).optional(),
   metodoPagoPreferido: z.enum([
-    'PAGO_MOVIL', 'EFECTIVO_FARMATODO', 'USDT', 'TARJETA_INTERNACIONAL',
+    'PAGO_MOVIL', 'EFECTIVO_FARMATODO', 'USDT', 'WALLET',
   ]).optional(),
   tiktok: z.string().max(50).optional(),
   instagram: z.string().max(50).optional(),

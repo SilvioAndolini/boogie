@@ -54,7 +54,7 @@ func (h *PagoHandler) RegistrarSimple(w http.ResponseWriter, r *http.Request) {
 
 	validMetodos := map[string]bool{
 		"TRANSFERENCIA_BANCARIA": true, "PAGO_MOVIL": true, "ZELLE": true,
-		"EFECTIVO_FARMATODO": true, "EFECTIVO": true,
+		"EFECTIVO_FARMATODO": true, "EFECTIVO": true, "WALLET": true,
 	}
 	if !validMetodos[req.MetodoPago] {
 		ErrorJSON(w, http.StatusBadRequest, "INVALID_METODO", "metodo de pago invalido")
@@ -135,8 +135,8 @@ func (h *PagoHandler) RegistrarConComprobante(w http.ResponseWriter, r *http.Req
 }
 
 type verificarPagoRequest struct {
-	Aprobado bool     `json:"aprobado"`
-	Notas    *string  `json:"notas"`
+	Aprobado bool    `json:"aprobado"`
+	Notas    *string `json:"notas"`
 }
 
 func (h *PagoHandler) Verificar(w http.ResponseWriter, r *http.Request) {

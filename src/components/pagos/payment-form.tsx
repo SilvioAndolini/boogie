@@ -3,13 +3,12 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Phone, CreditCard, Upload, X, Loader2, ArrowRight, Building2, FileText,
+  Phone, CreditCard, Upload, X, Loader2, ArrowRight, Building2, FileText, Wallet,
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { getTasaBCV } from '@/actions/wallet.actions'
+import { getTasaBCV, getWallet } from '@/actions/wallet.actions'
 import { CryptoPayment } from '@/components/pagos/crypto-payment'
-import { CardPayment } from '@/components/pagos/card-payment'
 import type { MetodoPagoEnum } from '@/types'
 import type { PaymentData } from '@/lib/payment-data'
 
@@ -59,7 +58,10 @@ export function PaymentForm({
 
   const esPagoMovil = metodo === 'PAGO_MOVIL'
   const esCripto = metodo === 'CRIPTO'
-  const esTarjeta = metodo === 'TARJETA_INTERNACIONAL'
+  const esWallet = metodo === 'WALLET'
+  const [walletSaldo, setWalletSaldo] = useState<number | null>(null)
+  const [walletLoading, setWalletLoading] = useState(false)
+  const [walletError, setWalletError] = useState<string | null>(null)
 
   useEffect(() => {
     getTasaBCV().then((res) => {
@@ -110,16 +112,91 @@ export function PaymentForm({
     )
   }
 
-  if (esTarjeta && propiedadId && fechaEntrada && fechaSalida && cantidadHuespedes) {
+  if (esWallet) {
+    const handleWalletPay = async () => {
+      setWalletLoading(true)
+      setWalletError(null)
+      try {
+        const walletRes = await getWallet()
+        if (walletRes.error || !walletRes.wallet) {
+          setWalletError('No tienes una Boogie Wallet activa. Actívala desde Configuración de pagos.')
+          setWalletLoading(false)
+          return
+        }
+        const saldo = walletRes.wallet.saldo_usd as number
+        if (saldo < monto) {
+          setWalletError(`Saldo insuficiente. Disponible: $${saldo.toFixed(2)} USD`)
+          setWalletLoading(false)
+          return
+        }
+        const formData = new FormData()
+        formData.append('metodoPago', 'WALLET')
+        formData.append('referencia', `WALLET-${Date.now()}`)
+        onSubmit(formData)
+      } catch {
+        setWalletError('Error al procesar el pago con wallet')
+      }
+      setWalletLoading(false)
+    }
+
     return (
-      <CardPayment
-        monto={monto}
-        propiedadId={propiedadId}
-        fechaEntrada={fechaEntrada}
-        fechaSalida={fechaSalida}
-        cantidadHuespedes={cantidadHuespedes}
-        onReservaCreated={onCryptoReservaCreated || (() => {})}
-      />
+      <div className="space-y-4">
+        <div className="relative overflow-hidden rounded-2xl border border-[#E8E4DF] bg-gradient-to-br from-white to-[#F8F6F3]">
+          <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-[#1B4332]/[0.03]" />
+          <div className="absolute -bottom-6 -left-6 h-20 w-20 rounded-full bg-[#1B4332]/[0.03]" />
+          <div className="relative p-5">
+            <div className="mb-4 flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#D8F3DC]">
+                <Wallet className="h-4 w-4 text-[#1B4332]" />
+              </div>
+              <h3 className="text-sm font-bold text-[#1A1A1A]">Pagar con Boogie Wallet</h3>
+            </div>
+            <div className="rounded-xl bg-[#1B4332] p-4">
+              <div className="flex items-end justify-between">
+                <div>
+                  <p className="text-[10px] font-medium uppercase tracking-wider text-white/40">Monto a pagar</p>
+                  <p className="text-2xl font-bold text-white">{formatUSD(monto)}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] text-white/40">Confirmación</p>
+                  <p className="text-xs font-medium text-white/70">Inmediata</p>
+                </div>
+              </div>
+            </div>
+            <div className="mt-3 flex items-center gap-2 text-[11px] text-[#52B788]">
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+              Sin comisiones
+            </div>
+            <div className="flex items-center gap-2 text-[11px] text-[#52B788]">
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+              Pago instantáneo
+            </div>
+          </div>
+        </div>
+
+        {walletError && (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{walletError}</div>
+        )}
+
+        <button
+          onClick={handleWalletPay}
+          disabled={walletLoading}
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1B4332] text-sm font-semibold text-white transition-all hover:bg-[#2D6A4F] disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {walletLoading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Procesando...
+            </>
+          ) : (
+            <>
+              <Wallet className="h-4 w-4" />
+              Pagar con Wallet
+              <ArrowRight className="h-4 w-4" />
+            </>
+          )}
+        </button>
+      </div>
     )
   }
 

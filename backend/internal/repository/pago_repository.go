@@ -19,15 +19,15 @@ func NewPagoRepo(pool *pgxpool.Pool) *PagoRepo {
 }
 
 type PagoConReserva struct {
-	ID             string     `json:"id"`
-	ReservaID      *string    `json:"reserva_id"`
-	Monto          float64    `json:"monto"`
-	Moneda         string     `json:"moneda"`
-	MetodoPago     string     `json:"metodo_pago"`
-	Estado         string     `json:"estado"`
-	Referencia     string     `json:"referencia"`
-	Comprobante    *string    `json:"comprobante"`
-	FechaCreacion  time.Time  `json:"fecha_creacion"`
+	ID              string    `json:"id"`
+	ReservaID       *string   `json:"reserva_id"`
+	Monto           float64   `json:"monto"`
+	Moneda          string    `json:"moneda"`
+	MetodoPago      string    `json:"metodo_pago"`
+	Estado          string    `json:"estado"`
+	Referencia      string    `json:"referencia"`
+	Comprobante     *string   `json:"comprobante"`
+	FechaCreacion   time.Time `json:"fecha_creacion"`
 	PropiedadTitulo *string   `json:"propiedad_titulo"`
 }
 
@@ -144,15 +144,6 @@ func (r *PagoRepo) ReservaBelongsToUser(ctx context.Context, reservaID, userID s
 	return exists, err
 }
 
-func (r *PagoRepo) InsertPagoCard(ctx context.Context, reservaID, usuarioID string, monto float64, externalTxID string) error {
-	id := fmt.Sprintf("%016x", rand.Int63())
-	_, err := r.pool.Exec(ctx, `
-		INSERT INTO pagos (id, monto, moneda, metodo_pago, estado, referencia, fecha_creacion, reserva_id, usuario_id)
-		VALUES ($1, $2, 'USD', 'TARJETA_INTERNACIONAL', 'PENDIENTE', $3, NOW(), $4, $5)
-	`, id, monto, fmt.Sprintf("MoonPay TX: %s", externalTxID), reservaID, usuarioID)
-	return err
-}
-
 func (r *PagoRepo) FindByReferencia(ctx context.Context, metodo, referencia string) (*PagoConReserva, error) {
 	var p PagoConReserva
 	err := r.pool.QueryRow(ctx, `
@@ -173,10 +164,10 @@ func (r *PagoRepo) FindByReferencia(ctx context.Context, metodo, referencia stri
 }
 
 type WalletData struct {
-	ID        string  `json:"id"`
-	UsuarioID string  `json:"usuario_id"`
-	Estado    string  `json:"estado"`
-	SaldoUSD  float64 `json:"saldo_usd"`
+	ID        string    `json:"id"`
+	UsuarioID string    `json:"usuario_id"`
+	Estado    string    `json:"estado"`
+	SaldoUSD  float64   `json:"saldo_usd"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
@@ -202,13 +193,13 @@ func (r *PagoRepo) CreateWallet(ctx context.Context, userID string) error {
 }
 
 type WalletTransaccion struct {
-	ID            string     `json:"id"`
-	WalletID      string     `json:"wallet_id"`
-	Tipo          string     `json:"tipo"`
-	MontoUSD      float64    `json:"monto_usd"`
-	Descripcion   string     `json:"descripcion"`
-	ReferenciaID  *string    `json:"referencia_id"`
-	CreatedAt     time.Time  `json:"created_at"`
+	ID           string    `json:"id"`
+	WalletID     string    `json:"wallet_id"`
+	Tipo         string    `json:"tipo"`
+	MontoUSD     float64   `json:"monto_usd"`
+	Descripcion  string    `json:"descripcion"`
+	ReferenciaID *string   `json:"referencia_id"`
+	CreatedAt    time.Time `json:"created_at"`
 }
 
 func (r *PagoRepo) GetWalletTransacciones(ctx context.Context, walletID string) ([]WalletTransaccion, error) {

@@ -3,10 +3,10 @@ package enums
 type Rol string
 
 const (
-	RolBooger   Rol = "BOOGER"
+	RolBooger    Rol = "BOOGER"
 	RolAnfitrion Rol = "ANFITRION"
-	RolAmbos    Rol = "AMBOS"
-	RolAdmin    Rol = "ADMIN"
+	RolAmbos     Rol = "AMBOS"
+	RolAdmin     Rol = "ADMIN"
 )
 
 type EstadoPublicacion string
@@ -22,26 +22,26 @@ const (
 type EstadoReserva string
 
 const (
-	EstadoReservaPendientePago    EstadoReserva = "PENDIENTE_PAGO"
-	EstadoReservaPendiente        EstadoReserva = "PENDIENTE"
-	EstadoReservaConfirmada       EstadoReserva = "CONFIRMADA"
-	EstadoReservaEnCurso          EstadoReserva = "EN_CURSO"
-	EstadoReservaCompletada       EstadoReserva = "COMPLETADA"
-	EstadoReservaCanceladaHuesped EstadoReserva = "CANCELADA_HUESPED"
+	EstadoReservaPendientePago      EstadoReserva = "PENDIENTE_PAGO"
+	EstadoReservaPendiente          EstadoReserva = "PENDIENTE"
+	EstadoReservaConfirmada         EstadoReserva = "CONFIRMADA"
+	EstadoReservaEnCurso            EstadoReserva = "EN_CURSO"
+	EstadoReservaCompletada         EstadoReserva = "COMPLETADA"
+	EstadoReservaCanceladaHuesped   EstadoReserva = "CANCELADA_HUESPED"
 	EstadoReservaCanceladaAnfitrion EstadoReserva = "CANCELADA_ANFITRION"
-	EstadoReservaRechazada        EstadoReserva = "RECHAZADA"
-	EstadoReservaAnulada          EstadoReserva = "ANULADA"
+	EstadoReservaRechazada          EstadoReserva = "RECHAZADA"
+	EstadoReservaAnulada            EstadoReserva = "ANULADA"
 )
 
 type EstadoPago string
 
 const (
-	EstadoPagoPendiente     EstadoPago = "PENDIENTE"
+	EstadoPagoPendiente      EstadoPago = "PENDIENTE"
 	EstadoPagoEnVerificacion EstadoPago = "EN_VERIFICACION"
-	EstadoPagoVerificado    EstadoPago = "VERIFICADO"
-	EstadoPagoAcreditado    EstadoPago = "ACREDITADO"
-	EstadoPagoRechazado     EstadoPago = "RECHAZADO"
-	EstadoPagoReembolsado   EstadoPago = "REEMBOLSADO"
+	EstadoPagoVerificado     EstadoPago = "VERIFICADO"
+	EstadoPagoAcreditado     EstadoPago = "ACREDITADO"
+	EstadoPagoRechazado      EstadoPago = "RECHAZADO"
+	EstadoPagoReembolsado    EstadoPago = "REEMBOLSADO"
 )
 
 type MetodoPagoEnum string
@@ -52,9 +52,9 @@ const (
 	MetodoPagoZelle                 MetodoPagoEnum = "ZELLE"
 	MetodoPagoEfectivoFarmatodo     MetodoPagoEnum = "EFECTIVO_FARMATODO"
 	MetodoPagoUSDT                  MetodoPagoEnum = "USDT"
-	MetodoPagoTarjetaInternacional  MetodoPagoEnum = "TARJETA_INTERNACIONAL"
 	MetodoPagoEfectivo              MetodoPagoEnum = "EFECTIVO"
 	MetodoPagoCripto                MetodoPagoEnum = "CRIPTO"
+	MetodoPagoWallet                MetodoPagoEnum = "WALLET"
 )
 
 type Moneda string
@@ -67,9 +67,9 @@ const (
 type PoliticaCancelacion string
 
 const (
-	PoliticaCancelacionFlexible  PoliticaCancelacion = "FLEXIBLE"
-	PoliticaCancelacionModerada  PoliticaCancelacion = "MODERADA"
-	PoliticaCancelacionEstricta  PoliticaCancelacion = "ESTRICTA"
+	PoliticaCancelacionFlexible PoliticaCancelacion = "FLEXIBLE"
+	PoliticaCancelacionModerada PoliticaCancelacion = "MODERADA"
+	PoliticaCancelacionEstricta PoliticaCancelacion = "ESTRICTA"
 )
 
 type TipoPropiedad string

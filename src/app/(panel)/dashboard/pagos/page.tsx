@@ -31,8 +31,8 @@ const METODO_PAGO_LABELS: Record<string, string> = {
   ZELLE: 'Zelle',
   EFECTIVO_FARMATODO: 'Efectivo Farmatodo',
   USDT: 'USDT',
-  TARJETA_INTERNACIONAL: 'Tarjeta internacional',
   EFECTIVO: 'Efectivo',
+  WALLET: 'Boogie Wallet',
 }
 
 function formatearPrecio(precio: number, moneda: 'USD' | 'VES'): string {

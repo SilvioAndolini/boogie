@@ -349,9 +349,9 @@ enum MetodoPagoEnum {
   ZELLE
   EFECTIVO_FARMATODO
   USDT
-  TARJETA_INTERNACIONAL
   EFECTIVO
   CRIPTO
+  WALLET
 }
 
 enum EstadoPago {

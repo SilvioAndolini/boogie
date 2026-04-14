@@ -25,7 +25,7 @@ type PerfilFormData = {
   apellido: string
   telefono?: string
   bio?: string
-  metodoPagoPreferido?: 'PAGO_MOVIL' | 'EFECTIVO_FARMATODO' | 'USDT' | 'TARJETA_INTERNACIONAL'
+  metodoPagoPreferido?: 'PAGO_MOVIL' | 'EFECTIVO_FARMATODO' | 'USDT' | 'WALLET'
   tiktok?: string
   instagram?: string
 }
@@ -40,7 +40,7 @@ const METODOS_PAGO = [
   { value: 'PAGO_MOVIL', label: 'Pago Móvil' },
   { value: 'EFECTIVO_FARMATODO', label: 'Efectivo Farmatodo' },
   { value: 'USDT', label: 'USDT' },
-  { value: 'TARJETA_INTERNACIONAL', label: 'Tarjeta Internacional' },
+  { value: 'WALLET', label: 'Boogie Wallet' },
 ] as const
 
 const stagger = {

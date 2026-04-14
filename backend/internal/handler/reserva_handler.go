@@ -51,11 +51,17 @@ func (h *ReservaHandler) Crear(w http.ResponseWriter, r *http.Request) {
 
 	fechaEntrada, err := time.Parse("2006-01-02", req.FechaEntrada)
 	if err != nil {
+		fechaEntrada, err = time.Parse(time.RFC3339, req.FechaEntrada)
+	}
+	if err != nil {
 		ErrorJSON(w, http.StatusBadRequest, "INVALID_FECHA_ENTRADA", "fechaEntrada invalida (formato: YYYY-MM-DD)")
 		return
 	}
 
 	fechaSalida, err := time.Parse("2006-01-02", req.FechaSalida)
+	if err != nil {
+		fechaSalida, err = time.Parse(time.RFC3339, req.FechaSalida)
+	}
 	if err != nil {
 		ErrorJSON(w, http.StatusBadRequest, "INVALID_FECHA_SALIDA", "fechaSalida invalida (formato: YYYY-MM-DD)")
 		return
@@ -418,10 +424,16 @@ func (h *ReservaHandler) Disponibilidad(w http.ResponseWriter, r *http.Request) 
 
 	fechaEntrada, err := time.Parse("2006-01-02", fe)
 	if err != nil {
+		fechaEntrada, err = time.Parse(time.RFC3339, fe)
+	}
+	if err != nil {
 		ErrorJSON(w, http.StatusBadRequest, "INVALID_FECHA", "fechaEntrada invalida")
 		return
 	}
 	fechaSalida, err := time.Parse("2006-01-02", fs)
+	if err != nil {
+		fechaSalida, err = time.Parse(time.RFC3339, fs)
+	}
 	if err != nil {
 		ErrorJSON(w, http.StatusBadRequest, "INVALID_FECHA", "fechaSalida invalida")
 		return

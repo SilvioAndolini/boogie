@@ -213,7 +213,7 @@ function ReservarContent() {
   }
 
   useEffect(() => {
-    if (metodoPago !== 'CRIPTO' && metodoPago !== 'TARJETA_INTERNACIONAL' && reservaCreadaId && metodoPago) {
+    if (metodoPago !== 'CRIPTO' && metodoPago !== 'WALLET' && reservaCreadaId && metodoPago) {
       setReservaCreadaId(null)
     }
   }, [metodoPago])

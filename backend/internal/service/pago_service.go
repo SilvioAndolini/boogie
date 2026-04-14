@@ -12,7 +12,7 @@ import (
 )
 
 type PagoService struct {
-	pagoRepo   *repository.PagoRepo
+	pagoRepo *repository.PagoRepo
 }
 
 func NewPagoService(pagoRepo *repository.PagoRepo) *PagoService {
@@ -96,41 +96,6 @@ func (s *PagoService) RegistrarPagoConComprobante(ctx context.Context, reservaID
 	return s.pagoRepo.InsertPagoConComprobante(ctx, reservaID, usuarioID, monto, moneda, metodo, referenciaCompleta, comprobanteURL, bancoEmisor, telefonoEmisor)
 }
 
-func (s *PagoService) ProcessCardCallback(ctx context.Context, externalTxID, status string) error {
-	pago, err := s.pagoRepo.FindByReferencia(ctx, "TARJETA_INTERNACIONAL", fmt.Sprintf("MoonPay TX: %s", externalTxID))
-	if err != nil {
-		return fmt.Errorf("pago no encontrado")
-	}
-
-	if pago.Estado == "VERIFICADO" || pago.Estado == "ACREDITADO" {
-		return nil
-	}
-
-	estadoPago := mapMoonPayStatus(status)
-	if err := s.pagoRepo.Verificar(ctx, pago.ID, "", estadoPago, nil); err != nil {
-		return err
-	}
-
-	if estadoPago == "VERIFICADO" && pago.ReservaID != nil {
-		_ = s.pagoRepo.ConfirmarReserva(ctx, *pago.ReservaID)
-	}
-
-	return nil
-}
-
-func mapMoonPayStatus(status string) string {
-	switch status {
-	case "completed":
-		return "VERIFICADO"
-	case "pending", "waitingAuthorization", "waitingPayment", "paymentInProgress", "cryptoTransferInProgress":
-		return "EN_VERIFICACION"
-	case "failed", "refunded":
-		return "RECHAZADO"
-	default:
-		return "PENDIENTE"
-	}
-}
-
 type WalletService struct {
 	pagoRepo *repository.PagoRepo
 }
@@ -203,11 +168,10 @@ func NewPaymentDataService() *PaymentDataService {
 
 type PaymentData struct {
 	TransferenciaBancaria map[string]string `json:"TRANSFERENCIA_BANCARIA"`
-	PagoMovil            map[string]string `json:"PAGO_MOVIL"`
-	Zelle                map[string]string `json:"ZELle"`
-	EfectivoFarmatodo    map[string]string `json:"EFECTIVO_FARMATODO"`
-	USDT                 map[string]string `json:"USDT"`
-	TarjetaInternacional map[string]string `json:"TARJETA_INTERNACIONAL"`
+	PagoMovil             map[string]string `json:"PAGO_MOVIL"`
+	Zelle                 map[string]string `json:"ZELLE"`
+	EfectivoFarmatodo     map[string]string `json:"EFECTIVO_FARMATODO"`
+	USDT                  map[string]string `json:"USDT"`
 }
 
 func (s *PaymentDataService) GetPaymentData() map[string]map[string]string {
@@ -219,13 +183,13 @@ func (s *PaymentDataService) GetPaymentData() map[string]map[string]string {
 			"cedula":  envOrDefault("PAYMENT_TRANSFERENCIA_CEDULA", "J-XXXXXXXX"),
 		},
 		"PAGO_MOVIL": {
-			"banco":     envOrDefault("PAYMENT_PAGO_MOVIL_BANCO", "Banco de Venezuela"),
-			"telefono":  envOrDefault("PAYMENT_PAGO_MOVIL_TELEFONO", "0414-XXX-XXXX"),
-			"cedula":    envOrDefault("PAYMENT_PAGO_MOVIL_CEDULA", "J-XXXXXXXX"),
+			"banco":    envOrDefault("PAYMENT_PAGO_MOVIL_BANCO", "Banco de Venezuela"),
+			"telefono": envOrDefault("PAYMENT_PAGO_MOVIL_TELEFONO", "0414-XXX-XXXX"),
+			"cedula":   envOrDefault("PAYMENT_PAGO_MOVIL_CEDULA", "J-XXXXXXXX"),
 		},
 		"ZELLE": {
-			"email":   envOrDefault("PAYMENT_ZELLE_EMAIL", "pagos@boogie.app"),
-			"nombre":  envOrDefault("PAYMENT_ZELLE_NOMBRE", "Boogie CA"),
+			"email":  envOrDefault("PAYMENT_ZELLE_EMAIL", "pagos@boogie.app"),
+			"nombre": envOrDefault("PAYMENT_ZELLE_NOMBRE", "Boogie CA"),
 		},
 		"EFECTIVO_FARMATODO": {
 			"instrucciones": "Realiza el pago en cualquier farmacia Farmatodo indicando el numero de referencia.",
@@ -233,9 +197,6 @@ func (s *PaymentDataService) GetPaymentData() map[string]map[string]string {
 		"USDT": {
 			"red":       envOrDefault("PAYMENT_USDT_RED", "TRC-20 (Tron)"),
 			"direccion": envOrDefault("PAYMENT_USDT_DIRECCION", "TXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"),
-		},
-		"TARJETA_INTERNACIONAL": {
-			"instrucciones": "El pago sera procesado de forma segura. Se te redirigira al portal de pago al confirmar.",
 		},
 	}
 }

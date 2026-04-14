@@ -82,9 +82,9 @@ export const METODOS_PAGO = {
   ZELLE: 'Zelle',
   EFECTIVO_FARMATODO: 'Efectivo (Farmatodo)',
   USDT: 'USDT (Tether)',
-  TARJETA_INTERNACIONAL: 'Tarjeta Internacional',
   EFECTIVO: 'Efectivo',
   CRIPTO: 'Criptomonedas (USDT)',
+  WALLET: 'Boogie Wallet',
 } as const
 
 // Políticas de cancelación

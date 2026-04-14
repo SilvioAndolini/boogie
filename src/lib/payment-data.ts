@@ -21,9 +21,6 @@ export interface PaymentData {
     red: string
     direccion: string
   }
-  TARJETA_INTERNACIONAL: {
-    instrucciones: string
-  }
 }
 
 function getPaymentData(): PaymentData {
@@ -49,9 +46,6 @@ function getPaymentData(): PaymentData {
     USDT: {
       red: process.env.PAYMENT_USDT_RED || 'TRC-20 (Tron)',
       direccion: process.env.PAYMENT_USDT_DIRECCION || 'TXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-    },
-    TARJETA_INTERNACIONAL: {
-      instrucciones: process.env.PAYMENT_TARJETA_INSTRUCCIONES || 'El pago será procesado de forma segura. Se te redirigirá al portal de pago al confirmar.',
     },
   }
 }

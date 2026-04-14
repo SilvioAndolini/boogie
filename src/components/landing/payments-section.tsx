@@ -10,7 +10,7 @@ const METODOS = [
   { nombre: 'Transferencia', icon: '🏦', color: 'bg-[#FEF3C7]', border: 'hover:border-[#92400E]/30' },
   { nombre: 'USDT', icon: '₮', color: 'bg-[#D8F3DC]', border: 'hover:border-[#1B4332]/30' },
   { nombre: 'Efectivo', icon: '💵', color: 'bg-[#F8F6F3]', border: 'hover:border-[#6B6560]/30' },
-  { nombre: 'Tarjeta', icon: '💳', color: 'bg-[#E0F2FE]', border: 'hover:border-[#0369A1]/30' },
+  { nombre: 'Wallet', icon: '👛', color: 'bg-[#D8F3DC]', border: 'hover:border-[#1B4332]/30' },
 ]
 
 const WALLET_BENEFITS = [

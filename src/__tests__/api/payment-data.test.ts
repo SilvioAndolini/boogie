@@ -6,9 +6,9 @@ describe('api/payment-data - estructura', () => {
   it('PaymentData tiene todos los metodos', () => {
     const metodos = [
       'TRANSFERENCIA_BANCARIA', 'PAGO_MOVIL', 'ZELLE',
-      'EFECTIVO_FARMATODO', 'USDT', 'TARJETA_INTERNACIONAL',
+      'EFECTIVO_FARMATODO', 'USDT',
     ]
-    expect(metodos).toHaveLength(6)
+    expect(metodos).toHaveLength(5)
   })
 
   it('requiere autenticacion', () => {

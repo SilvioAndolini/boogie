@@ -1,5 +1,94 @@
 # Changelog — Boogie
 
+## [2026-04-13] Migración a Backend Go
+
+### Arquitectura Dual
+
+El proyecto ahora tiene dos componentes separados:
+
+| Componente | Stack | Puerto |
+|---|---|---|
+| **Frontend** | Next.js 16 (App Router) | 3000 |
+| **Backend** | Go + Chi v5 | 8080 |
+
+El frontend Next.js funciona como aplicación web full-stack, delegando lógica de negocio pesada al backend Go via HTTP.
+
+### Backend Go (carpeta `/backend`)
+
+**Stack técnico:**
+- Go 1.24+ con Chi v5 router
+- pgx/v5 para PostgreSQL
+- JWT con JWKS para autenticación Supabase
+- Rate limiting por IP
+
+**Estructura de capas:**
+```
+handler/ → HTTP (receiven request, retornan JSON)
+    ↓
+service/ → Lógica de negocio
+    ↓
+repository/ → Acceso a datos (SQL con pgx)
+```
+
+**Endpoints principales:**
+- `/api/v1/auth/*` — Login, OTP, registro, Google OAuth
+- `/api/v1/reservas/*` — CRUD reservas
+- `/api/v1/pagos/*` — Pagos con comprobante
+- `/api/v1/wallet/*` — Boogie Wallet
+- `/api/v1/admin/*` — Panel de administración (requiere rol ADMIN)
+- `/api/v1/exchange-rate` — Tipo de cambio EUR/VES
+- `/api/v1/crypto/create` — Crear dirección USDT (CryptAPI)
+- `/api/v1/crypto/callback` — Webhook CryptAPI
+- `/api/v1/metamap/webhook` — Webhook verificación MetaMap
+
+**Servicios implementados:**
+- `propiedades_service.go` — Búsqueda con filtros y geolocalización
+- `reserva_service.go` — Creación, confirmación, cancelación
+- `pago_service.go` — Registro y verificación de pagos
+- `crypto_service.go` — Integración CryptAPI USDT TRC20
+- `exchange_service.go` — Cotización BCV con fallbacks
+- `admin_service.go` — Dashboard, estadísticas, CRUD admin
+- `wallet_service.go` — Recargas y transacciones
+
+### Archivos nuevos (Backend)
+
+```
+backend/
+├── cmd/server/main.go
+├── internal/
+│   ├── auth/supabase.go, supabase_auth_client.go
+│   ├── config/config.go
+│   ├── domain/models/models.go, enums/enums.go
+│   ├── handler/{auth,reserva,pago,crypto,admin,etc}_handler.go
+│   ├── handler/middleware.go, response.go
+│   ├── repository/{auth,reserva,pago,propiedades,admin}_repository.go
+│   ├── router/router.go
+│   └── service/{reserva,pago,crypto,exchange,admin}_service.go
+└── go.mod
+```
+
+### Cambios en Frontend
+
+- Server Actions ahora hacen llamadas HTTP al backend Go en lugar de query directly a Supabase (para operaciones protegidas)
+- API Routes públicas (`/api/exchange-rate`, `/api/ubicaciones`) se mantienen en Next.js
+- Webhooks de terceros (`/api/crypto/callback`, `/api/metamap/webhook`) delegados al backend Go
+
+### Configuración
+
+**Backend** (`.env` o vars de entorno):
+```bash
+PORT=8080
+APP_URL=http://localhost:3000
+SUPABASE_URL=https://[project].supabase.co
+SUPABASE_SECRET_KEY=[service_role_key]
+DATABASE_URL=postgres://...
+CRYPTAPI_WALLET_ADDRESS=[wallet]
+CRYPTAPI_CALLBACK_SECRET=[secret]
+METAMAP_WEBHOOK_SECRET=[secret]
+```
+
+---
+
 ## [2026-04-07] Panel de gestión de boogies + optimización de imágenes
 
 ### Creación de boogies (refactor completo)

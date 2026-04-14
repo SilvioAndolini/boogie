@@ -112,7 +112,6 @@ func main() {
 		pagoHandler := handler.NewPagoHandler(pagoSvc)
 		walletHandler := handler.NewWalletHandler(walletSvc)
 		paymentDataHandler := handler.NewPaymentDataHandler(paymentDataSvc)
-		cardHandler := handler.NewCardHandler(pagoSvc, pagoRepo)
 
 		pagoHandlers = &router.PagoHandlers{
 			RegistrarSimple:      pagoHandler.RegistrarSimple,
@@ -120,8 +119,6 @@ func main() {
 			Verificar:            pagoHandler.Verificar,
 			MisPagos:             pagoHandler.MisPagos,
 			PaymentData:          paymentDataHandler.Get,
-			CardCreate:           cardHandler.Create,
-			CardCallback:         cardHandler.Callback,
 		}
 
 		walletHandlers = &router.WalletHandlers{
@@ -273,9 +270,9 @@ func main() {
 				CryptoCallbackPost: safeHandler(cryptoHandler, func(h *handler.CryptoHandler) http.HandlerFunc { return h.CallbackPost }),
 				MetamapWebhook:     safeHandlerMetamap(metamapHandler),
 			},
-			PagoHandlers:       pagoHandlers,
-			WalletHandlers:     walletHandlers,
-			ResenaHandlers:     resenaHandlers,
+			PagoHandlers:         pagoHandlers,
+			WalletHandlers:       walletHandlers,
+			ResenaHandlers:       resenaHandlers,
 			VerificacionHandlers: verifHandlers,
 			ChatHandlers:         chatHandlers,
 			OfertaHandlers:       ofertaHandlers,
@@ -284,10 +281,10 @@ func main() {
 			AuthHandlers:         authHandlers,
 			PropiedadesHandlers:  propiedadesHandlers,
 			ReservaHandlers:      reservaHandlers,
-			AuthVerifier:       verifier,
-			AppURL:             cfg.AppURL,
-			ExchangeLimiter:    router.NewExchangeLimiter(),
-			UbicacionesLimiter: router.NewUbicacionesLimiter(),
+			AuthVerifier:         verifier,
+			AppURL:               cfg.AppURL,
+			ExchangeLimiter:      router.NewExchangeLimiter(),
+			UbicacionesLimiter:   router.NewUbicacionesLimiter(),
 		}),
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
