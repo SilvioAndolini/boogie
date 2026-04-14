@@ -328,6 +328,8 @@ func main() {
 				CryptoCallbackPost:       safeHandler(cryptoHandler, func(h *handler.CryptoHandler) http.HandlerFunc { return h.CallbackPost }),
 				CryptoVerificar:          safeHandler(cryptoHandler, func(h *handler.CryptoHandler) http.HandlerFunc { return h.Verificar }),
 				CryptoVerificacionManual: safeHandler(cryptoHandler, func(h *handler.CryptoHandler) http.HandlerFunc { return h.SolicitarVerificacionManual }),
+				CryptoCancelarFallida:    safeHandler(cryptoHandler, func(h *handler.CryptoHandler) http.HandlerFunc { return h.CancelarFallida }),
+				CryptoExpirarAbandonados: safeHandler(cryptoHandler, func(h *handler.CryptoHandler) http.HandlerFunc { return h.ExpirarAbandonados }),
 				MetamapWebhook:           safeHandlerMetamap(metamapHandler),
 			},
 			PagoHandlers:         pagoHandlers,

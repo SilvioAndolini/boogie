@@ -136,6 +136,18 @@ export function CryptoPayment({
     setPollAttempts(0)
   }
 
+  useEffect(() => {
+    if (status !== 'failed') return
+    const rid = createdReservaId || reservaId
+    if (!rid) return
+
+    fetch('/api/crypto/cancelar-fallida', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reservaId: rid }),
+    }).catch(() => {})
+  }, [status, createdReservaId, reservaId])
+
   const handleManualVerification = async () => {
     const rid = createdReservaId || reservaId
     if (!rid) return

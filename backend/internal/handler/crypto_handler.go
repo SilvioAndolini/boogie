@@ -341,3 +341,37 @@ func (h *CryptoHandler) SolicitarVerificacionManual(w http.ResponseWriter, r *ht
 
 	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
 }
+
+func (h *CryptoHandler) CancelarFallida(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetUserID(r.Context())
+	if userID == "" {
+		ErrorJSON(w, http.StatusUnauthorized, "AUTH_REQUIRED", "No autenticado")
+		return
+	}
+
+	var req struct {
+		ReservaID string `json:"reservaId"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.ReservaID == "" {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "reservaId requerido")
+		return
+	}
+
+	if err := h.cryptoRepo.CancelarCryptoFallida(r.Context(), req.ReservaID, userID); err != nil {
+		slog.Error("[crypto/cancel-fallida] error", "error", err)
+		ErrorJSON(w, http.StatusInternalServerError, "DB_ERROR", "Error al cancelar")
+		return
+	}
+
+	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+}
+
+func (h *CryptoHandler) ExpirarAbandonados(w http.ResponseWriter, r *http.Request) {
+	n, err := h.cryptoRepo.ExpirarCryptoAbandonados(r.Context())
+	if err != nil {
+		slog.Error("[crypto/expirar] error", "error", err)
+		ErrorJSON(w, http.StatusInternalServerError, "DB_ERROR", "Error al expirar")
+		return
+	}
+	JSON(w, http.StatusOK, map[string]interface{}{"ok": true, "expirados": n})
+}

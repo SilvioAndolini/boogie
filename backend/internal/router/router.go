@@ -22,6 +22,8 @@ type Handlers struct {
 	CryptoCallbackPost       http.HandlerFunc
 	CryptoVerificar          http.HandlerFunc
 	CryptoVerificacionManual http.HandlerFunc
+	CryptoCancelarFallida    http.HandlerFunc
+	CryptoExpirarAbandonados http.HandlerFunc
 	MetamapWebhook           http.HandlerFunc
 }
 
@@ -237,10 +239,12 @@ func New(opts *RouterOpts) http.Handler {
 			r.Post("/crypto/create", opts.Handlers.CryptoCreate)
 			r.Get("/crypto/verificar", opts.Handlers.CryptoVerificar)
 			r.Post("/crypto/verificacion-manual", opts.Handlers.CryptoVerificacionManual)
+			r.Post("/crypto/cancelar-fallida", opts.Handlers.CryptoCancelarFallida)
 		})
 
 		r.Get("/crypto/callback", opts.Handlers.CryptoCallback)
 		r.Post("/crypto/callback", opts.Handlers.CryptoCallbackPost)
+		r.Post("/crypto/cron/expirar-abandonados", opts.Handlers.CryptoExpirarAbandonados)
 		r.Post("/metamap/webhook", opts.Handlers.MetamapWebhook)
 
 		if opts.PagoHandlers != nil {
