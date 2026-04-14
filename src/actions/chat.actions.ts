@@ -47,7 +47,7 @@ export async function getConversacionInfo(
           avatar_url: info.otro_avatar_url,
         },
         propiedad: info.propiedad_id
-          ? { id: info.propiedad_id, titulo: info.propiedad_titulo }
+          ? { id: info.propiedad_id, titulo: info.propiedad_titulo ?? '' }
           : null,
       }
     } catch (err: any) {
