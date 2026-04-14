@@ -42,7 +42,7 @@ export default function BoogieCard({ boogie }: { boogie: Record<string, unknown>
   const estadoPublicacion = (boogie.estado_publicacion as string) || 'BORRADOR'
   const config = ESTADO_PUBLICACION_CONFIG[estadoPublicacion] ?? ESTADO_PUBLICACION_CONFIG.BORRADOR
   const imagenes = boogie.imagenes as { url: string; es_principal: boolean }[] | undefined
-  const imagenPrincipal = imagenes?.find((img) => img.es_principal)?.url || imagenes?.[0]?.url
+  const imagenPrincipal = imagenes?.find((img) => img.es_principal)?.url || imagenes?.[0]?.url || (boogie.imagen_principal as string) || undefined
   const slug = (boogie.slug as string) || id
 
   const [dialogOpen, setDialogOpen] = useState(false)

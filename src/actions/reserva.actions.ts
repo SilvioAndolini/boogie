@@ -73,7 +73,33 @@ export async function confirmarORechazarReserva(
 
 export async function getMisReservas(): Promise<ReservaConPropiedad[]> {
   try {
-    return await goGet<ReservaConPropiedad[]>('/api/v1/reservas/mias')
+    const raw = await goGet<Record<string, unknown>[]>('/api/v1/reservas/mias')
+    if (!Array.isArray(raw)) return []
+    return raw.map((r) => ({
+      id: r.id as string,
+      codigo: r.codigo as string,
+      fechaEntrada: r.fecha_entrada as string,
+      fechaSalida: r.fecha_salida as string,
+      noches: r.noches as number,
+      precioPorNoche: r.precio_por_noche as string,
+      subtotal: r.subtotal as string,
+      comisionPlataforma: r.comision_plataforma as string,
+      total: r.total as string,
+      moneda: r.moneda as string,
+      cantidadHuespedes: r.cantidad_huespedes as number,
+      estado: r.estado as string,
+      notasHuesped: r.notas_huesped as string | null,
+      fechaCreacion: r.fecha_creacion as string || r.created_at as string,
+      fechaConfirmacion: r.fecha_confirmacion as string | null,
+      fechaCancelacion: r.fecha_cancelacion as string | null,
+      propiedad: {
+        id: r.propiedad_id as string,
+        titulo: r.propiedad_titulo as string || 'Propiedad',
+        direccion: r.propiedad_direccion as string || '',
+        politicaCancelacion: (r.propiedad_politica_cancelacion as string || 'FLEXIBLE') as any,
+        imagenPrincipal: r.propiedad_imagen_principal as string | undefined,
+      },
+    }))
   } catch (err) {
     console.error('[getMisReservas] Error:', err)
     return []
@@ -82,7 +108,39 @@ export async function getMisReservas(): Promise<ReservaConPropiedad[]> {
 
 export async function getReservasRecibidas(): Promise<ReservaConPropiedad[]> {
   try {
-    return await goGet<ReservaConPropiedad[]>('/api/v1/reservas/recibidas')
+    const raw = await goGet<Record<string, unknown>[]>('/api/v1/reservas/recibidas')
+    if (!Array.isArray(raw)) return []
+    return raw.map((r) => ({
+      id: r.id as string,
+      codigo: r.codigo as string,
+      fechaEntrada: r.fecha_entrada as string,
+      fechaSalida: r.fecha_salida as string,
+      noches: r.noches as number,
+      precioPorNoche: r.precio_por_noche as string,
+      subtotal: r.subtotal as string,
+      comisionPlataforma: r.comision_plataforma as string,
+      total: r.total as string,
+      moneda: r.moneda as string,
+      cantidadHuespedes: r.cantidad_huespedes as number,
+      estado: r.estado as string,
+      notasHuesped: r.notas_huesped as string | null,
+      fechaCreacion: r.fecha_creacion as string || r.created_at as string,
+      fechaConfirmacion: r.fecha_confirmacion as string | null,
+      fechaCancelacion: r.fecha_cancelacion as string | null,
+      propiedad: {
+        id: r.propiedad_id as string,
+        titulo: r.propiedad_titulo as string || 'Propiedad',
+        direccion: '',
+        politicaCancelacion: 'FLEXIBLE' as any,
+        imagenPrincipal: r.propiedad_imagen_principal as string | undefined,
+      },
+      huesped: {
+        id: r.huesped_id as string,
+        nombre: r.huesped_nombre as string || '',
+        apellido: r.huesped_apellido as string || '',
+        avatarUrl: r.huesped_avatar_url as string | null,
+      },
+    }))
   } catch (err) {
     console.error('[getReservasRecibidas] Error:', err)
     return []
