@@ -182,7 +182,6 @@ export function BookingWidget({
                 fechasOcupadas={fechasOcupadas}
                 onFechaEntradaChange={setFechaEntrada}
                 onFechaSalidaChange={setFechaSalida}
-                propiedadId={propiedadId}
               />
             </div>
           </motion.div>

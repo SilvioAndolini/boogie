@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { verificarDisponibilidad } from '@/lib/reservas/disponibilidad'
 
 interface BookingCalendarProps {
   fechaEntrada?: Date
@@ -12,7 +11,6 @@ interface BookingCalendarProps {
   fechasOcupadas?: { inicio: Date; fin: Date; estado: string }[]
   onFechaEntradaChange?: (fecha: Date) => void
   onFechaSalidaChange?: (fecha: Date) => void
-  propiedadId?: string
 }
 
 const DIAS_SEMANA = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa', 'Do']
@@ -68,10 +66,8 @@ export function BookingCalendar({
   fechasOcupadas = [],
   onFechaEntradaChange,
   onFechaSalidaChange,
-  propiedadId,
 }: BookingCalendarProps) {
   const [mesActual, setMesActual] = useState(new Date())
-  const [verificando, setVerificando] = useState(false)
 
   const ano = mesActual.getFullYear()
   const mes = mesActual.getMonth()
@@ -106,7 +102,7 @@ export function BookingCalendar({
     return ts > entTs && ts < salTs
   }
 
-  const handleDiaClick = async (dia: number) => {
+  const handleDiaClick = (dia: number) => {
     const fecha = new Date(ano, mes, dia)
     const ts = soloFecha(fecha)
     const hoyTs = soloFecha(new Date())
@@ -131,21 +127,6 @@ export function BookingCalendar({
       onFechaEntradaChange?.(fecha)
       onFechaSalidaChange?.(undefined as unknown as Date)
       return
-    }
-
-    if (propiedadId) {
-      setVerificando(true)
-      try {
-        const verif = await verificarDisponibilidad(propiedadId, fechaEntrada, fecha)
-        if (!verif.disponible) {
-          return
-        }
-      } catch {
-        onFechaSalidaChange?.(fecha)
-        return
-      } finally {
-        setVerificando(false)
-      }
     }
 
     onFechaSalidaChange?.(fecha)
@@ -194,7 +175,7 @@ export function BookingCalendar({
           return (
             <button
               key={dia}
-              disabled={noSeleccionable || verificando}
+              disabled={noSeleccionable}
               onClick={() => handleDiaClick(dia)}
               className={cn(
                 'flex h-10 w-full items-center justify-center rounded-md text-sm transition-colors sm:h-8',
@@ -207,7 +188,6 @@ export function BookingCalendar({
                 esSalida && (estado === 'disponible' || estado === 'pendiente') && 'bg-[#1B4332] !text-white rounded-r-md',
                 enMedio && (estado === 'disponible' || estado === 'pendiente') && 'bg-[#D8F3DC] text-[#1B4332]',
                 ts === hoyTs && !esEntrada && !esSalida && estado === 'disponible' && 'font-bold text-[#1B4332]',
-                verificando && 'opacity-60',
               )}
             >
               {dia}
