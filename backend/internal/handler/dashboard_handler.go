@@ -32,16 +32,16 @@ func (h *DashboardHandler) GetDashboard(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	propiedad, err := h.propiedadesSvc.GetByID(r.Context(), propiedadID)
-	if err != nil {
-		ErrorJSON(w, http.StatusNotFound, "NOT_FOUND", "Propiedad no encontrada")
-		return
-	}
-
 	dashboardData, err := h.svc.GetDashboard(r.Context(), propiedadID, userID)
 	if err != nil {
 		slog.Error("[dashboard] error", "error", err, "propiedadID", propiedadID)
-		ErrorJSON(w, http.StatusBadRequest, "DASHBOARD_ERROR", err.Error())
+		ErrorJSON(w, http.StatusForbidden, "DASHBOARD_ERROR", err.Error())
+		return
+	}
+
+	propiedad, err := h.propiedadesSvc.GetByID(r.Context(), propiedadID)
+	if err != nil {
+		ErrorJSON(w, http.StatusNotFound, "NOT_FOUND", "Propiedad no encontrada")
 		return
 	}
 
