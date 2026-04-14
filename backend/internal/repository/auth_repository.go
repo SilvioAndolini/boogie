@@ -49,21 +49,30 @@ func (r *AuthRepo) UpdateProfile(ctx context.Context, userID, nombre, apellido, 
 
 func (r *AuthRepo) GetUserProfile(ctx context.Context, userID string) (map[string]interface{}, error) {
 	var nombre, apellido, email, rol string
-	var telefono, cedula *string
+	var telefono, cedula, avatarURL, bio *string
 	var verificado bool
+	var plan, metodoPago, tiktok, instagram *string
 	err := r.pool.QueryRow(ctx, `
-		SELECT nombre, apellido, email, rol, telefono, cedula, verificado
-		FROM usuarios WHERE id = $1`, userID).Scan(&nombre, &apellido, &email, &rol, &telefono, &cedula, &verificado)
+		SELECT nombre, apellido, email, rol, telefono, cedula, verificado,
+		       avatar_url, bio, plan, metodo_pago_preferido, tiktok, instagram
+		FROM usuarios WHERE id = $1`, userID).Scan(&nombre, &apellido, &email, &rol, &telefono, &cedula, &verificado,
+		&avatarURL, &bio, &plan, &metodoPago, &tiktok, &instagram)
 	if err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{
-		"nombre":     nombre,
-		"apellido":   apellido,
-		"email":      email,
-		"rol":        rol,
-		"telefono":   telefono,
-		"cedula":     cedula,
-		"verificado": verificado,
+		"nombre":                nombre,
+		"apellido":              apellido,
+		"email":                 email,
+		"rol":                   rol,
+		"telefono":              telefono,
+		"cedula":                cedula,
+		"verificado":            verificado,
+		"avatar_url":            avatarURL,
+		"bio":                   bio,
+		"plan":                  plan,
+		"metodo_pago_preferido": metodoPago,
+		"tiktok":                tiktok,
+		"instagram":             instagram,
 	}, nil
 }

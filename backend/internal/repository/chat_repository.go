@@ -159,15 +159,23 @@ func (r *ChatRepo) GetMensajes(ctx context.Context, conversacionID string, limit
 	return results, nil
 }
 
-func (r *ChatRepo) InsertMensaje(ctx context.Context, conversacionID, remitenteID, contenido, tipo string, imagenURL *string) (string, error) {
-	var id string
+func (r *ChatRepo) InsertMensaje(ctx context.Context, conversacionID, remitenteID, contenido, tipo string, imagenURL *string) (*Mensaje, error) {
+	var m Mensaje
 	err := r.pool.QueryRow(ctx, `
 		INSERT INTO mensajes (conversacion_id, remitente_id, contenido, tipo, imagen_url)
-		VALUES ($1, $2, $3, $4, $5) RETURNING id
-	`, conversacionID, remitenteID, contenido, tipo, imagenURL).Scan(&id)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id, conversacion_id, remitente_id, contenido, tipo, imagen_url, leido, created_at
+	`, conversacionID, remitenteID, contenido, tipo, imagenURL).Scan(
+		&m.ID, &m.ConversacionID, &m.RemitenteID, &m.Contenido, &m.Tipo, &m.ImagenURL, &m.Leido, &m.CreatedAt)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
+
+	var nombre string
+	var avatar *string
+	r.pool.QueryRow(ctx, `SELECT nombre, avatar_url FROM usuarios WHERE id = $1`, remitenteID).Scan(&nombre, &avatar)
+	m.RemitenteNombre = nombre
+	m.RemitenteAvatar = avatar
 
 	preview := contenido
 	if len(preview) > 50 {
@@ -177,7 +185,7 @@ func (r *ChatRepo) InsertMensaje(ctx context.Context, conversacionID, remitenteI
 		UPDATE conversaciones SET ultimo_mensaje_at = NOW(), ultimo_mensaje_preview = $2, updated_at = NOW() WHERE id = $1
 	`, conversacionID, preview)
 
-	return id, nil
+	return &m, nil
 }
 
 func (r *ChatRepo) MarkAsRead(ctx context.Context, conversacionID, userID string) error {

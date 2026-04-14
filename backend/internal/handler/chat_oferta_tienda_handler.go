@@ -131,14 +131,14 @@ func (h *ChatHandler) EnviarMensaje(w http.ResponseWriter, r *http.Request) {
 		tipo = "texto"
 	}
 
-	msgID, err := h.svc.EnviarMensaje(r.Context(), req.ConversacionID, userID, req.Contenido, tipo, req.ImagenURL)
+	msg, err := h.svc.EnviarMensaje(r.Context(), req.ConversacionID, userID, req.Contenido, tipo, req.ImagenURL)
 	if err != nil {
 		slog.Error("[chat/enviar] error", "error", err)
 		ErrorJSON(w, http.StatusBadRequest, "SEND_ERROR", err.Error())
 		return
 	}
 
-	JSON(w, http.StatusCreated, map[string]interface{}{"id": msgID})
+	JSON(w, http.StatusCreated, msg)
 }
 
 func (h *ChatHandler) CountNoLeidos(w http.ResponseWriter, r *http.Request) {
@@ -260,6 +260,7 @@ func (h *OfertaHandler) GetRecibidas(w http.ResponseWriter, r *http.Request) {
 
 	ofertas, err := h.svc.GetRecibidas(r.Context(), userID)
 	if err != nil {
+		slog.Error("[ofertas/recibidas] error", "error", err, "userID", userID)
 		ErrorJSON(w, http.StatusInternalServerError, "LIST_ERROR", "Error al obtener ofertas")
 		return
 	}
@@ -276,6 +277,7 @@ func (h *OfertaHandler) GetEnviadas(w http.ResponseWriter, r *http.Request) {
 
 	ofertas, err := h.svc.GetEnviadas(r.Context(), userID)
 	if err != nil {
+		slog.Error("[ofertas/enviadas] error", "error", err, "userID", userID)
 		ErrorJSON(w, http.StatusInternalServerError, "LIST_ERROR", "Error al obtener ofertas")
 		return
 	}

@@ -397,12 +397,13 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 		ErrorJSON(w, http.StatusUnauthorized, "AUTH_REQUIRED", "No autenticado")
 		return
 	}
-	email := auth.GetUserEmail(r.Context())
-	role := auth.GetUserRole(r.Context())
 
-	JSON(w, http.StatusOK, map[string]interface{}{
-		"id":    userID,
-		"email": email,
-		"role":  role,
-	})
+	profile, err := h.repo.GetUserProfile(r.Context(), userID)
+	if err != nil {
+		slog.Error("[auth/me] error", "error", err, "userID", userID)
+		ErrorJSON(w, http.StatusInternalServerError, "PROFILE_ERROR", "Error al obtener perfil")
+		return
+	}
+
+	JSON(w, http.StatusOK, profile)
 }

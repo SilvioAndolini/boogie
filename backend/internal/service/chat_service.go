@@ -51,12 +51,12 @@ func (s *ChatService) GetMensajes(ctx context.Context, conversacionID, userID st
 	return msgs, nil
 }
 
-func (s *ChatService) EnviarMensaje(ctx context.Context, conversacionID, userID, contenido, tipo string, imagenURL *string) (string, error) {
+func (s *ChatService) EnviarMensaje(ctx context.Context, conversacionID, userID, contenido, tipo string, imagenURL *string) (*repository.Mensaje, error) {
 	if !s.repo.IsParticipant(ctx, conversacionID, userID) {
-		return "", fmt.Errorf("sin permisos")
+		return nil, fmt.Errorf("sin permisos")
 	}
 	if contenido == "" && imagenURL == nil {
-		return "", fmt.Errorf("mensaje vacío")
+		return nil, fmt.Errorf("mensaje vacío")
 	}
 	return s.repo.InsertMensaje(ctx, conversacionID, userID, contenido, tipo, imagenURL)
 }

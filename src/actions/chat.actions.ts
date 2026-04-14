@@ -148,12 +148,28 @@ export async function enviarMensaje(
   if (!contenido?.trim() && !imagenUrl) return { exito: false, error: 'Mensaje vacío' }
 
   try {
-    const datos = await goPost<Mensaje>('/api/v1/chat/mensajes', {
+    const raw = await goPost<Record<string, unknown>>('/api/v1/chat/mensajes', {
       conversacionId,
       contenido: contenido?.trim() || '',
       tipo,
       imagenUrl,
     })
+    const datos: Mensaje = {
+      id: raw.id as string,
+      conversacion_id: raw.conversacion_id as string,
+      remitente_id: raw.remitente_id as string,
+      contenido: raw.contenido as string | null,
+      tipo: (raw.tipo as Mensaje['tipo']) || 'texto',
+      imagen_url: raw.imagen_url as string | null,
+      leido: (raw.leido as boolean) ?? false,
+      created_at: raw.created_at as string,
+      remitente: {
+        id: raw.remitente_id as string,
+        nombre: (raw.remitente_nombre as string) || '',
+        apellido: '',
+        avatar_url: raw.remitente_avatar as string | null,
+      },
+    }
     return { exito: true, datos }
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : 'Error al enviar mensaje'
