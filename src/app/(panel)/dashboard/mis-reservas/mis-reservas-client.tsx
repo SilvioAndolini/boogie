@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useEffect, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -27,6 +27,7 @@ import { formatFechaCorta, formatPrecio } from '@/lib/format'
 import { sePuedeCancelar } from '@/lib/reservas/estados'
 import { cancelarReserva } from '@/actions/reserva.actions'
 import { calcularReembolsoCompleto } from '@/lib/reservas/calculos'
+import type { ReembolsoCalculado } from '@/types/reserva'
 import { POLITICAS_CANCELACION } from '@/lib/constants'
 
 type Pestana = 'proximas' | 'en_curso' | 'completadas' | 'canceladas'
@@ -43,6 +44,7 @@ function ReservaCard({ reserva, onCancelar }: { reserva: ReservaConPropiedad; on
   const esCancelable = sePuedeCancelar(reserva.estado)
   const [expandido, setExpandido] = useState(false)
   const [pending, startTransition] = useTransition()
+  const [reembolso, setReembolso] = useState<ReembolsoCalculado | null>(null)
 
   const handleCancelar = () => {
     startTransition(async () => {
@@ -60,12 +62,15 @@ function ReservaCard({ reserva, onCancelar }: { reserva: ReservaConPropiedad; on
   const politica = reserva.propiedad.politicaCancelacion ?? 'MODERADA'
   const politicaInfo = POLITICAS_CANCELACION[politica]
 
-  let reembolso = calcularReembolsoCompleto(
-    Number(reserva.total),
-    Number(reserva.comisionPlataforma),
-    politica,
-    new Date(reserva.fechaEntrada)
-  )
+  useEffect(() => {
+    if (!esCancelable && !esConfirmada) return
+    calcularReembolsoCompleto(
+      Number(reserva.total),
+      Number(reserva.comisionPlataforma),
+      politica,
+      new Date(reserva.fechaEntrada)
+    ).then(setReembolso)
+  }, [reserva.total, reserva.comisionPlataforma, politica, reserva.fechaEntrada, esCancelable, esConfirmada])
 
   return (
     <div
@@ -138,7 +143,7 @@ function ReservaCard({ reserva, onCancelar }: { reserva: ReservaConPropiedad; on
                 </p>
               </div>
 
-              {esConfirmada && (
+              {esConfirmada && reembolso && (
                 <div className={`rounded-xl border p-3.5 ${
                   reembolso.porcentajeReembolso === 100
                     ? 'border-[#D8F3DC] bg-[#F0FFF4]'
@@ -167,7 +172,7 @@ function ReservaCard({ reserva, onCancelar }: { reserva: ReservaConPropiedad; on
                 </div>
               )}
 
-              {esConfirmada && reembolso.porcentajeReembolso === 0 && (
+              {esConfirmada && reembolso && reembolso.porcentajeReembolso === 0 && (
                 <p className="text-[10px] text-[#C1121F]/70 text-center">
                   Al cancelar ahora no recibirás reembolso según la política {politicaInfo?.nombre}.
                 </p>

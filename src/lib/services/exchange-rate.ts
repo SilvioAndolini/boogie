@@ -1,63 +1,33 @@
 export interface CotizacionEuro {
   tasa: number
   fuente: string
-  ultimaActualizacion: Date
+  ultimaActualizacion: string
 }
 
-const FALLBACK_TASA = 78.39
+const GO_URL = process.env.GO_BACKEND_URL || process.env.NEXT_PUBLIC_GO_BACKEND_URL || 'http://localhost:8080'
 
-let cachedRate: { data: CotizacionEuro; timestamp: number } | null = null
-const CACHE_TTL = 15 * 60 * 1000
-
-async function fetchFromERApi(): Promise<CotizacionEuro | null> {
-  try {
-    const res = await fetch('https://open.er-api.com/v6/latest/EUR', {
-      next: { revalidate: 900 },
-    })
-    if (!res.ok) return null
-    const data = await res.json()
-    if (data.result !== 'success' || !data.rates?.VES) return null
-    return {
-      tasa: data.rates.VES,
-      fuente: 'BCV',
-      ultimaActualizacion: new Date(data.time_last_update_unix * 1000),
-    }
-  } catch {
-    return null
-  }
-}
-
-async function fetchFromExchangerate(): Promise<CotizacionEuro | null> {
-  try {
-    const res = await fetch('https://api.exchangerate-api.com/v4/latest/EUR', {
-      next: { revalidate: 900 },
-    })
-    if (!res.ok) return null
-    const data = await res.json()
-    if (!data.rates?.VES) return null
-    return {
-      tasa: data.rates.VES,
-      fuente: 'BCV',
-      ultimaActualizacion: new Date(data.date ? new Date(data.date).getTime() : Date.now()),
-    }
-  } catch {
-    return null
-  }
-}
+let cached: { data: CotizacionEuro; ts: number } | null = null
+const TTL = 15 * 60 * 1000
 
 export async function getCotizacionEuro(): Promise<CotizacionEuro> {
-  if (cachedRate && Date.now() - cachedRate.timestamp < CACHE_TTL) {
-    return cachedRate.data
-  }
+  if (cached && Date.now() - cached.ts < TTL) return cached.data
 
-  const cotizacion =
-    (await fetchFromERApi()) ??
-    (await fetchFromExchangerate()) ?? {
-      tasa: FALLBACK_TASA,
-      fuente: 'Ref.',
-      ultimaActualizacion: new Date(),
+  try {
+    const res = await fetch(`${GO_URL}/api/v1/exchange-rate`, {
+      next: { revalidate: 900 },
+    })
+    if (res.ok) {
+      const body = await res.json()
+      const data = body?.data ?? body
+      const cot: CotizacionEuro = {
+        tasa: data.tasa,
+        fuente: data.fuente,
+        ultimaActualizacion: data.ultimaActualizacion,
+      }
+      cached = { data: cot, ts: Date.now() }
+      return cot
     }
+  } catch {}
 
-  cachedRate = { data: cotizacion, timestamp: Date.now() }
-  return cotizacion
+  return { tasa: 78.39, fuente: 'Ref.', ultimaActualizacion: new Date().toISOString() }
 }

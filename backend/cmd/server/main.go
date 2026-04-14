@@ -311,6 +311,7 @@ func main() {
 			Cancelar:               reservaH.Cancelar,
 			Disponibilidad:         reservaH.Disponibilidad,
 			FechasOcupadas:         reservaH.FechasOcupadas,
+			CalcularReembolso:      reservaH.CalcularReembolso,
 			AutoConfirmarExpiradas: reservaH.AutoConfirmarExpiradas,
 		}
 	}

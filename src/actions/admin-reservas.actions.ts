@@ -1,7 +1,6 @@
 'use server'
 
 import { goApi, goGet, goPost, GoAPIError } from '@/lib/go-api-client'
-import { getCotizacionEuro } from '@/lib/services/exchange-rate'
 
 type ReservasResult = {
   data?: Array<Record<string, unknown>>;
@@ -52,12 +51,18 @@ export async function getReservasAdmin(filtros?: {
 export async function getReservaDetalleAdmin(reservaId: string) {
   try {
     const data = await goGet<Record<string, unknown>>(`/api/v1/admin/reservas/${reservaId}`)
-    const cotizacion = await getCotizacionEuro()
+    let tasaBCV = 78.39
+    let fuenteBCV = 'Ref.'
+    try {
+      const cot = await goGet<{ tasa: number; fuente: string }>('/api/v1/exchange-rate')
+      tasaBCV = cot.tasa
+      fuenteBCV = cot.fuente
+    } catch {}
     return {
       reserva: data,
       timeline: (data?.timeline ?? []) as Array<Record<string, unknown>>,
-      tasaBCV: cotizacion.tasa,
-      fuenteBCV: cotizacion.fuente,
+      tasaBCV,
+      fuenteBCV,
     }
   } catch (err) {
     if (err instanceof GoAPIError) return { error: err.message }

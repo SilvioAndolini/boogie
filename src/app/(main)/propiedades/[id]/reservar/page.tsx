@@ -103,9 +103,12 @@ function ReservarContent() {
 
     const fetchTasa = async () => {
       try {
-        const { getCotizacionEuro } = await import('@/lib/services/exchange-rate')
-        const cot = await getCotizacionEuro()
-        setTasaCambio(cot.tasa)
+        const res = await fetch('/api/exchange-rate')
+        if (res.ok) {
+          const body = await res.json()
+          const data = body?.data ?? body
+          setTasaCambio(data.tasa ?? 78.39)
+        }
       } catch {}
     }
     fetchTasa()

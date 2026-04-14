@@ -2,7 +2,6 @@
 
 import { getUsuarioAutenticado } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
-import { getCotizacionEuro } from '@/lib/services/exchange-rate'
 import { goGet, goPost } from '@/lib/go-api-client'
 
 export async function getTasaBCV() {
@@ -10,8 +9,7 @@ export async function getTasaBCV() {
     const data = await goGet<{ tasa: number; fuente: string }>('/api/v1/exchange-rate')
     return { tasa: data.tasa, fuente: data.fuente }
   } catch {
-    const cotizacion = await getCotizacionEuro()
-    return { tasa: cotizacion.tasa, fuente: cotizacion.fuente }
+    return { tasa: 78.39, fuente: 'Ref.' }
   }
 }
 

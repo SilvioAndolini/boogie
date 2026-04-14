@@ -124,6 +124,7 @@ type ReservaHandlers struct {
 	Cancelar               http.HandlerFunc
 	Disponibilidad         http.HandlerFunc
 	FechasOcupadas         http.HandlerFunc
+	CalcularReembolso      http.HandlerFunc
 	AutoConfirmarExpiradas http.HandlerFunc
 }
 
@@ -378,6 +379,7 @@ func New(opts *RouterOpts) http.Handler {
 			r.Route("/reservas", func(r chi.Router) {
 				r.Get("/fechas-ocupadas", opts.ReservaHandlers.FechasOcupadas)
 				r.Get("/disponibilidad", opts.ReservaHandlers.Disponibilidad)
+				r.Get("/calcular-reembolso", opts.ReservaHandlers.CalcularReembolso)
 
 				r.Group(func(r chi.Router) {
 					r.Use(opts.AuthVerifier.Middleware)

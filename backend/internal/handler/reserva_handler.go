@@ -448,6 +448,40 @@ func (h *ReservaHandler) FechasOcupadas(w http.ResponseWriter, r *http.Request) 
 	JSON(w, http.StatusOK, fechas)
 }
 
+func (h *ReservaHandler) CalcularReembolso(w http.ResponseWriter, r *http.Request) {
+	totalStr := r.URL.Query().Get("total")
+	comisionStr := r.URL.Query().Get("comision")
+	politica := r.URL.Query().Get("politica")
+	fechaStr := r.URL.Query().Get("fechaEntrada")
+
+	if totalStr == "" || comisionStr == "" || politica == "" || fechaStr == "" {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_PARAMS", "total, comision, politica y fechaEntrada son requeridos")
+		return
+	}
+
+	total, err := strconv.ParseFloat(totalStr, 64)
+	if err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_TOTAL", "total debe ser un numero")
+		return
+	}
+
+	comision, err := strconv.ParseFloat(comisionStr, 64)
+	if err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_COMISION", "comision debe ser un numero")
+		return
+	}
+
+	fechaEntrada, err := time.Parse(time.RFC3339, fechaStr)
+	if err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_FECHA", "fechaEntrada debe ser ISO 8601")
+		return
+	}
+
+	pol := enums.PoliticaCancelacion(strings.ToUpper(politica))
+	result := service.CalcularReembolso(total, comision, pol, fechaEntrada)
+	JSON(w, http.StatusOK, result)
+}
+
 func getPagination(r *http.Request) (page, perPage int) {
 	page = 1
 	perPage = 20
