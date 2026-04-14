@@ -117,8 +117,9 @@ func main() {
 		pagoSvc := service.NewPagoService(pagoRepo)
 		walletSvc := service.NewWalletService(pagoRepo)
 		paymentDataSvc := service.NewPaymentDataService()
+		storeItemRepo := repository.NewStoreItemRepo(db)
 
-		pagoHandler := handler.NewPagoHandler(pagoSvc)
+		pagoHandler := handler.NewPagoHandler(pagoSvc, authClient, cfg.SupabaseURL, cfg.SupabaseSecretKey, storeItemRepo)
 		walletHandler := handler.NewWalletHandler(walletSvc)
 		paymentDataHandler := handler.NewPaymentDataHandler(paymentDataSvc)
 
@@ -128,6 +129,8 @@ func main() {
 			Verificar:            pagoHandler.Verificar,
 			MisPagos:             pagoHandler.MisPagos,
 			PaymentData:          paymentDataHandler.Get,
+			SubirComprobante:     pagoHandler.SubirComprobante,
+			AgregarStoreItems:    pagoHandler.AgregarStoreItems,
 		}
 
 		walletHandlers = &router.WalletHandlers{
@@ -294,8 +297,8 @@ func main() {
 		}
 
 		reservaRepo := repository.NewReservaRepo(db)
-		reservaSvc := service.NewReservaService(reservaRepo, cfg.ComisionPlataformaHuesped, cfg.ComisionPlataformaAnfitrion)
 		reservaDisponSvc := service.NewReservaDisponibilidad(db)
+		reservaSvc := service.NewReservaService(reservaRepo, reservaDisponSvc, cfg.ComisionPlataformaHuesped, cfg.ComisionPlataformaAnfitrion)
 		reservaH := handler.NewReservaHandler(reservaSvc, reservaDisponSvc)
 
 		reservaHandlers = &router.ReservaHandlers{
@@ -306,6 +309,7 @@ func main() {
 			ConfirmarORechazar:     reservaH.ConfirmarORechazar,
 			Cancelar:               reservaH.Cancelar,
 			Disponibilidad:         reservaH.Disponibilidad,
+			FechasOcupadas:         reservaH.FechasOcupadas,
 			AutoConfirmarExpiradas: reservaH.AutoConfirmarExpiradas,
 		}
 	}

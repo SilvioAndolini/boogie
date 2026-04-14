@@ -13,7 +13,7 @@ import { PaymentForm } from '@/components/pagos/payment-form'
 import { BoogieStore } from '@/components/reservas/boogie-store'
 import { COMISION_PLATAFORMA_HUESPED } from '@/lib/constants'
 import { crearReserva } from '@/actions/reserva.actions'
-import { registrarPagoReserva } from '@/actions/pago-reserva.actions'
+import { registrarPagoReserva, agregarStoreItems } from '@/actions/pago-reserva.actions'
 import Image from 'next/image'
 import { toast } from 'sonner'
 import type { MetodoPagoEnum } from '@/types'
@@ -182,22 +182,7 @@ function ReservarContent() {
         setReservaCreadaId(result.datos.id)
 
         if (storeCart.length > 0) {
-          const admin = (await import('@/lib/supabase/admin')).createAdminClient
-          const supabase = admin()
-          const storeItems = storeCart.map((item) => ({
-            reserva_id: result.datos!.id,
-            tipo_item: item.tipo,
-            nombre: item.nombre,
-            cantidad: item.cantidad,
-            precio_unitario: item.precio,
-            moneda: item.moneda,
-            subtotal: (item.tipo === 'servicio' && item.tipoPrecio === 'POR_NOCHE'
-              ? item.precio * noches
-              : item.precio) * item.cantidad,
-            producto_id: item.tipo === 'producto' ? item.id : null,
-            servicio_id: item.tipo === 'servicio' ? item.id : null,
-          }))
-          await supabase.from('reserva_store_items').insert(storeItems)
+          await agregarStoreItems(result.datos.id, storeCart, noches)
         }
 
         return result.datos.id

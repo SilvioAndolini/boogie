@@ -1,6 +1,5 @@
 'use server'
 
-import { createAdminClient } from '@/lib/supabase/admin'
 import { getUsuarioAutenticado } from '@/lib/auth'
 import { goPost } from '@/lib/go-api-client'
 
@@ -21,24 +20,15 @@ export async function registrarPagoReserva(datos: {
   let comprobanteUrl: string | null = null
 
   if (datos.comprobanteBase64 && datos.comprobanteExt) {
-    const admin = createAdminClient()
-    const { data: buckets } = await admin.storage.listBuckets()
-    const bucketExists = buckets?.some((b) => b.name === 'pagos')
-    if (!bucketExists) {
-      await admin.storage.createBucket('pagos', { public: true, fileSizeLimit: 5 * 1024 * 1024 })
-    }
-
-    const path = `comprobantes/${user.id}/${datos.reservaId}.${datos.comprobanteExt}`
-    const buffer = Buffer.from(datos.comprobanteBase64, 'base64')
-    const { error: uploadError } = await admin.storage
-      .from('pagos')
-      .upload(path, buffer, { upsert: true, contentType: `image/${datos.comprobanteExt}` })
-
-    if (uploadError) {
-      console.error('[registrarPagoReserva] Upload error:', uploadError.message)
-    } else {
-      const { data: urlData } = admin.storage.from('pagos').getPublicUrl(path)
-      comprobanteUrl = urlData?.publicUrl || null
+    try {
+      const uploadResult = await goPost<{ ok: boolean; url: string }>('/api/v1/pagos/subir-comprobante', {
+        reservaId: datos.reservaId,
+        comprobanteBase64: datos.comprobanteBase64,
+        comprobanteExt: datos.comprobanteExt,
+      })
+      comprobanteUrl = uploadResult.url
+    } catch (err) {
+      console.error('[registrarPagoReserva] Upload error:', err)
     }
   }
 
@@ -49,10 +39,9 @@ export async function registrarPagoReserva(datos: {
       moneda: datos.moneda,
       metodoPago: datos.metodoPago,
       referencia: datos.referencia,
-      bancoEmisor: datos.bancoEmisor,
-      telefonoEmisor: datos.telefonoEmisor,
-      comprobanteBase64: comprobanteUrl,
-      comprobanteExt: datos.comprobanteExt,
+      bancoEmisor: datos.bancoEmisor || null,
+      telefonoEmisor: datos.telefonoEmisor || null,
+      comprobanteUrl: comprobanteUrl,
     })
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : 'Error al registrar el pago'
@@ -60,4 +49,36 @@ export async function registrarPagoReserva(datos: {
   }
 
   return { exito: true }
+}
+
+export async function agregarStoreItems(reservaId: string, items: Array<{
+  tipo: string
+  nombre: string
+  cantidad: number
+  precio: number
+  moneda: string
+  tipoPrecio?: string
+  id: string
+}>, noches: number) {
+  try {
+    const storeItems = items.map((item) => ({
+      tipo_item: item.tipo,
+      nombre: item.nombre,
+      cantidad: item.cantidad,
+      precio_unitario: item.precio,
+      moneda: item.moneda,
+      subtotal: (item.tipo === 'servicio' && item.tipoPrecio === 'POR_NOCHE'
+        ? item.precio * noches
+        : item.precio) * item.cantidad,
+      producto_id: item.tipo === 'producto' ? item.id : null,
+      servicio_id: item.tipo === 'servicio' ? item.id : null,
+    }))
+
+    await goPost('/api/v1/pagos/store-items', {
+      reservaId,
+      items: storeItems,
+    })
+  } catch (err) {
+    console.error('[agregarStoreItems] Error:', err)
+  }
 }

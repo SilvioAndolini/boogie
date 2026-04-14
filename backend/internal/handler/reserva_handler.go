@@ -305,6 +305,23 @@ func (h *ReservaHandler) Disponibilidad(w http.ResponseWriter, r *http.Request) 
 	})
 }
 
+func (h *ReservaHandler) FechasOcupadas(w http.ResponseWriter, r *http.Request) {
+	propID := r.URL.Query().Get("propiedadId")
+	if propID == "" {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_PARAMS", "propiedadId es requerido")
+		return
+	}
+
+	fechas, err := h.disponSvc.ObtenerFechasOcupadas(r.Context(), propID)
+	if err != nil {
+		slog.Error("[reservas/fechas-ocupadas] error", "error", err)
+		ErrorJSON(w, http.StatusInternalServerError, "FETCH_ERROR", "Error al obtener fechas ocupadas")
+		return
+	}
+
+	JSON(w, http.StatusOK, fechas)
+}
+
 func getPagination(r *http.Request) (page, perPage int) {
 	page = 1
 	perPage = 20

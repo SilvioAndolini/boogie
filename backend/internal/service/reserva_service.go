@@ -15,8 +15,8 @@ type DisponibilidadResult struct {
 }
 
 type Conflicto struct {
-	Tipo            string
-	ReservaID       string
+	Tipo             string
+	ReservaID        string
 	FechaBloqueadaID string
 }
 
@@ -33,7 +33,7 @@ func (r *ReservaDisponibilidad) Verificar(ctx context.Context, propiedadID strin
 	err := r.pool.QueryRow(ctx, `
 		SELECT id FROM reservas
 		WHERE propiedad_id = $1
-		  AND estado IN ('PENDIENTE_PAGO', 'PENDIENTE', 'CONFIRMADA', 'EN_CURSO')
+		  AND estado IN ('PENDIENTE_PAGO', 'PENDIENTE', 'PENDIENTE_CONFIRMACION', 'CONFIRMADA', 'EN_CURSO')
 		  AND fecha_entrada < $3
 		  AND fecha_salida > $2
 		LIMIT 1
@@ -65,7 +65,7 @@ func (r *ReservaDisponibilidad) Verificar(ctx context.Context, propiedadID strin
 		return &DisponibilidadResult{
 			Disponible: false,
 			Conflicto: &Conflicto{
-				Tipo:            "FECHA_BLOQUEADA",
+				Tipo:             "FECHA_BLOQUEADA",
 				FechaBloqueadaID: bloqueadaID,
 			},
 		}, nil
@@ -83,4 +83,84 @@ func (r *ReservaDisponibilidad) ObtenerPropiedad(ctx context.Context, propiedadI
 		FROM propiedades WHERE id = $1
 	`, propiedadID).Scan(&id, &titulo, &precio, &moneda, &propietarioID)
 	return
+}
+
+type FechaOcupada struct {
+	Inicio time.Time `json:"inicio"`
+	Fin    time.Time `json:"fin"`
+}
+
+func (r *ReservaDisponibilidad) ObtenerFechasOcupadas(ctx context.Context, propiedadID string) ([]FechaOcupada, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT fecha_entrada, fecha_salida FROM reservas
+		WHERE propiedad_id = $1
+		  AND estado IN ('PENDIENTE_PAGO', 'PENDIENTE', 'PENDIENTE_CONFIRMACION', 'CONFIRMADA', 'EN_CURSO')
+	`, propiedadID)
+	if err != nil {
+		return nil, fmt.Errorf("query fechas ocupadas reservas: %w", err)
+	}
+	defer rows.Close()
+
+	var results []FechaOcupada
+	for rows.Next() {
+		var f FechaOcupada
+		if err := rows.Scan(&f.Inicio, &f.Fin); err != nil {
+			return nil, err
+		}
+		results = append(results, f)
+	}
+
+	blockedRows, err := r.pool.Query(ctx, `
+		SELECT fecha_inicio, fecha_fin FROM fechas_bloqueadas
+		WHERE propiedad_id = $1
+	`, propiedadID)
+	if err != nil {
+		return nil, fmt.Errorf("query fechas bloqueadas: %w", err)
+	}
+	defer blockedRows.Close()
+
+	for blockedRows.Next() {
+		var f FechaOcupada
+		if err := blockedRows.Scan(&f.Inicio, &f.Fin); err != nil {
+			return nil, err
+		}
+		results = append(results, f)
+	}
+
+	if results == nil {
+		results = []FechaOcupada{}
+	}
+	return results, nil
+}
+
+func (r *ReservaDisponibilidad) HaySolapamiento(ctx context.Context, propiedadID string, fechaEntrada, fechaSalida time.Time) (bool, error) {
+	var exists bool
+	err := r.pool.QueryRow(ctx, `
+		SELECT EXISTS(
+			SELECT 1 FROM reservas
+			WHERE propiedad_id = $1
+			  AND estado IN ('PENDIENTE_PAGO', 'PENDIENTE', 'PENDIENTE_CONFIRMACION', 'CONFIRMADA', 'EN_CURSO')
+			  AND fecha_entrada < $3
+			  AND fecha_salida > $2
+		)
+	`, propiedadID, fechaEntrada, fechaSalida).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+	if exists {
+		return true, nil
+	}
+
+	err = r.pool.QueryRow(ctx, `
+		SELECT EXISTS(
+			SELECT 1 FROM fechas_bloqueadas
+			WHERE propiedad_id = $1
+			  AND fecha_inicio < $3
+			  AND fecha_fin > $2
+		)
+	`, propiedadID, fechaEntrada, fechaSalida).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
 }

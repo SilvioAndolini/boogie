@@ -41,13 +41,15 @@ type CancelarInput struct {
 
 type ReservaService struct {
 	repo      *repository.ReservaRepo
+	disponSvc *ReservaDisponibilidad
 	comisionH float64
 	comisionA float64
 }
 
-func NewReservaService(repo *repository.ReservaRepo, comisionH, comisionA float64) *ReservaService {
+func NewReservaService(repo *repository.ReservaRepo, disponSvc *ReservaDisponibilidad, comisionH, comisionA float64) *ReservaService {
 	return &ReservaService{
 		repo:      repo,
+		disponSvc: disponSvc,
 		comisionH: comisionH,
 		comisionA: comisionA,
 	}
@@ -94,6 +96,16 @@ func (s *ReservaService) Crear(ctx context.Context, input *CrearReservaInput) (*
 
 	if noches < 1 || noches > 365 {
 		return nil, bizerrors.NochesFueraDeRango()
+	}
+
+	if s.disponSvc != nil {
+		solapado, err := s.disponSvc.HaySolapamiento(ctx, input.PropiedadID, input.FechaEntrada, input.FechaSalida)
+		if err != nil {
+			return nil, fmt.Errorf("error al verificar disponibilidad: %w", err)
+		}
+		if solapado {
+			return nil, bizerrors.EstadoInvalido("las fechas seleccionadas no estan disponibles")
+		}
 	}
 
 	reserva, err := s.repo.Crear(ctx, prop, input.HuespedID, input.FechaEntrada, input.FechaSalida, input.CantidadHuespedes, input.NotasHuesped, s.comisionH, s.comisionA)

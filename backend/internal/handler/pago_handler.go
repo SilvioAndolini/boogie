@@ -1,22 +1,30 @@
 package handler
 
 import (
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/boogie/backend/internal/auth"
 	"github.com/boogie/backend/internal/domain/enums"
+	"github.com/boogie/backend/internal/repository"
 	"github.com/boogie/backend/internal/service"
 	"github.com/go-chi/chi/v5"
 )
 
 type PagoHandler struct {
-	svc *service.PagoService
+	svc           *service.PagoService
+	authClient    *auth.SupabaseAuthClient
+	supabaseURL   string
+	serviceKey    string
+	storeItemRepo *repository.StoreItemRepo
 }
 
-func NewPagoHandler(svc *service.PagoService) *PagoHandler {
-	return &PagoHandler{svc: svc}
+func NewPagoHandler(svc *service.PagoService, authClient *auth.SupabaseAuthClient, supabaseURL, serviceKey string, storeItemRepo *repository.StoreItemRepo) *PagoHandler {
+	return &PagoHandler{svc: svc, authClient: authClient, supabaseURL: supabaseURL, serviceKey: serviceKey, storeItemRepo: storeItemRepo}
 }
 
 type registrarPagoSimpleRequest struct {
@@ -186,4 +194,121 @@ func (h *PagoHandler) MisPagos(w http.ResponseWriter, r *http.Request) {
 	}
 
 	JSON(w, http.StatusOK, pagos)
+}
+
+type subirComprobanteRequest struct {
+	ReservaID string `json:"reservaId"`
+	Base64    string `json:"comprobanteBase64"`
+	Ext       string `json:"comprobanteExt"`
+}
+
+func (h *PagoHandler) SubirComprobante(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetUserID(r.Context())
+	if userID == "" {
+		ErrorJSON(w, http.StatusUnauthorized, "AUTH_REQUIRED", "No autenticado")
+		return
+	}
+
+	var req subirComprobanteRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "JSON invalido")
+		return
+	}
+
+	if req.ReservaID == "" || req.Base64 == "" || req.Ext == "" {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_PARAMS", "reservaId, comprobanteBase64 y comprobanteExt son requeridos")
+		return
+	}
+
+	fileBytes, err := base64.StdEncoding.DecodeString(req.Base64)
+	if err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_BASE64", "comprobanteBase64 no es base64 valido")
+		return
+	}
+
+	ext := strings.TrimPrefix(req.Ext, ".")
+	contentType := "image/jpeg"
+	if ext == "png" {
+		contentType = "image/png"
+	} else if ext == "webp" {
+		contentType = "image/webp"
+	}
+
+	path := fmt.Sprintf("comprobantes/%s/%s.%s", userID, req.ReservaID, ext)
+	publicURL, err := h.authClient.UploadStorage(r.Context(), h.supabaseURL, h.serviceKey, "pagos", path, fileBytes, contentType)
+	if err != nil {
+		slog.Error("[pagos/subir-comprobante] upload error", "error", err)
+		ErrorJSON(w, http.StatusInternalServerError, "UPLOAD_ERROR", "Error al subir comprobante")
+		return
+	}
+
+	JSON(w, http.StatusOK, map[string]interface{}{
+		"ok":  true,
+		"url": publicURL,
+	})
+}
+
+type storeItemJSON struct {
+	TipoItem       string  `json:"tipo_item"`
+	Nombre         string  `json:"nombre"`
+	Cantidad       int     `json:"cantidad"`
+	PrecioUnitario float64 `json:"precio_unitario"`
+	Moneda         string  `json:"moneda"`
+	Subtotal       float64 `json:"subtotal"`
+	ProductoID     *string `json:"producto_id"`
+	ServicioID     *string `json:"servicio_id"`
+}
+
+type agregarStoreItemsRequest struct {
+	ReservaID string          `json:"reservaId"`
+	Items     []storeItemJSON `json:"items"`
+}
+
+func (h *PagoHandler) AgregarStoreItems(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetUserID(r.Context())
+	if userID == "" {
+		ErrorJSON(w, http.StatusUnauthorized, "AUTH_REQUIRED", "No autenticado")
+		return
+	}
+
+	var req agregarStoreItemsRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "JSON invalido")
+		return
+	}
+
+	if req.ReservaID == "" {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_RESERVA_ID", "reservaId es requerido")
+		return
+	}
+	if len(req.Items) == 0 {
+		JSON(w, http.StatusOK, map[string]interface{}{"ok": true, "mensaje": "sin items"})
+		return
+	}
+
+	items := make([]repository.StoreItemInput, len(req.Items))
+	for i, it := range req.Items {
+		items[i] = repository.StoreItemInput{
+			ReservaID:      req.ReservaID,
+			TipoItem:       it.TipoItem,
+			Nombre:         it.Nombre,
+			Cantidad:       it.Cantidad,
+			PrecioUnitario: it.PrecioUnitario,
+			Moneda:         it.Moneda,
+			Subtotal:       it.Subtotal,
+			ProductoID:     it.ProductoID,
+			ServicioID:     it.ServicioID,
+		}
+	}
+
+	if err := h.storeItemRepo.InsertBatch(r.Context(), items); err != nil {
+		slog.Error("[pagos/store-items] error", "error", err)
+		ErrorJSON(w, http.StatusInternalServerError, "INSERT_ERROR", "Error al guardar items del store")
+		return
+	}
+
+	JSON(w, http.StatusCreated, map[string]interface{}{
+		"ok":      true,
+		"mensaje": fmt.Sprintf("%d items guardados", len(items)),
+	})
 }

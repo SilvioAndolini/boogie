@@ -29,6 +29,8 @@ type PagoHandlers struct {
 	Verificar            http.HandlerFunc
 	MisPagos             http.HandlerFunc
 	PaymentData          http.HandlerFunc
+	SubirComprobante     http.HandlerFunc
+	AgregarStoreItems    http.HandlerFunc
 }
 
 type WalletHandlers struct {
@@ -120,6 +122,7 @@ type ReservaHandlers struct {
 	ConfirmarORechazar     http.HandlerFunc
 	Cancelar               http.HandlerFunc
 	Disponibilidad         http.HandlerFunc
+	FechasOcupadas         http.HandlerFunc
 	AutoConfirmarExpiradas http.HandlerFunc
 }
 
@@ -242,6 +245,8 @@ func New(opts *RouterOpts) http.Handler {
 					r.Post("/registrar-comprobante", opts.PagoHandlers.RegistrarComprobante)
 					r.Post("/{id}/verificar", opts.PagoHandlers.Verificar)
 					r.Get("/mis-pagos", opts.PagoHandlers.MisPagos)
+					r.Post("/subir-comprobante", opts.PagoHandlers.SubirComprobante)
+					r.Post("/store-items", opts.PagoHandlers.AgregarStoreItems)
 				})
 			})
 
@@ -369,6 +374,7 @@ func New(opts *RouterOpts) http.Handler {
 		}
 
 		if opts.ReservaHandlers != nil {
+			r.Get("/reservas/fechas-ocupadas", opts.ReservaHandlers.FechasOcupadas)
 			r.Route("/reservas", func(r chi.Router) {
 				r.Use(opts.AuthVerifier.Middleware)
 				r.Post("/", opts.ReservaHandlers.Crear)
