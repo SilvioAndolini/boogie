@@ -119,7 +119,7 @@ function ReservaRecibidaCard({ reserva }: { reserva: ReservaConPropiedad }) {
 export function ReservasRecibidasClient({ reservas }: { reservas: ReservaConPropiedad[] }) {
   const [activa, setActiva] = useState<Pestana>('pendientes')
 
-  const pendientes = reservas.filter(r => r.estado === 'PENDIENTE')
+  const pendientes = reservas.filter(r => r.estado === 'PENDIENTE' || r.estado === 'PENDIENTE_CONFIRMACION')
   const confirmadas = reservas.filter(r => r.estado === 'CONFIRMADA' || r.estado === 'EN_CURSO')
   const completadas = reservas.filter(r => r.estado === 'COMPLETADA')
   const canceladas = reservas.filter(r => ['CANCELADA_HUESPED', 'CANCELADA_ANFITRION', 'RECHAZADA'].includes(r.estado))

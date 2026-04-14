@@ -299,13 +299,14 @@ func main() {
 		reservaH := handler.NewReservaHandler(reservaSvc, reservaDisponSvc)
 
 		reservaHandlers = &router.ReservaHandlers{
-			Crear:              reservaH.Crear,
-			GetByID:            reservaH.GetByID,
-			MisReservas:        reservaH.MisReservas,
-			ReservasRecibidas:  reservaH.ReservasRecibidas,
-			ConfirmarORechazar: reservaH.ConfirmarORechazar,
-			Cancelar:           reservaH.Cancelar,
-			Disponibilidad:     reservaH.Disponibilidad,
+			Crear:                  reservaH.Crear,
+			GetByID:                reservaH.GetByID,
+			MisReservas:            reservaH.MisReservas,
+			ReservasRecibidas:      reservaH.ReservasRecibidas,
+			ConfirmarORechazar:     reservaH.ConfirmarORechazar,
+			Cancelar:               reservaH.Cancelar,
+			Disponibilidad:         reservaH.Disponibilidad,
+			AutoConfirmarExpiradas: reservaH.AutoConfirmarExpiradas,
 		}
 	}
 

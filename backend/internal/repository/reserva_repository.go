@@ -3,11 +3,12 @@ package repository
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"time"
 
 	"github.com/boogie/backend/internal/domain/enums"
+	"github.com/boogie/backend/internal/domain/idgen"
 	"github.com/boogie/backend/internal/domain/models"
+	"github.com/boogie/backend/internal/domain/util"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -22,15 +23,15 @@ func NewReservaRepo(pool *pgxpool.Pool) *ReservaRepo {
 
 type ReservaDetalle struct {
 	models.Reserva
-	PropiedadTitulo       string
-	PropiedadSlug         string
-	PropietarioID         string
-	PoliticaCancelacion   string
-	PropiedadDireccion    string
-	PropiedadCiudad       string
-	HuespedNombre         string
-	HuespedApellido       string
-	HuespedEmail          string
+	PropiedadTitulo     string
+	PropiedadSlug       string
+	PropietarioID       string
+	PoliticaCancelacion string
+	PropiedadDireccion  string
+	PropiedadCiudad     string
+	HuespedNombre       string
+	HuespedApellido     string
+	HuespedEmail        string
 }
 
 type ReservaConPropiedad struct {
@@ -55,11 +56,11 @@ type ReservaConHuesped struct {
 }
 
 type ReservasStats struct {
-	Pendientes   int `json:"pendientes"`
-	Confirmadas  int `json:"confirmadas"`
-	EnCurso      int `json:"en_curso"`
-	Completadas  int `json:"completadas"`
-	Canceladas   int `json:"canceladas"`
+	Pendientes  int `json:"pendientes"`
+	Confirmadas int `json:"confirmadas"`
+	EnCurso     int `json:"en_curso"`
+	Completadas int `json:"completadas"`
+	Canceladas  int `json:"canceladas"`
 }
 
 type PagoResumen struct {
@@ -257,18 +258,12 @@ func (r *ReservaRepo) Crear(ctx context.Context, prop *PropiedadInfo, huespedID 
 		noches = 1
 	}
 
-	round2 := func(v float64) float64 {
-		v = v * 100
-		v = float64(int(v+0.5)) / 100
-		return v
-	}
-
-	subtotal := round2(prop.PrecioPorNoche * float64(noches))
-	comisionHuesped := round2(subtotal * comisionH)
-	comisionAnfitrion := round2(subtotal * comisionA)
-	total := round2(subtotal + comisionHuesped)
-	codigo := generarCodigoReserva()
-	id := fmt.Sprintf("%016x", rand.Int63())
+	subtotal := util.Round2(prop.PrecioPorNoche * float64(noches))
+	comisionHuesped := util.Round2(subtotal * comisionH)
+	comisionAnfitrion := util.Round2(subtotal * comisionA)
+	total := util.Round2(subtotal + comisionHuesped)
+	codigo := idgen.CodigoReserva()
+	id := idgen.New()
 
 	var notaVal *string
 	if notasHuesped != nil && *notasHuesped != "" {
@@ -347,13 +342,13 @@ func (r *ReservaRepo) GetPropiedadForReserva(ctx context.Context, propiedadID st
 func (r *ReservaRepo) Confirmar(ctx context.Context, reservaID string) error {
 	tag, err := r.pool.Exec(ctx, `
 		UPDATE reservas SET estado = 'CONFIRMADA', fecha_confirmacion = NOW()
-		WHERE id = $1 AND estado = 'PENDIENTE'
+		WHERE id = $1 AND estado IN ('PENDIENTE', 'PENDIENTE_CONFIRMACION')
 	`, reservaID)
 	if err != nil {
 		return fmt.Errorf("confirmar reserva: %w", err)
 	}
 	if tag.RowsAffected() == 0 {
-		return fmt.Errorf("reserva no encontrada o no esta en estado PENDIENTE")
+		return fmt.Errorf("reserva no encontrada o no esta pendiente de confirmacion")
 	}
 	return nil
 }
@@ -361,15 +356,70 @@ func (r *ReservaRepo) Confirmar(ctx context.Context, reservaID string) error {
 func (r *ReservaRepo) Rechazar(ctx context.Context, reservaID, motivo string) error {
 	tag, err := r.pool.Exec(ctx, `
 		UPDATE reservas SET estado = 'RECHAZADA', fecha_cancelacion = NOW(), motivo_cancelacion = $2
-		WHERE id = $1 AND estado = 'PENDIENTE'
+		WHERE id = $1 AND estado IN ('PENDIENTE', 'PENDIENTE_CONFIRMACION')
 	`, reservaID, motivo)
 	if err != nil {
 		return fmt.Errorf("rechazar reserva: %w", err)
 	}
 	if tag.RowsAffected() == 0 {
-		return fmt.Errorf("reserva no encontrada o no esta en estado PENDIENTE")
+		return fmt.Errorf("reserva no encontrada o no esta pendiente de confirmacion")
 	}
 	return nil
+}
+
+func (r *ReservaRepo) CountRechazosMes(ctx context.Context, anfitrionID string) (int, error) {
+	var count int
+	err := r.pool.QueryRow(ctx, `
+		SELECT COUNT(*) FROM anfitrion_rechazos
+		WHERE anfitrion_id = $1
+		  AND fecha >= date_trunc('month', CURRENT_DATE)
+		  AND fecha < date_trunc('month', CURRENT_DATE) + interval '1 month'
+	`, anfitrionID).Scan(&count)
+	return count, err
+}
+
+func (r *ReservaRepo) RegistrarRechazo(ctx context.Context, anfitrionID, reservaID, motivo string) error {
+	id := idgen.New()
+	_, err := r.pool.Exec(ctx, `
+		INSERT INTO anfitrion_rechazos (id, anfitrion_id, reserva_id, motivo, fecha)
+		VALUES ($1, $2, $3, $4, NOW())
+	`, id, anfitrionID, reservaID, motivo)
+	return err
+}
+
+func (r *ReservaRepo) RegistrarPenalizacion(ctx context.Context, anfitrionID string, porcentaje float64, descripcion string) error {
+	id := idgen.New()
+	_, err := r.pool.Exec(ctx, `
+		INSERT INTO anfitrion_penalizaciones (id, anfitrion_id, porcentaje, descripcion, fecha, aplicada)
+		VALUES ($1, $2, $3, $4, NOW(), false)
+	`, id, anfitrionID, porcentaje, descripcion)
+	return err
+}
+
+func (r *ReservaRepo) GetReservasExpiradas(ctx context.Context, ventana time.Duration) ([]string, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT id FROM reservas
+		WHERE estado = 'PENDIENTE_CONFIRMACION'
+		  AND fecha_confirmacion IS NOT NULL
+		  AND fecha_confirmacion + $1 < NOW()
+	`, ventana)
+	if err != nil {
+		return nil, fmt.Errorf("get expiradas: %w", err)
+	}
+	defer rows.Close()
+
+	var ids []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	if ids == nil {
+		ids = []string{}
+	}
+	return ids, nil
 }
 
 func (r *ReservaRepo) CancelarHuesped(ctx context.Context, reservaID, motivo string) error {
@@ -478,7 +528,7 @@ func (r *ReservaRepo) GetPagosByReserva(ctx context.Context, reservaID string) (
 }
 
 func (r *ReservaRepo) InsertPagoManual(ctx context.Context, pago *NuevoPago) (string, error) {
-	id := fmt.Sprintf("%016x", rand.Int63())
+	id := idgen.New()
 	_, err := r.pool.Exec(ctx, `
 		INSERT INTO pagos (id, reserva_id, usuario_id, monto, moneda, metodo_pago, estado,
 		                   referencia, comprobante, banco_emisor, telefono_emisor, notas, fecha_creacion)
@@ -502,10 +552,4 @@ type NuevoPago struct {
 	BancoEmisor    *string
 	TelefonoEmisor *string
 	Notas          *string
-}
-
-func generarCodigoReserva() string {
-	ts := fmt.Sprintf("%x", time.Now().UnixMilli())
-	randPart := fmt.Sprintf("%04X", rand.Intn(0xFFFF))
-	return "BOO-" + ts + "-" + randPart
 }

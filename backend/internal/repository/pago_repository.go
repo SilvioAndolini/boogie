@@ -3,10 +3,10 @@ package repository
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"time"
 
 	"github.com/boogie/backend/internal/domain/enums"
+	"github.com/boogie/backend/internal/domain/idgen"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -111,8 +111,16 @@ func (r *PagoRepo) ConfirmarReserva(ctx context.Context, reservaID string) error
 	return err
 }
 
+func (r *PagoRepo) SetReservaPendienteConfirm(ctx context.Context, reservaID string) error {
+	_, err := r.pool.Exec(ctx, `
+		UPDATE reservas SET estado = 'PENDIENTE_CONFIRMACION', fecha_confirmacion = NOW()
+		WHERE id = $1 AND estado IN ('PENDIENTE_PAGO','PENDIENTE')
+	`, reservaID)
+	return err
+}
+
 func (r *PagoRepo) InsertPagoSimple(ctx context.Context, reservaID, usuarioID string, monto float64, moneda enums.Moneda, metodo enums.MetodoPagoEnum, referencia string) (string, error) {
-	id := fmt.Sprintf("%016x", rand.Int63())
+	id := idgen.New()
 	_, err := r.pool.Exec(ctx, `
 		INSERT INTO pagos (id, reserva_id, usuario_id, monto, moneda, metodo_pago, estado, referencia, fecha_creacion)
 		VALUES ($1, $2, $3, $4, $5, $6, 'PENDIENTE', $7, NOW())
@@ -124,7 +132,7 @@ func (r *PagoRepo) InsertPagoSimple(ctx context.Context, reservaID, usuarioID st
 }
 
 func (r *PagoRepo) InsertPagoConComprobante(ctx context.Context, reservaID, usuarioID string, monto float64, moneda enums.Moneda, metodo enums.MetodoPagoEnum, referencia string, comprobanteURL *string, bancoEmisor, telefonoEmisor *string) (string, error) {
-	id := fmt.Sprintf("%016x", rand.Int63())
+	id := idgen.New()
 	_, err := r.pool.Exec(ctx, `
 		INSERT INTO pagos (id, reserva_id, usuario_id, monto, moneda, metodo_pago, estado,
 			referencia, comprobante, banco_emisor, telefono_emisor, fecha_creacion)
@@ -184,7 +192,7 @@ func (r *PagoRepo) GetWallet(ctx context.Context, userID string) (*WalletData, e
 }
 
 func (r *PagoRepo) CreateWallet(ctx context.Context, userID string) error {
-	id := fmt.Sprintf("%016x", rand.Int63())
+	id := idgen.New()
 	_, err := r.pool.Exec(ctx, `
 		INSERT INTO wallets (id, usuario_id, estado, saldo_usd, created_at)
 		VALUES ($1, $2, 'ACTIVA', 0, NOW())
@@ -227,7 +235,7 @@ func (r *PagoRepo) GetWalletTransacciones(ctx context.Context, walletID string) 
 }
 
 func (r *PagoRepo) InsertWalletTransaccion(ctx context.Context, walletID, tipo, descripcion string, montoUSD float64, referenciaID *string) (string, error) {
-	id := fmt.Sprintf("%016x", rand.Int63())
+	id := idgen.New()
 	_, err := r.pool.Exec(ctx, `
 		INSERT INTO wallet_transacciones (id, wallet_id, tipo, monto_usd, descripcion, referencia_id, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6, NOW())

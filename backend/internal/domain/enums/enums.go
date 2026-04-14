@@ -24,6 +24,7 @@ type EstadoReserva string
 const (
 	EstadoReservaPendientePago      EstadoReserva = "PENDIENTE_PAGO"
 	EstadoReservaPendiente          EstadoReserva = "PENDIENTE"
+	EstadoReservaPendienteConfirm   EstadoReserva = "PENDIENTE_CONFIRMACION"
 	EstadoReservaConfirmada         EstadoReserva = "CONFIRMADA"
 	EstadoReservaEnCurso            EstadoReserva = "EN_CURSO"
 	EstadoReservaCompletada         EstadoReserva = "COMPLETADA"

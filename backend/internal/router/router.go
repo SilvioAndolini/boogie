@@ -113,13 +113,14 @@ type SeccionesHandlers struct {
 }
 
 type ReservaHandlers struct {
-	Crear              http.HandlerFunc
-	GetByID            http.HandlerFunc
-	MisReservas        http.HandlerFunc
-	ReservasRecibidas  http.HandlerFunc
-	ConfirmarORechazar http.HandlerFunc
-	Cancelar           http.HandlerFunc
-	Disponibilidad     http.HandlerFunc
+	Crear                  http.HandlerFunc
+	GetByID                http.HandlerFunc
+	MisReservas            http.HandlerFunc
+	ReservasRecibidas      http.HandlerFunc
+	ConfirmarORechazar     http.HandlerFunc
+	Cancelar               http.HandlerFunc
+	Disponibilidad         http.HandlerFunc
+	AutoConfirmarExpiradas http.HandlerFunc
 }
 
 type AdminHandlers struct {
@@ -368,26 +369,17 @@ func New(opts *RouterOpts) http.Handler {
 		}
 
 		if opts.ReservaHandlers != nil {
-			r.Get("/reservas/disponibilidad", opts.ReservaHandlers.Disponibilidad)
-
 			r.Route("/reservas", func(r chi.Router) {
 				r.Use(opts.AuthVerifier.Middleware)
 				r.Post("/", opts.ReservaHandlers.Crear)
 				r.Get("/mias", opts.ReservaHandlers.MisReservas)
 				r.Get("/recibidas", opts.ReservaHandlers.ReservasRecibidas)
+				r.Get("/disponibilidad", opts.ReservaHandlers.Disponibilidad)
+				r.Post("/cron/auto-confirmar", opts.ReservaHandlers.AutoConfirmarExpiradas)
 				r.Get("/{id}", opts.ReservaHandlers.GetByID)
-				r.Get("/{id}/store-items", func(w http.ResponseWriter, r *http.Request) {
-					w.WriteHeader(http.StatusNotImplemented)
-				})
 				r.Post("/{id}/cancelar", opts.ReservaHandlers.Cancelar)
-				r.Post("/{id}/confirmar", func(w http.ResponseWriter, r *http.Request) {
-					r.URL.RawQuery += "&accion=confirmar"
-					opts.ReservaHandlers.ConfirmarORechazar.ServeHTTP(w, r)
-				})
-				r.Post("/{id}/rechazar", func(w http.ResponseWriter, r *http.Request) {
-					r.URL.RawQuery += "&accion=rechazar"
-					opts.ReservaHandlers.ConfirmarORechazar.ServeHTTP(w, r)
-				})
+				r.Post("/{id}/confirmar", opts.ReservaHandlers.ConfirmarORechazar)
+				r.Post("/{id}/rechazar", opts.ReservaHandlers.ConfirmarORechazar)
 			})
 		}
 

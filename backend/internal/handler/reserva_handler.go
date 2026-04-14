@@ -1,22 +1,24 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/boogie/backend/internal/auth"
-	"github.com/boogie/backend/internal/domain/enums"
+	bizerrors "github.com/boogie/backend/internal/domain/errors"
 	"github.com/boogie/backend/internal/repository"
 	"github.com/boogie/backend/internal/service"
 	"github.com/go-chi/chi/v5"
 )
 
 type ReservaHandler struct {
-	svc        *service.ReservaService
-	disponSvc  *service.ReservaDisponibilidad
+	svc       *service.ReservaService
+	disponSvc *service.ReservaDisponibilidad
 }
 
 func NewReservaHandler(svc *service.ReservaService, disponSvc *service.ReservaDisponibilidad) *ReservaHandler {
@@ -49,19 +51,13 @@ func (h *ReservaHandler) Crear(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fechaEntrada, err := time.Parse("2006-01-02", req.FechaEntrada)
-	if err != nil {
-		fechaEntrada, err = time.Parse(time.RFC3339, req.FechaEntrada)
-	}
+	fechaEntrada, err := parseFlexibleDate(req.FechaEntrada)
 	if err != nil {
 		ErrorJSON(w, http.StatusBadRequest, "INVALID_FECHA_ENTRADA", "fechaEntrada invalida (formato: YYYY-MM-DD)")
 		return
 	}
 
-	fechaSalida, err := time.Parse("2006-01-02", req.FechaSalida)
-	if err != nil {
-		fechaSalida, err = time.Parse(time.RFC3339, req.FechaSalida)
-	}
+	fechaSalida, err := parseFlexibleDate(req.FechaSalida)
 	if err != nil {
 		ErrorJSON(w, http.StatusBadRequest, "INVALID_FECHA_SALIDA", "fechaSalida invalida (formato: YYYY-MM-DD)")
 		return
@@ -81,30 +77,25 @@ func (h *ReservaHandler) Crear(w http.ResponseWriter, r *http.Request) {
 		NotasHuesped:      req.NotasHuesped,
 	})
 	if err != nil {
-		slog.Error("[reservas/crear] error", "error", err, "userId", userID, "propId", req.PropiedadID)
-		if isBusinessError(err) {
-			ErrorJSON(w, http.StatusBadRequest, "RESERVA_ERROR", err.Error())
-			return
-		}
-		ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Error al crear reserva")
+		handleBusinessError(w, err, "[reservas/crear]", userID, req.PropiedadID)
 		return
 	}
 
 	JSON(w, http.StatusCreated, map[string]interface{}{
-		"id":               result.Reserva.ID,
-		"codigo":           result.Reserva.Codigo,
-		"propiedadId":      result.Reserva.PropiedadID,
-		"fechaEntrada":     result.Reserva.FechaEntrada,
-		"fechaSalida":      result.Reserva.FechaSalida,
-		"noches":           result.Reserva.Noches,
-		"precioPorNoche":   result.Reserva.PrecioPorNoche,
-		"subtotal":         result.Reserva.Subtotal,
+		"id":                 result.Reserva.ID,
+		"codigo":             result.Reserva.Codigo,
+		"propiedadId":        result.Reserva.PropiedadID,
+		"fechaEntrada":       result.Reserva.FechaEntrada,
+		"fechaSalida":        result.Reserva.FechaSalida,
+		"noches":             result.Reserva.Noches,
+		"precioPorNoche":     result.Reserva.PrecioPorNoche,
+		"subtotal":           result.Reserva.Subtotal,
 		"comisionPlataforma": result.Reserva.ComisionPlataforma,
-		"comisionAnfitrion": result.Reserva.ComisionAnfitrion,
-		"total":            result.Reserva.Total,
-		"moneda":           result.Reserva.Moneda,
-		"cantidadHuespedes": result.Reserva.CantidadHuespedes,
-		"estado":           result.Reserva.Estado,
+		"comisionAnfitrion":  result.Reserva.ComisionAnfitrion,
+		"total":              result.Reserva.Total,
+		"moneda":             result.Reserva.Moneda,
+		"cantidadHuespedes":  result.Reserva.CantidadHuespedes,
+		"estado":             result.Reserva.Estado,
 	})
 }
 
@@ -123,7 +114,8 @@ func (h *ReservaHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 	detalle, err := h.svc.GetByID(r.Context(), reservaID, userID)
 	if err != nil {
-		ErrorJSON(w, http.StatusNotFound, "NOT_FOUND", err.Error())
+		status, code := mapBizErrorToHTTP(err)
+		ErrorJSON(w, status, code, err.Error())
 		return
 	}
 
@@ -217,11 +209,8 @@ func (h *ReservaHandler) ConfirmarORechazar(w http.ResponseWriter, r *http.Reque
 	err := h.svc.ConfirmarORechazar(r.Context(), reservaID, userID, service.TransicionEstado(req.Accion), req.Motivo)
 	if err != nil {
 		slog.Error("[reservas/confirmar-rechazar] error", "error", err, "reservaId", reservaID)
-		if isBusinessError(err) {
-			ErrorJSON(w, http.StatusBadRequest, "ACCION_ERROR", err.Error())
-			return
-		}
-		ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Error al procesar accion")
+		status, code := mapBizErrorToHTTP(err)
+		ErrorJSON(w, status, code, err.Error())
 		return
 	}
 
@@ -261,11 +250,8 @@ func (h *ReservaHandler) Cancelar(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		slog.Error("[reservas/cancelar] error", "error", err, "reservaId", reservaID)
-		if isBusinessError(err) {
-			ErrorJSON(w, http.StatusBadRequest, "CANCEL_ERROR", err.Error())
-			return
-		}
-		ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Error al cancelar reserva")
+		status, code := mapBizErrorToHTTP(err)
+		ErrorJSON(w, status, code, err.Error())
 		return
 	}
 
@@ -278,132 +264,6 @@ func (h *ReservaHandler) Cancelar(w http.ResponseWriter, r *http.Request) {
 	}
 
 	JSON(w, http.StatusOK, resp)
-}
-
-func (h *ReservaHandler) Stats(w http.ResponseWriter, r *http.Request) {
-	userID := auth.GetUserID(r.Context())
-	if userID == "" {
-		ErrorJSON(w, http.StatusUnauthorized, "AUTH_REQUIRED", "No autenticado")
-		return
-	}
-
-	rol := r.URL.Query().Get("rol")
-	esPropietario := rol == "anfitrion"
-
-	stats, err := h.svc.GetStats(r.Context(), userID, esPropietario)
-	if err != nil {
-		slog.Error("[reservas/stats] error", "error", err)
-		ErrorJSON(w, http.StatusInternalServerError, "STATS_ERROR", "Error al obtener estadisticas")
-		return
-	}
-
-	JSON(w, http.StatusOK, stats)
-}
-
-func (h *ReservaHandler) Pagos(w http.ResponseWriter, r *http.Request) {
-	userID := auth.GetUserID(r.Context())
-	if userID == "" {
-		ErrorJSON(w, http.StatusUnauthorized, "AUTH_REQUIRED", "No autenticado")
-		return
-	}
-
-	reservaID := chi.URLParam(r, "id")
-	if reservaID == "" {
-		ErrorJSON(w, http.StatusBadRequest, "MISSING_ID", "ID de reserva requerido")
-		return
-	}
-
-	pagos, err := h.svc.GetPagos(r.Context(), reservaID, userID)
-	if err != nil {
-		ErrorJSON(w, http.StatusNotFound, "NOT_FOUND", err.Error())
-		return
-	}
-
-	if pagos == nil {
-		pagos = []repository.PagoResumen{}
-	}
-
-	JSON(w, http.StatusOK, pagos)
-}
-
-type registrarPagoRequest struct {
-	ReservaID      string  `json:"reservaId"`
-	Monto          float64 `json:"monto"`
-	Moneda         string  `json:"moneda"`
-	MetodoPago     string  `json:"metodoPago"`
-	Referencia     string  `json:"referencia"`
-	ComprobanteURL *string `json:"comprobanteUrl"`
-	BancoEmisor    *string `json:"bancoEmisor"`
-	TelefonoEmisor *string `json:"telefonoEmisor"`
-	Notas          *string `json:"notas"`
-}
-
-func (h *ReservaHandler) RegistrarPago(w http.ResponseWriter, r *http.Request) {
-	userID := auth.GetUserID(r.Context())
-	if userID == "" {
-		ErrorJSON(w, http.StatusUnauthorized, "AUTH_REQUIRED", "No autenticado")
-		return
-	}
-
-	var req registrarPagoRequest
-	if err := DecodeJSON(r, &req); err != nil {
-		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "JSON invalido")
-		return
-	}
-
-	if req.ReservaID == "" {
-		ErrorJSON(w, http.StatusBadRequest, "MISSING_RESERVA_ID", "reservaId es requerido")
-		return
-	}
-	if req.Monto <= 0 {
-		ErrorJSON(w, http.StatusBadRequest, "INVALID_MONTO", "monto debe ser mayor a 0")
-		return
-	}
-	if req.MetodoPago == "" {
-		ErrorJSON(w, http.StatusBadRequest, "MISSING_METODO", "metodoPago es requerido")
-		return
-	}
-
-	validMetodos := map[string]bool{
-		"TRANSFERENCIA_BANCARIA": true, "PAGO_MOVIL": true, "ZELLE": true,
-		"EFECTIVO_FARMATODO": true, "EFECTIVO": true,
-	}
-	if !validMetodos[req.MetodoPago] {
-		ErrorJSON(w, http.StatusBadRequest, "INVALID_METODO", "metodo de pago invalido")
-		return
-	}
-
-	moneda := enums.Moneda(req.Moneda)
-	if moneda != enums.MonedaUSD && moneda != enums.MonedaVES {
-		moneda = enums.MonedaUSD
-	}
-
-	pagoID, err := h.svc.RegistrarPago(r.Context(), &repository.NuevoPago{
-		ReservaID:      req.ReservaID,
-		UsuarioID:      userID,
-		Monto:          req.Monto,
-		Moneda:         moneda,
-		MetodoPago:     enums.MetodoPagoEnum(req.MetodoPago),
-		Referencia:     req.Referencia,
-		ComprobanteURL: req.ComprobanteURL,
-		BancoEmisor:    req.BancoEmisor,
-		TelefonoEmisor: req.TelefonoEmisor,
-		Notas:          req.Notas,
-	}, userID)
-	if err != nil {
-		slog.Error("[reservas/registrar-pago] error", "error", err)
-		if isBusinessError(err) {
-			ErrorJSON(w, http.StatusBadRequest, "PAGO_ERROR", err.Error())
-			return
-		}
-		ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Error al registrar pago")
-		return
-	}
-
-	JSON(w, http.StatusCreated, map[string]interface{}{
-		"id":      pagoID,
-		"mensaje": "Pago registrado exitosamente",
-	})
 }
 
 type disponibilidadRequest struct {
@@ -422,18 +282,12 @@ func (h *ReservaHandler) Disponibilidad(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	fechaEntrada, err := time.Parse("2006-01-02", fe)
-	if err != nil {
-		fechaEntrada, err = time.Parse(time.RFC3339, fe)
-	}
+	fechaEntrada, err := parseFlexibleDate(fe)
 	if err != nil {
 		ErrorJSON(w, http.StatusBadRequest, "INVALID_FECHA", "fechaEntrada invalida")
 		return
 	}
-	fechaSalida, err := time.Parse("2006-01-02", fs)
-	if err != nil {
-		fechaSalida, err = time.Parse(time.RFC3339, fs)
-	}
+	fechaSalida, err := parseFlexibleDate(fs)
 	if err != nil {
 		ErrorJSON(w, http.StatusBadRequest, "INVALID_FECHA", "fechaSalida invalida")
 		return
@@ -464,35 +318,85 @@ func getPagination(r *http.Request) (page, perPage int) {
 	return
 }
 
+// parseFlexibleDate tries YYYY-MM-DD first, then RFC3339.
+func parseFlexibleDate(s string) (time.Time, error) {
+	t, err := time.Parse("2006-01-02", s)
+	if err == nil {
+		return t, nil
+	}
+	return time.Parse(time.RFC3339, s)
+}
+
+// mapBizErrorToHTTP maps a BusinessError code to an HTTP status.
+func mapBizErrorToHTTP(err error) (int, string) {
+	var bizErr *bizerrors.BusinessError
+	if errors.As(err, &bizErr) {
+		switch bizErr.Code {
+		case bizerrors.CodeNotFound:
+			return http.StatusNotFound, "NOT_FOUND"
+		case bizerrors.CodeForbidden:
+			return http.StatusForbidden, "FORBIDDEN"
+		case bizerrors.CodeValidation, bizerrors.CodeBadRequest:
+			return http.StatusBadRequest, "RESERVA_ERROR"
+		case bizerrors.CodeConflict:
+			return http.StatusConflict, "CONFLICT"
+		case bizerrors.CodeStateConflict:
+			return http.StatusBadRequest, "STATE_ERROR"
+		default:
+			return http.StatusBadRequest, "RESERVA_ERROR"
+		}
+	}
+	return http.StatusInternalServerError, "INTERNAL_ERROR"
+}
+
+// handleBusinessError logs and responds for reserva operations.
+func handleBusinessError(w http.ResponseWriter, err error, logPrefix, userID, propID string) {
+	var bizErr *bizerrors.BusinessError
+	if errors.As(err, &bizErr) {
+		status, code := mapBizErrorToHTTP(err)
+		slog.Error(logPrefix, "error", err, "code", bizErr.Code)
+		ErrorJSON(w, status, code, err.Error())
+		return
+	}
+	slog.Error(logPrefix, "error", err, "userId", userID, "propId", propID)
+	ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Error al procesar reserva")
+}
+
+// isBusinessError provides backward-compatible error classification for
+// errors that haven't been migrated to typed BusinessError yet.
 func isBusinessError(err error) bool {
 	if err == nil {
 		return false
 	}
-	msg := err.Error()
-	businessErrors := []string{
+	var bizErr *bizerrors.BusinessError
+	if errors.As(err, &bizErr) {
+		return true
+	}
+	msg := strings.ToLower(err.Error())
+	businessSubstrings := []string{
 		"no encontrada", "no publicada", "tu propia propiedad",
 		"capacidad maxima", "estancia minima", "estancia maxima",
 		"pasado", "posterior", "entre 1 y 365",
 		"disponib", "bloqueada", "permisos", "no se puede",
 		"no esta en estado", "solo el huesped",
 	}
-	for _, be := range businessErrors {
-		if contains(msg, be) {
+	for _, sub := range businessSubstrings {
+		if strings.Contains(msg, sub) {
 			return true
 		}
 	}
 	return false
 }
 
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > 0 && containsSubstr(s, substr))
-}
-
-func containsSubstr(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
+func (h *ReservaHandler) AutoConfirmarExpiradas(w http.ResponseWriter, r *http.Request) {
+	confirmadas, err := h.svc.AutoConfirmarExpiradas(r.Context())
+	if err != nil {
+		slog.Error("[reserva/auto-confirmar] error", "error", err)
+		ErrorJSON(w, http.StatusInternalServerError, "AUTO_CONFIRM_ERROR", "Error al auto-confirmar")
+		return
 	}
-	return false
+	JSON(w, http.StatusOK, map[string]interface{}{
+		"ok":          true,
+		"confirmadas": confirmadas,
+	})
 }

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/boogie/backend/internal/domain/enums"
+	bizerrors "github.com/boogie/backend/internal/domain/errors"
 	"github.com/boogie/backend/internal/domain/models"
 	"github.com/boogie/backend/internal/repository"
 )
@@ -55,44 +56,44 @@ func NewReservaService(repo *repository.ReservaRepo, comisionH, comisionA float6
 func (s *ReservaService) Crear(ctx context.Context, input *CrearReservaInput) (*CrearReservaResult, error) {
 	prop, err := s.repo.GetPropiedadForReserva(ctx, input.PropiedadID)
 	if err != nil {
-		return nil, fmt.Errorf("propiedad no encontrada")
+		return nil, bizerrors.PropiedadNoEncontrada()
 	}
 
 	if prop.Estado != string(enums.EstadoPublicacionPublicada) {
-		return nil, fmt.Errorf("la propiedad no esta publicada")
+		return nil, bizerrors.PropiedadNoPublicada()
 	}
 
 	if prop.PropietarioID == input.HuespedID {
-		return nil, fmt.Errorf("no puedes reservar tu propia propiedad")
+		return nil, bizerrors.PropiedadPropia()
 	}
 
 	if input.CantidadHuespedes > prop.Capacidad {
-		return nil, fmt.Errorf("capacidad maxima es %d huespedes", prop.Capacidad)
+		return nil, bizerrors.CapacidadExcedida(prop.Capacidad)
 	}
 
 	noches := int(time.Date(input.FechaSalida.Year(), input.FechaSalida.Month(), input.FechaSalida.Day(), 0, 0, 0, 0, time.UTC).
 		Sub(time.Date(input.FechaEntrada.Year(), input.FechaEntrada.Month(), input.FechaEntrada.Day(), 0, 0, 0, 0, time.UTC)).Hours() / 24)
 	if noches < prop.EstanciaMinima {
-		return nil, fmt.Errorf("estancia minima es de %d noches", prop.EstanciaMinima)
+		return nil, bizerrors.EstanciaInvalida(fmt.Sprintf("estancia minima es de %d noches", prop.EstanciaMinima))
 	}
 	if prop.EstanciaMaxima > 0 && noches > prop.EstanciaMaxima {
-		return nil, fmt.Errorf("estancia maxima es de %d noches", prop.EstanciaMaxima)
+		return nil, bizerrors.EstanciaInvalida(fmt.Sprintf("estancia maxima es de %d noches", prop.EstanciaMaxima))
 	}
 
 	now := time.Now()
 	hoy := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	entrada := time.Date(input.FechaEntrada.Year(), input.FechaEntrada.Month(), input.FechaEntrada.Day(), 0, 0, 0, 0, input.FechaEntrada.Location())
 	if entrada.Before(hoy) {
-		return nil, fmt.Errorf("la fecha de entrada no puede ser en el pasado")
+		return nil, bizerrors.FechaPasada()
 	}
 
 	salida := time.Date(input.FechaSalida.Year(), input.FechaSalida.Month(), input.FechaSalida.Day(), 0, 0, 0, 0, input.FechaSalida.Location())
 	if !salida.After(entrada) {
-		return nil, fmt.Errorf("la fecha de salida debe ser posterior a la de entrada")
+		return nil, bizerrors.FechaSalidaInvalida()
 	}
 
 	if noches < 1 || noches > 365 {
-		return nil, fmt.Errorf("estancia debe ser entre 1 y 365 noches")
+		return nil, bizerrors.NochesFueraDeRango()
 	}
 
 	reserva, err := s.repo.Crear(ctx, prop, input.HuespedID, input.FechaEntrada, input.FechaSalida, input.CantidadHuespedes, input.NotasHuesped, s.comisionH, s.comisionA)
@@ -100,13 +101,15 @@ func (s *ReservaService) Crear(ctx context.Context, input *CrearReservaInput) (*
 		return nil, fmt.Errorf("error al crear reserva: %w", err)
 	}
 
-	_ = s.repo.InsertNotificacion(ctx,
+	if err := s.repo.InsertNotificacion(ctx,
 		"NUEVA_RESERVA",
 		"Nueva reserva recibida",
 		fmt.Sprintf("Tienes una nueva reserva para \"%s\"", prop.Titulo),
 		prop.PropietarioID,
 		"/dashboard/reservas-recibidas",
-	)
+	); err != nil {
+		slog.Error("[reserva-service] notificacion nueva reserva", "error", err)
+	}
 
 	return &CrearReservaResult{Reserva: reserva}, nil
 }
@@ -114,15 +117,26 @@ func (s *ReservaService) Crear(ctx context.Context, input *CrearReservaInput) (*
 func (s *ReservaService) ConfirmarORechazar(ctx context.Context, reservaID, userID string, accion TransicionEstado, motivo *string) error {
 	detalle, err := s.repo.GetByID(ctx, reservaID)
 	if err != nil {
-		return fmt.Errorf("reserva no encontrada")
+		return bizerrors.ReservaNoEncontrada()
 	}
 
 	if detalle.PropietarioID != userID {
-		return fmt.Errorf("no tienes permisos para esta accion")
+		return bizerrors.Permisos("no tienes permisos para esta accion")
 	}
 
-	if detalle.Estado != enums.EstadoReservaPendiente {
-		return fmt.Errorf("la reserva no esta en estado PENDIENTE")
+	if detalle.Estado != enums.EstadoReservaPendienteConfirm {
+		return bizerrors.EstadoInvalido("la reserva no esta pendiente de confirmacion")
+	}
+
+	ventanaConfirmacion := 1 * time.Hour
+	if detalle.FechaConfirmacion != nil {
+		deadline := detalle.FechaConfirmacion.Add(ventanaConfirmacion)
+		if time.Now().After(deadline) {
+			if err := s.repo.Confirmar(ctx, reservaID); err != nil {
+				return err
+			}
+			return bizerrors.EstadoInvalido("la ventana de 1 hora ha expirado, la reserva fue confirmada automaticamente")
+		}
 	}
 
 	motivoStr := ""
@@ -135,39 +149,89 @@ func (s *ReservaService) ConfirmarORechazar(ctx context.Context, reservaID, user
 		if err := s.repo.Confirmar(ctx, reservaID); err != nil {
 			return err
 		}
-		_ = s.repo.InsertNotificacion(ctx,
+		if err := s.repo.InsertNotificacion(ctx,
 			"RESERVA_CONFIRMADA",
 			"Reserva confirmada",
 			fmt.Sprintf("Tu reserva para \"%s\" ha sido confirmada", detalle.PropiedadTitulo),
 			detalle.HuespedID,
 			"/dashboard/mis-reservas",
-		)
+		); err != nil {
+			slog.Error("[reserva-service] notificacion confirmar", "error", err)
+		}
+
 	case TransicionRechazar:
+		rechazosMes, err := s.repo.CountRechazosMes(ctx, userID)
+		if err != nil {
+			slog.Error("[reserva-service] count rechazos", "error", err)
+			rechazosMes = 0
+		}
+
+		if rechazosMes >= 3 {
+			penalty := (rechazosMes - 3 + 1) * 20
+			slog.Warn("[reserva-service] anfitrion excedio rechazos mensuales",
+				"userID", userID, "rechazos", rechazosMes, "penaltyPct", penalty)
+			if err := s.repo.RegistrarPenalizacion(ctx, userID, float64(penalty), fmt.Sprintf("Rechazo #%d del mes - %d%% penalizacion", rechazosMes+1, penalty)); err != nil {
+				slog.Error("[reserva-service] registrar penalizacion", "error", err)
+			}
+		}
+
 		if err := s.repo.Rechazar(ctx, reservaID, motivoStr); err != nil {
 			return err
 		}
-		_ = s.repo.InsertNotificacion(ctx,
+
+		if err := s.repo.RegistrarRechazo(ctx, userID, reservaID, motivoStr); err != nil {
+			slog.Error("[reserva-service] registrar rechazo", "error", err)
+		}
+
+		if err := s.repo.InsertNotificacion(ctx,
 			"RESERVA_RECHAZADA",
 			"Reserva rechazada",
 			fmt.Sprintf("Tu reserva para \"%s\" ha sido rechazada", detalle.PropiedadTitulo),
 			detalle.HuespedID,
 			"/dashboard/mis-reservas",
-		)
+		); err != nil {
+			slog.Error("[reserva-service] notificacion rechazar", "error", err)
+		}
+
+		if detalle.FechaConfirmacion != nil {
+			slog.Info("[reserva-service] reserva con pago verificado rechazada - requiere reembolso",
+				"reservaID", reservaID, "huespedID", detalle.HuespedID)
+		}
+
 	default:
-		return fmt.Errorf("accion invalida")
+		return bizerrors.AccionInvalida("accion invalida")
 	}
 
 	return nil
 }
 
+func (s *ReservaService) AutoConfirmarExpiradas(ctx context.Context) (int, error) {
+	ventana := 1 * time.Hour
+	ids, err := s.repo.GetReservasExpiradas(ctx, ventana)
+	if err != nil {
+		return 0, fmt.Errorf("auto-confirmar expiradas: %w", err)
+	}
+
+	confirmadas := 0
+	for _, id := range ids {
+		if err := s.repo.Confirmar(ctx, id); err != nil {
+			slog.Error("[reserva-service] auto-confirmar", "error", err, "reservaID", id)
+			continue
+		}
+		confirmadas++
+		slog.Info("[reserva-service] reserva auto-confirmada por expiracion", "reservaID", id)
+	}
+	return confirmadas, nil
+}
+
 func (s *ReservaService) Cancelar(ctx context.Context, input *CancelarInput) (*ReembolsoCalculado, error) {
 	detalle, err := s.repo.GetByID(ctx, input.ReservaID)
 	if err != nil {
-		return nil, fmt.Errorf("reserva no encontrada")
+		return nil, bizerrors.ReservaNoEncontrada()
 	}
 
 	if detalle.Estado != enums.EstadoReservaPendiente && detalle.Estado != enums.EstadoReservaConfirmada {
-		return nil, fmt.Errorf("la reserva no se puede cancelar en su estado actual")
+		return nil, bizerrors.EstadoInvalido("la reserva no se puede cancelar en su estado actual")
 	}
 
 	motivoStr := "Sin motivo"
@@ -185,27 +249,31 @@ func (s *ReservaService) Cancelar(ctx context.Context, input *CancelarInput) (*R
 		reembolsoResult := CalcularReembolso(detalle.Total, detalle.ComisionPlataforma, politica, detalle.FechaEntrada)
 		reembolso = &reembolsoResult
 
-		_ = s.repo.InsertNotificacion(ctx,
+		if err := s.repo.InsertNotificacion(ctx,
 			"RESERVA_CANCELADA",
 			"Reserva cancelada por el huesped",
 			fmt.Sprintf("La reserva para \"%s\" ha sido cancelada", detalle.PropiedadTitulo),
 			detalle.PropietarioID,
 			"/dashboard/reservas-recibidas",
-		)
+		); err != nil {
+			slog.Error("[reserva-service] notificacion cancelar huesped", "error", err)
+		}
 	} else if detalle.PropietarioID == input.UserID {
 		if err := s.repo.CancelarAnfitrion(ctx, input.ReservaID, motivoStr); err != nil {
 			return nil, err
 		}
 
-		_ = s.repo.InsertNotificacion(ctx,
+		if err := s.repo.InsertNotificacion(ctx,
 			"RESERVA_CANCELADA",
 			"Reserva cancelada por el anfitrion",
 			fmt.Sprintf("La reserva para \"%s\" ha sido cancelada por el anfitrion", detalle.PropiedadTitulo),
 			detalle.HuespedID,
 			"/dashboard/mis-reservas",
-		)
+		); err != nil {
+			slog.Error("[reserva-service] notificacion cancelar anfitrion", "error", err)
+		}
 	} else {
-		return nil, fmt.Errorf("no tienes permisos para cancelar esta reserva")
+		return nil, bizerrors.Permisos("no tienes permisos para cancelar esta reserva")
 	}
 
 	return reembolso, nil
@@ -214,11 +282,11 @@ func (s *ReservaService) Cancelar(ctx context.Context, input *CancelarInput) (*R
 func (s *ReservaService) GetByID(ctx context.Context, reservaID, userID string) (*repository.ReservaDetalle, error) {
 	detalle, err := s.repo.GetByID(ctx, reservaID)
 	if err != nil {
-		return nil, fmt.Errorf("reserva no encontrada")
+		return nil, bizerrors.ReservaNoEncontrada()
 	}
 
 	if userID != "" && detalle.HuespedID != userID && detalle.PropietarioID != userID {
-		return nil, fmt.Errorf("no tienes permisos para ver esta reserva")
+		return nil, bizerrors.Permisos("no tienes permisos para ver esta reserva")
 	}
 
 	return detalle, nil
@@ -253,11 +321,11 @@ func (s *ReservaService) GetStats(ctx context.Context, userID string, esPropieta
 func (s *ReservaService) GetPagos(ctx context.Context, reservaID, userID string) ([]repository.PagoResumen, error) {
 	detalle, err := s.repo.GetByID(ctx, reservaID)
 	if err != nil {
-		return nil, fmt.Errorf("reserva no encontrada")
+		return nil, bizerrors.ReservaNoEncontrada()
 	}
 
 	if detalle.HuespedID != userID && detalle.PropietarioID != userID {
-		return nil, fmt.Errorf("no tienes permisos")
+		return nil, bizerrors.Permisos("no tienes permisos")
 	}
 
 	return s.repo.GetPagosByReserva(ctx, reservaID)
@@ -266,16 +334,16 @@ func (s *ReservaService) GetPagos(ctx context.Context, reservaID, userID string)
 func (s *ReservaService) RegistrarPago(ctx context.Context, pago *repository.NuevoPago, userID string) (string, error) {
 	detalle, err := s.repo.GetByID(ctx, pago.ReservaID)
 	if err != nil {
-		return "", fmt.Errorf("reserva no encontrada")
+		return "", bizerrors.ReservaNoEncontrada()
 	}
 
 	if detalle.HuespedID != userID {
-		return "", fmt.Errorf("solo el huesped puede registrar pagos")
+		return "", bizerrors.PagoSoloHuesped()
 	}
 
 	if !strings.EqualFold(string(detalle.Estado), string(enums.EstadoReservaPendiente)) &&
 		!strings.EqualFold(string(detalle.Estado), string(enums.EstadoReservaConfirmada)) {
-		slog.Warn("pago registrado para reserva no pendiente/confirmada", "reservaId", pago.ReservaID, "estado", string(detalle.Estado))
+		slog.Warn("[reserva-service] pago registrado para reserva no pendiente/confirmada", "reservaId", pago.ReservaID, "estado", string(detalle.Estado))
 	}
 
 	return s.repo.InsertPagoManual(ctx, pago)

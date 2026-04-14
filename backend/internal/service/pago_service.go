@@ -54,9 +54,9 @@ func (s *PagoService) Verificar(ctx context.Context, pagoID, userID string, apro
 		return fmt.Errorf("error al verificar pago: %w", err)
 	}
 
-	if aprobado && estadoReserva == "PENDIENTE" {
-		if err := s.pagoRepo.ConfirmarReserva(ctx, reservaID); err != nil {
-			slog.Warn("[pago/verificar] no se pudo confirmar reserva", "error", err)
+	if aprobado && (estadoReserva == "PENDIENTE" || estadoReserva == "PENDIENTE_PAGO") {
+		if err := s.pagoRepo.SetReservaPendienteConfirm(ctx, reservaID); err != nil {
+			slog.Warn("[pago/verificar] no se pudo pasar a PENDIENTE_CONFIRMACION", "error", err)
 		}
 	}
 
