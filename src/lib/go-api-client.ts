@@ -97,46 +97,4 @@ export async function goDelete<T = unknown>(path: string): Promise<T> {
   return goApi<T>(path, { method: 'DELETE' })
 }
 
-export type GoModule =
-  | 'exchange'
-  | 'webhooks'
-  | 'propiedades'
-  | 'reservas'
-  | 'pagos'
-  | 'reviews'
-  | 'verificacion'
-  | 'admin'
-  | 'auth'
-  | 'chat'
-  | 'ofertas'
-  | 'wallet'
-  | 'tienda'
-  | 'metodos-pago'
-  | 'perfil'
-  | 'dashboard'
-  | 'secciones'
-
-export function useGoBackend(module: GoModule): boolean {
-  const flags: Record<GoModule, boolean> = {
-    exchange: process.env.GO_BACKEND_EXCHANGE === 'true',
-    webhooks: process.env.GO_BACKEND_WEBHOOKS === 'true',
-    propiedades: process.env.GO_BACKEND_PROPIEDADES === 'true',
-    reservas: process.env.GO_BACKEND_RESERVAS === 'true',
-    pagos: process.env.GO_BACKEND_PAGOS === 'true',
-    reviews: process.env.GO_BACKEND_REVIEWS === 'true',
-    verificacion: process.env.GO_BACKEND_VERIFICACION === 'true',
-    admin: process.env.GO_BACKEND_ADMIN === 'true',
-    auth: process.env.GO_BACKEND_AUTH === 'true',
-    chat: process.env.GO_BACKEND_CHAT === 'true',
-    ofertas: process.env.GO_BACKEND_OFERTAS === 'true',
-    wallet: process.env.GO_BACKEND_WALLET === 'true',
-    tienda: process.env.GO_BACKEND_TIENDA === 'true',
-    'metodos-pago': process.env.GO_BACKEND_METODOS_PAGO === 'true',
-    perfil: process.env.GO_BACKEND_PERFIL === 'true',
-    dashboard: process.env.GO_BACKEND_DASHBOARD === 'true',
-    secciones: process.env.GO_BACKEND_SECCIONES === 'true',
-  }
-  return flags[module] ?? false
-}
-
 export { GoAPIError, goFetch, getAuthToken }

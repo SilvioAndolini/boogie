@@ -1,36 +1,19 @@
 'use server'
 
 import { getUsuarioAutenticado } from '@/lib/auth'
-import { goGet, goPost, goDelete, useGoBackend } from '@/lib/go-api-client'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { goGet, goPost, goDelete } from '@/lib/go-api-client'
 import { revalidatePath } from 'next/cache'
 
 export async function getMetodosPago() {
   const user = await getUsuarioAutenticado()
   if (!user) return { error: 'No autenticado' }
 
-  if (useGoBackend('metodos-pago')) {
-    try {
-      const metodos = await goGet('/api/v1/metodos-pago')
-      return { metodos }
-    } catch (err: any) {
-      return { error: err.message || 'Error al consultar metodos de pago' }
-    }
+  try {
+    const metodos = await goGet('/api/v1/metodos-pago')
+    return { metodos }
+  } catch (err: any) {
+    return { error: err.message || 'Error al consultar metodos de pago' }
   }
-
-  const supabase = createAdminClient()
-  const { data, error } = await supabase
-    .from('metodos_pago')
-    .select('*')
-    .eq('usuario_id', user.id)
-    .order('principal', { ascending: false })
-
-  if (error) {
-    console.error('[getMetodosPago] Error:', error.message)
-    return { error: 'Error al consultar métodos de pago' }
-  }
-
-  return { metodos: data }
 }
 
 export async function crearMetodoPago(datos: {
@@ -46,82 +29,24 @@ export async function crearMetodoPago(datos: {
   const user = await getUsuarioAutenticado()
   if (!user) return { error: 'No autenticado' }
 
-  if (useGoBackend('metodos-pago')) {
-    try {
-      const metodo = await goPost('/api/v1/metodos-pago', datos)
-      revalidatePath('/dashboard/pagos/configuracion')
-      return { metodo }
-    } catch (err: any) {
-      return { error: err.message || 'Error al guardar el metodo de pago' }
-    }
+  try {
+    const metodo = await goPost('/api/v1/metodos-pago', datos)
+    revalidatePath('/dashboard/pagos/configuracion')
+    return { metodo }
+  } catch (err: any) {
+    return { error: err.message || 'Error al guardar el metodo de pago' }
   }
-
-  const supabase = createAdminClient()
-
-  const { data: existentes } = await supabase
-    .from('metodos_pago')
-    .select('id')
-    .eq('usuario_id', user.id)
-    .eq('tipo', datos.tipo)
-
-  if (existentes && existentes.length > 0) {
-    return { error: 'Ya tienes un método de este tipo configurado' }
-  }
-
-  const { data, error } = await supabase
-    .from('metodos_pago')
-    .insert({
-      id: crypto.randomUUID(),
-      usuario_id: user.id,
-      tipo: datos.tipo,
-      banco: datos.banco || null,
-      telefono: datos.telefono || null,
-      cedula: datos.cedula || null,
-      numero_cuenta: datos.numero_cuenta || null,
-      titular: datos.titular || null,
-      email_zelle: datos.email_zelle || null,
-      direccion_usdt: datos.direccion_usdt || null,
-      activo: true,
-      principal: false,
-    })
-    .select()
-    .single()
-
-  if (error) {
-    console.error('[crearMetodoPago] Error:', error.message)
-    return { error: 'Error al guardar el método de pago' }
-  }
-
-  revalidatePath('/dashboard/pagos/configuracion')
-  return { metodo: data }
 }
 
 export async function eliminarMetodoPago(id: string) {
   const user = await getUsuarioAutenticado()
   if (!user) return { error: 'No autenticado' }
 
-  if (useGoBackend('metodos-pago')) {
-    try {
-      await goDelete(`/api/v1/metodos-pago/${id}`)
-      revalidatePath('/dashboard/pagos/configuracion')
-      return { exito: true }
-    } catch (err: any) {
-      return { error: err.message || 'Error al eliminar el metodo de pago' }
-    }
+  try {
+    await goDelete(`/api/v1/metodos-pago/${id}`)
+    revalidatePath('/dashboard/pagos/configuracion')
+    return { exito: true }
+  } catch (err: any) {
+    return { error: err.message || 'Error al eliminar el metodo de pago' }
   }
-
-  const supabase = createAdminClient()
-  const { error } = await supabase
-    .from('metodos_pago')
-    .delete()
-    .eq('id', id)
-    .eq('usuario_id', user.id)
-
-  if (error) {
-    console.error('[eliminarMetodoPago] Error:', error.message)
-    return { error: 'Error al eliminar el método de pago' }
-  }
-
-  revalidatePath('/dashboard/pagos/configuracion')
-  return { exito: true }
 }

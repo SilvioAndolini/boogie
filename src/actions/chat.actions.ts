@@ -1,15 +1,9 @@
 'use server'
 
 import { getUsuarioAutenticado } from '@/lib/auth'
-import { createAdminClient } from '@/lib/supabase/admin'
-import { goGet, goPost, goPut, goDelete, useGoBackend } from '@/lib/go-api-client'
+import { goGet, goPost, goPut, goDelete } from '@/lib/go-api-client'
 import { Conversacion, Mensaje, MensajeRapido } from '@/types/chat'
-import {
-  QUICK_MESSAGES_DEFAULTS_ANFITRION,
-  QUICK_MESSAGES_DEFAULTS_BOOGER,
-  IMAGEN_CHAT_MAX_SIZE,
-  IMAGEN_CHAT_BUCKET,
-} from '@/lib/chat/constants'
+import { IMAGEN_CHAT_MAX_SIZE } from '@/lib/chat/constants'
 import { revalidatePath } from 'next/cache'
 
 export async function getConversacionInfo(
@@ -24,75 +18,33 @@ export async function getConversacionInfo(
   const user = await getUsuarioAutenticado()
   if (!user) return { exito: false, error: 'No autenticado' }
 
-  if (useGoBackend('chat')) {
-    try {
-      const info = await goGet<{
-        otro_id: string
-        otro_nombre: string
-        otro_apellido: string
-        otro_avatar_url: string | null
-        propiedad_id: string | null
-        propiedad_titulo: string | null
-      }>(`/api/v1/chat/conversaciones/${conversacionId}`)
+  try {
+    const info = await goGet<{
+      otro_id: string
+      otro_nombre: string
+      otro_apellido: string
+      otro_avatar_url: string | null
+      propiedad_id: string | null
+      propiedad_titulo: string | null
+    }>(`/api/v1/chat/conversaciones/${conversacionId}`)
 
-      await seedMensajesRapidos('')
+    await seedMensajesRapidos('')
 
-      return {
-        exito: true,
-        miId: user.id,
-        otroUsuario: {
-          id: info.otro_id,
-          nombre: info.otro_nombre,
-          apellido: info.otro_apellido,
-          avatar_url: info.otro_avatar_url,
-        },
-        propiedad: info.propiedad_id
-          ? { id: info.propiedad_id, titulo: info.propiedad_titulo ?? '' }
-          : null,
-      }
-    } catch (err: any) {
-      return { exito: false, error: err.message || 'Conversacion no encontrada' }
+    return {
+      exito: true,
+      miId: user.id,
+      otroUsuario: {
+        id: info.otro_id,
+        nombre: info.otro_nombre,
+        apellido: info.otro_apellido,
+        avatar_url: info.otro_avatar_url,
+      },
+      propiedad: info.propiedad_id
+        ? { id: info.propiedad_id, titulo: info.propiedad_titulo ?? '' }
+        : null,
     }
-  }
-
-  const admin = createAdminClient()
-
-  const { data: conv } = await admin
-    .from('conversaciones')
-    .select(`
-      participante_1, participante_2,
-      p1:usuarios!participante_1(id, nombre, apellido, avatar_url),
-      p2:usuarios!participante_2(id, nombre, apellido, avatar_url),
-      propiedad:propiedades(id, titulo)
-    `)
-    .eq('id', conversacionId)
-    .single()
-
-  if (!conv) return { exito: false, error: 'Conversación no encontrada' }
-
-  const c = conv as Record<string, unknown>
-  if (c.participante_1 !== user.id && c.participante_2 !== user.id) {
-    return { exito: false, error: 'Sin permisos' }
-  }
-
-  const esParticipante1 = c.participante_1 === user.id
-  const otro = esParticipante1 ? c.p2 : c.p1
-
-  const { data: userData } = await admin
-    .from('usuarios')
-    .select('rol')
-    .eq('id', user.id)
-    .single()
-
-  if (userData) {
-    await seedMensajesRapidos((userData as Record<string, unknown>).rol as string)
-  }
-
-  return {
-    exito: true,
-    miId: user.id,
-    otroUsuario: otro as Conversacion['otro_usuario'],
-    propiedad: (c.propiedad as Conversacion['propiedad']) || null,
+  } catch (err: any) {
+    return { exito: false, error: err.message || 'Conversacion no encontrada' }
   }
 }
 
@@ -216,28 +168,12 @@ export async function subirImagenChat(formData: FormData): Promise<{ exito: bool
   if (!archivo) return { exito: false, error: 'No se encontró imagen' }
   if (archivo.size > IMAGEN_CHAT_MAX_SIZE) return { exito: false, error: 'Imagen muy grande (máx 5MB)' }
 
-  if (useGoBackend('chat')) {
-    try {
-      const result = await goPost<{ ok: boolean; url: string }>('/api/v1/chat/imagen', formData)
-      return { exito: true, url: result.url }
-    } catch (err: any) {
-      return { exito: false, error: err.message || 'Error al subir imagen' }
-    }
+  try {
+    const result = await goPost<{ ok: boolean; url: string }>('/api/v1/chat/imagen', formData)
+    return { exito: true, url: result.url }
+  } catch (err: any) {
+    return { exito: false, error: err.message || 'Error al subir imagen' }
   }
-
-  const admin = createAdminClient()
-  const ext = archivo.name.split('.').pop() || 'jpg'
-  const path = `${user.id}/${Date.now()}.${ext}`
-
-  const { error } = await admin.storage.from(IMAGEN_CHAT_BUCKET).upload(path, archivo, {
-    contentType: archivo.type,
-    upsert: false,
-  })
-
-  if (error) return { exito: false, error: 'Error al subir imagen' }
-
-  const { data: urlData } = admin.storage.from(IMAGEN_CHAT_BUCKET).getPublicUrl(path)
-  return { exito: true, url: urlData.publicUrl }
 }
 
 export async function getConteoNoLeidos(): Promise<number> {
@@ -256,64 +192,21 @@ export async function getMensajesRapidos(): Promise<{ exito: boolean; datos?: Me
   const user = await getUsuarioAutenticado()
   if (!user) return { exito: false, error: 'No autenticado' }
 
-  if (useGoBackend('chat')) {
-    try {
-      const datos = await goGet<MensajeRapido[]>('/api/v1/chat/mensajes-rapidos')
-      return { exito: true, datos: datos ?? [] }
-    } catch (err: any) {
-      return { exito: false, error: err.message || 'Error al obtener mensajes rapidos' }
-    }
+  try {
+    const datos = await goGet<MensajeRapido[]>('/api/v1/chat/mensajes-rapidos')
+    return { exito: true, datos: datos ?? [] }
+  } catch (err: any) {
+    return { exito: false, error: err.message || 'Error al obtener mensajes rapidos' }
   }
-
-  const admin = createAdminClient()
-
-  const { data } = await admin
-    .from('mensajes_rapidos')
-    .select('*')
-    .eq('usuario_id', user.id)
-    .eq('activo', true)
-    .order('orden', { ascending: true })
-
-  if (!data || data.length === 0) {
-    return { exito: true, datos: [] }
-  }
-
-  return { exito: true, datos: data as unknown as MensajeRapido[] }
 }
 
 export async function seedMensajesRapidos(rol: string): Promise<void> {
   const user = await getUsuarioAutenticado()
   if (!user) return
 
-  if (useGoBackend('chat')) {
-    try {
-      await goPost('/api/v1/chat/mensajes-rapidos/seed', { rol: rol || 'BOOGER' })
-    } catch {}
-    return
-  }
-
-  const admin = createAdminClient()
-
-  const { data: existentes } = await admin
-    .from('mensajes_rapidos')
-    .select('id')
-    .eq('usuario_id', user.id)
-
-  if (existentes && existentes.length > 0) return
-
-  const defaults = rol === 'ANFITRION' || rol === 'AMBOS'
-    ? QUICK_MESSAGES_DEFAULTS_ANFITRION
-    : QUICK_MESSAGES_DEFAULTS_BOOGER
-
-  const inserts = defaults.map((d, i) => ({
-    usuario_id: user.id,
-    contenido: d.contenido,
-    tipo: d.tipo,
-    orden: i,
-    activo: true,
-  }))
-
-  await admin.from('mensajes_rapidos').insert(inserts)
+  try {
+    await goPost('/api/v1/chat/mensajes-rapidos/seed', { rol: rol || 'BOOGER' })
+  } catch {}
 }
 
 export async function actualizarMensajeRapido(
@@ -323,26 +216,13 @@ export async function actualizarMensajeRapido(
   const user = await getUsuarioAutenticado()
   if (!user) return { exito: false, error: 'No autenticado' }
 
-  if (useGoBackend('chat')) {
-    try {
-      await goPut(`/api/v1/chat/mensajes-rapidos/${id}`, { contenido })
-      revalidatePath('/dashboard/mensajes')
-      return { exito: true }
-    } catch (err: any) {
-      return { exito: false, error: err.message || 'Error al actualizar' }
-    }
+  try {
+    await goPut(`/api/v1/chat/mensajes-rapidos/${id}`, { contenido })
+    revalidatePath('/dashboard/mensajes')
+    return { exito: true }
+  } catch (err: any) {
+    return { exito: false, error: err.message || 'Error al actualizar' }
   }
-
-  const admin = createAdminClient()
-  const { error } = await admin
-    .from('mensajes_rapidos')
-    .update({ contenido })
-    .eq('id', id)
-    .eq('usuario_id', user.id)
-
-  if (error) return { exito: false, error: 'Error al actualizar' }
-  revalidatePath('/dashboard/mensajes')
-  return { exito: true }
 }
 
 export async function crearMensajeRapido(
@@ -352,58 +232,23 @@ export async function crearMensajeRapido(
   const user = await getUsuarioAutenticado()
   if (!user) return { exito: false, error: 'No autenticado' }
 
-  if (useGoBackend('chat')) {
-    try {
-      const datos = await goPost<MensajeRapido>('/api/v1/chat/mensajes-rapidos', { contenido, tipo })
-      return { exito: true, datos }
-    } catch (err: any) {
-      return { exito: false, error: err.message || 'Error al crear' }
-    }
+  try {
+    const datos = await goPost<MensajeRapido>('/api/v1/chat/mensajes-rapidos', { contenido, tipo })
+    return { exito: true, datos }
+  } catch (err: any) {
+    return { exito: false, error: err.message || 'Error al crear' }
   }
-
-  const admin = createAdminClient()
-
-  const { data: maxOrden } = await admin
-    .from('mensajes_rapidos')
-    .select('orden')
-    .eq('usuario_id', user.id)
-    .order('orden', { ascending: false })
-    .limit(1)
-
-  const orden = (maxOrden?.[0] as Record<string, unknown>)?.orden as number ?? 0
-
-  const { data, error } = await admin
-    .from('mensajes_rapidos')
-    .insert({ usuario_id: user.id, contenido, tipo, orden: orden + 1, activo: true })
-    .select()
-    .single()
-
-  if (error) return { exito: false, error: 'Error al crear' }
-  return { exito: true, datos: data as unknown as MensajeRapido }
 }
 
 export async function eliminarMensajeRapido(id: string): Promise<{ exito: boolean; error?: string }> {
   const user = await getUsuarioAutenticado()
   if (!user) return { exito: false, error: 'No autenticado' }
 
-  if (useGoBackend('chat')) {
-    try {
-      await goDelete(`/api/v1/chat/mensajes-rapidos/${id}`)
-      revalidatePath('/dashboard/mensajes')
-      return { exito: true }
-    } catch (err: any) {
-      return { exito: false, error: err.message || 'Error al eliminar' }
-    }
+  try {
+    await goDelete(`/api/v1/chat/mensajes-rapidos/${id}`)
+    revalidatePath('/dashboard/mensajes')
+    return { exito: true }
+  } catch (err: any) {
+    return { exito: false, error: err.message || 'Error al eliminar' }
   }
-
-  const admin = createAdminClient()
-  const { error } = await admin
-    .from('mensajes_rapidos')
-    .delete()
-    .eq('id', id)
-    .eq('usuario_id', user.id)
-
-  if (error) return { exito: false, error: 'Error al eliminar' }
-  revalidatePath('/dashboard/mensajes')
-  return { exito: true }
 }

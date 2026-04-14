@@ -1,7 +1,8 @@
 import type { EstadoReserva } from '@/types'
 
 const TRANSICIONES_PERMITIDAS: Record<EstadoReserva, EstadoReserva[]> = {
-  PENDIENTE_PAGO: ['CONFIRMADA', 'ANULADA', 'CANCELADA_HUESPED'],
+  PENDIENTE_PAGO: ['PENDIENTE_CONFIRMACION', 'ANULADA', 'CANCELADA_HUESPED'],
+  PENDIENTE_CONFIRMACION: ['CONFIRMADA', 'RECHAZADA', 'CANCELADA_HUESPED'],
   PENDIENTE: ['CONFIRMADA', 'RECHAZADA', 'CANCELADA_HUESPED'],
   CONFIRMADA: ['EN_CURSO', 'CANCELADA_HUESPED', 'CANCELADA_ANFITRION'],
   EN_CURSO: ['COMPLETADA'],
@@ -40,5 +41,5 @@ export function esEstadoFinal(estado: EstadoReserva): boolean {
 }
 
 export function sePuedeCancelar(estado: EstadoReserva): boolean {
-  return estado === 'PENDIENTE_PAGO' || estado === 'PENDIENTE' || estado === 'CONFIRMADA'
+  return estado === 'PENDIENTE_PAGO' || estado === 'PENDIENTE' || estado === 'PENDIENTE_CONFIRMACION' || estado === 'CONFIRMADA'
 }
