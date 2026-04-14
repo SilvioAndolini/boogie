@@ -29,7 +29,34 @@ interface SeccionConPropiedades {
 }
 
 export function BoogiePreviewsSection({ secciones }: { secciones: unknown[] }) {
-  const seccionesData = (secciones || []) as unknown as SeccionConPropiedades[]
+  const seccionesRaw = (secciones || []) as Array<Record<string, unknown>>
+
+  const seccionesData: SeccionConPropiedades[] = seccionesRaw.map((s) => {
+    const props = (s.propiedades || []) as Array<Record<string, unknown>>
+    return {
+      id: s.id as string,
+      titulo: s.titulo as string,
+      subtitulo: (s.subtitulo as string) || null,
+      tipo_filtro: s.tipo_filtro as string,
+      propiedades: props.map((p) => ({
+        id: p.id as string,
+        titulo: p.titulo as string,
+        tipoPropiedad: (p.tipo_propiedad ?? p.tipoPropiedad) as string,
+        precioPorNoche: (p.precio_por_noche ?? p.precioPorNoche ?? 0) as number,
+        moneda: (p.moneda ?? 'USD') as string,
+        ciudad: (p.ciudad ?? '') as string,
+        estado: (p.estado ?? '') as string,
+        slug: (p.slug ?? '') as string,
+        habitaciones: (p.habitaciones ?? 0) as number,
+        camas: (p.camas ?? 0) as number,
+        banos: (p.banos ?? 0) as number,
+        imagenes: (p.imagenes ?? []) as string[],
+        ratingPromedio: (p.rating_promedio ?? p.ratingPromedio ?? 0) as number,
+        totalResenas: (p.total_resenas ?? p.totalResenas ?? 0) as number,
+        planPropietario: (p.plan_propietario ?? p.planPropietario) as string | undefined,
+      })),
+    }
+  })
 
   if (seccionesData.length === 0) return null
 

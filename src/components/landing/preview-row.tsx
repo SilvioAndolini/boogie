@@ -21,9 +21,10 @@ const TIPO_LABELS: Record<string, string> = {
   OTRO: 'Otro',
 }
 
-function formatearPrecio(precio: number, moneda: string): string {
-  if (moneda === 'USD') return `$${precio.toLocaleString('en-US')}`
-  return `Bs. ${precio.toLocaleString('es-VE')}`
+function formatearPrecio(precio: number | undefined | null, moneda: string): string {
+  const p = precio ?? 0
+  if (moneda === 'USD') return `$${p.toLocaleString('en-US')}`
+  return `Bs. ${p.toLocaleString('es-VE')}`
 }
 
 interface PropiedadPreview {

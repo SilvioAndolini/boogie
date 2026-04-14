@@ -38,11 +38,12 @@ const TIPO_LABELS: Record<TipoPropiedad, string> = {
   OTRO: 'Otro',
 }
 
-function formatearPrecio(precio: number, moneda: Moneda): string {
+function formatearPrecio(precio: number | undefined | null, moneda: Moneda): string {
+  const p = precio ?? 0
   if (moneda === 'USD') {
-    return `$${precio.toLocaleString('en-US')}`
+    return `$${p.toLocaleString('en-US')}`
   }
-  return `Bs. ${precio.toLocaleString('es-VE')}`
+  return `Bs. ${p.toLocaleString('es-VE')}`
 }
 
 export function PropertyCard({ propiedad }: { propiedad: PropiedadCard }) {
