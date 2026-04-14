@@ -157,7 +157,33 @@ export async function getReservaStoreItems(reservaId: string) {
 
 export async function getReservaPorId(reservaId: string): Promise<ReservaConPropiedad | null> {
   try {
-    return await goGet<ReservaConPropiedad>(`/api/v1/reservas/${reservaId}`)
+    const r = await goGet<Record<string, unknown>>(`/api/v1/reservas/${reservaId}`)
+    if (!r) return null
+    return {
+      id: r.id as string,
+      codigo: r.codigo as string,
+      fechaEntrada: r.fecha_entrada as string,
+      fechaSalida: r.fecha_salida as string,
+      noches: r.noches as number,
+      precioPorNoche: String(r.precio_por_noche),
+      subtotal: String(r.subtotal),
+      comisionPlataforma: String(r.comision_plataforma),
+      total: String(r.total),
+      moneda: r.moneda as Moneda,
+      cantidadHuespedes: r.cantidad_huespedes as number,
+      estado: r.estado as EstadoReserva,
+      notasHuesped: r.notas_huesped as string | null,
+      fechaCreacion: (r.fecha_creacion || r.created_at) as string,
+      fechaConfirmacion: r.fecha_confirmacion as string | null,
+      fechaCancelacion: (r.fecha_cancelacion || r.cancelada_en) as string | null,
+      propiedad: {
+        id: r.propiedad_id as string,
+        titulo: (r.propiedad_titulo || r.PropiedadTitulo || '') as string,
+        direccion: (r.propiedad_direccion || r.PropiedadDireccion || '') as string,
+        politicaCancelacion: (r.propiedad_politica_cancelacion || r.PoliticaCancelacion || 'FLEXIBLE') as PoliticaCancelacion,
+      },
+      pago: r.pago as ReservaConPropiedad['pago'],
+    } as ReservaConPropiedad
   } catch (err) {
     console.error('[getReservaPorId] Error:', err)
     return null

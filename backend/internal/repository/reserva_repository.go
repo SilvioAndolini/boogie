@@ -82,7 +82,6 @@ func (r *ReservaRepo) GetByID(ctx context.Context, id string) (*ReservaDetalle, 
 	var d ReservaDetalle
 	var notasHuesped *string
 	var fechaConfirmacion, fechaCancelacion *time.Time
-	var motivoCancelacion *string
 
 	err := r.pool.QueryRow(ctx, `
 		SELECT r.id, r.codigo, r.propiedad_id, r.huesped_id,
@@ -90,7 +89,7 @@ func (r *ReservaRepo) GetByID(ctx context.Context, id string) (*ReservaDetalle, 
 		       r.precio_por_noche, r.subtotal, r.comision_plataforma, r.comision_anfitrion,
 		       r.total, r.moneda, r.cantidad_huespedes, r.estado,
 		       r.notas_huesped, r.fecha_creacion, r.fecha_confirmacion,
-		       r.fecha_cancelacion, r.motivo_cancelacion,
+		       r.fecha_cancelacion,
 		       p.titulo, p.slug, p.propietario_id, p.politica_cancelacion,
 		       p.direccion, p.ciudad,
 		       u.nombre, u.apellido, u.email
@@ -104,7 +103,7 @@ func (r *ReservaRepo) GetByID(ctx context.Context, id string) (*ReservaDetalle, 
 		&d.PrecioPorNoche, &d.Subtotal, &d.ComisionPlataforma, &d.ComisionAnfitrion,
 		&d.Total, &d.Moneda, &d.CantidadHuespedes, &d.Estado,
 		&notasHuesped, &d.CreatedAt, &fechaConfirmacion,
-		&fechaCancelacion, &motivoCancelacion,
+		&fechaCancelacion,
 		&d.PropiedadTitulo, &d.PropiedadSlug, &d.PropietarioID, &d.PoliticaCancelacion,
 		&d.PropiedadDireccion, &d.PropiedadCiudad,
 		&d.HuespedNombre, &d.HuespedApellido, &d.HuespedEmail,
@@ -115,7 +114,6 @@ func (r *ReservaRepo) GetByID(ctx context.Context, id string) (*ReservaDetalle, 
 	d.NotasHuesped = notasHuesped
 	d.FechaConfirmacion = fechaConfirmacion
 	d.CanceladaEn = fechaCancelacion
-	d.MotivoCancelacion = motivoCancelacion
 	return &d, nil
 }
 
