@@ -72,12 +72,47 @@ export async function responderOferta(formData: FormData) {
   }
 }
 
+function mapOferta(o: Record<string, unknown>) {
+  return {
+    id: o.id,
+    codigo: o.codigo,
+    estado: o.estado,
+    precio_ofertado: o.precio_ofertado,
+    precio_original: o.precio_original,
+    moneda: o.moneda,
+    fecha_entrada: o.fecha_entrada,
+    fecha_salida: o.fecha_salida,
+    noches: o.noches,
+    cantidad_huespedes: o.cantidad_huespedes,
+    mensaje: o.mensaje,
+    fecha_creacion: o.fecha_creacion,
+    fecha_expiracion: o.fecha_expiracion,
+    fecha_rechazada: o.fecha_rechazada,
+    motivo_rechazo: o.motivo_rechazo,
+    reserva_id: o.reserva_id,
+    propiedad: {
+      id: o.propiedad_id,
+      titulo: o.propiedad_titulo,
+      imagenes: o.imagen_principal
+        ? [{ url: o.imagen_principal, es_principal: true }]
+        : [],
+    },
+    huesped: {
+      id: o.huesped_id,
+      nombre: o.huesped_nombre,
+      apellido: o.huesped_apellido,
+      avatar_url: o.huesped_avatar,
+    },
+  }
+}
+
 export async function getOfertasRecibidas() {
   const user = await getUsuarioAutenticado()
   if (!user) return { error: 'No autenticado' }
 
   try {
-    const ofertas = await goGet<unknown[]>('/api/v1/ofertas/recibidas')
+    const raw = await goGet<Record<string, unknown>[]>('/api/v1/ofertas/recibidas')
+    const ofertas = (raw ?? []).map(mapOferta)
     return { ofertas }
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : 'Error al cargar ofertas'
@@ -90,7 +125,8 @@ export async function getOfertasEnviadas() {
   if (!user) return { error: 'No autenticado' }
 
   try {
-    const ofertas = await goGet<unknown[]>('/api/v1/ofertas/enviadas')
+    const raw = await goGet<Record<string, unknown>[]>('/api/v1/ofertas/enviadas')
+    const ofertas = (raw ?? []).map(mapOferta)
     return { ofertas }
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : 'Error al cargar ofertas'

@@ -17,42 +17,47 @@ func NewChatRepo(pool *pgxpool.Pool) *ChatRepo {
 }
 
 type Conversacion struct {
-	ID               string     `json:"id"`
-	Participante1    string     `json:"participante_1"`
-	Participante2    string     `json:"participante_2"`
-	PropiedadID      *string    `json:"propiedad_id"`
-	ReservaID        *string    `json:"reserva_id"`
-	UltimoMensajeAt  *time.Time `json:"ultimo_mensaje_at"`
-	UltimoMensajePreview *string `json:"ultimo_mensaje_preview"`
-	CreatedAt        time.Time  `json:"created_at"`
-	UpdatedAt        time.Time  `json:"updated_at"`
-	OtroNombre       string     `json:"otro_nombre"`
-	OtroApellido     string     `json:"otro_apellido"`
-	OtroAvatarURL    *string    `json:"otro_avatar_url"`
-	NoLeidos         int        `json:"no_leidos"`
+	ID                   string     `json:"id"`
+	Participante1        string     `json:"participante_1"`
+	Participante2        string     `json:"participante_2"`
+	PropiedadID          *string    `json:"propiedad_id"`
+	ReservaID            *string    `json:"reserva_id"`
+	UltimoMensajeAt      *time.Time `json:"ultimo_mensaje_at"`
+	UltimoMensajePreview *string    `json:"ultimo_mensaje_preview"`
+	CreatedAt            time.Time  `json:"created_at"`
+	UpdatedAt            time.Time  `json:"updated_at"`
+	OtroNombre           string     `json:"otro_nombre"`
+	OtroApellido         string     `json:"otro_apellido"`
+	OtroAvatarURL        *string    `json:"otro_avatar_url"`
+	OtroID               string     `json:"otro_id"`
+	PropiedadTitulo      *string    `json:"propiedad_titulo"`
+	NoLeidos             int        `json:"no_leidos"`
 }
 
 type Mensaje struct {
-	ID              string     `json:"id"`
-	ConversacionID  string     `json:"conversacion_id"`
-	RemitenteID     string     `json:"remitente_id"`
-	Contenido       *string    `json:"contenido"`
-	Tipo            string     `json:"tipo"`
-	ImagenURL       *string    `json:"imagen_url"`
-	Leido           bool       `json:"leido"`
-	CreatedAt       time.Time  `json:"created_at"`
-	RemitenteNombre string     `json:"remitente_nombre"`
-	RemitenteAvatar *string    `json:"remitente_avatar"`
+	ID              string    `json:"id"`
+	ConversacionID  string    `json:"conversacion_id"`
+	RemitenteID     string    `json:"remitente_id"`
+	Contenido       *string   `json:"contenido"`
+	Tipo            string    `json:"tipo"`
+	ImagenURL       *string   `json:"imagen_url"`
+	Leido           bool      `json:"leido"`
+	CreatedAt       time.Time `json:"created_at"`
+	RemitenteNombre string    `json:"remitente_nombre"`
+	RemitenteAvatar *string   `json:"remitente_avatar"`
 }
 
 func (r *ChatRepo) GetConversaciones(ctx context.Context, userID string) ([]Conversacion, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT c.id, c.participante_1, c.participante_2, c.propiedad_id, c.reserva_id,
 		       c.ultimo_mensaje_at, c.ultimo_mensaje_preview, c.created_at, c.updated_at,
-		       u.nombre, u.apellido, u.foto_url,
+		       u.nombre, u.apellido, u.avatar_url,
+		       CASE WHEN c.participante_1 = $1 THEN c.participante_2 ELSE c.participante_1 END,
+		       p.titulo,
 		       (SELECT COUNT(*) FROM mensajes m WHERE m.conversacion_id = c.id AND m.remitente_id != $1 AND m.leido = false)
 		FROM conversaciones c
 		LEFT JOIN usuarios u ON u.id = CASE WHEN c.participante_1 = $1 THEN c.participante_2 ELSE c.participante_1 END
+		LEFT JOIN propiedades p ON p.id = c.propiedad_id
 		WHERE c.participante_1 = $1 OR c.participante_2 = $1
 		ORDER BY c.ultimo_mensaje_at DESC NULLS LAST
 	`, userID)
@@ -66,7 +71,7 @@ func (r *ChatRepo) GetConversaciones(ctx context.Context, userID string) ([]Conv
 		var c Conversacion
 		if err := rows.Scan(&c.ID, &c.Participante1, &c.Participante2, &c.PropiedadID, &c.ReservaID,
 			&c.UltimoMensajeAt, &c.UltimoMensajePreview, &c.CreatedAt, &c.UpdatedAt,
-			&c.OtroNombre, &c.OtroApellido, &c.OtroAvatarURL, &c.NoLeidos); err != nil {
+			&c.OtroNombre, &c.OtroApellido, &c.OtroAvatarURL, &c.OtroID, &c.PropiedadTitulo, &c.NoLeidos); err != nil {
 			return nil, err
 		}
 
@@ -130,7 +135,7 @@ func (r *ChatRepo) IsParticipant(ctx context.Context, conversacionID, userID str
 func (r *ChatRepo) GetMensajes(ctx context.Context, conversacionID string, limit, offset int) ([]Mensaje, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT m.id, m.conversacion_id, m.remitente_id, m.contenido, m.tipo, m.imagen_url, m.leido, m.created_at,
-		       u.nombre, u.foto_url
+		       u.nombre, u.avatar_url
 		FROM mensajes m
 		JOIN usuarios u ON u.id = m.remitente_id
 		WHERE m.conversacion_id = $1

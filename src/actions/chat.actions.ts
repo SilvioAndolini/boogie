@@ -92,8 +92,29 @@ export async function getConversaciones(): Promise<{ exito: boolean; datos?: Con
   if (!user) return { exito: false, error: 'No autenticado' }
 
   try {
-    const datos = await goGet<Conversacion[]>('/api/v1/chat/conversaciones')
-    return { exito: true, datos: datos ?? [] }
+    const raw = await goGet<Record<string, unknown>[]>('/api/v1/chat/conversaciones')
+    const datos = (raw ?? []).map((c) => ({
+      id: c.id,
+      participante_1: c.participante_1,
+      participante_2: c.participante_2,
+      propiedad_id: c.propiedad_id,
+      reserva_id: c.reserva_id,
+      ultimo_mensaje_at: c.ultimo_mensaje_at,
+      ultimo_mensaje_preview: c.ultimo_mensaje_preview,
+      created_at: c.created_at,
+      updated_at: c.updated_at,
+      otro_usuario: {
+        id: c.otro_id,
+        nombre: c.otro_nombre,
+        apellido: c.otro_apellido,
+        avatar_url: c.otro_avatar_url,
+      },
+      propiedad: c.propiedad_id
+        ? { id: c.propiedad_id, titulo: c.propiedad_titulo }
+        : null,
+      no_leidos: c.no_leidos,
+    })) as Conversacion[]
+    return { exito: true, datos }
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : 'Error al obtener conversaciones'
     return { exito: false, error: message }
