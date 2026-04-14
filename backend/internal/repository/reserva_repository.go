@@ -35,19 +35,23 @@ type ReservaDetalle struct {
 
 type ReservaConPropiedad struct {
 	models.Reserva
-	PropiedadTitulo    string
-	PropiedadSlug      string
-	PropiedadDireccion string
-	PropiedadCiudad    string
+	PropiedadTitulo          string  `json:"propiedad_titulo"`
+	PropiedadSlug            string  `json:"propiedad_slug"`
+	PropiedadDireccion       string  `json:"propiedad_direccion"`
+	PropiedadCiudad          string  `json:"propiedad_ciudad"`
+	PropiedadPoliticaCancel  string  `json:"propiedad_politica_cancelacion"`
+	PropiedadImagenPrincipal *string `json:"propiedad_imagen_principal"`
 }
 
 type ReservaConHuesped struct {
 	models.Reserva
-	PropiedadTitulo string
-	PropiedadSlug   string
-	HuespedNombre   string
-	HuespedApellido string
-	HuespedEmail    string
+	PropiedadTitulo          string  `json:"propiedad_titulo"`
+	PropiedadSlug            string  `json:"propiedad_slug"`
+	PropiedadImagenPrincipal *string `json:"propiedad_imagen_principal"`
+	HuespedNombre            string  `json:"huesped_nombre"`
+	HuespedApellido          string  `json:"huesped_apellido"`
+	HuespedEmail             string  `json:"huesped_email"`
+	HuespedAvatarURL         *string `json:"huesped_avatar_url"`
 }
 
 type ReservasStats struct {
@@ -128,7 +132,9 @@ func (r *ReservaRepo) ListByHuesped(ctx context.Context, huespedID string, limit
 		       r.precio_por_noche, r.subtotal, r.comision_plataforma, r.comision_anfitrion,
 		       r.total, r.moneda, r.cantidad_huespedes, r.estado,
 		       r.notas_huesped, r.fecha_creacion,
-		       p.titulo, p.slug, p.direccion, p.ciudad
+		       p.titulo, p.slug, p.direccion, p.ciudad,
+		       COALESCE(p.politica_cancelacion, 'FLEXIBLE'),
+		       (SELECT ip.url FROM imagenes_propiedad ip WHERE ip.propiedad_id = p.id AND ip.es_principal = true LIMIT 1)
 		FROM reservas r
 		JOIN propiedades p ON p.id = r.propiedad_id
 		WHERE r.huesped_id = $1
@@ -151,6 +157,7 @@ func (r *ReservaRepo) ListByHuesped(ctx context.Context, huespedID string, limit
 			&item.Total, &item.Moneda, &item.CantidadHuespedes, &item.Estado,
 			&notasHuesped, &item.CreatedAt,
 			&item.PropiedadTitulo, &item.PropiedadSlug, &item.PropiedadDireccion, &item.PropiedadCiudad,
+			&item.PropiedadPoliticaCancel, &item.PropiedadImagenPrincipal,
 		)
 		if err != nil {
 			return nil, 0, fmt.Errorf("scan reserva huesped: %w", err)
@@ -191,7 +198,8 @@ func (r *ReservaRepo) ListByPropietario(ctx context.Context, propietarioID strin
 			       r.total, r.moneda, r.cantidad_huespedes, r.estado,
 			       r.notas_huesped, r.fecha_creacion,
 			       p.titulo, p.slug,
-			       u.nombre, u.apellido, u.email
+			       u.nombre, u.apellido, u.email, u.avatar_url,
+			       (SELECT ip.url FROM imagenes_propiedad ip WHERE ip.propiedad_id = p.id AND ip.es_principal = true LIMIT 1)
 			FROM reservas r
 			JOIN propiedades p ON p.id = r.propiedad_id
 			JOIN usuarios u ON u.id = r.huesped_id
@@ -207,7 +215,8 @@ func (r *ReservaRepo) ListByPropietario(ctx context.Context, propietarioID strin
 			       r.total, r.moneda, r.cantidad_huespedes, r.estado,
 			       r.notas_huesped, r.fecha_creacion,
 			       p.titulo, p.slug,
-			       u.nombre, u.apellido, u.email
+			       u.nombre, u.apellido, u.email, u.avatar_url,
+			       (SELECT ip.url FROM imagenes_propiedad ip WHERE ip.propiedad_id = p.id AND ip.es_principal = true LIMIT 1)
 			FROM reservas r
 			JOIN propiedades p ON p.id = r.propiedad_id
 			JOIN usuarios u ON u.id = r.huesped_id
@@ -232,7 +241,8 @@ func (r *ReservaRepo) ListByPropietario(ctx context.Context, propietarioID strin
 			&item.Total, &item.Moneda, &item.CantidadHuespedes, &item.Estado,
 			&notasHuesped, &item.CreatedAt,
 			&item.PropiedadTitulo, &item.PropiedadSlug,
-			&item.HuespedNombre, &item.HuespedApellido, &item.HuespedEmail,
+			&item.HuespedNombre, &item.HuespedApellido, &item.HuespedEmail, &item.HuespedAvatarURL,
+			&item.PropiedadImagenPrincipal,
 		)
 		if err != nil {
 			return nil, 0, fmt.Errorf("scan reserva propietario: %w", err)
@@ -271,7 +281,7 @@ func (r *ReservaRepo) Crear(ctx context.Context, prop *PropiedadInfo, huespedID 
 		INSERT INTO reservas (id, codigo, propiedad_id, huesped_id, fecha_entrada, fecha_salida,
 			noches, precio_por_noche, subtotal, comision_plataforma, comision_anfitrion, total,
 			moneda, cantidad_huespedes, estado, notas_huesped, fecha_creacion)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'PENDIENTE', $15, NOW())
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'PENDIENTE_PAGO', $15, NOW())
 	`, id, codigo, prop.ID, huespedID, fechaEntrada, fechaSalida,
 		noches, prop.PrecioPorNoche, subtotal, comisionHuesped, comisionAnfitrion,
 		total, string(prop.Moneda), cantidadHuespedes, notaVal)
@@ -294,7 +304,7 @@ func (r *ReservaRepo) Crear(ctx context.Context, prop *PropiedadInfo, huespedID 
 		Total:              total,
 		Moneda:             prop.Moneda,
 		CantidadHuespedes:  cantidadHuespedes,
-		Estado:             enums.EstadoReservaPendiente,
+		Estado:             enums.EstadoReservaPendientePago,
 		NotasHuesped:       notaVal,
 	}, nil
 }

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -260,7 +261,10 @@ func (h *AdminHandler) GetResenas(w http.ResponseWriter, r *http.Request) {
 
 	total, promedio, dist, _ := h.svc.GetResenaStats(r.Context())
 	JSON(w, http.StatusOK, map[string]interface{}{
-		"data":         result,
+		"data":         result.Data,
+		"total":        result.Total,
+		"pagina":       result.Pagina,
+		"totalPaginas": result.TotalPaginas,
 		"stats":        map[string]interface{}{"total": total, "promedio": promedio, "distribucion": dist},
 	})
 }
@@ -844,16 +848,22 @@ func (h *AdminHandler) UpdateUsuario(w http.ResponseWriter, r *http.Request) {
 	}
 	id := chi.URLParam(r, "id")
 	var req struct {
-		Rol        *string  `json:"rol"`
-		Plan       *string  `json:"plan_suscripcion"`
-		Reputacion *float64 `json:"reputacion"`
-		Activo     *bool    `json:"activo"`
+		Rol              *string  `json:"rol"`
+		Plan             *string  `json:"plan"`
+		PlanSuscripcion  *string  `json:"plan_suscripcion"`
+		Reputacion       *float64 `json:"reputacion"`
+		ReputacionManual *string  `json:"reputacion_manual"`
+		Activo           *bool    `json:"activo"`
 	}
-	if err := DecodeJSON(r, &req); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "JSON invalido")
 		return
 	}
-	if err := h.svc.UpdateUsuario(r.Context(), id, req.Rol, req.Plan, req.Reputacion, req.Activo); err != nil {
+	plan := req.PlanSuscripcion
+	if plan == nil && req.Plan != nil {
+		plan = req.Plan
+	}
+	if err := h.svc.UpdateUsuario(r.Context(), id, req.Rol, plan, req.Reputacion, req.Activo); err != nil {
 		slog.Error("[admin/usuarios/update] error", "error", err)
 		ErrorJSON(w, http.StatusBadRequest, "UPDATE_ERROR", err.Error())
 		return

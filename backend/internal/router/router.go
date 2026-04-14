@@ -283,11 +283,10 @@ func New(opts *RouterOpts) http.Handler {
 		}
 
 		if opts.PropiedadesHandlers != nil {
-			r.Get("/propiedades/publicas", opts.PropiedadesHandlers.Search)
-			r.Get("/propiedades/buscar", opts.PropiedadesHandlers.Search)
-			r.Get("/propiedades/{id}", opts.PropiedadesHandlers.GetByID)
-
 			r.Route("/propiedades", func(r chi.Router) {
+				r.Get("/publicas", opts.PropiedadesHandlers.Search)
+				r.Get("/buscar", opts.PropiedadesHandlers.Search)
+
 				r.Group(func(r chi.Router) {
 					r.Use(opts.AuthVerifier.Middleware)
 					r.Get("/mias", opts.PropiedadesHandlers.MisPropiedades)
@@ -296,9 +295,11 @@ func New(opts *RouterOpts) http.Handler {
 						w.Write([]byte(`{"error":{"code":"NOT_IMPLEMENTED","message":"Use Supabase storage for property creation"}}`))
 					})
 				})
-				r.Group(func(r chi.Router) {
-					r.Use(opts.AuthVerifier.Middleware)
-					r.Route("/{id}", func(r chi.Router) {
+
+				r.Route("/{id}", func(r chi.Router) {
+					r.Get("/", opts.PropiedadesHandlers.GetByID)
+					r.Group(func(r chi.Router) {
+						r.Use(opts.AuthVerifier.Middleware)
 						r.Patch("/estado", opts.PropiedadesHandlers.UpdateEstado)
 						r.Put("/", func(w http.ResponseWriter, r *http.Request) {
 							w.WriteHeader(http.StatusNotImplemented)

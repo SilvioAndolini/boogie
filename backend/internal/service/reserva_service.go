@@ -33,7 +33,7 @@ func (r *ReservaDisponibilidad) Verificar(ctx context.Context, propiedadID strin
 	err := r.pool.QueryRow(ctx, `
 		SELECT id FROM reservas
 		WHERE propiedad_id = $1
-		  AND estado IN ('PENDIENTE', 'CONFIRMADA', 'EN_CURSO')
+		  AND estado IN ('PENDIENTE_PAGO', 'PENDIENTE', 'CONFIRMADA', 'EN_CURSO')
 		  AND fecha_entrada < $3
 		  AND fecha_salida > $2
 		LIMIT 1

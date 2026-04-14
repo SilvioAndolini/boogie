@@ -22,6 +22,7 @@ const (
 type EstadoReserva string
 
 const (
+	EstadoReservaPendientePago    EstadoReserva = "PENDIENTE_PAGO"
 	EstadoReservaPendiente        EstadoReserva = "PENDIENTE"
 	EstadoReservaConfirmada       EstadoReserva = "CONFIRMADA"
 	EstadoReservaEnCurso          EstadoReserva = "EN_CURSO"
@@ -29,6 +30,7 @@ const (
 	EstadoReservaCanceladaHuesped EstadoReserva = "CANCELADA_HUESPED"
 	EstadoReservaCanceladaAnfitrion EstadoReserva = "CANCELADA_ANFITRION"
 	EstadoReservaRechazada        EstadoReserva = "RECHAZADA"
+	EstadoReservaAnulada          EstadoReserva = "ANULADA"
 )
 
 type EstadoPago string

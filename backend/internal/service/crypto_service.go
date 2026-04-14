@@ -8,6 +8,7 @@ import (
 	"math"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -35,24 +36,24 @@ type CryptAPIResult struct {
 }
 
 type PrecioReserva struct {
-	Noches           int        `json:"noches"`
-	PrecioPorNoche   float64    `json:"precio_por_noche"`
-	Subtotal         float64    `json:"subtotal"`
-	ComisionHuesped  float64    `json:"comision_huesped"`
-	ComisionAnfitrion float64   `json:"comision_anfitrion"`
-	Total            float64    `json:"total"`
-	Moneda           enums.Moneda `json:"moneda"`
+	Noches            int          `json:"noches"`
+	PrecioPorNoche    float64      `json:"precio_por_noche"`
+	Subtotal          float64      `json:"subtotal"`
+	ComisionHuesped   float64      `json:"comision_huesped"`
+	ComisionAnfitrion float64      `json:"comision_anfitrion"`
+	Total             float64      `json:"total"`
+	Moneda            enums.Moneda `json:"moneda"`
 }
 
 type ReembolsoCalculado struct {
-	TotalReserva       float64 `json:"total_reserva"`
-	ComisionPlataforma float64 `json:"comision_plataforma"`
-	MontoReembolsable  float64 `json:"monto_reembolsable"`
+	TotalReserva        float64 `json:"total_reserva"`
+	ComisionPlataforma  float64 `json:"comision_plataforma"`
+	MontoReembolsable   float64 `json:"monto_reembolsable"`
 	MontoNoReembolsable float64 `json:"monto_no_reembolsable"`
-	PorcentajeReembolso int    `json:"porcentaje_reembolso"`
-	PoliticaAplicable  string  `json:"politica_aplicable"`
-	DiasAntesCheckIn   int     `json:"dias_antes_check_in"`
-	Mensaje            string  `json:"mensaje"`
+	PorcentajeReembolso int     `json:"porcentaje_reembolso"`
+	PoliticaAplicable   string  `json:"politica_aplicable"`
+	DiasAntesCheckIn    int     `json:"dias_antes_check_in"`
+	Mensaje             string  `json:"mensaje"`
 }
 
 type CryptoService struct {
@@ -64,7 +65,7 @@ type CryptoService struct {
 
 func NewCryptoService(cfg CryptapiConfig, comisionH, comisionA float64) *CryptoService {
 	return &CryptoService{
-		Config:     cfg,
+		Config:    cfg,
 		comisionH: comisionH,
 		comisionA: comisionA,
 		httpClient: &http.Client{
@@ -75,7 +76,7 @@ func NewCryptoService(cfg CryptapiConfig, comisionH, comisionA float64) *CryptoS
 
 func (s *CryptoService) CreateAddress(callbackURL string) (*CryptAPIResult, error) {
 	url := fmt.Sprintf("%s/%s/create/?callback=%s&address=%s&pending=1",
-		CryptapiBase, CryptapiTicker, callbackURL, s.Config.WalletAddress,
+		CryptapiBase, CryptapiTicker, url.QueryEscape(callbackURL), s.Config.WalletAddress,
 	)
 
 	resp, err := s.httpClient.Get(url)
@@ -110,9 +111,9 @@ func (s *CryptoService) CreateAddress(callbackURL string) (*CryptAPIResult, erro
 func (s *CryptoService) BuildCallbackURL(params map[string]string) string {
 	parts := []string{}
 	for k, v := range params {
-		parts = append(parts, fmt.Sprintf("%s=%s", k, v))
+		parts = append(parts, fmt.Sprintf("%s=%s", k, url.QueryEscape(v)))
 	}
-	return fmt.Sprintf("%s/api/v1/crypto/callback?%s",
+	return fmt.Sprintf("%s/api/crypto/callback?%s",
 		s.Config.CallbackBaseURL, strings.Join(parts, "&"),
 	)
 }

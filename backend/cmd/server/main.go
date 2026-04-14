@@ -16,6 +16,7 @@ import (
 	"github.com/boogie/backend/internal/repository"
 	"github.com/boogie/backend/internal/router"
 	"github.com/boogie/backend/internal/service"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func main() {
@@ -301,6 +302,8 @@ func main() {
 		}
 	}()
 
+	go startExpiryWorker(db)
+
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
@@ -336,4 +339,26 @@ func safeHandlerMetamap(h *handler.MetamapHandler) http.HandlerFunc {
 		}
 	}
 	return h.Webhook
+}
+
+func startExpiryWorker(pool *pgxpool.Pool) {
+	if pool == nil {
+		return
+	}
+	ticker := time.NewTicker(1 * time.Minute)
+	defer ticker.Stop()
+	for range ticker.C {
+		tag, err := pool.Exec(context.Background(), `
+			UPDATE reservas SET estado = 'ANULADA'
+			WHERE estado = 'PENDIENTE_PAGO'
+			  AND fecha_creacion < NOW() - INTERVAL '30 minutes'
+		`)
+		if err != nil {
+			slog.Error("[expiry-worker] error", "error", err)
+			continue
+		}
+		if tag.RowsAffected() > 0 {
+			slog.Info("[expiry-worker] reservas anuladas", "count", tag.RowsAffected())
+		}
+	}
 }

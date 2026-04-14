@@ -181,7 +181,7 @@ func (s *AdminService) GetPropiedades(ctx context.Context, estado, ciudad, busqu
 	}
 	props, total, err := s.repo.GetPropiedadesAdmin(ctx, estado, ciudad, busqueda, pagina, limite)
 	if err != nil {
-		return nil, fmt.Errorf("error al obtener propiedades")
+		return nil, fmt.Errorf("error al obtener propiedades: %w", err)
 	}
 	return paginated(props, total, pagina, limite), nil
 }
@@ -326,7 +326,7 @@ func (s *AdminService) GetUsuarios(ctx context.Context, busqueda, rol string, pa
 	}
 	usuarios, total, err := s.repo.GetUsuariosAdmin(ctx, busqueda, rol, pagina, limite)
 	if err != nil {
-		return nil, fmt.Errorf("error al obtener usuarios")
+		return nil, fmt.Errorf("error al obtener usuarios: %w", err)
 	}
 	return paginated(usuarios, total, pagina, limite), nil
 }

@@ -30,12 +30,12 @@ func NewCryptoHandler(cryptoSvc *service.CryptoService, reservaSvc *service.Rese
 }
 
 type CryptoCreateRequest struct {
-	ReservaID        string  `json:"reservaId"`
-	Monto            float64 `json:"monto"`
-	PropiedadID      string  `json:"propiedadId"`
-	FechaEntrada     string  `json:"fechaEntrada"`
-	FechaSalida      string  `json:"fechaSalida"`
-	CantidadHuespedes int    `json:"cantidadHuespedes"`
+	ReservaID         string  `json:"reservaId"`
+	Monto             float64 `json:"monto"`
+	PropiedadID       string  `json:"propiedadId"`
+	FechaEntrada      string  `json:"fechaEntrada"`
+	FechaSalida       string  `json:"fechaSalida"`
+	CantidadHuespedes int     `json:"cantidadHuespedes"`
 }
 
 func (h *CryptoHandler) Create(w http.ResponseWriter, r *http.Request) {
@@ -46,10 +46,13 @@ func (h *CryptoHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req CryptoCreateRequest
-	if err := DecodeJSON(r, &req); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		slog.Error("[crypto/create] decode error", "error", err)
 		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "JSON invalido")
 		return
 	}
+
+	slog.Info("[crypto/create] request", "reservaId", req.ReservaID, "monto", req.Monto, "propiedadId", req.PropiedadID, "fechaEntrada", req.FechaEntrada, "fechaSalida", req.FechaSalida, "cantidadHuespedes", req.CantidadHuespedes)
 
 	if req.Monto <= 0 {
 		ErrorJSON(w, http.StatusBadRequest, "INVALID_AMOUNT", "Monto invalido")
@@ -71,8 +74,14 @@ func (h *CryptoHandler) Create(w http.ResponseWriter, r *http.Request) {
 	reservaIDFinal := req.ReservaID
 
 	if needCreateReserva {
-		fechaEntrada, err := time.Parse("2006-01-02", req.FechaEntrada)
-		fechaSalida, err2 := time.Parse("2006-01-02", req.FechaSalida)
+		fechaEntrada, err := time.Parse(time.RFC3339, req.FechaEntrada)
+		if err != nil {
+			fechaEntrada, err = time.Parse("2006-01-02", req.FechaEntrada)
+		}
+		fechaSalida, err2 := time.Parse(time.RFC3339, req.FechaSalida)
+		if err2 != nil {
+			fechaSalida, err2 = time.Parse("2006-01-02", req.FechaSalida)
+		}
 		if err != nil || err2 != nil {
 			ErrorJSON(w, http.StatusBadRequest, "INVALID_DATES", "Fechas invalidas")
 			return
@@ -109,7 +118,7 @@ func (h *CryptoHandler) Create(w http.ResponseWriter, r *http.Request) {
 			INSERT INTO reservas (id, codigo, propiedad_id, huesped_id, fecha_entrada, fecha_salida,
 				noches, precio_por_noche, subtotal, comision_plataforma, comision_anfitrion, total,
 				moneda, cantidad_huespedes, estado, fecha_creacion)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'PENDIENTE', NOW())
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'PENDIENTE_PAGO', NOW())
 		`, newReservaID, codigoReserva, req.PropiedadID, userID, fechaEntrada, fechaSalida,
 			calculo.Noches, calculo.PrecioPorNoche, calculo.Subtotal, calculo.ComisionHuesped,
 			calculo.ComisionAnfitrion, calculo.Total, string(calculo.Moneda), req.CantidadHuespedes,
@@ -129,11 +138,11 @@ func (h *CryptoHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	callbackURL := h.cryptoSvc.BuildCallbackURL(map[string]string{
-		"reservaId":     reservaIDFinal,
-		"propiedadId":   req.PropiedadID,
-		"fechaEntrada":  req.FechaEntrada,
-		"fechaSalida":   req.FechaSalida,
-		"secret":        h.cryptoSvc.Config.CallbackSecret,
+		"reservaId":    reservaIDFinal,
+		"propiedadId":  req.PropiedadID,
+		"fechaEntrada": req.FechaEntrada,
+		"fechaSalida":  req.FechaSalida,
+		"secret":       h.cryptoSvc.Config.CallbackSecret,
 	})
 
 	cryptoResult, err := h.cryptoSvc.CreateAddress(callbackURL)
@@ -155,7 +164,9 @@ func (h *CryptoHandler) Create(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	JSON(w, http.StatusOK, map[string]interface{}{
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
 		"address":   cryptoResult.AddressIn,
 		"reservaId": reservaIDFinal,
 		"ticker":    service.CryptapiTicker,
@@ -256,7 +267,7 @@ func (h *CryptoHandler) Callback(w http.ResponseWriter, r *http.Request) {
 	if isConfirmed && pagoReservaID != "" {
 		_, _ = h.pool.Exec(r.Context(), `
 			UPDATE reservas SET estado = 'CONFIRMADA', fecha_confirmacion = NOW()
-			WHERE id = $1 AND estado = 'PENDIENTE'
+			WHERE id = $1 AND estado IN ('PENDIENTE_PAGO','PENDIENTE')
 		`, pagoReservaID)
 	}
 

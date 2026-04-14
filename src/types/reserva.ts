@@ -96,6 +96,7 @@ export interface ReservaConPropiedad {
 }
 
 export const ESTADO_RESERVA_LABELS: Record<EstadoReserva, string> = {
+  PENDIENTE_PAGO: 'Esperando Pago',
   PENDIENTE: 'Pendiente',
   CONFIRMADA: 'Confirmada',
   EN_CURSO: 'En curso',
@@ -103,9 +104,11 @@ export const ESTADO_RESERVA_LABELS: Record<EstadoReserva, string> = {
   CANCELADA_HUESPED: 'Cancelada por Huésped',
   CANCELADA_ANFITRION: 'Cancelada por Anfitrión',
   RECHAZADA: 'Rechazada',
+  ANULADA: 'Anulada',
 } as const
 
 export const ESTADO_RESERVA_COLORS: Record<EstadoReserva, string> = {
+  PENDIENTE_PAGO: 'bg-[#FFF7ED] text-[#C2410C]',
   PENDIENTE: 'bg-[#FEF3C7] text-[#92400E]',
   CONFIRMADA: 'bg-[#D8F3DC] text-[#1B4332]',
   EN_CURSO: 'bg-[#E8F4FD] text-[#457B9D]',
@@ -113,6 +116,7 @@ export const ESTADO_RESERVA_COLORS: Record<EstadoReserva, string> = {
   CANCELADA_HUESPED: 'bg-[#FEE2E2] text-[#C1121F]',
   CANCELADA_ANFITRION: 'bg-[#FEE2E2] text-[#C1121F]',
   RECHAZADA: 'bg-[#FEE2E2] text-[#C1121F]',
+  ANULADA: 'bg-[#F3F4F6] text-[#6B7280]',
 } as const
 
 export const ESTADO_PAGO_LABELS: Record<EstadoPago, string> = {

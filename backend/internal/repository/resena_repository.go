@@ -18,23 +18,23 @@ func NewResenaRepo(pool *pgxpool.Pool) *ResenaRepo {
 }
 
 type ResenaConAutor struct {
-	ID              string     `json:"id"`
-	ReservaID       string     `json:"reserva_id"`
-	PropiedadID     string     `json:"propiedad_id"`
-	AutorID         string     `json:"autor_id"`
-	AutorNombre     string     `json:"autor_nombre"`
-	AutorApellido   string     `json:"autor_apellido"`
-	AutorAvatarURL  *string    `json:"autor_avatar_url"`
-	Calificacion    int        `json:"calificacion"`
-	Limpieza        *int       `json:"limpieza"`
-	Comunicacion    *int       `json:"comunicacion"`
-	Ubicacion       *int       `json:"ubicacion"`
-	Valor           *int       `json:"valor"`
-	Comentario      string     `json:"comentario"`
-	Respuesta       *string    `json:"respuesta"`
-	FechaRespuesta  *time.Time `json:"fecha_respuesta"`
-	Oculta          bool       `json:"oculta"`
-	FechaCreacion   time.Time  `json:"fecha_creacion"`
+	ID             string     `json:"id"`
+	ReservaID      string     `json:"reserva_id"`
+	PropiedadID    string     `json:"propiedad_id"`
+	AutorID        string     `json:"autor_id"`
+	AutorNombre    string     `json:"autor_nombre"`
+	AutorApellido  string     `json:"autor_apellido"`
+	AutorAvatarURL *string    `json:"autor_avatar_url"`
+	Calificacion   int        `json:"calificacion"`
+	Limpieza       *int       `json:"limpieza"`
+	Comunicacion   *int       `json:"comunicacion"`
+	Ubicacion      *int       `json:"ubicacion"`
+	Valor          *int       `json:"valor"`
+	Comentario     string     `json:"comentario"`
+	Respuesta      *string    `json:"respuesta"`
+	FechaRespuesta *time.Time `json:"fecha_respuesta"`
+	Oculta         bool       `json:"oculta"`
+	FechaCreacion  time.Time  `json:"fecha_creacion"`
 }
 
 func (r *ResenaRepo) GetByPropiedad(ctx context.Context, propiedadID string, page, perPage int) ([]ResenaConAutor, int, error) {
@@ -49,7 +49,7 @@ func (r *ResenaRepo) GetByPropiedad(ctx context.Context, propiedadID string, pag
 	offset := (page - 1) * perPage
 	rows, err := r.pool.Query(ctx, `
 		SELECT r.id, r.reserva_id, r.propiedad_id, r.autor_id,
-		       u.nombre, u.apellido, u.foto_url,
+		       u.nombre, u.apellido, u.avatar_url,
 		       r.calificacion, r.limpieza, r.comunicacion, r.ubicacion, r.valor,
 		       r.comentario, r.respuesta, r.fecha_respuesta, r.oculta, r.fecha_creacion
 		FROM resenas r
@@ -80,8 +80,8 @@ func (r *ResenaRepo) GetByPropiedad(ctx context.Context, propiedadID string, pag
 }
 
 type ReservaForResena struct {
-	ID           string
-	PropiedadID  string
+	ID          string
+	PropiedadID string
 }
 
 func (r *ResenaRepo) GetReservaForResena(ctx context.Context, reservaID, userID string) (*ReservaForResena, error) {
@@ -132,7 +132,7 @@ func (r *ResenaRepo) GetByID(ctx context.Context, resenaID string) (*ResenaConAu
 	var res ResenaConAutor
 	err := r.pool.QueryRow(ctx, `
 		SELECT r.id, r.reserva_id, r.propiedad_id, r.autor_id,
-		       u.nombre, u.apellido, u.foto_url,
+		       u.nombre, u.apellido, u.avatar_url,
 		       r.calificacion, r.limpieza, r.comunicacion, r.ubicacion, r.valor,
 		       r.comentario, r.respuesta, r.fecha_respuesta, r.oculta, r.fecha_creacion
 		FROM resenas r

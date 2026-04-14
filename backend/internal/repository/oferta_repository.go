@@ -17,25 +17,25 @@ func NewOfertaRepo(pool *pgxpool.Pool) *OfertaRepo {
 }
 
 type Oferta struct {
-	ID              string     `json:"id"`
-	Codigo          string     `json:"codigo"`
-	PropiedadID     string     `json:"propiedad_id"`
-	HuespedID       string     `json:"huesped_id"`
-	FechaEntrada    time.Time  `json:"fecha_entrada"`
-	FechaSalida     time.Time  `json:"fecha_salida"`
-	Noches          int        `json:"noches"`
-	CantidadHuespedes int      `json:"cantidad_huespedes"`
-	PrecioOriginal  float64    `json:"precio_original"`
-	PrecioOfertado  float64    `json:"precio_ofertado"`
-	Moneda          string     `json:"moneda"`
-	Estado          string     `json:"estado"`
-	Mensaje         *string    `json:"mensaje"`
-	MotivoRechazo   *string    `json:"motivo_rechazo"`
-	FechaCreacion   time.Time  `json:"fecha_creacion"`
-	FechaAprobada   *time.Time `json:"fecha_aprobada"`
-	FechaExpiracion *time.Time `json:"fecha_expiracion"`
-	FechaRechazada  *time.Time `json:"fecha_rechazada"`
-	ReservaID       *string    `json:"reserva_id"`
+	ID                string     `json:"id"`
+	Codigo            string     `json:"codigo"`
+	PropiedadID       string     `json:"propiedad_id"`
+	HuespedID         string     `json:"huesped_id"`
+	FechaEntrada      time.Time  `json:"fecha_entrada"`
+	FechaSalida       time.Time  `json:"fecha_salida"`
+	Noches            int        `json:"noches"`
+	CantidadHuespedes int        `json:"cantidad_huespedes"`
+	PrecioOriginal    float64    `json:"precio_original"`
+	PrecioOfertado    float64    `json:"precio_ofertado"`
+	Moneda            string     `json:"moneda"`
+	Estado            string     `json:"estado"`
+	Mensaje           *string    `json:"mensaje"`
+	MotivoRechazo     *string    `json:"motivo_rechazo"`
+	FechaCreacion     time.Time  `json:"fecha_creacion"`
+	FechaAprobada     *time.Time `json:"fecha_aprobada"`
+	FechaExpiracion   *time.Time `json:"fecha_expiracion"`
+	FechaRechazada    *time.Time `json:"fecha_rechazada"`
+	ReservaID         *string    `json:"reserva_id"`
 }
 
 type OfertaConPropiedad struct {
@@ -111,7 +111,7 @@ func (r *OfertaRepo) GetRecibidas(ctx context.Context, propietarioID string) ([]
 		       o.mensaje, o.motivo_rechazo, o.fecha_creacion, o.fecha_aprobada, o.fecha_expiracion, o.fecha_rechazada, o.reserva_id,
 		       p.titulo,
 		       (SELECT url FROM imagenes_propiedad WHERE propiedad_id = p.id ORDER BY orden LIMIT 1),
-		       u.nombre, u.apellido, u.foto_url
+		       u.nombre, u.apellido, u.avatar_url
 		FROM boogie_ofertas o
 		JOIN propiedades p ON p.id = o.propiedad_id
 		JOIN usuarios u ON u.id = o.huesped_id

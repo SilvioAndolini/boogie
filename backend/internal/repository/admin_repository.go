@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -18,47 +19,50 @@ func NewAdminRepo(pool *pgxpool.Pool) *AdminRepo {
 }
 
 type AdminUser struct {
-	ID        string    `json:"id"`
-	Email     string    `json:"email"`
-	Nombre    string    `json:"nombre"`
-	Apellido  string    `json:"apellido"`
-	Telefono  *string   `json:"telefono"`
-	Cedula    *string   `json:"cedula"`
-	AvatarURL *string   `json:"avatar_url"`
-	Verificado bool     `json:"verificado"`
-	Rol       string    `json:"rol"`
-	Activo    bool      `json:"activo"`
-	FechaRegistro time.Time `json:"fecha_registro"`
+	ID               string    `json:"id"`
+	Email            string    `json:"email"`
+	Nombre           string    `json:"nombre"`
+	Apellido         string    `json:"apellido"`
+	Telefono         *string   `json:"telefono"`
+	Cedula           *string   `json:"cedula"`
+	AvatarURL        *string   `json:"avatar_url"`
+	Verificado       bool      `json:"verificado"`
+	Rol              string    `json:"rol"`
+	Activo           bool      `json:"activo"`
+	FechaRegistro    time.Time `json:"fecha_registro"`
+	PlanSuscripcion  string    `json:"plan_suscripcion"`
+	Reputacion       float64   `json:"reputacion"`
+	ReputacionManual bool      `json:"reputacion_manual"`
 }
 
 type AdminReserva struct {
-	ID                string    `json:"id"`
-	Codigo            string    `json:"codigo"`
-	FechaEntrada      time.Time `json:"fecha_entrada"`
-	FechaSalida       time.Time `json:"fecha_salida"`
-	Noches            int       `json:"noches"`
-	PrecioPorNoche    float64   `json:"precio_por_noche"`
-	Subtotal          float64   `json:"subtotal"`
-	ComisionPlataforma float64  `json:"comision_plataforma"`
-	Total             float64   `json:"total"`
-	Moneda            string    `json:"moneda"`
-	Estado            string    `json:"estado"`
-	CantidadHuespedes int       `json:"cantidad_huespedes"`
-	NotasHuesped      *string   `json:"notas_huesped"`
-	NotasInternas     *string   `json:"notas_internas"`
-	FechaCreacion     time.Time `json:"fecha_creacion"`
-	FechaConfirmacion *time.Time `json:"fecha_confirmacion"`
-	FechaCancelacion  *time.Time `json:"fecha_cancelacion"`
-	Propiedad         *AdminPropiedadShort `json:"propiedad"`
-	Huesped           *AdminUserShort      `json:"huesped"`
+	ID                 string               `json:"id"`
+	Codigo             string               `json:"codigo"`
+	FechaEntrada       time.Time            `json:"fecha_entrada"`
+	FechaSalida        time.Time            `json:"fecha_salida"`
+	Noches             int                  `json:"noches"`
+	PrecioPorNoche     float64              `json:"precio_por_noche"`
+	Subtotal           float64              `json:"subtotal"`
+	ComisionPlataforma float64              `json:"comision_plataforma"`
+	Total              float64              `json:"total"`
+	Moneda             string               `json:"moneda"`
+	Estado             string               `json:"estado"`
+	CantidadHuespedes  int                  `json:"cantidad_huespedes"`
+	NotasHuesped       *string              `json:"notas_huesped"`
+	NotasInternas      *string              `json:"notas_internas"`
+	FechaCreacion      time.Time            `json:"fecha_creacion"`
+	FechaConfirmacion  *time.Time           `json:"fecha_confirmacion"`
+	FechaCancelacion   *time.Time           `json:"fecha_cancelacion"`
+	Propiedad          *AdminPropiedadShort `json:"propiedad"`
+	Huesped            *AdminUserShort      `json:"huesped"`
 }
 
 type AdminPropiedadShort struct {
-	ID      string  `json:"id"`
-	Titulo  string  `json:"titulo"`
-	Slug    string  `json:"slug"`
-	Ciudad  string  `json:"ciudad"`
-	Estado  string  `json:"estado"`
+	ID     string `json:"id"`
+	Titulo string `json:"titulo"`
+	Slug   string `json:"slug"`
+	Ciudad string `json:"ciudad"`
+	Estado string `json:"estado"`
 }
 
 type AdminUserShort struct {
@@ -70,104 +74,105 @@ type AdminUserShort struct {
 }
 
 type AdminPago struct {
-	ID                string     `json:"id"`
-	Monto             float64    `json:"monto"`
-	Moneda            string     `json:"moneda"`
-	MontoEquivalente  *float64   `json:"monto_equivalente"`
-	MonedaEquivalente *string    `json:"moneda_equivalente"`
-	TasaCambio        *float64   `json:"tasa_cambio"`
-	MetodoPago        string     `json:"metodo_pago"`
-	Referencia        string     `json:"referencia"`
-	Comprobante       *string    `json:"comprobante"`
-	Estado            string     `json:"estado"`
-	FechaCreacion     time.Time  `json:"fecha_creacion"`
-	FechaVerificacion *time.Time `json:"fecha_verificacion"`
-	FechaAcreditacion *time.Time `json:"fecha_acreditacion"`
-	NotasVerificacion *string    `json:"notas_verificacion"`
+	ID                string             `json:"id"`
+	Monto             float64            `json:"monto"`
+	Moneda            string             `json:"moneda"`
+	MontoEquivalente  *float64           `json:"monto_equivalente"`
+	MonedaEquivalente *string            `json:"moneda_equivalente"`
+	TasaCambio        *float64           `json:"tasa_cambio"`
+	MetodoPago        string             `json:"metodo_pago"`
+	Referencia        string             `json:"referencia"`
+	Comprobante       *string            `json:"comprobante"`
+	Estado            string             `json:"estado"`
+	FechaCreacion     time.Time          `json:"fecha_creacion"`
+	FechaVerificacion *time.Time         `json:"fecha_verificacion"`
+	FechaAcreditacion *time.Time         `json:"fecha_acreditacion"`
+	NotasVerificacion *string            `json:"notas_verificacion"`
 	Reserva           *AdminReservaShort `json:"reserva"`
 	Usuario           *AdminUserShort    `json:"usuario"`
 }
 
 type AdminReservaShort struct {
-	ID      string `json:"id"`
-	Codigo  string `json:"codigo"`
-	Estado  string `json:"estado"`
+	ID     string `json:"id"`
+	Codigo string `json:"codigo"`
+	Estado string `json:"estado"`
 }
 
 type AdminPropiedad struct {
-	ID               string    `json:"id"`
-	Titulo           string    `json:"titulo"`
-	Slug             string    `json:"slug"`
-	TipoPropiedad    string    `json:"tipo_propiedad"`
-	PrecioPorNoche   float64   `json:"precio_por_noche"`
-	Moneda           string    `json:"moneda"`
-	CapacidadMaxima  int       `json:"capacidad_maxima"`
-	Habitaciones     *int      `json:"habitaciones"`
-	Banos            *int      `json:"banos"`
-	Camas            *int      `json:"camas"`
-	Ciudad           string    `json:"ciudad"`
-	Estado           string    `json:"estado"`
-	Direccion        *string   `json:"direccion"`
-	EstadoPublicacion string   `json:"estado_publicacion"`
-	Destacada        bool      `json:"destacada"`
-	FechaPublicacion *time.Time `json:"fecha_publicacion"`
-	FechaActualizacion time.Time `json:"fecha_actualizacion"`
-	VistasTotales    int       `json:"vistas_totales"`
-	RatingPromedio   float64   `json:"rating_promedio"`
-	TotalResenas     int       `json:"total_resenas"`
-	Propietario      *AdminUserShort `json:"propietario"`
+	ID                 string          `json:"id"`
+	Titulo             string          `json:"titulo"`
+	Slug               string          `json:"slug"`
+	TipoPropiedad      string          `json:"tipo_propiedad"`
+	PrecioPorNoche     float64         `json:"precio_por_noche"`
+	Moneda             string          `json:"moneda"`
+	CapacidadMaxima    int             `json:"capacidad_maxima"`
+	Habitaciones       *int            `json:"habitaciones"`
+	Banos              *int            `json:"banos"`
+	Camas              *int            `json:"camas"`
+	Ciudad             string          `json:"ciudad"`
+	Estado             string          `json:"estado"`
+	Direccion          *string         `json:"direccion"`
+	EstadoPublicacion  string          `json:"estado_publicacion"`
+	Destacada          bool            `json:"destacada"`
+	FechaPublicacion   *time.Time      `json:"fecha_publicacion"`
+	FechaActualizacion time.Time       `json:"fecha_actualizacion"`
+	VistasTotales      int             `json:"vistas_totales"`
+	RatingPromedio     float64         `json:"rating_promedio"`
+	TotalResenas       int             `json:"total_resenas"`
+	Imagenes           json.RawMessage `json:"imagenes"`
+	Propietario        *AdminUserShort `json:"propietario"`
 }
 
 type AdminResena struct {
-	ID           string     `json:"id"`
-	Calificacion int        `json:"calificacion"`
-	Limpieza     *int       `json:"limpieza"`
-	Comunicacion *int       `json:"comunicacion"`
-	Ubicacion    *int       `json:"ubicacion"`
-	Valor        *int       `json:"valor"`
-	Comentario   string     `json:"comentario"`
-	Respuesta    *string    `json:"respuesta"`
-	FechaCreacion time.Time `json:"fecha_creacion"`
-	FechaRespuesta *time.Time `json:"fecha_respuesta"`
-	Oculta       bool       `json:"oculta"`
-	Propiedad    *AdminPropiedadShort `json:"propiedad"`
-	Autor        *AdminUserShort      `json:"autor"`
-	Reserva      *AdminReservaShort   `json:"reserva"`
+	ID             string               `json:"id"`
+	Calificacion   int                  `json:"calificacion"`
+	Limpieza       *int                 `json:"limpieza"`
+	Comunicacion   *int                 `json:"comunicacion"`
+	Ubicacion      *int                 `json:"ubicacion"`
+	Valor          *int                 `json:"valor"`
+	Comentario     string               `json:"comentario"`
+	Respuesta      *string              `json:"respuesta"`
+	FechaCreacion  time.Time            `json:"fecha_creacion"`
+	FechaRespuesta *time.Time           `json:"fecha_respuesta"`
+	Oculta         bool                 `json:"oculta"`
+	Propiedad      *AdminPropiedadShort `json:"propiedad"`
+	Autor          *AdminUserShort      `json:"autor"`
+	Reserva        *AdminReservaShort   `json:"reserva"`
 }
 
 type Cupon struct {
-	ID                string     `json:"id"`
-	Codigo            string     `json:"codigo"`
-	Nombre            string     `json:"nombre"`
-	Descripcion       *string    `json:"descripcion"`
-	TipoDescuento     string     `json:"tipo_descuento"`
-	ValorDescuento    float64    `json:"valor_descuento"`
-	Moneda            string     `json:"moneda"`
-	MaxDescuento      *float64   `json:"max_descuento"`
-	TipoAplicacion    string     `json:"tipo_aplicacion"`
-	ValorAplicacion   *string    `json:"valor_aplicacion"`
-	MinCompra         *float64   `json:"min_compra"`
-	MinNoches         *int       `json:"min_noches"`
-	MaxUsos           *int       `json:"max_usos"`
-	MaxUsosPorUsuario int        `json:"max_usos_por_usuario"`
-	UsosActuales      int        `json:"usos_actuales"`
-	FechaInicio       time.Time  `json:"fecha_inicio"`
-	FechaFin          time.Time  `json:"fecha_fin"`
-	Activo            bool       `json:"activo"`
-	CreadoPor         *string    `json:"creado_por"`
-	FechaCreacion     time.Time  `json:"fecha_creacion"`
+	ID                string    `json:"id"`
+	Codigo            string    `json:"codigo"`
+	Nombre            string    `json:"nombre"`
+	Descripcion       *string   `json:"descripcion"`
+	TipoDescuento     string    `json:"tipo_descuento"`
+	ValorDescuento    float64   `json:"valor_descuento"`
+	Moneda            string    `json:"moneda"`
+	MaxDescuento      *float64  `json:"max_descuento"`
+	TipoAplicacion    string    `json:"tipo_aplicacion"`
+	ValorAplicacion   *string   `json:"valor_aplicacion"`
+	MinCompra         *float64  `json:"min_compra"`
+	MinNoches         *int      `json:"min_noches"`
+	MaxUsos           *int      `json:"max_usos"`
+	MaxUsosPorUsuario int       `json:"max_usos_por_usuario"`
+	UsosActuales      int       `json:"usos_actuales"`
+	FechaInicio       time.Time `json:"fecha_inicio"`
+	FechaFin          time.Time `json:"fecha_fin"`
+	Activo            bool      `json:"activo"`
+	CreadoPor         *string   `json:"creado_por"`
+	FechaCreacion     time.Time `json:"fecha_creacion"`
 }
 
 type CuponUso struct {
-	ID              string    `json:"id"`
-	CuponID         string    `json:"cupon_id"`
-	UsuarioID       string    `json:"usuario_id"`
-	ReservaID       string    `json:"reserva_id"`
-	DescuentoAplicado float64  `json:"descuento_aplicado"`
-	FechaUso        time.Time `json:"fecha_uso"`
-	Usuario         *AdminUserShort `json:"usuario"`
-	Cupon           *CuponShort     `json:"cupon"`
-	Reserva         *AdminReservaShort `json:"reserva"`
+	ID                string             `json:"id"`
+	CuponID           string             `json:"cupon_id"`
+	UsuarioID         string             `json:"usuario_id"`
+	ReservaID         string             `json:"reserva_id"`
+	DescuentoAplicado float64            `json:"descuento_aplicado"`
+	FechaUso          time.Time          `json:"fecha_uso"`
+	Usuario           *AdminUserShort    `json:"usuario"`
+	Cupon             *CuponShort        `json:"cupon"`
+	Reserva           *AdminReservaShort `json:"reserva"`
 }
 
 type CuponShort struct {
@@ -176,27 +181,27 @@ type CuponShort struct {
 }
 
 type AuditLog struct {
-	ID         string     `json:"id"`
-	AdminID    string     `json:"admin_id"`
-	Accion     string     `json:"accion"`
-	Entidad    string     `json:"entidad"`
-	EntidadID  *string    `json:"entidad_id"`
-	Detalles   *string    `json:"detalles"`
-	IP         *string    `json:"ip"`
-	UserAgent  *string    `json:"user_agent"`
-	CreatedAt  time.Time  `json:"created_at"`
-	Admin      *AdminUserShort `json:"admin"`
+	ID        string          `json:"id"`
+	AdminID   string          `json:"admin_id"`
+	Accion    string          `json:"accion"`
+	Entidad   string          `json:"entidad"`
+	EntidadID *string         `json:"entidad_id"`
+	Detalles  *string         `json:"detalles"`
+	IP        *string         `json:"ip"`
+	UserAgent *string         `json:"user_agent"`
+	CreatedAt time.Time       `json:"created_at"`
+	Admin     *AdminUserShort `json:"admin"`
 }
 
 type Notificacion struct {
-	ID           string     `json:"id"`
-	Tipo         string     `json:"tipo"`
-	Titulo       string     `json:"titulo"`
-	Mensaje      string     `json:"mensaje"`
-	Leida        bool       `json:"leida"`
-	URLAccion    *string    `json:"url_accion"`
-	FechaCreacion time.Time `json:"fecha_creacion"`
-	Usuario      *AdminUserShort `json:"usuario"`
+	ID            string          `json:"id"`
+	Tipo          string          `json:"tipo"`
+	Titulo        string          `json:"titulo"`
+	Mensaje       string          `json:"mensaje"`
+	Leida         bool            `json:"leida"`
+	URLAccion     *string         `json:"url_accion"`
+	FechaCreacion time.Time       `json:"fecha_creacion"`
+	Usuario       *AdminUserShort `json:"usuario"`
 }
 
 func (r *AdminRepo) GetReservasAdmin(ctx context.Context, estado, busqueda string, pagina, limite int) ([]AdminReserva, int, error) {
@@ -477,11 +482,13 @@ func (r *AdminRepo) GetPropiedadesAdmin(ctx context.Context, estado, ciudad, bus
 		SELECT pr.id, pr.titulo, pr.slug, pr.tipo_propiedad, pr.precio_por_noche, pr.moneda,
 			pr.capacidad_maxima, pr.ciudad, pr.estado, pr.estado_publicacion, pr.destacada,
 			pr.fecha_actualizacion, pr.vistas_totales,
-			COALESCE(pr.calificacion, 0), COALESCE(pr.cantidad_resenas, 0),
+			COALESCE(pr.rating_promedio, 0), COALESCE(pr.total_resenas, 0),
+			COALESCE((SELECT json_agg(json_build_object('url', ip.url, 'es_principal', ip.es_principal) ORDER BY ip.orden)
+				FROM imagenes_propiedad ip WHERE ip.propiedad_id = pr.id), '[]'::json),
 			COALESCE(u.id,''), COALESCE(u.nombre,''), COALESCE(u.apellido,''), COALESCE(u.email,''), u.avatar_url
 		FROM propiedades pr
 		LEFT JOIN usuarios u ON pr.propietario_id = u.id
-		%s}
+		%s
 		ORDER BY pr.fecha_actualizacion DESC
 		LIMIT $%d OFFSET $%d`,
 		whereClause, argIdx, argIdx+1)
@@ -502,6 +509,7 @@ func (r *AdminRepo) GetPropiedadesAdmin(ctx context.Context, estado, ciudad, bus
 			&p.CapacidadMaxima, &p.Ciudad, &p.Estado, &p.EstadoPublicacion, &p.Destacada,
 			&p.FechaActualizacion, &p.VistasTotales,
 			&p.RatingPromedio, &p.TotalResenas,
+			&p.Imagenes,
 			&owner.ID, &owner.Nombre, &owner.Apellido, &owner.Email, &owner.AvatarURL,
 		); err != nil {
 			return nil, 0, err
@@ -1036,7 +1044,7 @@ func (r *AdminRepo) GetDashboardStats(ctx context.Context) (map[string]interface
 				resHoy = append(resHoy, map[string]interface{}{
 					"id": id, "codigo": codigo, "total": total, "noches": noches,
 					"cantidad_huespedes": ch, "moneda": moneda,
-					"huesped": map[string]string{"nombre": unombre, "apellido": uapellido},
+					"huesped":   map[string]string{"nombre": unombre, "apellido": uapellido},
 					"propiedad": map[string]string{"titulo": ptitulo},
 				})
 			}
@@ -1131,7 +1139,7 @@ func (r *AdminRepo) GetDashboardStats(ctx context.Context) (map[string]interface
 				reservasRecientes = append(reservasRecientes, map[string]interface{}{
 					"id": id, "codigo": codigo, "total": total, "estado": estado, "moneda": moneda,
 					"fecha_entrada": fentrada.Format("2006-01-02"), "fecha_salida": fsalida.Format("2006-01-02"),
-					"huesped": map[string]string{"nombre": unombre, "apellido": uapellido},
+					"huesped":   map[string]string{"nombre": unombre, "apellido": uapellido},
 					"propiedad": map[string]string{"titulo": ptitulo},
 				})
 			}
@@ -1154,24 +1162,24 @@ func (r *AdminRepo) GetDashboardStats(ctx context.Context) (map[string]interface
 				actividad = append(actividad, map[string]interface{}{
 					"id": id, "accion": accion, "entidad": entidad,
 					"created_at": createdAt.Format(time.RFC3339),
-					"admin": map[string]string{"nombre": unombre, "apellido": uapellido},
+					"admin":      map[string]string{"nombre": unombre, "apellido": uapellido},
 				})
 			}
 		}
 	}
 
 	return map[string]interface{}{
-		"usuarios":           map[string]interface{}{"total": usuariosTotal, "nuevosSemana": usuariosNuevosSemana},
-		"propiedades":        map[string]interface{}{"total": propTotal, "publicadas": propPublicadas},
-		"reservas":           map[string]interface{}{"total": resTotal, "pendientes": resPendientes, "hoy": resHoy},
-		"pagos":              map[string]interface{}{"ingresosMes": ingresosMes, "ingresosMesPasado": ingresosMesPasado, "crecimientoIngresos": crecimientoIngresos},
+		"usuarios":            map[string]interface{}{"total": usuariosTotal, "nuevosSemana": usuariosNuevosSemana},
+		"propiedades":         map[string]interface{}{"total": propTotal, "publicadas": propPublicadas},
+		"reservas":            map[string]interface{}{"total": resTotal, "pendientes": resPendientes, "hoy": resHoy},
+		"pagos":               map[string]interface{}{"ingresosMes": ingresosMes, "ingresosMesPasado": ingresosMesPasado, "crecimientoIngresos": crecimientoIngresos},
 		"crecimientoReservas": crecimientoReservas,
-		"ingresosByMonth":    ingresosByMonth,
-		"reservasByStatus":   reservasByStatus,
+		"ingresosByMonth":     ingresosByMonth,
+		"reservasByStatus":    reservasByStatus,
 		"propiedadesByCiudad": propiedadesByCiudad,
-		"usersByDay":         usersByDay,
-		"reservasRecientes":  reservasRecientes,
-		"actividad":          actividad,
+		"usersByDay":          usersByDay,
+		"reservasRecientes":   reservasRecientes,
+		"actividad":           actividad,
 	}, nil
 }
 
@@ -1205,8 +1213,9 @@ func (r *AdminRepo) GetUsuariosAdmin(ctx context.Context, busqueda, rol string, 
 	}
 
 	q := fmt.Sprintf(`
-		SELECT u.id, u.email, u.nombre, u.apellido, u.telefono, u.cedula, u.foto_url,
-		       u.verificado, u.rol, COALESCE(u.activo, true), u.fecha_registro
+		SELECT u.id, u.email, u.nombre, u.apellido, u.telefono, u.cedula, u.avatar_url,
+		       u.verificado, u.rol, COALESCE(u.activo, true), u.fecha_registro,
+		       COALESCE(u.plan_suscripcion, 'FREE'), COALESCE(u.reputacion, 0), COALESCE(u.reputacion_manual, false)
 		FROM usuarios u
 		%s
 		ORDER BY u.fecha_registro DESC
@@ -1225,6 +1234,7 @@ func (r *AdminRepo) GetUsuariosAdmin(ctx context.Context, busqueda, rol string, 
 		if err := rows.Scan(
 			&u.ID, &u.Email, &u.Nombre, &u.Apellido, &u.Telefono, &u.Cedula, &u.AvatarURL,
 			&u.Verificado, &u.Rol, &u.Activo, &u.FechaRegistro,
+			&u.PlanSuscripcion, &u.Reputacion, &u.ReputacionManual,
 		); err != nil {
 			return nil, 0, err
 		}
@@ -1289,9 +1299,11 @@ func (r *AdminRepo) GetPropiedadByIDAdmin(ctx context.Context, id string) (*Admi
 	var owner AdminUserShort
 	err := r.pool.QueryRow(ctx, `
 		SELECT pr.id, pr.titulo, pr.slug, pr.tipo_propiedad, pr.precio_por_noche, pr.moneda,
-		       COALESCE(pr.capacidad_maxima, pr.capacidad, 1), pr.ciudad, pr.estado, pr.estado_publicacion,
+		       COALESCE(pr.capacidad_maxima, 1), pr.ciudad, pr.estado, pr.estado_publicacion,
 		       COALESCE(pr.destacada, false), pr.fecha_actualizacion,
-		       COALESCE(pr.vistas_totales, 0), COALESCE(pr.calificacion, 0), COALESCE(pr.cantidad_resenas, 0),
+		       COALESCE(pr.vistas_totales, 0), COALESCE(pr.rating_promedio, 0), COALESCE(pr.total_resenas, 0),
+		       COALESCE((SELECT json_agg(json_build_object('url', ip.url, 'es_principal', ip.es_principal) ORDER BY ip.orden)
+				FROM imagenes_propiedad ip WHERE ip.propiedad_id = pr.id), '[]'::json),
 		       COALESCE(u.id,''), COALESCE(u.nombre,''), COALESCE(u.apellido,''), COALESCE(u.email,''), u.avatar_url
 		FROM propiedades pr
 		LEFT JOIN usuarios u ON pr.propietario_id = u.id
@@ -1300,6 +1312,7 @@ func (r *AdminRepo) GetPropiedadByIDAdmin(ctx context.Context, id string) (*Admi
 		&p.CapacidadMaxima, &p.Ciudad, &p.Estado, &p.EstadoPublicacion,
 		&p.Destacada, &p.FechaActualizacion, &p.VistasTotales,
 		&p.RatingPromedio, &p.TotalResenas,
+		&p.Imagenes,
 		&owner.ID, &owner.Nombre, &owner.Apellido, &owner.Email, &owner.AvatarURL,
 	)
 	if err != nil {
@@ -1338,11 +1351,91 @@ func (r *AdminRepo) GetPropiedadIngresos(ctx context.Context, id string) (map[st
 		       COUNT(*) FILTER (WHERE estado IN ('CONFIRMADA','EN_CURSO','COMPLETADA'))
 		FROM reservas WHERE propiedad_id = $1`, id).Scan(&totalReservas, &noches, &ingresos, &confirmadas)
 
+	var ingresosMes, ingresosMesPasado float64
+	now := time.Now()
+	inicioMes := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+	inicioMesPasado := time.Date(now.Year(), now.Month()-1, 1, 0, 0, 0, 0, now.Location())
+	r.pool.QueryRow(ctx, `SELECT COALESCE(SUM(total), 0) FROM reservas WHERE propiedad_id = $1 AND estado IN ('CONFIRMADA','EN_CURSO','COMPLETADA') AND fecha_creacion >= $2`, id, inicioMes).Scan(&ingresosMes)
+	r.pool.QueryRow(ctx, `SELECT COALESCE(SUM(total), 0) FROM reservas WHERE propiedad_id = $1 AND estado IN ('CONFIRMADA','EN_CURSO','COMPLETADA') AND fecha_creacion >= $2 AND fecha_creacion < $3`, id, inicioMesPasado, inicioMes).Scan(&ingresosMesPasado)
+
+	crecimiento := 0
+	if ingresosMesPasado > 0 {
+		crecimiento = int((ingresosMes - ingresosMesPasado) / ingresosMesPasado * 100)
+	}
+
+	comisionPlat := ingresos * 0.06
+	comisionAnf := ingresos * 0.03
+	var totalHuespedes int
+	r.pool.QueryRow(ctx, `SELECT COALESCE(SUM(cantidad_huespedes), 0) FROM reservas WHERE propiedad_id = $1 AND estado IN ('CONFIRMADA','EN_CURSO','COMPLETADA')`, id).Scan(&totalHuespedes)
+
+	var tarifaPromedio float64
+	if noches > 0 {
+		tarifaPromedio = ingresos / float64(noches)
+	}
+
+	ingresosByMonth := []map[string]interface{}{}
+	irows, err := r.pool.Query(ctx, `
+		SELECT TO_CHAR(d, 'Mon') as name,
+			COALESCE(SUM(r.total), 0) as ingresos,
+			COALESCE(SUM(r.comision_plataforma), 0) as comisiones
+		FROM generate_series(NOW() - INTERVAL '11 months', NOW(), INTERVAL '1 month') d
+		LEFT JOIN reservas r ON DATE_TRUNC('month', r.fecha_creacion) = DATE_TRUNC('month', d) AND r.propiedad_id = $1 AND r.estado IN ('CONFIRMADA','EN_CURSO','COMPLETADA')
+		GROUP BY d ORDER BY d`, id)
+	if err == nil {
+		defer irows.Close()
+		for irows.Next() {
+			var name string
+			var ing, com float64
+			if err := irows.Scan(&name, &ing, &com); err == nil {
+				ingresosByMonth = append(ingresosByMonth, map[string]interface{}{"name": name, "ingresos": ing, "comisiones": com})
+			}
+		}
+	}
+
+	reservas := []interface{}{}
+	rrows, err := r.pool.Query(ctx, `
+		SELECT r.id, r.codigo, r.total, r.moneda, r.estado, r.noches, r.cantidad_huespedes,
+			r.fecha_entrada, r.fecha_salida, r.fecha_creacion,
+			COALESCE(u.nombre,''), COALESCE(u.apellido,'')
+		FROM reservas r
+		LEFT JOIN usuarios u ON r.huesped_id = u.id
+		WHERE r.propiedad_id = $1
+		ORDER BY r.fecha_creacion DESC LIMIT 50`, id)
+	if err == nil {
+		defer rrows.Close()
+		for rrows.Next() {
+			var rid, codigo, moneda, estado, unombre, uapellido string
+			var total float64
+			var nochesR, ch int
+			var fentrada, fsalida, fcreacion time.Time
+			if err := rrows.Scan(&rid, &codigo, &total, &moneda, &estado, &nochesR, &ch, &fentrada, &fsalida, &fcreacion, &unombre, &uapellido); err == nil {
+				reservas = append(reservas, map[string]interface{}{
+					"id": rid, "codigo": codigo, "total": total, "moneda": moneda, "estado": estado,
+					"noches": nochesR, "cantidad_huespedes": ch,
+					"fecha_entrada": fentrada.Format("2006-01-02"), "fecha_salida": fsalida.Format("2006-01-02"),
+					"fecha_creacion": fcreacion.Format(time.RFC3339),
+					"huesped": map[string]string{"nombre": unombre, "apellido": uapellido},
+				})
+			}
+		}
+	}
+
 	return map[string]interface{}{
-		"totalReservas": totalReservas,
-		"confirmadas":   confirmadas,
-		"noches":        noches,
-		"ingresos":      ingresos,
+		"kpis": map[string]interface{}{
+			"totalIngresos":          ingresos,
+			"totalComisiones":        comisionPlat,
+			"totalComisionesAnfitrion": comisionAnf,
+			"ingresosNetos":          ingresos - comisionPlat - comisionAnf,
+			"totalNoches":            noches,
+			"totalHuespedes":         totalHuespedes,
+			"tarifaPromedio":         tarifaPromedio,
+			"totalReservas":          totalReservas,
+			"ingresosMes":            ingresosMes,
+			"ingresosMesPasado":      ingresosMesPasado,
+			"crecimiento":            crecimiento,
+		},
+		"ingresosByMonth": ingresosByMonth,
+		"reservas":        reservas,
 	}, nil
 }
 

@@ -106,7 +106,7 @@ func (r *PagoRepo) GetReservaOwnerForPago(ctx context.Context, pagoID string) (r
 func (r *PagoRepo) ConfirmarReserva(ctx context.Context, reservaID string) error {
 	_, err := r.pool.Exec(ctx, `
 		UPDATE reservas SET estado = 'CONFIRMADA', fecha_confirmacion = NOW()
-		WHERE id = $1 AND estado = 'PENDIENTE'
+		WHERE id = $1 AND estado IN ('PENDIENTE_PAGO','PENDIENTE')
 	`, reservaID)
 	return err
 }
