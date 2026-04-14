@@ -21,6 +21,8 @@ func NewReservaRepo(pool *pgxpool.Pool) *ReservaRepo {
 	return &ReservaRepo{pool: pool}
 }
 
+func (r *ReservaRepo) Pool() *pgxpool.Pool { return r.pool }
+
 type ReservaDetalle struct {
 	models.Reserva
 	PropiedadTitulo     string

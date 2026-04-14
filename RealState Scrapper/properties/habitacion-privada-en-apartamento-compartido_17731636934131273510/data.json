@@ -1,0 +1,106 @@
+{
+  "id": "17731636934131273510",
+  "slug": "habitacion-privada-en-apartamento-compartido",
+  "url": "https://estei.app/stay/17731636934131273510/profile",
+  "scrapedAt": "2026-04-14T17:03:50.260Z",
+  "titulo": "Habitación privada en apartamento compartido",
+  "descripcion": "Apartamento ubicado en Caracas, cercano al boulevard de Sabana Grande, con tiendas, comercios, restaurantes. Fácil acceso desde cualquier punto. Apartamento de tres habitaciones, de uso particular o compartido según la necesidad que tengas. Cómo, acogedor, pulcro y seguro.",
+  "tipoPropiedad": "APARTAMENTO",
+  "precioPorNoche": 26,
+  "precioOriginal": "$26 USD",
+  "moneda": "USD",
+  "capacidadMaxima": 2,
+  "habitaciones": null,
+  "banos": 1,
+  "camas": 1,
+  "direccion": "F4VG+F8Q, Av Francisco Solano Lopez, Caracas 1050, Distrito Capital, Venezuela",
+  "ciudad": "",
+  "estado": "",
+  "latitud": null,
+  "longitud": null,
+  "reglas": null,
+  "politicaCancelacion": "",
+  "horarioCheckIn": "15:00 - 20:00",
+  "horarioCheckOut": "10:00 - 11:00",
+  "estanciaMinima": 1,
+  "estanciaMaxima": 365,
+  "amenidades": [
+    "Ventilador",
+    "Agua caliente",
+    "Ascensor",
+    "Ciudad",
+    "Estacionamiento",
+    "Terraza",
+    "WiFi",
+    "Cocina equipada",
+    "Vajilla",
+    "Juego de cubiertos",
+    "Nevera",
+    "Lavadora",
+    "Vasos",
+    "TV",
+    "Mesa de comedor",
+    "Cafetera",
+    "Licuadora",
+    "Juego de ollas"
+  ],
+  "anfitrion": {
+    "nombre": "Gabriel",
+    "imagen": null,
+    "miembroDesde": null,
+    "telefono": null,
+    "email": null,
+    "whatsapp": null
+  },
+  "imagenes": [
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/09cX2Gqd90J42scWPz6XSA9QVl40y55Kaf62HYwm2941In5PcR.jpg",
+      "alt": "habitacin-privada-en-apartamento-compartido-0",
+      "orden": 1,
+      "esPrincipal": true,
+      "archivoLocal": "img/img_1.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/v4J644vj3z2w0s0Ul8Fpdot328dx839KsWklDO0s856y9op354.jpg",
+      "alt": "habitacin-privada-en-apartamento-compartido-1",
+      "orden": 2,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_2.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/F44PDBs3pYc4xcYIQ2atX3pD2n50Pca3m74H706Nug8B66YqOX.jpg",
+      "alt": "habitacin-privada-en-apartamento-compartido-2",
+      "orden": 3,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_3.jpg"
+    },
+    {
+      "url": "https://avilatek.sfo3.digitaloceanspaces.com/stg/dR955ZW07qt7aK048H11iw7r5NF9a54l0c986JxGFa3L4lFV0s.jpg",
+      "alt": "habitacin-privada-en-apartamento-compartido-3",
+      "orden": 4,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_4.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/B1u90NcfB6I9b1cbB9m90QAC36D84BFR112I7mwsz3Y6G4O461.jpg",
+      "alt": "1792507826432845659",
+      "orden": 5,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_5.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/MiS8C3VR742tAKOC67702aah16H59Klxa4q601c85k298XWBu9.jpg",
+      "alt": "1800491785539228080",
+      "orden": 6,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_6.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/K7pMN66jk87S44d8HM9mzae51tmRS23oN4jnt9rQ2Guj243P20.jpg",
+      "alt": "1793718967905760474",
+      "orden": 7,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_7.jpg"
+    }
+  ]
+}

@@ -1,0 +1,97 @@
+{
+  "id": "17683754395359629071",
+  "slug": "b15-comodo-y-practico-espacio",
+  "url": "https://estei.app/stay/17683754395359629071/profile",
+  "scrapedAt": "2026-04-14T17:03:59.598Z",
+  "titulo": "B15 Cómodo y Practico Espacio",
+  "descripcion": "Disfruta de este cómodo y céntrico espacio. Muy cerca de comercios y restaurantes.",
+  "tipoPropiedad": "APARTAMENTO",
+  "precioPorNoche": null,
+  "precioOriginal": "",
+  "moneda": "USD",
+  "capacidadMaxima": 3,
+  "habitaciones": 30,
+  "banos": 1,
+  "camas": 1,
+  "direccion": "Centro Residencial Solano, Av Francisco Solano Lopez, Caracas 1050, Distrito Capital, Venezuela",
+  "ciudad": "",
+  "estado": "",
+  "latitud": null,
+  "longitud": null,
+  "reglas": null,
+  "politicaCancelacion": "",
+  "horarioCheckIn": "15:00 - 19:00",
+  "horarioCheckOut": "10:00 - 10:30",
+  "estanciaMinima": 1,
+  "estanciaMaxima": 365,
+  "amenidades": [
+    "Estacionamiento",
+    "WiFi",
+    "Vajilla",
+    "Secadora",
+    "Cafetera",
+    "Juego de ollas",
+    "Aire acondicionado",
+    "Tanque de agua",
+    "Vasos",
+    "Agua caliente",
+    "Horno",
+    "Licuadora",
+    "Microondas",
+    "Ascensor",
+    "Lavadora",
+    "Transporte",
+    "Seguridad",
+    "Nevera",
+    "Cocina equipada",
+    "Ciudad",
+    "Mesa de comedor",
+    "Juego de cubiertos",
+    "TV"
+  ],
+  "anfitrion": {
+    "nombre": "CARLOS",
+    "imagen": null,
+    "miembroDesde": null,
+    "telefono": null,
+    "email": null,
+    "whatsapp": null
+  },
+  "imagenes": [
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/KU33k140Uid9I0g3gvqUq681Kcvc975nA5i3428A9K43A9ZYc7.jpg",
+      "alt": "b15-cmodo-y-practico-espacio-0",
+      "orden": 1,
+      "esPrincipal": true,
+      "archivoLocal": "img/img_1.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/KCZ6Rff9NMs6v7a27955G95e0o34yx27oiHB4P9Dy93YBAn6Y2.jpg",
+      "alt": "b15-cmodo-y-practico-espacio-1",
+      "orden": 2,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_2.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/i12rM8dFk99YEjL0e0795d6kS172d3VA41419I7s1Jsb9y6F78.jpg",
+      "alt": "b15-cmodo-y-practico-espacio-2",
+      "orden": 3,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_3.jpg"
+    },
+    {
+      "url": "https://avilatek.sfo3.digitaloceanspaces.com/stg/U4fR1CorS7653V7vf669E82y15t78n1580Ga2Y69zuiEr959je.jpg",
+      "alt": "b15-cmodo-y-practico-espacio-3",
+      "orden": 4,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_4.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/pVY278HzJoDA70BYC1a78jJ02G22AC8890O774z1lF9F9jc37l.jpg",
+      "alt": "1825844905860590885",
+      "orden": 5,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_5.jpg"
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": "17561857117139817972",
+  "slug": "apartamento-vacacional-en-caraballeda-estado-la-guaira",
+  "url": "https://estei.app/stay/17561857117139817972/profile",
+  "scrapedAt": "2026-04-14T17:03:45.739Z",
+  "titulo": "Apartamento Vacacional en Caraballeda, Estado La Guaira",
+  "descripcion": "Es un bello apartamento ubicado en la mejor zona de la Guaira, con vista al mar, ambiente de montaña, consta de 2 habitaciones, 2 baños, sala integral con cocina, aire acondicionado y full equipado. Es un apartamento bien acogedor, decorado con mucho cariño para el disfrute de los huéspedes.",
+  "tipoPropiedad": "APARTAMENTO",
+  "precioPorNoche": 70,
+  "precioOriginal": "$70 USD",
+  "moneda": "USD",
+  "capacidadMaxima": 2,
+  "habitaciones": 2,
+  "banos": 2,
+  "camas": null,
+  "direccion": "Av. La Costanera, Caraballeda, La Guaira, Venezuela",
+  "ciudad": "",
+  "estado": "",
+  "latitud": null,
+  "longitud": null,
+  "reglas": null,
+  "politicaCancelacion": "",
+  "horarioCheckIn": "11:00 - 20:00",
+  "horarioCheckOut": "8:00 - 14:00",
+  "estanciaMinima": 1,
+  "estanciaMaxima": 365,
+  "amenidades": [
+    "Aire acondicionado",
+    "Montaña",
+    "Parque para niños",
+    "Agua caliente",
+    "Ascensor",
+    "Estacionamiento",
+    "Seguridad",
+    "Servicios de streaming",
+    "Piscina",
+    "WiFi",
+    "Cocina equipada",
+    "Tanque de agua",
+    "Vajilla",
+    "Juego de cubiertos",
+    "Nevera",
+    "Vasos",
+    "TV",
+    "Mesa de comedor",
+    "Parrillera",
+    "Cafetera",
+    "Licuadora",
+    "Secadora",
+    "Horno",
+    "Juego de ollas",
+    "Transporte"
+  ],
+  "anfitrion": {
+    "nombre": "Heidy Beatyriz",
+    "imagen": null,
+    "miembroDesde": null,
+    "telefono": null,
+    "email": null,
+    "whatsapp": null
+  },
+  "imagenes": [
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/JQ0MyIN8i6082Ww76lxNOFQ1MC9Vv3RKlmQ6U94Xz161461LRx.jpg",
+      "alt": "apartamento-vacacional-en-caraballeda-estado-la-guaira-0",
+      "orden": 1,
+      "esPrincipal": true,
+      "archivoLocal": "img/img_1.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/2CC897vEMx2Fyab003c0w730HQ445HS6v601QMq6L11IlApcb7.jpg",
+      "alt": "apartamento-vacacional-en-caraballeda-estado-la-guaira-1",
+      "orden": 2,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_2.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/NuC211P227x5b348vQ9Q6w8rn2Fj176RD81894r1ha48G5uE6r.jpg",
+      "alt": "apartamento-vacacional-en-caraballeda-estado-la-guaira-2",
+      "orden": 3,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_3.jpg"
+    },
+    {
+      "url": "https://avilatek.sfo3.digitaloceanspaces.com/stg/76PxRLb18Yky0KjT3B2820mS2T3Bril2m6158s29GW6h9EQGG9.jpg",
+      "alt": "apartamento-vacacional-en-caraballeda-estado-la-guaira-3",
+      "orden": 4,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_4.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/JP1J99g6z7j80Rw6J5911D70YPi5r8l2c6h54s27sUk2pEt7Pr.jpg",
+      "alt": "1796615447680466059",
+      "orden": 5,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_5.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/8L37jTv98V49Or2859a062o637wr2m9oAJ085k23LMX5DwWFLr.jpg",
+      "alt": "1780210028411753863",
+      "orden": 6,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_6.jpg"
+    }
+  ]
+}

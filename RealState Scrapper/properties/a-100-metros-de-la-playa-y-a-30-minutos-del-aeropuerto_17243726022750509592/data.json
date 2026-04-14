@@ -1,0 +1,85 @@
+{
+  "id": "17243726022750509592",
+  "slug": "a-100-metros-de-la-playa-y-a-30-minutos-del-aeropuerto",
+  "url": "https://estei.app/stay/17243726022750509592/profile",
+  "scrapedAt": "2026-04-14T17:04:23.080Z",
+  "titulo": "A 100 metros de la playa y a 30 minutos del aeropuerto",
+  "descripcion": "Ideal para parejas o familias pequeñas, acogedora casa en Las Salinas, muy cerca de la playa. Te sentirás como en casa.",
+  "tipoPropiedad": "APARTAMENTO",
+  "precioPorNoche": null,
+  "precioOriginal": "",
+  "moneda": "USD",
+  "capacidadMaxima": 4,
+  "habitaciones": 30,
+  "banos": 1,
+  "camas": 1,
+  "direccion": "La Salinas, La Guaira, Venezuela",
+  "ciudad": "",
+  "estado": "",
+  "latitud": null,
+  "longitud": null,
+  "reglas": null,
+  "politicaCancelacion": "",
+  "horarioCheckIn": "11:00 - 11:15",
+  "horarioCheckOut": "11:00 - 11:30",
+  "estanciaMinima": 1,
+  "estanciaMaxima": 365,
+  "amenidades": [
+    "Pet Friendly",
+    "Aire acondicionado",
+    "Playa",
+    "Estacionamiento",
+    "Terraza",
+    "WiFi",
+    "Cocina equipada",
+    "Tanque de agua",
+    "Copas",
+    "Vajilla",
+    "Juego de cubiertos",
+    "Nevera",
+    "Vasos",
+    "TV",
+    "Mesa de comedor",
+    "Licuadora",
+    "Cafetera",
+    "Juego de ollas"
+  ],
+  "anfitrion": {
+    "nombre": "Yaimara",
+    "imagen": null,
+    "miembroDesde": null,
+    "telefono": null,
+    "email": null,
+    "whatsapp": null
+  },
+  "imagenes": [
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/62TtLzqRBlPkabk361NJZaUTK9P8Nj66QCzz925x2w0xN5s1k9.jpeg",
+      "alt": "a-100-metros-de-la-playa-y-a-30-minutos-del-aeropuerto-0",
+      "orden": 1,
+      "esPrincipal": true,
+      "archivoLocal": "img/img_1.jpeg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/4i8I75302ypHR56c52ZJ5Eko6e2yj1gJ5628C78LTPOoh85lBl.jpeg",
+      "alt": "a-100-metros-de-la-playa-y-a-30-minutos-del-aeropuerto-1",
+      "orden": 2,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_2.jpeg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/677sL9C44vc1p1op081mT4g78r8XhC8T2TMlcK1gs1f2hk6p03.jpeg",
+      "alt": "a-100-metros-de-la-playa-y-a-30-minutos-del-aeropuerto-2",
+      "orden": 3,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_3.jpeg"
+    },
+    {
+      "url": "https://avilatek.sfo3.digitaloceanspaces.com/stg/U0XSKl8Q74i02Isj9v271614EgS3yIdxSr58lAgm9knJgX8jS9.jpeg",
+      "alt": "a-100-metros-de-la-playa-y-a-30-minutos-del-aeropuerto-3",
+      "orden": 4,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_4.jpeg"
+    }
+  ]
+}

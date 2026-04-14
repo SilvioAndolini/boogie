@@ -1,0 +1,100 @@
+{
+  "id": "17684408706891930370",
+  "slug": "casa-para-17-personas",
+  "url": "https://estei.app/stay/17684408706891930370/profile",
+  "scrapedAt": "2026-04-14T17:03:57.335Z",
+  "titulo": "CASA PARA 17 PERSONAS",
+  "descripcion": "HERMOSA CASA CON CLIMA DE MONTAÑA TOTALMENTE EQUIPADA PARA PASAR DÍAS DE PAZ Y TRANQUILIDAD CON CAPACIDAD PARA 17 PERSONAS",
+  "tipoPropiedad": "APARTAMENTO",
+  "precioPorNoche": null,
+  "precioOriginal": "",
+  "moneda": "USD",
+  "capacidadMaxima": 17,
+  "habitaciones": 45,
+  "banos": 5,
+  "camas": null,
+  "direccion": "Colonia Tovar 1030, Aragua, Venezuela",
+  "ciudad": "",
+  "estado": "",
+  "latitud": null,
+  "longitud": null,
+  "reglas": null,
+  "politicaCancelacion": "",
+  "horarioCheckIn": "13:45 - 14:30",
+  "horarioCheckOut": "11:30 - 11:45",
+  "estanciaMinima": 1,
+  "estanciaMaxima": 365,
+  "amenidades": [
+    "Montaña",
+    "WiFi",
+    "Estacionamiento",
+    "Vasos",
+    "Licuadora",
+    "Microondas",
+    "Nevera",
+    "Cocina equipada",
+    "Mesa de comedor",
+    "Juego de cubiertos",
+    "Juego de ollas",
+    "Cafetera"
+  ],
+  "anfitrion": {
+    "nombre": "Yelitza",
+    "imagen": null,
+    "miembroDesde": null,
+    "telefono": null,
+    "email": null,
+    "whatsapp": null
+  },
+  "imagenes": [
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/eK6Z4846KX089LZFuSl32bQ7g874886Mb5tH755QrF97d4nQb9.jpg",
+      "alt": "casa-para-17-personas-0",
+      "orden": 1,
+      "esPrincipal": true,
+      "archivoLocal": "img/img_1.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/JxW4S23887w1Rmw5A05N603y6f6AwfYG5538c2GgF1999k6xR9.jpg",
+      "alt": "casa-para-17-personas-1",
+      "orden": 2,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_2.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/o5l3451nnBJ3dYOn3Bhd6582836a106S6363d4IpU71tIjc2QT.jpg",
+      "alt": "casa-para-17-personas-2",
+      "orden": 3,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_3.jpg"
+    },
+    {
+      "url": "https://avilatek.sfo3.digitaloceanspaces.com/stg/91dha11tvkrkzNm6cgCS3Gz8d0910678U90rbN313Q8N8e7Uz4.jpg",
+      "alt": "casa-para-17-personas-3",
+      "orden": 4,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_4.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/Q8r88hon5256Zd04N3dvJ127e43Q43X85NYt2w46006zO27IHF.jpg",
+      "alt": "1784732003137060051",
+      "orden": 5,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_5.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/fBcPOr0mQ1P841M838z250n069BF2zD86ZM19eg82T5Dd9aq6d.jpg",
+      "alt": "1781590484694114248",
+      "orden": 6,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_6.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/y7xBkbUh4t0bMmZfPw8Ri6tk3zLgnRV2F95L842vGrL0BCl0Nv.jpg",
+      "alt": "1793781528180340411",
+      "orden": 7,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_7.jpg"
+    }
+  ]
+}

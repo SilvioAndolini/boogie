@@ -1,0 +1,73 @@
+{
+  "id": "17252546656502240954",
+  "slug": "habitacion",
+  "url": "https://estei.app/stay/17252546656502240954/profile",
+  "scrapedAt": "2026-04-14T17:04:34.699Z",
+  "titulo": "Habitación",
+  "descripcion": "Muy buena ubicación cercana a la ciudad de los Teques, con un excelente clima, comodidades como habitación amplia con baño privado, conjunto residencial con seguridad para vehículo.",
+  "tipoPropiedad": "APARTAMENTO",
+  "precioPorNoche": 45,
+  "precioOriginal": "$45 USD",
+  "moneda": "USD",
+  "capacidadMaxima": 2,
+  "habitaciones": null,
+  "banos": 1,
+  "camas": 1,
+  "direccion": "Urb. Alto Verde, Los Teques 1201, Miranda, Venezuela",
+  "ciudad": "",
+  "estado": "",
+  "latitud": null,
+  "longitud": null,
+  "reglas": null,
+  "politicaCancelacion": "",
+  "horarioCheckIn": "15:00",
+  "horarioCheckOut": "11:00",
+  "estanciaMinima": 1,
+  "estanciaMaxima": 365,
+  "amenidades": [],
+  "anfitrion": {
+    "nombre": "Susana",
+    "imagen": null,
+    "miembroDesde": null,
+    "telefono": null,
+    "email": null,
+    "whatsapp": null
+  },
+  "imagenes": [
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/B825EngM8341s2Yabf8jj371IGZmGj56x0vLmYrH763lIqBb6T.jpg",
+      "alt": "habitacin-0",
+      "orden": 1,
+      "esPrincipal": true,
+      "archivoLocal": "img/img_1.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/HfY55V2Zq963f404iq6zZv1M5800LVgRW46o8r1XH40X5rO2W7.jpeg",
+      "alt": "habitacin-1",
+      "orden": 2,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_2.jpeg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/7D767H1sj94J2U78R4dpdFiotv8fJ6x6V63gu297To8AJuxE6p.jpg",
+      "alt": "habitacin-2",
+      "orden": 3,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_3.jpg"
+    },
+    {
+      "url": "https://avilatek.sfo3.digitaloceanspaces.com/stg/0Rzu0A6e6MS1XTr62l142P85E665d03MPti6lgTPP7gJE4j265.jpg",
+      "alt": "habitacin-3",
+      "orden": 4,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_4.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/7W9440TEakWMJ17i8n933kNjCW1tqnZ8bVqbE3ar83G7chRaW6.jpg",
+      "alt": "1737563148552635026",
+      "orden": 5,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_5.jpg"
+    }
+  ]
+}

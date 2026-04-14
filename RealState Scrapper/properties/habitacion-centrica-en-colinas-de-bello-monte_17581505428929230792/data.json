@@ -1,0 +1,93 @@
+{
+  "id": "17581505428929230792",
+  "slug": "habitacion-centrica-en-colinas-de-bello-monte",
+  "url": "https://estei.app/stay/17581505428929230792/profile",
+  "scrapedAt": "2026-04-14T16:47:05.630Z",
+  "titulo": "Habitación céntrica en Colinas de Bello Monte",
+  "descripcion": "Si tiene una diligencia hacer en Caracas, te ofrecemos esta tranquila y sencilla habitación, para una persona, con su baño privado, nevera ejecutiva, Wifi, pequeño escritorio de trabajo, y a un módico precio.\nClosed con ganchos para guardar su ropa\nNota: Solamente para damas.",
+  "tipoPropiedad": "APARTAMENTO",
+  "precioPorNoche": 20,
+  "precioOriginal": "$20 USD",
+  "moneda": "USD",
+  "capacidadMaxima": 1,
+  "habitaciones": null,
+  "banos": null,
+  "camas": null,
+  "direccion": "F4P8+VXP, Caracas 1080, Capital District, Venezuela",
+  "ciudad": "",
+  "estado": "",
+  "latitud": null,
+  "longitud": null,
+  "reglas": null,
+  "politicaCancelacion": "",
+  "horarioCheckIn": "12:00",
+  "horarioCheckOut": "12:00",
+  "estanciaMinima": 1,
+  "estanciaMaxima": 365,
+  "amenidades": [
+    "Ventilador",
+    "WiFi",
+    "Tanque de agua",
+    "Agua caliente",
+    "Microondas",
+    "Ascensor",
+    "Transporte",
+    "Seguridad",
+    "Nevera",
+    "Ciudad",
+    "Juego de cubiertos",
+    "Mesa de comedor"
+  ],
+  "anfitrion": {
+    "nombre": "Gonzalo",
+    "imagen": null,
+    "miembroDesde": null,
+    "telefono": null,
+    "email": null,
+    "whatsapp": null
+  },
+  "imagenes": [
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/5j6RKjtm59XPOz2404I800548t4V1z72H7DrS7073nHX2674vF.jpg",
+      "alt": "habitacin-cntrica-en-colinas-de-bello-monte-0",
+      "orden": 1,
+      "esPrincipal": true,
+      "archivoLocal": "img/img_1.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/m7007Dw1MA5A4128paRKd988gL7sZC258mj1xV2nA9GjC1h4HD.jpg",
+      "alt": "habitacin-cntrica-en-colinas-de-bello-monte-1",
+      "orden": 2,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_2.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/zM7T500LeX87V2UVU37z4tYu0V4RW8G527oeNc2E4n510091S8.jpg",
+      "alt": "habitacin-cntrica-en-colinas-de-bello-monte-2",
+      "orden": 3,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_3.jpg"
+    },
+    {
+      "url": "https://avilatek.sfo3.digitaloceanspaces.com/stg/68440474B9hzG976TJsASz23d40H2xKGh324M83ff00lcy517A.jpg",
+      "alt": "habitacin-cntrica-en-colinas-de-bello-monte-3",
+      "orden": 4,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_4.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/1sgV6js4uukLg23211vuDR4P9Lm5J5QY0RD757e5t54w548yw2.jpg",
+      "alt": "1805149640945401046",
+      "orden": 5,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_5.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/6OjM93Z22rb7K9Nk94S9K1KPF38yiADo3MyC4xpOw6k8202cW2.jpg",
+      "alt": "1789913102036314428",
+      "orden": 6,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_6.jpg"
+    }
+  ]
+}

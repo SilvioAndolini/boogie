@@ -1,0 +1,66 @@
+{
+  "id": "17259467346271147446",
+  "slug": "posada-bella-vista",
+  "url": "https://estei.app/stay/17259467346271147446/profile",
+  "scrapedAt": "2026-04-14T17:03:31.287Z",
+  "titulo": "Posada bella vista",
+  "descripcion": "Posada ubicada a 10 minutos del aeropuerto y frente a las playas incluye transporte al aeropuerto gratuito más desayuno",
+  "tipoPropiedad": "APARTAMENTO",
+  "precioPorNoche": 30.43,
+  "precioOriginal": "$30.43 USD",
+  "moneda": "USD",
+  "capacidadMaxima": 3,
+  "habitaciones": null,
+  "banos": 1,
+  "camas": 1,
+  "direccion": "C. Bella Vista, Catia La Mar 1162, La Guaira, Venezuela",
+  "ciudad": "",
+  "estado": "",
+  "latitud": null,
+  "longitud": null,
+  "reglas": null,
+  "politicaCancelacion": "",
+  "horarioCheckIn": "15:00",
+  "horarioCheckOut": "11:00",
+  "estanciaMinima": 1,
+  "estanciaMaxima": 365,
+  "amenidades": [],
+  "anfitrion": {
+    "nombre": "Efrén",
+    "imagen": null,
+    "miembroDesde": null,
+    "telefono": null,
+    "email": null,
+    "whatsapp": null
+  },
+  "imagenes": [
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/06a41w1H001736Yp9S3tMj6A3nb4s3677L5SK7468N6106zQ5Z.jpg",
+      "alt": "posada-bella-vista-0",
+      "orden": 1,
+      "esPrincipal": true,
+      "archivoLocal": "img/img_1.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/fqg080862Ls28R77x47l19ObVS4NeRTXF8h8dQ681s08k38H0D.jpg",
+      "alt": "posada-bella-vista-1",
+      "orden": 2,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_2.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/S9rSG76okg8R9tjaKE5293Z57Ap87vnWCAu0E34Kamv9n333Q5.jpg",
+      "alt": "posada-bella-vista-2",
+      "orden": 3,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_3.jpg"
+    },
+    {
+      "url": "https://avilatek.sfo3.digitaloceanspaces.com/stg/GHx632Ss004zE30M37v48jNO5A3O5iMG79N916N3yCYuB2uQVM.jpg",
+      "alt": "posada-bella-vista-3",
+      "orden": 4,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_4.jpg"
+    }
+  ]
+}

@@ -1,0 +1,91 @@
+{
+  "id": "17293395962082792810",
+  "slug": "res-costabella",
+  "url": "https://estei.app/stay/17293395962082792810/profile",
+  "scrapedAt": "2026-04-14T16:46:21.715Z",
+  "titulo": "Res. Costabella",
+  "descripcion": "Una de las mejores propiedades en La Guaira, inmejorable ubicación, todo a pie a menos de 5 minutos, supermercados, restaurantes, playas, centro de diversiones, farmacias, etc...",
+  "tipoPropiedad": "APARTAMENTO",
+  "precioPorNoche": null,
+  "precioOriginal": "",
+  "moneda": "USD",
+  "capacidadMaxima": 4,
+  "habitaciones": 0,
+  "banos": 1,
+  "camas": 1,
+  "direccion": "Av. Cannes, Caraballeda 1165, La Guaira, Venezuela",
+  "ciudad": "",
+  "estado": "",
+  "latitud": null,
+  "longitud": null,
+  "reglas": null,
+  "politicaCancelacion": "",
+  "horarioCheckIn": "15:00",
+  "horarioCheckOut": "9:00",
+  "estanciaMinima": 1,
+  "estanciaMaxima": 365,
+  "amenidades": [
+    "Aire acondicionado",
+    "Agua caliente",
+    "Ascensor",
+    "Patio",
+    "Playa",
+    "Ciudad",
+    "Estacionamiento",
+    "Servicios de streaming",
+    "Piscina",
+    "WiFi",
+    "Cocina equipada",
+    "Tanque de agua",
+    "Copas",
+    "Vajilla",
+    "Juego de cubiertos",
+    "Nevera",
+    "Vasos",
+    "Mesa de comedor",
+    "Tostadora",
+    "Cafetera",
+    "Licuadora",
+    "Horno",
+    "Juego de ollas",
+    "Microondas"
+  ],
+  "anfitrion": {
+    "nombre": "Gladimar",
+    "imagen": null,
+    "miembroDesde": null,
+    "telefono": null,
+    "email": null,
+    "whatsapp": null
+  },
+  "imagenes": [
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/185z25s1RI0XyCfZ4r6r5LR0P3rOex57F9klaH9yhXh2B20Y8A.jpg",
+      "alt": "res-costabella-0",
+      "orden": 1,
+      "esPrincipal": true,
+      "archivoLocal": "img/img_1.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/qnq7ozB44BI2NPI82711bb07noO86R3547b14N5Qh763Ew1i3i.jpg",
+      "alt": "res-costabella-1",
+      "orden": 2,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_2.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/g99ts7Lb524mI7BrhZvvaIy9elrC2rk354U5w887zTo3Yy27jk.jpg",
+      "alt": "res-costabella-2",
+      "orden": 3,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_3.jpg"
+    },
+    {
+      "url": "https://avilatek.sfo3.digitaloceanspaces.com/stg/273x5v93h6g8vBF97zf23J59QiufYAvM713SepgsiflwlgbPv1.jpg",
+      "alt": "res-costabella-3",
+      "orden": 4,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_4.jpg"
+    }
+  ]
+}

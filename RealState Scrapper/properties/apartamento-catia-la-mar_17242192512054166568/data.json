@@ -1,0 +1,111 @@
+{
+  "id": "17242192512054166568",
+  "slug": "apartamento-catia-la-mar",
+  "url": "https://estei.app/stay/17242192512054166568/profile",
+  "scrapedAt": "2026-04-14T17:04:39.705Z",
+  "titulo": "Apartamento Catia la Mar",
+  "descripcion": "Relájate con toda la familia en este alojamiento donde la tranquilidad se respira. Contamos con todas las comodidades para una estadía única. Dos habitaciones (una principal con cama matrimonial y baño privado, una segunda con dos camas individuales). Un baño común, cocina con todos sus utensilios y...",
+  "tipoPropiedad": "APARTAMENTO",
+  "precioPorNoche": null,
+  "precioOriginal": "",
+  "moneda": "USD",
+  "capacidadMaxima": 4,
+  "habitaciones": 0,
+  "banos": 1,
+  "camas": 1,
+  "direccion": "Av Principal de Playa Grande, Catia La Mar 1162, La Guaira, Venezuela",
+  "ciudad": "",
+  "estado": "",
+  "latitud": null,
+  "longitud": null,
+  "reglas": null,
+  "politicaCancelacion": "",
+  "horarioCheckIn": "10:00 - 13:00",
+  "horarioCheckOut": "10:00 - 13:00",
+  "estanciaMinima": 1,
+  "estanciaMaxima": 365,
+  "amenidades": [
+    "Aire acondicionado",
+    "Parque para niños",
+    "Ventilador",
+    "Agua caliente",
+    "Ascensor",
+    "Patio",
+    "Estacionamiento",
+    "Playa",
+    "Terraza",
+    "Seguridad",
+    "Piscina",
+    "WiFi",
+    "Cocina equipada",
+    "Servicios de streaming",
+    "Tanque de agua",
+    "Vajilla",
+    "Juego de cubiertos",
+    "Nevera",
+    "Lavadora",
+    "Vasos",
+    "TV",
+    "Mesa de comedor",
+    "Parrillera",
+    "Cafetera",
+    "Licuadora",
+    "Tostadora",
+    "Horno",
+    "Juego de ollas",
+    "Microondas",
+    "Transporte"
+  ],
+  "anfitrion": {
+    "nombre": "Hildana",
+    "imagen": null,
+    "miembroDesde": null,
+    "telefono": null,
+    "email": null,
+    "whatsapp": null
+  },
+  "imagenes": [
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/6KEB9r755yfhV39B3332m169vSZkn703E8O63S81WFs50k6Sf3.jpg",
+      "alt": "apartamento-catia-la-mar-0",
+      "orden": 1,
+      "esPrincipal": true,
+      "archivoLocal": "img/img_1.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/4F0TE4281wwX8SSyFpIZ8M61Y19i3wAkN0fk544p3xT1G60CfJ.jpg",
+      "alt": "apartamento-catia-la-mar-1",
+      "orden": 2,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_2.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/46IeuH8j1709D929Hz7792E4kuT7x0X83e6j57M534iUARFXeQ.jpg",
+      "alt": "apartamento-catia-la-mar-2",
+      "orden": 3,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_3.jpg"
+    },
+    {
+      "url": "https://avilatek.sfo3.digitaloceanspaces.com/stg/dfhY32r286P0703bMJ3O1wwO9HrD9ht8FfvC4C00bDo4J2e0M3.jpg",
+      "alt": "apartamento-catia-la-mar-3",
+      "orden": 4,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_4.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/0atyP1INjX7CRu2PWN9gP2T5983G26M7Hl28Z7c48c786M1659.jpg",
+      "alt": "1750091790955264489",
+      "orden": 5,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_5.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/U4h62iwe9O95wnNH904j7LfkG0W1c379F6LPhA11G20vVgeTSt.jpg",
+      "alt": "1758986226230532414",
+      "orden": 6,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_6.jpg"
+    }
+  ]
+}

@@ -55,6 +55,61 @@ func NewReservaService(repo *repository.ReservaRepo, disponSvc *ReservaDisponibi
 	}
 }
 
+type CrearConPagoInput struct {
+	PropiedadID       string
+	HuespedID         string
+	FechaEntrada      time.Time
+	FechaSalida       time.Time
+	CantidadHuespedes int
+	NotasHuesped      *string
+	Monto             float64
+	Moneda            enums.Moneda
+	MetodoPago        enums.MetodoPagoEnum
+	Referencia        string
+	ComprobanteURL    *string
+	BancoEmisor       *string
+	TelefonoEmisor    *string
+	StoreItems        []repository.StoreItemInput
+}
+
+func (s *ReservaService) CrearConPago(ctx context.Context, input *CrearConPagoInput) (*CrearReservaResult, error) {
+	result, err := s.Crear(ctx, &CrearReservaInput{
+		PropiedadID:       input.PropiedadID,
+		HuespedID:         input.HuespedID,
+		FechaEntrada:      input.FechaEntrada,
+		FechaSalida:       input.FechaSalida,
+		CantidadHuespedes: input.CantidadHuespedes,
+		NotasHuesped:      input.NotasHuesped,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = s.repo.InsertPagoManual(ctx, &repository.NuevoPago{
+		ReservaID:      result.Reserva.ID,
+		UsuarioID:      input.HuespedID,
+		Monto:          input.Monto,
+		Moneda:         input.Moneda,
+		MetodoPago:     input.MetodoPago,
+		Referencia:     input.Referencia,
+		ComprobanteURL: input.ComprobanteURL,
+		BancoEmisor:    input.BancoEmisor,
+		TelefonoEmisor: input.TelefonoEmisor,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error al registrar pago: %w", err)
+	}
+
+	if len(input.StoreItems) > 0 {
+		storeRepo := repository.NewStoreItemRepo(s.repo.Pool())
+		if err := storeRepo.InsertBatch(ctx, input.StoreItems); err != nil {
+			slog.Error("[reserva/crear-con-pago] store items error", "error", err)
+		}
+	}
+
+	return result, nil
+}
+
 func (s *ReservaService) Crear(ctx context.Context, input *CrearReservaInput) (*CrearReservaResult, error) {
 	prop, err := s.repo.GetPropiedadForReserva(ctx, input.PropiedadID)
 	if err != nil {

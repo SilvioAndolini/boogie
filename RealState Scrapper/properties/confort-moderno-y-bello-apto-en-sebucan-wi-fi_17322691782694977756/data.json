@@ -1,0 +1,116 @@
+{
+  "id": "17322691782694977756",
+  "slug": "confort-moderno-y-bello-apto-en-sebucan-wi-fi",
+  "url": "https://estei.app/stay/17322691782694977756/profile",
+  "scrapedAt": "2026-04-14T17:04:44.443Z",
+  "titulo": "Confort: Moderno y Bello Apto en Sebucán | Wi-Fi",
+  "descripcion": "Moderno y acogedor apartamento en excelente ubicación en Sebucán, ideal para hasta 4 personas, con Wi-Fi de fibra, Smart TV y todas las comodidades para una estadía perfecta, a pocos pasos del Metro, comercios y centros comerciales, ideal para moverte fácilmente por la ciudad Nuestra oferta incluye...",
+  "tipoPropiedad": "APARTAMENTO",
+  "precioPorNoche": null,
+  "precioOriginal": "",
+  "moneda": "USD",
+  "capacidadMaxima": 4,
+  "habitaciones": 0,
+  "banos": null,
+  "camas": 1,
+  "direccion": "Resd Dunas, Calle Cantuara, Caracas 1050, Distrito Capital, Venezuela",
+  "ciudad": "",
+  "estado": "",
+  "latitud": null,
+  "longitud": null,
+  "reglas": null,
+  "politicaCancelacion": "",
+  "horarioCheckIn": "16:00 - 19:00",
+  "horarioCheckOut": "8:00 - 11:00",
+  "estanciaMinima": 1,
+  "estanciaMaxima": 365,
+  "amenidades": [
+    "Pet Friendly",
+    "Aire acondicionado",
+    "Agua caliente",
+    "Ascensor",
+    "Ciudad",
+    "Estacionamiento",
+    "Seguridad",
+    "WiFi",
+    "Cocina equipada",
+    "Servicios de streaming",
+    "Tanque de agua",
+    "Copas",
+    "Vajilla",
+    "Juego de cubiertos",
+    "Nevera",
+    "Mesa de comedor",
+    "TV",
+    "Vasos",
+    "Lavadora",
+    "Cafetera",
+    "Licuadora",
+    "Secadora",
+    "Horno",
+    "Juego de ollas",
+    "Microondas",
+    "Transporte",
+    "Parrillera",
+    "Tostadora"
+  ],
+  "anfitrion": {
+    "nombre": "Rob",
+    "imagen": null,
+    "miembroDesde": null,
+    "telefono": null,
+    "email": null,
+    "whatsapp": null
+  },
+  "imagenes": [
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/qI21TwBFx2U417x1qUAo3T6HLQ321dz53l989F49DSd474f89x.png",
+      "alt": "confort-moderno-y-bello-apto-en-sebucn-wi-fi-0",
+      "orden": 1,
+      "esPrincipal": true,
+      "archivoLocal": "img/img_1.png"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/74AWp8uAB7gY4TbyooV5g35AVay3lO9H57Hl9ERs66711fYIFc.png",
+      "alt": "confort-moderno-y-bello-apto-en-sebucn-wi-fi-1",
+      "orden": 2,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_2.png"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/0G8721swqop2ojm6N98NK91tTDm253Y7waGhR7XPb9Mp5Q4Tr3.png",
+      "alt": "confort-moderno-y-bello-apto-en-sebucn-wi-fi-2",
+      "orden": 3,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_3.png"
+    },
+    {
+      "url": "https://avilatek.sfo3.digitaloceanspaces.com/stg/BV3Dt5Ez4V3c81E9B43psZOyauwGUA23QAFJNX61x90050f8Y5.png",
+      "alt": "confort-moderno-y-bello-apto-en-sebucn-wi-fi-3",
+      "orden": 4,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_4.png"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/876guGi9Qp25RH4OC51207BJE67cAu6l162nr1C4477p6coy8A.png",
+      "alt": "1822216793538649018",
+      "orden": 5,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_5.png"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/U43yjHFAq48w1Q4Ibg279c14cptlm633627e2vP4Vsy0of09a9.png?tr=q-20%2Cbl-25",
+      "alt": "1814759542912542442",
+      "orden": 6,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_6.png"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/0PAh25P6khvEVxKsU36XT6UOc8yy7M8w607t6kCQ5H7U870gx7.png",
+      "alt": "1793689573063545256",
+      "orden": 7,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_7.png"
+    }
+  ]
+}

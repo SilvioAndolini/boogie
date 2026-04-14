@@ -1,0 +1,101 @@
+{
+  "id": "17731067395546446716",
+  "slug": "habitaciones-en-apartamento-compartido",
+  "url": "https://estei.app/stay/17731067395546446716/profile",
+  "scrapedAt": "2026-04-14T17:03:19.101Z",
+  "titulo": "Habitaciones en apartamento compartido",
+  "descripcion": "Apartamento ubicado en urbanización residencial tranquila y agradable, lejos de los ruidos de una avenida principal pero a pocos minutos se accede a transporte publico constante y trabajando hasta tarde en la noche. La urbanizacion cuenta con un parque privado perfecto para pasear y ejercitarse. ...",
+  "tipoPropiedad": "APARTAMENTO",
+  "precioPorNoche": 30,
+  "precioOriginal": "$30 USD",
+  "moneda": "USD",
+  "capacidadMaxima": 2,
+  "habitaciones": null,
+  "banos": 1,
+  "camas": 1,
+  "direccion": "Residencias Parque Alegre, Caracas 1083, Miranda, Venezuela",
+  "ciudad": "",
+  "estado": "",
+  "latitud": null,
+  "longitud": null,
+  "reglas": null,
+  "politicaCancelacion": "",
+  "horarioCheckIn": "11:00 - 11:45",
+  "horarioCheckOut": "11:00 - 11:45",
+  "estanciaMinima": 1,
+  "estanciaMaxima": 365,
+  "amenidades": [
+    "Parque para niños",
+    "Ascensor",
+    "Agua caliente",
+    "Ciudad",
+    "Estacionamiento",
+    "Terraza",
+    "Seguridad",
+    "WiFi",
+    "Cocina equipada",
+    "Tanque de agua",
+    "Vajilla",
+    "Copas",
+    "Juego de cubiertos",
+    "Nevera",
+    "Lavadora",
+    "Vasos",
+    "Mesa de comedor",
+    "Secadora",
+    "Juego de ollas",
+    "Microondas"
+  ],
+  "anfitrion": {
+    "nombre": "Samira Carolina",
+    "imagen": null,
+    "miembroDesde": null,
+    "telefono": null,
+    "email": null,
+    "whatsapp": null
+  },
+  "imagenes": [
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/51u2Y5R57504Gfzm341Vq3ozz2ky3UC14a8D29ZNPf10Mm7uh0.jpg",
+      "alt": "habitaciones-en-apartamento-compartido-0",
+      "orden": 1,
+      "esPrincipal": true,
+      "archivoLocal": "img/img_1.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/rL79D3O1f3ltS5lu276JLhcWYvMR8883p6358jHOu6Y24X6pw0.jpg",
+      "alt": "habitaciones-en-apartamento-compartido-1",
+      "orden": 2,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_2.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/Z8xZb5xdG4e2q6a1kJ7E998v6MR4adgamCN59f7OEl1o8NVi06.jpg",
+      "alt": "habitaciones-en-apartamento-compartido-2",
+      "orden": 3,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_3.jpg"
+    },
+    {
+      "url": "https://avilatek.sfo3.digitaloceanspaces.com/stg/79OKJxe08J5ea1W9oMgN1H57Yuo39jmg39Y94r77SC14M71k8R.jpg",
+      "alt": "habitaciones-en-apartamento-compartido-3",
+      "orden": 4,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_4.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/QYa5MX9Xi87kK42gjSWiaWZrH22ENZ00Ja7VAY5x9m7ss00v2s.jpg",
+      "alt": "1827696738904169042",
+      "orden": 5,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_5.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/32Bpg667cEa0bb8cVyh94p9v99jZ32lN4t3i8RMaI37U690z1V.jpg",
+      "alt": "1800957687959687441",
+      "orden": 6,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_6.jpg"
+    }
+  ]
+}

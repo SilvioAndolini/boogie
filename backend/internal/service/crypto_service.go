@@ -5,15 +5,14 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"math"
-	"math/rand"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/boogie/backend/internal/domain/enums"
+	"github.com/boogie/backend/internal/domain/idgen"
+	"github.com/boogie/backend/internal/domain/util"
 )
 
 const (
@@ -75,17 +74,20 @@ func NewCryptoService(cfg CryptapiConfig, comisionH, comisionA float64) *CryptoS
 }
 
 func (s *CryptoService) CreateAddress(callbackURL string) (*CryptAPIResult, error) {
-	url := fmt.Sprintf("%s/%s/create/?callback=%s&address=%s&pending=1",
+	apiURL := fmt.Sprintf("%s/%s/create/?callback=%s&address=%s&pending=1",
 		CryptapiBase, CryptapiTicker, url.QueryEscape(callbackURL), s.Config.WalletAddress,
 	)
 
-	resp, err := s.httpClient.Get(url)
+	resp, err := s.httpClient.Get(apiURL)
 	if err != nil {
 		return nil, fmt.Errorf("cryptapi request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("cryptapi read body: %w", err)
+	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("cryptapi status %d: %s", resp.StatusCode, string(body))
 	}
@@ -130,14 +132,10 @@ func CalcularPrecioReserva(precioPorNoche float64, fechaEntrada, fechaSalida tim
 		noches = 1
 	}
 
-	round2 := func(v float64) float64 {
-		return math.Round(v*100) / 100
-	}
-
-	subtotal := round2(precioPorNoche * float64(noches))
-	comisionH := round2(subtotal * 0.06)
-	comisionA := round2(subtotal * 0.03)
-	total := round2(subtotal + comisionH)
+	subtotal := util.Round2(precioPorNoche * float64(noches))
+	comisionH := util.Round2(subtotal * 0.06)
+	comisionA := util.Round2(subtotal * 0.03)
+	total := util.Round2(subtotal + comisionH)
 
 	return PrecioReserva{
 		Noches:            noches,
@@ -155,9 +153,7 @@ func CalcularReembolso(totalReserva, comisionPlataforma float64, politica enums.
 	hoy := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	checkIn := time.Date(fechaEntrada.Year(), fechaEntrada.Month(), fechaEntrada.Day(), 14, 0, 0, 0, fechaEntrada.Location())
 
-	diasAntes := int(math.Ceil(checkIn.Sub(hoy).Hours() / 24))
-
-	round2 := func(v float64) float64 { return math.Round(v*100) / 100 }
+	diasAntes := int(checkIn.Sub(hoy).Hours() / 24)
 
 	var porcentaje int
 	var montoReembolsable float64
@@ -186,7 +182,7 @@ func CalcularReembolso(totalReserva, comisionPlataforma float64, politica enums.
 		}
 	}
 
-	montoReembolsable = math.Max(0, round2(montoReembolsable))
+	montoReembolsable = util.Round2(max(0, montoReembolsable))
 
 	var mensaje string
 	switch {
@@ -202,7 +198,7 @@ func CalcularReembolso(totalReserva, comisionPlataforma float64, politica enums.
 		TotalReserva:        totalReserva,
 		ComisionPlataforma:  comisionPlataforma,
 		MontoReembolsable:   montoReembolsable,
-		MontoNoReembolsable: round2(totalReserva - montoReembolsable),
+		MontoNoReembolsable: util.Round2(totalReserva - montoReembolsable),
 		PorcentajeReembolso: porcentaje,
 		PoliticaAplicable:   string(politica),
 		DiasAntesCheckIn:    diasAntes,
@@ -211,9 +207,7 @@ func CalcularReembolso(totalReserva, comisionPlataforma float64, politica enums.
 }
 
 func GenerarCodigoReserva() string {
-	ts := strconv.FormatInt(time.Now().UnixMilli(), 36)
-	randPart := fmt.Sprintf("%04s", strings.ToUpper(strconv.FormatInt(rand.Int63(), 36)))
-	return "BOO-" + strings.ToUpper(ts) + "-" + randPart[len(randPart)-4:]
+	return idgen.CodigoReserva()
 }
 
 func BuildExplorerURL(txHash string) string {
@@ -221,8 +215,8 @@ func BuildExplorerURL(txHash string) string {
 }
 
 func (s *CryptoService) GetLogs(callbackURL string) []interface{} {
-	url := fmt.Sprintf("%s/%s/logs/?callback=%s", CryptapiBase, CryptapiTicker, callbackURL)
-	resp, err := s.httpClient.Get(url)
+	apiURL := fmt.Sprintf("%s/%s/logs/?callback=%s", CryptapiBase, CryptapiTicker, callbackURL)
+	resp, err := s.httpClient.Get(apiURL)
 	if err != nil || resp.StatusCode != http.StatusOK {
 		slog.Warn("cryptapi logs fetch failed", "error", err)
 		return nil

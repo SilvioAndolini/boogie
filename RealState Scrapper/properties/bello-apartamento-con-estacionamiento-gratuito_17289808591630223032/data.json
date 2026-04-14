@@ -1,0 +1,104 @@
+{
+  "id": "17289808591630223032",
+  "slug": "bello-apartamento-con-estacionamiento-gratuito",
+  "url": "https://estei.app/stay/17289808591630223032/profile",
+  "scrapedAt": "2026-04-14T17:03:16.688Z",
+  "titulo": "Bello Apartamento Con Estacionamiento Gratuito",
+  "descripcion": "Ubicado en la mejor zona de caracas, el rosal, el edificio posee pozo, jamás falta el agua, zona tranquila. El check in es a las 2 pm y el check out es a las 10 am. No se permite fumar ni utilizar vapers. No se permite utilizar planchas.",
+  "tipoPropiedad": "APARTAMENTO",
+  "precioPorNoche": null,
+  "precioOriginal": "",
+  "moneda": "USD",
+  "capacidadMaxima": 2,
+  "habitaciones": 15,
+  "banos": 1,
+  "camas": null,
+  "direccion": "C. Junín, Caracas 1060, Miranda, Venezuela",
+  "ciudad": "",
+  "estado": "",
+  "latitud": null,
+  "longitud": null,
+  "reglas": null,
+  "politicaCancelacion": "",
+  "horarioCheckIn": "15:00 - 15:15",
+  "horarioCheckOut": "11:00 - 11:15",
+  "estanciaMinima": 1,
+  "estanciaMaxima": 365,
+  "amenidades": [
+    "Cafetera",
+    "Aire acondicionado",
+    "Estacionamiento",
+    "WiFi",
+    "Vajilla",
+    "Juego de ollas",
+    "Horno",
+    "Agua caliente",
+    "Vasos",
+    "Licuadora",
+    "Microondas",
+    "Ascensor",
+    "Lavadora",
+    "Seguridad",
+    "Servicios de streaming",
+    "Nevera",
+    "Ciudad",
+    "Cocina equipada",
+    "Mesa de comedor",
+    "Copas",
+    "Juego de cubiertos",
+    "TV",
+    "Ventilador"
+  ],
+  "anfitrion": {
+    "nombre": "Daniel Dieter",
+    "imagen": null,
+    "miembroDesde": null,
+    "telefono": null,
+    "email": null,
+    "whatsapp": null
+  },
+  "imagenes": [
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/KzO18Y3f7FU8i2ItDoW984kmHcj71aL6v2dX6l1JN3943fDe67.jpg",
+      "alt": "bello-apartamento-con-estacionamiento-gratuito-0",
+      "orden": 1,
+      "esPrincipal": true,
+      "archivoLocal": "img/img_1.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/T6llXTO0we9Ej86j9758L97K6V5UfCBCy25rU7i82ZkpppH07W.jpg",
+      "alt": "bello-apartamento-con-estacionamiento-gratuito-1",
+      "orden": 2,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_2.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/01S8y9H4ejCM33heNK23pFSrDy2w8CTT3869836LB4E39S94i4.jpg",
+      "alt": "bello-apartamento-con-estacionamiento-gratuito-2",
+      "orden": 3,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_3.jpg"
+    },
+    {
+      "url": "https://avilatek.sfo3.digitaloceanspaces.com/stg/b01zObFdJhMasd0CGj7ev96w4a4iZaE3no4l945YUh70Qwgy9M.jpg",
+      "alt": "bello-apartamento-con-estacionamiento-gratuito-3",
+      "orden": 4,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_4.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/Wk2ik39p33lI9J2QFnqaK0t8f8ST9H2tO12B0W64j8Qt75G2Xk.jpg",
+      "alt": "1740040334399606821",
+      "orden": 5,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_5.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/776243W87k52Y8hh204X4990Ot1H6HzI6n0iTzbM32xGTfGngW.jpg",
+      "alt": "1738176744700594839",
+      "orden": 6,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_6.jpg"
+    }
+  ]
+}

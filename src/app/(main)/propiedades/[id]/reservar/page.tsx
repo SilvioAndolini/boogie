@@ -13,7 +13,7 @@ import { PaymentForm } from '@/components/pagos/payment-form'
 import { BoogieStore } from '@/components/reservas/boogie-store'
 import { COMISION_PLATAFORMA_HUESPED } from '@/lib/constants'
 import { crearReserva } from '@/actions/reserva.actions'
-import { registrarPagoReserva, agregarStoreItems } from '@/actions/pago-reserva.actions'
+import { crearReservaConPago } from '@/actions/pago-reserva.actions'
 import Image from 'next/image'
 import { toast } from 'sonner'
 import type { MetodoPagoEnum } from '@/types'
@@ -127,35 +127,47 @@ function ReservarContent() {
     if (!propiedad || !metodoPago) return
     setCreandoReserva(true)
     try {
-      const reservaIdToUse = await ensureReserva()
-      if (!reservaIdToUse) return
-
       const referencia = paymentFormData.get('referencia') as string
       const bancoEmisor = paymentFormData.get('bancoEmisor') as string
       const telefonoEmisor = paymentFormData.get('telefonoEmisor') as string
       const comprobanteFile = paymentFormData.get('comprobante') as File | null
 
-      if (referencia && metodoPago) {
-        let comprobanteBase64: string | undefined
-        let comprobanteExt: string | undefined
-        if (comprobanteFile) {
-          comprobanteExt = comprobanteFile.name.split('.').pop() || 'jpg'
-          const bytes = new Uint8Array(await comprobanteFile.arrayBuffer())
-          let binary = ''
-          for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
-          comprobanteBase64 = btoa(binary)
-        }
-        const pagoResult = await registrarPagoReserva({
-          reservaId: reservaIdToUse, monto: total, moneda: propiedad.moneda,
-          metodoPago: metodoPago, referencia,
-          bancoEmisor: bancoEmisor || undefined,
-          telefonoEmisor: telefonoEmisor || undefined,
-          comprobanteBase64, comprobanteExt,
-        })
-        if (pagoResult.error) {
-          toast.error(pagoResult.error)
-        }
+      let comprobanteBase64: string | undefined
+      let comprobanteExt: string | undefined
+      if (comprobanteFile) {
+        comprobanteExt = comprobanteFile.name.split('.').pop() || 'jpg'
+        const bytes = new Uint8Array(await comprobanteFile.arrayBuffer())
+        let binary = ''
+        for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
+        comprobanteBase64 = btoa(binary)
       }
+
+      const result = await crearReservaConPago({
+        propiedadId: propiedad.id,
+        fechaEntrada: fechaEntrada.toISOString(),
+        fechaSalida: fechaSalida.toISOString(),
+        cantidadHuespedes: huespedes,
+        monto: total,
+        moneda: propiedad.moneda,
+        metodoPago: metodoPago,
+        referencia: referencia || '',
+        bancoEmisor: bancoEmisor || undefined,
+        telefonoEmisor: telefonoEmisor || undefined,
+        comprobanteBase64,
+        comprobanteExt,
+        storeItems: storeCart,
+        noches,
+      })
+
+      if (result.error) {
+        toast.error(result.error)
+        return
+      }
+
+      if (result.reservaId) {
+        setReservaCreadaId(result.reservaId)
+      }
+
       setPaso('confirmacion')
     } catch (err) {
       console.error('[ReservarPage] Error:', err)
@@ -180,11 +192,6 @@ function ReservarContent() {
 
       if (result.exito && result.datos) {
         setReservaCreadaId(result.datos.id)
-
-        if (storeCart.length > 0) {
-          await agregarStoreItems(result.datos.id, storeCart, noches)
-        }
-
         return result.datos.id
       } else if (result.error) {
         toast.error(result.error.mensaje)

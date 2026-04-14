@@ -2,35 +2,36 @@ package config
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"strconv"
 )
 
+// Config holds all application configuration loaded from environment variables.
 type Config struct {
-	Port                     string
-	AppURL                   string
-	SupabaseURL              string
-	SupabaseSecretKey        string
-	SupabaseJWTSecret        string  // deprecated, kept for compatibility
-	DatabaseURL              string
-	CryptapiWalletAddress    string
-	CryptapiCallbackSecret   string
-	MetamapWebhookSecret     string
+	Port                      string
+	AppURL                    string
+	SupabaseURL               string
+	SupabaseSecretKey         string
+	DatabaseURL               string
+	CryptapiWalletAddress     string
+	CryptapiCallbackSecret    string
+	MetamapWebhookSecret      string
 	ComisionPlataformaHuesped float64
 	ComisionPlataformaAnfitrion float64
 }
 
+// Load reads configuration from environment variables and validates required fields.
 func Load() (*Config, error) {
 	c := &Config{
-		Port:                     getEnv("PORT", "8080"),
-		AppURL:                   getEnv("APP_URL", "http://localhost:3000"),
-		SupabaseURL:              os.Getenv("SUPABASE_URL"),
-		SupabaseSecretKey:        os.Getenv("SUPABASE_SECRET_KEY"),
-		SupabaseJWTSecret:        os.Getenv("SUPABASE_JWT_SECRET"),
-		DatabaseURL:              os.Getenv("DATABASE_URL"),
-		CryptapiWalletAddress:    os.Getenv("CRYPTAPI_WALLET_ADDRESS"),
-		CryptapiCallbackSecret:   os.Getenv("CRYPTAPI_CALLBACK_SECRET"),
-		MetamapWebhookSecret:     os.Getenv("METAMAP_WEBHOOK_SECRET"),
+		Port:                      getEnv("PORT", "8080"),
+		AppURL:                    getEnv("APP_URL", "http://localhost:3000"),
+		SupabaseURL:               os.Getenv("SUPABASE_URL"),
+		SupabaseSecretKey:         os.Getenv("SUPABASE_SECRET_KEY"),
+		DatabaseURL:               os.Getenv("DATABASE_URL"),
+		CryptapiWalletAddress:     os.Getenv("CRYPTAPI_WALLET_ADDRESS"),
+		CryptapiCallbackSecret:    os.Getenv("CRYPTAPI_CALLBACK_SECRET"),
+		MetamapWebhookSecret:      os.Getenv("METAMAP_WEBHOOK_SECRET"),
 		ComisionPlataformaHuesped: getEnvFloat("COMISION_PLATAFORMA_HUESPED", 0.06),
 		ComisionPlataformaAnfitrion: getEnvFloat("COMISION_PLATAFORMA_ANFITRION", 0.03),
 	}
@@ -41,7 +42,6 @@ func Load() (*Config, error) {
 	if c.SupabaseSecretKey == "" {
 		return nil, fmt.Errorf("SUPABASE_SECRET_KEY is required")
 	}
-	// SUPABASE_JWT_SECRET deprecated — auth uses JWKS now
 	if c.DatabaseURL == "" {
 		return nil, fmt.Errorf("DATABASE_URL is required")
 	}
@@ -63,6 +63,7 @@ func getEnvFloat(key string, fallback float64) float64 {
 	}
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
+		slog.Warn("[config] invalid float env, using fallback", "key", key, "value", v, "fallback", fallback)
 		return fallback
 	}
 	return f

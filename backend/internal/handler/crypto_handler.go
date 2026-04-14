@@ -4,28 +4,27 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"math/rand"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/boogie/backend/internal/auth"
 	"github.com/boogie/backend/internal/domain/enums"
+	"github.com/boogie/backend/internal/repository"
 	"github.com/boogie/backend/internal/service"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type CryptoHandler struct {
 	cryptoSvc  *service.CryptoService
 	reservaSvc *service.ReservaDisponibilidad
-	pool       *pgxpool.Pool
+	cryptoRepo *repository.CryptoRepo
 }
 
-func NewCryptoHandler(cryptoSvc *service.CryptoService, reservaSvc *service.ReservaDisponibilidad, pool *pgxpool.Pool) *CryptoHandler {
+func NewCryptoHandler(cryptoSvc *service.CryptoService, reservaSvc *service.ReservaDisponibilidad, cryptoRepo *repository.CryptoRepo) *CryptoHandler {
 	return &CryptoHandler{
 		cryptoSvc:  cryptoSvc,
 		reservaSvc: reservaSvc,
-		pool:       pool,
+		cryptoRepo: cryptoRepo,
 	}
 }
 
@@ -52,8 +51,6 @@ func (h *CryptoHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Info("[crypto/create] request", "reservaId", req.ReservaID, "monto", req.Monto, "propiedadId", req.PropiedadID, "fechaEntrada", req.FechaEntrada, "fechaSalida", req.FechaSalida, "cantidadHuespedes", req.CantidadHuespedes)
-
 	if req.Monto <= 0 {
 		ErrorJSON(w, http.StatusBadRequest, "INVALID_AMOUNT", "Monto invalido")
 		return
@@ -74,15 +71,13 @@ func (h *CryptoHandler) Create(w http.ResponseWriter, r *http.Request) {
 	reservaIDFinal := req.ReservaID
 
 	if needCreateReserva {
-		fechaEntrada, err := time.Parse(time.RFC3339, req.FechaEntrada)
+		fechaEntrada, err := parseFlexibleDate(req.FechaEntrada)
 		if err != nil {
-			fechaEntrada, err = time.Parse("2006-01-02", req.FechaEntrada)
+			ErrorJSON(w, http.StatusBadRequest, "INVALID_DATES", "Fechas invalidas")
+			return
 		}
-		fechaSalida, err2 := time.Parse(time.RFC3339, req.FechaSalida)
-		if err2 != nil {
-			fechaSalida, err2 = time.Parse("2006-01-02", req.FechaSalida)
-		}
-		if err != nil || err2 != nil {
+		fechaSalida, err := parseFlexibleDate(req.FechaSalida)
+		if err != nil {
 			ErrorJSON(w, http.StatusBadRequest, "INVALID_DATES", "Fechas invalidas")
 			return
 		}
@@ -110,18 +105,9 @@ func (h *CryptoHandler) Create(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		calculo := service.CalcularPrecioReserva(precioPorNoche, fechaEntrada, fechaSalida, enums.Moneda(moneda))
-		codigoReserva := service.GenerarCodigoReserva()
-		newReservaID := fmt.Sprintf("%016x", rand.Int63())
-
-		_, err = h.pool.Exec(r.Context(), `
-			INSERT INTO reservas (id, codigo, propiedad_id, huesped_id, fecha_entrada, fecha_salida,
-				noches, precio_por_noche, subtotal, comision_plataforma, comision_anfitrion, total,
-				moneda, cantidad_huespedes, estado, fecha_creacion)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'PENDIENTE_PAGO', NOW())
-		`, newReservaID, codigoReserva, req.PropiedadID, userID, fechaEntrada, fechaSalida,
-			calculo.Noches, calculo.PrecioPorNoche, calculo.Subtotal, calculo.ComisionHuesped,
-			calculo.ComisionAnfitrion, calculo.Total, string(calculo.Moneda), req.CantidadHuespedes,
+		newReservaID, err := h.cryptoRepo.InsertReservaCrypto(
+			r.Context(), req.PropiedadID, userID, precioPorNoche, enums.Moneda(moneda),
+			req.FechaEntrada, req.FechaSalida, req.CantidadHuespedes,
 		)
 		if err != nil {
 			slog.Error("[crypto/create] reserva insert error", "error", err)
@@ -131,10 +117,13 @@ func (h *CryptoHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 		reservaIDFinal = newReservaID
 
-		_, _ = h.pool.Exec(r.Context(), `
-			INSERT INTO notificaciones (tipo, titulo, mensaje, usuario_id, url_accion, created_at)
-			VALUES ('NUEVA_RESERVA', 'Nueva reserva recibida', $1, $2, '/dashboard/reservas-recibidas', NOW())
-		`, fmt.Sprintf("Tienes una nueva reserva cripto para \"%s\"", titulo), propietarioID)
+		if nerr := h.cryptoRepo.InsertNotificacion(r.Context(),
+			"NUEVA_RESERVA", "Nueva reserva recibida",
+			fmt.Sprintf("Tienes una nueva reserva cripto para \"%s\"", titulo),
+			propietarioID, "/dashboard/reservas-recibidas",
+		); nerr != nil {
+			slog.Error("[crypto/create] notificacion error", "error", nerr)
+		}
 	}
 
 	callbackURL := h.cryptoSvc.BuildCallbackURL(map[string]string{
@@ -153,20 +142,12 @@ func (h *CryptoHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if reservaIDFinal != "" {
-		pagoID := fmt.Sprintf("%016x", rand.Int63())
-		_, err = h.pool.Exec(r.Context(), `
-			INSERT INTO pagos (id, monto, moneda, metodo_pago, estado, referencia, fecha_creacion,
-				reserva_id, usuario_id, crypto_address)
-			VALUES ($1, $2, 'USD', 'CRIPTO', 'PENDIENTE', 'Crypto - pendiente TX', NOW(), $3, $4, $5)
-		`, pagoID, req.Monto, reservaIDFinal, userID, cryptoResult.AddressIn)
-		if err != nil {
+		if err := h.cryptoRepo.InsertCryptoPago(r.Context(), reservaIDFinal, userID, req.Monto, cryptoResult.AddressIn); err != nil {
 			slog.Error("[crypto/create] pago insert error", "error", err)
 		}
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	JSON(w, http.StatusOK, map[string]interface{}{
 		"address":   cryptoResult.AddressIn,
 		"reservaId": reservaIDFinal,
 		"ticker":    service.CryptapiTicker,
@@ -208,27 +189,16 @@ func (h *CryptoHandler) Callback(w http.ResponseWriter, r *http.Request) {
 
 	var pagoID, pagoEstado string
 	var pagoReservaID string
+	var err error
 
 	if reservaID != "" {
-		err := h.pool.QueryRow(r.Context(), `
-			SELECT id, estado, reserva_id FROM pagos
-			WHERE metodo_pago = 'CRIPTO' AND reserva_id = $1
-			ORDER BY fecha_creacion DESC LIMIT 1
-		`, reservaID).Scan(&pagoID, &pagoEstado, &pagoReservaID)
+		pagoID, pagoEstado, pagoReservaID, err = h.cryptoRepo.GetCryptoPagoByReserva(r.Context(), reservaID)
 		if err != nil {
 			ErrorJSON(w, http.StatusNotFound, "PAGO_NOT_FOUND", "Pago no encontrado")
 			return
 		}
 	} else if propiedadID != "" {
-		err := h.pool.QueryRow(r.Context(), `
-			SELECT p.id, p.estado, p.reserva_id FROM pagos p
-			JOIN reservas r ON p.reserva_id = r.id
-			WHERE p.metodo_pago = 'CRIPTO'
-			  AND r.propiedad_id = $1
-			  AND r.fecha_entrada >= $2
-			  AND r.fecha_salida <= $3
-			ORDER BY p.fecha_creacion DESC LIMIT 1
-		`, propiedadID, fechaEntrada, fechaSalida).Scan(&pagoID, &pagoEstado, &pagoReservaID)
+		pagoID, pagoEstado, pagoReservaID, err = h.cryptoRepo.GetCryptoPagoByPropiedad(r.Context(), propiedadID, fechaEntrada, fechaSalida)
 		if err != nil {
 			ErrorJSON(w, http.StatusNotFound, "PAGO_NOT_FOUND", "Pago no encontrado")
 			return
@@ -254,21 +224,16 @@ func (h *CryptoHandler) Callback(w http.ResponseWriter, r *http.Request) {
 		verifiedAt = &now
 	}
 
-	_, err := h.pool.Exec(r.Context(), `
-		UPDATE pagos SET crypto_tx_hash = $1, crypto_confirmations = $2, crypto_value_coin = $3,
-			referencia = $4, estado = $5, fecha_verificacion = $6 WHERE id = $7
-	`, txHash, confirmations, valueCoin, ref, newEstado, verifiedAt, pagoID)
-	if err != nil {
+	if err := h.cryptoRepo.UpdateCryptoPago(r.Context(), pagoID, txHash, ref, newEstado, confirmations, valueCoin, verifiedAt); err != nil {
 		slog.Error("[crypto/callback] pago update error", "error", err)
 		ErrorJSON(w, http.StatusInternalServerError, "DB_ERROR", "Error updating pago")
 		return
 	}
 
 	if isConfirmed && pagoReservaID != "" {
-		_, _ = h.pool.Exec(r.Context(), `
-			UPDATE reservas SET estado = 'CONFIRMADA', fecha_confirmacion = NOW()
-			WHERE id = $1 AND estado IN ('PENDIENTE_PAGO','PENDIENTE')
-		`, pagoReservaID)
+		if err := h.cryptoRepo.ConfirmarReservaFromCrypto(r.Context(), pagoReservaID); err != nil {
+			slog.Error("[crypto/callback] confirmar reserva error", "error", err, "reservaID", pagoReservaID)
+		}
 	}
 
 	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
@@ -277,5 +242,3 @@ func (h *CryptoHandler) Callback(w http.ResponseWriter, r *http.Request) {
 func (h *CryptoHandler) CallbackPost(w http.ResponseWriter, r *http.Request) {
 	h.Callback(w, r)
 }
-
-var _ = json.Marshal

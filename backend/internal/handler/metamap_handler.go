@@ -10,16 +10,16 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/boogie/backend/internal/repository"
 )
 
 type MetamapHandler struct {
-	pool   *pgxpool.Pool
-	secret string
+	metamapRepo *repository.MetamapRepo
+	secret      string
 }
 
-func NewMetamapHandler(pool *pgxpool.Pool, secret string) *MetamapHandler {
-	return &MetamapHandler{pool: pool, secret: secret}
+func NewMetamapHandler(metamapRepo *repository.MetamapRepo, secret string) *MetamapHandler {
+	return &MetamapHandler{metamapRepo: metamapRepo, secret: secret}
 }
 
 func (h *MetamapHandler) Webhook(w http.ResponseWriter, r *http.Request) {
@@ -76,19 +76,7 @@ func (h *MetamapHandler) Webhook(w http.ResponseWriter, r *http.Request) {
 	}
 	status := strings.ToLower(statusRaw)
 
-	var verifID, usuarioID string
-	err = h.pool.QueryRow(r.Context(), `
-		SELECT id, usuario_id FROM verificaciones_documento
-		WHERE metamap_identity_id = $1 LIMIT 1
-	`, identityID).Scan(&verifID, &usuarioID)
-
-	if err != nil {
-		err = h.pool.QueryRow(r.Context(), `
-			SELECT id, usuario_id FROM verificaciones_documento
-			WHERE metamap_flow_id = $1 LIMIT 1
-		`, identityID).Scan(&verifID, &usuarioID)
-	}
-
+	verifID, usuarioID, err := h.metamapRepo.FindVerificacionByMetamapIdentity(r.Context(), identityID)
 	if err != nil {
 		ErrorJSON(w, http.StatusNotFound, "NOT_FOUND", "Verification not found")
 		return
@@ -107,33 +95,33 @@ func (h *MetamapHandler) Webhook(w http.ResponseWriter, r *http.Request) {
 		nuevoEstado = "EN_PROCESO"
 	}
 
-	resourceJSON, _ := json.Marshal(resource)
-	_, err = h.pool.Exec(r.Context(), `
-		UPDATE verificaciones_documento
-		SET estado = $1, metamap_resultado = $2, fecha_actualizacion = NOW()
-		WHERE id = $3
-	`, nuevoEstado, resourceJSON, verifID)
+	resourceJSON, err := json.Marshal(resource)
 	if err != nil {
+		slog.Error("[metamap/webhook] marshal resource", "error", err)
+		resourceJSON = body
+	}
+
+	if err := h.metamapRepo.UpdateVerificacionEstado(r.Context(), verifID, nuevoEstado, resourceJSON); err != nil {
 		slog.Error("[metamap/webhook] update error", "error", err)
 		ErrorJSON(w, http.StatusInternalServerError, "DB_ERROR", "Error updating verification")
 		return
 	}
 
 	if nuevoEstado == "RECHAZADA" {
-		_, _ = h.pool.Exec(r.Context(), `
-			UPDATE verificaciones_documento SET motivo_rechazo = $1 WHERE id = $2
-		`, "MetaMap: Verificación rechazada automáticamente", verifID)
+		if err := h.metamapRepo.SetMotivoRechazo(r.Context(), verifID, "MetaMap: Verificación rechazada automáticamente"); err != nil {
+			slog.Error("[metamap/webhook] set motivo rechazo", "error", err)
+		}
 	}
 
 	if esAprobada {
-		_, _ = h.pool.Exec(r.Context(), `
-			UPDATE verificaciones_documento SET fecha_revision = NOW() WHERE id = $1
-		`, verifID)
+		if err := h.metamapRepo.SetFechaRevision(r.Context(), verifID); err != nil {
+			slog.Error("[metamap/webhook] set fecha revision", "error", err)
+		}
 
 		if usuarioID != "" {
-			_, _ = h.pool.Exec(r.Context(), `
-				UPDATE usuarios SET verificado = true WHERE id = $1
-			`, usuarioID)
+			if err := h.metamapRepo.MarcarUsuarioVerificado(r.Context(), usuarioID); err != nil {
+				slog.Error("[metamap/webhook] marcar usuario verificado", "error", err)
+			}
 		}
 	}
 
@@ -151,5 +139,3 @@ func readBody(r *http.Request) ([]byte, error) {
 	defer r.Body.Close()
 	return io.ReadAll(r.Body)
 }
-
-var _ = strings.ToLower

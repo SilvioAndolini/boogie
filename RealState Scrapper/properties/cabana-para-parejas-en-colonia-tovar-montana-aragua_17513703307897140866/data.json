@@ -1,0 +1,92 @@
+{
+  "id": "17513703307897140866",
+  "slug": "cabana-para-parejas-en-colonia-tovar-montana-aragua",
+  "url": "https://estei.app/stay/17513703307897140866/profile",
+  "scrapedAt": "2026-04-14T17:04:27.863Z",
+  "titulo": "Cabaña para Parejas en Colonia Tovar, Montaña, Aragua",
+  "descripcion": "La \"Elegancia rústica\" es una cabaña única que es el lugar perfecto para descansar después de un día de aventura (a solo 10mn del Famoso Pueblo de La Colonia Tovar). Este pequeño y acogedor espacio ofrece una sola cama tamaño matrimonial con una ventana que da a una hermosa vista a la montaña. La ca...",
+  "tipoPropiedad": "APARTAMENTO",
+  "precioPorNoche": 45,
+  "precioOriginal": "$45 USD",
+  "moneda": "USD",
+  "capacidadMaxima": 2,
+  "habitaciones": null,
+  "banos": 1,
+  "camas": 1,
+  "direccion": "CQC4+MMF, Carr. Colonia Tovar - El Jarillo, 1030, Aragua, Venezuela",
+  "ciudad": "",
+  "estado": "",
+  "latitud": null,
+  "longitud": null,
+  "reglas": null,
+  "politicaCancelacion": "",
+  "horarioCheckIn": "14:00 - 21:00",
+  "horarioCheckOut": "6:00 - 12:00",
+  "estanciaMinima": 1,
+  "estanciaMaxima": 365,
+  "amenidades": [
+    "Montaña",
+    "Estacionamiento",
+    "Tanque de agua",
+    "Agua caliente",
+    "Pet Friendly",
+    "Servicios de streaming",
+    "Seguridad",
+    "TV",
+    "WiFi",
+    "Patio",
+    "Parrillera"
+  ],
+  "anfitrion": {
+    "nombre": "POSADA",
+    "imagen": null,
+    "miembroDesde": null,
+    "telefono": null,
+    "email": null,
+    "whatsapp": null
+  },
+  "imagenes": [
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/2tcPdU3B20mD05AfY4tNKwbC43hixr6X13xw0EjSIpT437Vy17.jpg",
+      "alt": "cabaa-para-parejas-en-colonia-tovar-montaa-aragua-0",
+      "orden": 1,
+      "esPrincipal": true,
+      "archivoLocal": "img/img_1.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/7wBWv9GR6032DGT617aiKzG1WQ09dRtiG5f7HxG6p1Ebw7kZ8q.jpg",
+      "alt": "cabaa-para-parejas-en-colonia-tovar-montaa-aragua-1",
+      "orden": 2,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_2.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/31SQyFJQDQ463V7nGKvi08n7pk7Zbh68831qH154vI8871Ix49.jpg",
+      "alt": "cabaa-para-parejas-en-colonia-tovar-montaa-aragua-2",
+      "orden": 3,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_3.jpg"
+    },
+    {
+      "url": "https://avilatek.sfo3.digitaloceanspaces.com/stg/OslLOj54B50Y2J788ViGe04qW9A2j22d5dWP52nEq9sPsc55M4.jpeg",
+      "alt": "cabaa-para-parejas-en-colonia-tovar-montaa-aragua-3",
+      "orden": 4,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_4.jpeg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/36s3AP2Ja3dn7f971l057U0280CW1ZVF4s3u88fpR7C63X9p5Z.jpg",
+      "alt": "1770694891979370467",
+      "orden": 5,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_5.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/3qS1wkl9xk1675LMm4js78XP3JTXl789t74797q7v52t9APwsq.jpg",
+      "alt": "1776802717931960034",
+      "orden": 6,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_6.jpg"
+    }
+  ]
+}

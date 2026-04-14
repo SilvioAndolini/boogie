@@ -57,45 +57,91 @@ func NewSupabaseVerifier(supabaseURL string) *SupabaseVerifier {
 		supabaseURL: strings.TrimRight(supabaseURL, "/"),
 		keys:        make(map[string]*ecdsa.PublicKey),
 	}
-	v.fetchKeys()
+	if err := v.fetchKeysWithRetry(); err != nil {
+		slog.Error("[auth] JWKS fetch failed after retries — server cannot verify tokens", "error", err)
+	}
 	return v
 }
 
-func (v *SupabaseVerifier) fetchKeys() {
+func (v *SupabaseVerifier) fetchKeysWithRetry() error {
+	var lastErr error
+	for attempt := 0; attempt < 5; attempt++ {
+		if attempt > 0 {
+			backoff := time.Duration(attempt) * 2 * time.Second
+			slog.Warn("[auth] JWKS retry", "attempt", attempt+1, "backoff", backoff)
+			time.Sleep(backoff)
+		}
+		if err := v.fetchKeys(); err != nil {
+			lastErr = err
+			continue
+		}
+		if len(v.keysSnapshot()) > 0 {
+			return nil
+		}
+		lastErr = fmt.Errorf("JWKS returned 0 keys")
+	}
+	return lastErr
+}
+
+func (v *SupabaseVerifier) keysSnapshot() map[string]*ecdsa.PublicKey {
+	v.mu.RLock()
+	defer v.mu.RUnlock()
+	snapshot := make(map[string]*ecdsa.PublicKey, len(v.keys))
+	for k, pub := range v.keys {
+		snapshot[k] = pub
+	}
+	return snapshot
+}
+
+func (v *SupabaseVerifier) fetchKeys() error {
 	url := v.supabaseURL + "/auth/v1/.well-known/jwks.json"
 
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Get(url)
 	if err != nil {
-		return
+		return fmt.Errorf("JWKS HTTP request: %w", err)
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("JWKS HTTP status %d", resp.StatusCode)
+	}
+
 	var jwks jwksResponse
 	if err := json.NewDecoder(resp.Body).Decode(&jwks); err != nil {
-		return
+		return fmt.Errorf("JWKS JSON decode: %w", err)
 	}
 
 	newKeys := make(map[string]*ecdsa.PublicKey)
 	for _, k := range jwks.Keys {
 		pubKey, err := parseECDSAPublicKey(k.X, k.Y)
 		if err != nil {
+			slog.Warn("[auth] skipping JWKS key", "kid", k.Kid, "error", err)
 			continue
 		}
 		newKeys[k.Kid] = pubKey
+	}
+
+	if len(newKeys) == 0 {
+		return fmt.Errorf("JWKS returned 0 valid keys")
 	}
 
 	v.mu.Lock()
 	v.keys = newKeys
 	v.fetchedAt = time.Now()
 	v.mu.Unlock()
+
+	slog.Info("[auth] JWKS keys loaded", "count", len(newKeys))
+	return nil
 }
 
 func (v *SupabaseVerifier) getKey(kid string) *ecdsa.PublicKey {
 	v.mu.RLock()
 	if time.Since(v.fetchedAt) > 1*time.Hour {
 		v.mu.RUnlock()
-		v.fetchKeys()
+		if err := v.fetchKeys(); err != nil {
+			slog.Error("[auth] JWKS background refresh failed", "error", err)
+		}
 		v.mu.RLock()
 	}
 	defer v.mu.RUnlock()
@@ -157,26 +203,20 @@ func (v *SupabaseVerifier) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte(`{"error":{"code":"AUTH_MISSING_TOKEN","message":"Authorization header required"}}`))
+			writeAuthError(w, http.StatusUnauthorized, "AUTH_MISSING_TOKEN", "Authorization header required")
 			return
 		}
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 		if tokenString == authHeader {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte(`{"error":{"code":"AUTH_INVALID_TOKEN","message":"Invalid authorization format"}}`))
+			writeAuthError(w, http.StatusUnauthorized, "AUTH_INVALID_TOKEN", "Invalid authorization format")
 			return
 		}
 
 		claims, err := v.VerifyToken(tokenString)
 		if err != nil {
-			slog.Warn("token verify failed", "error", err)
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte(`{"error":{"code":"AUTH_INVALID_TOKEN","message":"Invalid or expired token"}}`))
+			slog.Warn("[auth] token verify failed", "error", err)
+			writeAuthError(w, http.StatusUnauthorized, "AUTH_INVALID_TOKEN", "Invalid or expired token")
 			return
 		}
 
@@ -192,6 +232,14 @@ func (v *SupabaseVerifier) Middleware(next http.Handler) http.Handler {
 		ctx = context.WithValue(ctx, UserRoleKey, role)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func writeAuthError(w http.ResponseWriter, status int, code, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	if _, err := w.Write([]byte(fmt.Sprintf(`{"error":{"code":"%s","message":"%s"}}`, code, message))); err != nil {
+		slog.Error("[auth] failed to write error response", "error", err)
+	}
 }
 
 func GetUserID(ctx context.Context) string {
@@ -219,9 +267,7 @@ func RequireAdmin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		role := strings.ToUpper(GetUserRole(r.Context()))
 		if role != "ADMIN" && role != "CEO" {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte(`{"error":{"code":"AUTH_NOT_ADMIN","message":"Admin access required"}}`))
+			writeAuthError(w, http.StatusForbidden, "AUTH_NOT_ADMIN", "Admin access required")
 			return
 		}
 		next.ServeHTTP(w, r)

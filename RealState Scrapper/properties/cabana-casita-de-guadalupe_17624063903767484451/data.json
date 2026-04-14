@@ -1,0 +1,86 @@
+{
+  "id": "17624063903767484451",
+  "slug": "cabana-casita-de-guadalupe",
+  "url": "https://estei.app/stay/17624063903767484451/profile",
+  "scrapedAt": "2026-04-14T16:47:17.592Z",
+  "titulo": "CABAÑA \"CASITA DE GUADALUPE\"",
+  "descripcion": "CABAÑA ACOGEDORA ESPECTACULAR A SOLO 50 METROS DE LA CASITA DEL ARBOL, CON DOS (02) HABITACIONES PARA SIETE (07) PERSONAS, GRAN SALA CON CHIMENEA, COMEDOR COCINA EQUIPADA, AMBIENTES Y ESPACIOS ALREDEDOR PARA DISFRUTAR, PARRILLERA, AREA DE PINOS, ESTACIONAMIENTO PARA 3 VEHICULOS.",
+  "tipoPropiedad": "APARTAMENTO",
+  "precioPorNoche": null,
+  "precioOriginal": "",
+  "moneda": "USD",
+  "capacidadMaxima": 7,
+  "habitaciones": 0,
+  "banos": 1,
+  "camas": 1,
+  "direccion": "CP6J+C7, Colonia Tovar 1030, Aragua, Venezuela",
+  "ciudad": "",
+  "estado": "",
+  "latitud": null,
+  "longitud": null,
+  "reglas": null,
+  "politicaCancelacion": "",
+  "horarioCheckIn": "11:00",
+  "horarioCheckOut": "12:15",
+  "estanciaMinima": 1,
+  "estanciaMaxima": 365,
+  "amenidades": [
+    "Montaña",
+    "Sofacama",
+    "Juego de cubiertos",
+    "Copas",
+    "Cocina equipada",
+    "Terraza",
+    "Licuadora",
+    "Agua caliente",
+    "Parque para niños",
+    "Juego de ollas",
+    "Estacionamiento",
+    "WiFi",
+    "Tanque de agua",
+    "Vajilla",
+    "Vasos",
+    "Nevera",
+    "Parrillera",
+    "Patio",
+    "Mesa de comedor"
+  ],
+  "anfitrion": {
+    "nombre": "Ysaac",
+    "imagen": null,
+    "miembroDesde": null,
+    "telefono": null,
+    "email": null,
+    "whatsapp": null
+  },
+  "imagenes": [
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/40duQe9RZQ1y2IWZg2vbh8R7m4muV4RWvDH0HtK5Ea4r242k25.jpeg",
+      "alt": "cabaa-casita-de-guadalupe-0",
+      "orden": 1,
+      "esPrincipal": true,
+      "archivoLocal": "img/img_1.jpeg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/R0SrVj355UE60vf7eILA80m2Bu8W3P1zn6W071mTk9Wfz5TtRp.jpg",
+      "alt": "cabaa-casita-de-guadalupe-1",
+      "orden": 2,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_2.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/tj15314D8VeRdO6cv802SZZ9S2824o8yNattA8sEv7nC3fR62c.jpg",
+      "alt": "cabaa-casita-de-guadalupe-2",
+      "orden": 3,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_3.jpg"
+    },
+    {
+      "url": "https://avilatek.sfo3.digitaloceanspaces.com/stg/we556x7Q1x49ko22hOsd43X1a8GLZ4ZJSZ30jRR52DG9dlOQk5.jpeg",
+      "alt": "cabaa-casita-de-guadalupe-3",
+      "orden": 4,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_4.jpeg"
+    }
+  ]
+}

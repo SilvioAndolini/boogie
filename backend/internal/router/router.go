@@ -116,6 +116,7 @@ type SeccionesHandlers struct {
 
 type ReservaHandlers struct {
 	Crear                  http.HandlerFunc
+	CrearConPago           http.HandlerFunc
 	GetByID                http.HandlerFunc
 	MisReservas            http.HandlerFunc
 	ReservasRecibidas      http.HandlerFunc
@@ -374,18 +375,22 @@ func New(opts *RouterOpts) http.Handler {
 		}
 
 		if opts.ReservaHandlers != nil {
-			r.Get("/reservas/fechas-ocupadas", opts.ReservaHandlers.FechasOcupadas)
 			r.Route("/reservas", func(r chi.Router) {
-				r.Use(opts.AuthVerifier.Middleware)
-				r.Post("/", opts.ReservaHandlers.Crear)
-				r.Get("/mias", opts.ReservaHandlers.MisReservas)
-				r.Get("/recibidas", opts.ReservaHandlers.ReservasRecibidas)
-				r.Get("/disponibilidad", opts.ReservaHandlers.Disponibilidad)
-				r.Post("/cron/auto-confirmar", opts.ReservaHandlers.AutoConfirmarExpiradas)
-				r.Get("/{id}", opts.ReservaHandlers.GetByID)
-				r.Post("/{id}/cancelar", opts.ReservaHandlers.Cancelar)
-				r.Post("/{id}/confirmar", opts.ReservaHandlers.ConfirmarORechazar)
-				r.Post("/{id}/rechazar", opts.ReservaHandlers.ConfirmarORechazar)
+				r.Get("/fechas-ocupadas", opts.ReservaHandlers.FechasOcupadas)
+
+				r.Group(func(r chi.Router) {
+					r.Use(opts.AuthVerifier.Middleware)
+					r.Post("/", opts.ReservaHandlers.Crear)
+					r.Post("/crear-con-pago", opts.ReservaHandlers.CrearConPago)
+					r.Get("/mias", opts.ReservaHandlers.MisReservas)
+					r.Get("/recibidas", opts.ReservaHandlers.ReservasRecibidas)
+					r.Get("/disponibilidad", opts.ReservaHandlers.Disponibilidad)
+					r.Post("/cron/auto-confirmar", opts.ReservaHandlers.AutoConfirmarExpiradas)
+					r.Get("/{id}", opts.ReservaHandlers.GetByID)
+					r.Post("/{id}/cancelar", opts.ReservaHandlers.Cancelar)
+					r.Post("/{id}/confirmar", opts.ReservaHandlers.ConfirmarORechazar)
+					r.Post("/{id}/rechazar", opts.ReservaHandlers.ConfirmarORechazar)
+				})
 			})
 		}
 

@@ -1,0 +1,99 @@
+{
+  "id": "17331999448632829622",
+  "slug": "habitacion-2-con-bano-compartido-para-2-personas",
+  "url": "https://estei.app/stay/17331999448632829622/profile",
+  "scrapedAt": "2026-04-14T17:03:47.987Z",
+  "titulo": "Habitación #2 con baño compartido para 2 personas",
+  "descripcion": "Comienzo la descripción sobre mi, mi nombre es Gabriel y tomo orgullo ser anfritón estrella, tengo una empresa propia, soy dueño de un gato negrito, siempre estoy trabajando pero lo que más me gusta de ser anfritón en Estei es conocer a nuevas caras, conversar y compartir un rato, ayudar en lo que p...",
+  "tipoPropiedad": "APARTAMENTO",
+  "precioPorNoche": 23,
+  "precioOriginal": "$23 USD",
+  "moneda": "USD",
+  "capacidadMaxima": 2,
+  "habitaciones": null,
+  "banos": 1,
+  "camas": 1,
+  "direccion": "F4PG+P7R, Caracas 1080, Miranda, Venezuela",
+  "ciudad": "",
+  "estado": "",
+  "latitud": null,
+  "longitud": null,
+  "reglas": null,
+  "politicaCancelacion": "",
+  "horarioCheckIn": "12:00 - 22:00",
+  "horarioCheckOut": "5:00 - 11:00",
+  "estanciaMinima": 1,
+  "estanciaMaxima": 365,
+  "amenidades": [
+    "Cafetera",
+    "WiFi",
+    "Vajilla",
+    "Juego de ollas",
+    "Horno",
+    "Agua caliente",
+    "Vasos",
+    "Licuadora",
+    "Microondas",
+    "Lavadora",
+    "Transporte",
+    "Seguridad",
+    "Nevera",
+    "Ciudad",
+    "Cocina equipada",
+    "Juego de cubiertos",
+    "TV",
+    "Aire acondicionado"
+  ],
+  "anfitrion": {
+    "nombre": "Gabriel",
+    "imagen": null,
+    "miembroDesde": null,
+    "telefono": null,
+    "email": null,
+    "whatsapp": null
+  },
+  "imagenes": [
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/79unQ224aB7I6ov848129Qhi2sqM63s6PgPo18rt0Y92068Smq.jpg",
+      "alt": "habitacin-2-con-bao-compartido-para-2-personas-0",
+      "orden": 1,
+      "esPrincipal": true,
+      "archivoLocal": "img/img_1.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/54786H6Pl20y1pLe70a2b6uW5W91xx0UnLmQ0Md14387hC0255.jpg",
+      "alt": "habitacin-2-con-bao-compartido-para-2-personas-1",
+      "orden": 2,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_2.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/7199B1J805G8B6L9TmTz17W4RpaD1F1GZ1SHv48Mq5R3YC6E18.jpg",
+      "alt": "habitacin-2-con-bao-compartido-para-2-personas-2",
+      "orden": 3,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_3.jpg"
+    },
+    {
+      "url": "https://avilatek.sfo3.digitaloceanspaces.com/stg/CL3WC1c2E585R55m44pGMJsF2Q5Oih5h5WPP6Ne847RFTN605f.jpg",
+      "alt": "habitacin-2-con-bao-compartido-para-2-personas-3",
+      "orden": 4,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_4.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/kn19c00D3774q313OxI6ypFj6KOuoHfo1kt1dz99qg66OR9K62.jpg",
+      "alt": "1740368355174152497",
+      "orden": 5,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_5.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/U2XDh2Isej1k7ajh7651RK968n4sO59n3nOx5971Q07897kRj0.jpg",
+      "alt": "1758530216238190632",
+      "orden": 6,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_6.jpg"
+    }
+  ]
+}

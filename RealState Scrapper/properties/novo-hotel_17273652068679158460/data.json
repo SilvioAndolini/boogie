@@ -1,0 +1,95 @@
+{
+  "id": "17273652068679158460",
+  "slug": "novo-hotel",
+  "url": "https://estei.app/stay/17273652068679158460/profile",
+  "scrapedAt": "2026-04-14T17:03:07.349Z",
+  "titulo": "Novo Hotel",
+  "descripcion": "Somos la mejor alternativa al suoreste de Caracas con acabados de lujo en nuestras instalaciones y habitaciones con una decoración de colores brillantes y energéticos, que estimulan sus sentidos, un mobiliario ideal para cada ocasión con un toque sofisticado, además de la excelente atención, tranqui...",
+  "tipoPropiedad": "APARTAMENTO",
+  "precioPorNoche": 75,
+  "precioOriginal": "$75 USD",
+  "moneda": "USD",
+  "capacidadMaxima": 2,
+  "habitaciones": null,
+  "banos": 1,
+  "camas": 1,
+  "direccion": "C. Loyola, Caracas 1020, Distrito Capital, Venezuela",
+  "ciudad": "",
+  "estado": "",
+  "latitud": null,
+  "longitud": null,
+  "reglas": null,
+  "politicaCancelacion": "",
+  "horarioCheckIn": "14:00 - 23:00",
+  "horarioCheckOut": "12:00 - 13:00",
+  "estanciaMinima": 1,
+  "estanciaMaxima": 365,
+  "amenidades": [
+    "Aire acondicionado",
+    "Planta eléctrica",
+    "Agua caliente",
+    "Ascensor",
+    "Ciudad",
+    "Estacionamiento",
+    "Terraza",
+    "Seguridad",
+    "WiFi",
+    "Tanque de agua",
+    "Nevera",
+    "TV",
+    "Lavadora",
+    "Secadora"
+  ],
+  "anfitrion": {
+    "nombre": "Novo",
+    "imagen": null,
+    "miembroDesde": null,
+    "telefono": null,
+    "email": null,
+    "whatsapp": null
+  },
+  "imagenes": [
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/65EnL1jqeb89I02955lY7B571v8dZM97d7qNeH2ymO8TG607r7.jpg",
+      "alt": "novo-hotel-0",
+      "orden": 1,
+      "esPrincipal": true,
+      "archivoLocal": "img/img_1.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/k123JcM100BN30PCFi18up5gS9o38s1QeX2qxxfZ373R6tm9y0.jpg",
+      "alt": "novo-hotel-1",
+      "orden": 2,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_2.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/KUJsT23hZmfB192Ut6yWQ4w6PieC46Zs89L4ZQjycf6aOnC90F.jpeg",
+      "alt": "novo-hotel-2",
+      "orden": 3,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_3.jpeg"
+    },
+    {
+      "url": "https://avilatek.sfo3.digitaloceanspaces.com/stg/f7fz82HqpcCLDQW884n16041NLe7fmD38l7i1Od5569o68L1C1.jpg",
+      "alt": "novo-hotel-3",
+      "orden": 4,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_4.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/tGX2s45Nd853037BV5LvzSj0M8PxOVc23S0k047B7R22sH1T1r.jpeg",
+      "alt": "1779747736527812813",
+      "orden": 5,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_5.jpeg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/1hSge8t6YPz1nhi131cMj9fXE108qy1B0ZEwZF4295J3QBVE8A.jpg",
+      "alt": "1762651987940429216",
+      "orden": 6,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_6.jpg"
+    }
+  ]
+}

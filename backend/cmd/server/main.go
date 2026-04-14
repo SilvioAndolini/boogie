@@ -303,6 +303,7 @@ func main() {
 
 		reservaHandlers = &router.ReservaHandlers{
 			Crear:                  reservaH.Crear,
+			CrearConPago:           reservaH.CrearConPago,
 			GetByID:                reservaH.GetByID,
 			MisReservas:            reservaH.MisReservas,
 			ReservasRecibidas:      reservaH.ReservasRecibidas,

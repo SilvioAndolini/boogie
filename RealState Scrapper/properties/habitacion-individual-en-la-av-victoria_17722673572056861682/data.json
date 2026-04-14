@@ -1,0 +1,76 @@
+{
+  "id": "17722673572056861682",
+  "slug": "habitacion-individual-en-la-av-victoria",
+  "url": "https://estei.app/stay/17722673572056861682/profile",
+  "scrapedAt": "2026-04-14T17:04:32.444Z",
+  "titulo": "Habitación individual en la Av. Victoria",
+  "descripcion": "Disfruta de la sencillez de este alojamiento tranquilo, en la Av. Victoria (Sector Las Acacias). Apartamento pequeño, sencillo, pero limpio, ordenado y cómodo. Está en un segundo piso con vista a la avenida. Cuenta con sala, cocina y un comedor. Un baño compartido. Variedad de negocios alrededor c...",
+  "tipoPropiedad": "APARTAMENTO",
+  "precioPorNoche": 19,
+  "precioOriginal": "$19 USD",
+  "moneda": "USD",
+  "capacidadMaxima": 1,
+  "habitaciones": null,
+  "banos": null,
+  "camas": 1,
+  "direccion": "F3PX+46M, Caracas 1041, Capital District, Venezuela",
+  "ciudad": "",
+  "estado": "",
+  "latitud": null,
+  "longitud": null,
+  "reglas": null,
+  "politicaCancelacion": "",
+  "horarioCheckIn": "8:00 - 18:30",
+  "horarioCheckOut": "7:00 - 14:00",
+  "estanciaMinima": 1,
+  "estanciaMaxima": 365,
+  "amenidades": [
+    "Aire acondicionado",
+    "Agua caliente",
+    "Vajilla",
+    "Juego de cubiertos",
+    "Nevera",
+    "Vasos",
+    "Mesa de comedor",
+    "Microondas",
+    "Ciudad"
+  ],
+  "anfitrion": {
+    "nombre": "Carolina",
+    "imagen": null,
+    "miembroDesde": null,
+    "telefono": null,
+    "email": null,
+    "whatsapp": null
+  },
+  "imagenes": [
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/44fF41baM29WzACjYc3Wml4Xs0sG2ZH8aV702X8pCSv3x897z8.jpeg",
+      "alt": "habitacin-individual-en-la-av-victoria-0",
+      "orden": 1,
+      "esPrincipal": true,
+      "archivoLocal": "img/img_1.jpeg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/8S5Uws7mRq5z6Oe3870EQvn91O4C243J33TrA64E77K8B915mN.jpeg",
+      "alt": "habitacin-individual-en-la-av-victoria-1",
+      "orden": 2,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_2.jpeg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/hbEcX11lq4yy5q2qX94jcpS53d4gCHAc27M5dQ1964Ox8DM60A.jpeg",
+      "alt": "habitacin-individual-en-la-av-victoria-2",
+      "orden": 3,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_3.jpeg"
+    },
+    {
+      "url": "https://avilatek.sfo3.digitaloceanspaces.com/stg/76lhRF71UeIBD70a0B7crf91S8ON1xim6R89Lf4V0BEk3j7D0D.jpeg",
+      "alt": "habitacin-individual-en-la-av-victoria-3",
+      "orden": 4,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_4.jpeg"
+    }
+  ]
+}

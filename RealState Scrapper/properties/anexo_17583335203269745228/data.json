@@ -1,0 +1,85 @@
+{
+  "id": "17583335203269745228",
+  "slug": "anexo",
+  "url": "https://estei.app/stay/17583335203269745228/profile",
+  "scrapedAt": "2026-04-14T17:04:18.112Z",
+  "titulo": "Anexo",
+  "descripcion": "Comodidad y Tranquilidad. Un espacio creado para tu confort y cocina equipada. zona Céntrica. Contamos con servicio de desayunos Criollos adicional y Spa.",
+  "tipoPropiedad": "APARTAMENTO",
+  "precioPorNoche": 35,
+  "precioOriginal": "$35 USD",
+  "moneda": "USD",
+  "capacidadMaxima": 2,
+  "habitaciones": null,
+  "banos": 1,
+  "camas": 1,
+  "direccion": "Los Palos Grandes, Caracas 1060, Miranda, Venezuela",
+  "ciudad": "",
+  "estado": "",
+  "latitud": null,
+  "longitud": null,
+  "reglas": null,
+  "politicaCancelacion": "",
+  "horarioCheckIn": "9:00 - 11:00",
+  "horarioCheckOut": "15:00 - 16:00",
+  "estanciaMinima": 1,
+  "estanciaMaxima": 365,
+  "amenidades": [
+    "Aire acondicionado",
+    "Agua caliente",
+    "Patio",
+    "Ciudad",
+    "WiFi",
+    "Cocina equipada",
+    "Seguridad",
+    "Nevera",
+    "TV",
+    "Vasos",
+    "Cafetera",
+    "Tostadora",
+    "Juego de ollas",
+    "Licuadora",
+    "Horno",
+    "Juego de cubiertos",
+    "Vajilla",
+    "Copas"
+  ],
+  "anfitrion": {
+    "nombre": "Maria Alejandra",
+    "imagen": null,
+    "miembroDesde": null,
+    "telefono": null,
+    "email": null,
+    "whatsapp": null
+  },
+  "imagenes": [
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/Pa33318S14xpXgUaw2ujCBpR19V0SSmC6p377Qj70I8o29E0fx.jpeg",
+      "alt": "anexo-0",
+      "orden": 1,
+      "esPrincipal": true,
+      "archivoLocal": "img/img_1.jpeg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/K5q3I4Qq97rV34dWBX0V0vf82601Cwhk059DS7y2eiFoC0o085.jpeg",
+      "alt": "anexo-1",
+      "orden": 2,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_2.jpeg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/Q0WdoRF2FspXTUc3u10GJ22N70pLXPK3H37D2M39wCtY6R9u18.jpeg",
+      "alt": "anexo-2",
+      "orden": 3,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_3.jpeg"
+    },
+    {
+      "url": "https://avilatek.sfo3.digitaloceanspaces.com/stg/b936h4x0KD0pfm79T81a0925viB7Kv6NULFB30DJN76tkzuKKC.jpeg",
+      "alt": "anexo-3",
+      "orden": 4,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_4.jpeg"
+    }
+  ]
+}

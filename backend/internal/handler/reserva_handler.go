@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"github.com/boogie/backend/internal/auth"
+	"github.com/boogie/backend/internal/domain/enums"
 	bizerrors "github.com/boogie/backend/internal/domain/errors"
 	"github.com/boogie/backend/internal/repository"
 	"github.com/boogie/backend/internal/service"
@@ -78,6 +80,130 @@ func (h *ReservaHandler) Crear(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		handleBusinessError(w, err, "[reservas/crear]", userID, req.PropiedadID)
+		return
+	}
+
+	JSON(w, http.StatusCreated, map[string]interface{}{
+		"id":                 result.Reserva.ID,
+		"codigo":             result.Reserva.Codigo,
+		"propiedadId":        result.Reserva.PropiedadID,
+		"fechaEntrada":       result.Reserva.FechaEntrada,
+		"fechaSalida":        result.Reserva.FechaSalida,
+		"noches":             result.Reserva.Noches,
+		"precioPorNoche":     result.Reserva.PrecioPorNoche,
+		"subtotal":           result.Reserva.Subtotal,
+		"comisionPlataforma": result.Reserva.ComisionPlataforma,
+		"comisionAnfitrion":  result.Reserva.ComisionAnfitrion,
+		"total":              result.Reserva.Total,
+		"moneda":             result.Reserva.Moneda,
+		"cantidadHuespedes":  result.Reserva.CantidadHuespedes,
+		"estado":             result.Reserva.Estado,
+	})
+}
+
+type crearReservaConPagoRequest struct {
+	PropiedadID       string  `json:"propiedadId"`
+	FechaEntrada      string  `json:"fechaEntrada"`
+	FechaSalida       string  `json:"fechaSalida"`
+	CantidadHuespedes int     `json:"cantidadHuespedes"`
+	NotasHuesped      *string `json:"notasHuesped"`
+	Monto             float64 `json:"monto"`
+	Moneda            string  `json:"moneda"`
+	MetodoPago        string  `json:"metodoPago"`
+	Referencia        string  `json:"referencia"`
+	ComprobanteURL    *string `json:"comprobanteUrl"`
+	BancoEmisor       *string `json:"bancoEmisor"`
+	TelefonoEmisor    *string `json:"telefonoEmisor"`
+	StoreItems        []struct {
+		TipoItem       string  `json:"tipo_item"`
+		Nombre         string  `json:"nombre"`
+		Cantidad       int     `json:"cantidad"`
+		PrecioUnitario float64 `json:"precio_unitario"`
+		Moneda         string  `json:"moneda"`
+		Subtotal       float64 `json:"subtotal"`
+		ProductoID     *string `json:"producto_id"`
+		ServicioID     *string `json:"servicio_id"`
+	} `json:"storeItems"`
+}
+
+func (h *ReservaHandler) CrearConPago(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetUserID(r.Context())
+	if userID == "" {
+		ErrorJSON(w, http.StatusUnauthorized, "AUTH_REQUIRED", "No autenticado")
+		return
+	}
+
+	var req crearReservaConPagoRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "JSON invalido")
+		return
+	}
+
+	if req.PropiedadID == "" {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_PROP_ID", "propiedadId es requerido")
+		return
+	}
+	if req.Monto <= 0 {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_MONTO", "monto debe ser mayor a 0")
+		return
+	}
+	if req.MetodoPago == "" {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_METODO", "metodoPago es requerido")
+		return
+	}
+
+	fechaEntrada, err := parseFlexibleDate(req.FechaEntrada)
+	if err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_FECHA_ENTRADA", "fechaEntrada invalida")
+		return
+	}
+	fechaSalida, err := parseFlexibleDate(req.FechaSalida)
+	if err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_FECHA_SALIDA", "fechaSalida invalida")
+		return
+	}
+	if req.CantidadHuespedes < 1 || req.CantidadHuespedes > 20 {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_HUESPEDES", "cantidadHuespedes debe ser entre 1 y 20")
+		return
+	}
+
+	moneda := enums.Moneda(req.Moneda)
+	if moneda != enums.MonedaUSD && moneda != enums.MonedaVES {
+		moneda = enums.MonedaUSD
+	}
+
+	var storeItems []repository.StoreItemInput
+	for _, it := range req.StoreItems {
+		storeItems = append(storeItems, repository.StoreItemInput{
+			TipoItem:       it.TipoItem,
+			Nombre:         it.Nombre,
+			Cantidad:       it.Cantidad,
+			PrecioUnitario: it.PrecioUnitario,
+			Moneda:         it.Moneda,
+			Subtotal:       it.Subtotal,
+			ProductoID:     it.ProductoID,
+			ServicioID:     it.ServicioID,
+		})
+	}
+
+	result, err := h.svc.CrearConPago(r.Context(), &service.CrearConPagoInput{
+		PropiedadID:       req.PropiedadID,
+		HuespedID:         userID,
+		FechaEntrada:      fechaEntrada,
+		FechaSalida:       fechaSalida,
+		CantidadHuespedes: req.CantidadHuespedes,
+		NotasHuesped:      req.NotasHuesped,
+		Monto:             req.Monto,
+		Moneda:            moneda,
+		MetodoPago:        enums.MetodoPagoEnum(req.MetodoPago),
+		Referencia:        req.Referencia,
+		ComprobanteURL:    req.ComprobanteURL,
+		BancoEmisor:       req.BancoEmisor,
+		TelefonoEmisor:    req.TelefonoEmisor,
+		StoreItems:        storeItems,
+	})
+	if err != nil {
+		handleBusinessError(w, err, "[reservas/crear-con-pago]", userID, req.PropiedadID)
 		return
 	}
 

@@ -1,0 +1,66 @@
+{
+  "id": "17424539708798642376",
+  "slug": "habitacion-matrimonial",
+  "url": "https://estei.app/stay/17424539708798642376/profile",
+  "scrapedAt": "2026-04-14T17:03:24.007Z",
+  "titulo": "Habitacion Matrimonial",
+  "descripcion": "Habitación privada con baño privado, cama matrimonial y aire acondicionado, en conjunto cerrado con mucha vegetación, cuenta con estacionamiento, canchas de tenis, caminerias, acceso al uso de cocina, lavadora, secadora, servicio de agua constante Clima fresco, iluminado y de absoluta tranquilidad",
+  "tipoPropiedad": "APARTAMENTO",
+  "precioPorNoche": 50,
+  "precioOriginal": "$50 USD",
+  "moneda": "USD",
+  "capacidadMaxima": 2,
+  "habitaciones": null,
+  "banos": 1,
+  "camas": 1,
+  "direccion": "F55Q+668, C. las Canteras, Caracas 1073, Distrito Capital, Venezuela",
+  "ciudad": "",
+  "estado": "",
+  "latitud": null,
+  "longitud": null,
+  "reglas": null,
+  "politicaCancelacion": "",
+  "horarioCheckIn": "15:00",
+  "horarioCheckOut": "11:00",
+  "estanciaMinima": 1,
+  "estanciaMaxima": 365,
+  "amenidades": [],
+  "anfitrion": {
+    "nombre": "Maribel",
+    "imagen": null,
+    "miembroDesde": null,
+    "telefono": null,
+    "email": null,
+    "whatsapp": null
+  },
+  "imagenes": [
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/JB63MNp17o307T36d30iub6606953cM65uujb8yR40vU7eGW3n.jpeg",
+      "alt": "habitacion-matrimonial-0",
+      "orden": 1,
+      "esPrincipal": true,
+      "archivoLocal": "img/img_1.jpeg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/aot1HPL7x62O54Xkde93w0V0T0SOi57ev7z19jD3Jwy6npx08s.jpeg",
+      "alt": "habitacion-matrimonial-1",
+      "orden": 2,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_2.jpeg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/n10eQ0P3AH86lRo10P63u9FOJC564jhwec4uL7Ly6fCrN198b5.jpeg",
+      "alt": "habitacion-matrimonial-2",
+      "orden": 3,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_3.jpeg"
+    },
+    {
+      "url": "https://avilatek.sfo3.digitaloceanspaces.com/stg/764NX62Zo30M5VxX0lZ42hu7RMxbkL899If3GYag752Ni7i42q.jpeg",
+      "alt": "habitacion-matrimonial-3",
+      "orden": 4,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_4.jpeg"
+    }
+  ]
+}

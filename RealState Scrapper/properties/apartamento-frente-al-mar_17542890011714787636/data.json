@@ -1,0 +1,93 @@
+{
+  "id": "17542890011714787636",
+  "slug": "apartamento-frente-al-mar",
+  "url": "https://estei.app/stay/17542890011714787636/profile",
+  "scrapedAt": "2026-04-14T17:03:28.747Z",
+  "titulo": "Apartamento frente al mar",
+  "descripcion": "Ubicado en Macuto, nuestro apartamento frente al mar es un refugio acogedor y elegante para aquellos que buscan una experiencia tranquila y cómoda. Con 1 habitación amplia iluminada, 1 baño y un amplio espacio de estar, este apartamento es perfecto para 4 personas. * Habitación: Cama matrimonial, c...",
+  "tipoPropiedad": "APARTAMENTO",
+  "precioPorNoche": null,
+  "precioOriginal": "",
+  "moneda": "USD",
+  "capacidadMaxima": 4,
+  "habitaciones": 1,
+  "banos": 1,
+  "camas": 1,
+  "direccion": "J467+GR7, Macuto 1164, La Guaira, Venezuela",
+  "ciudad": "",
+  "estado": "",
+  "latitud": null,
+  "longitud": null,
+  "reglas": null,
+  "politicaCancelacion": "",
+  "horarioCheckIn": "14:00 - 15:00",
+  "horarioCheckOut": "11:00 - 11:30",
+  "estanciaMinima": 1,
+  "estanciaMaxima": 365,
+  "amenidades": [
+    "Playa",
+    "Cafetera",
+    "Estacionamiento",
+    "WiFi",
+    "Vajilla",
+    "Juego de ollas",
+    "Aire acondicionado",
+    "Horno",
+    "Agua caliente",
+    "Vasos",
+    "Licuadora",
+    "Ascensor",
+    "Nevera",
+    "Piscina",
+    "Cocina equipada",
+    "Mesa de comedor",
+    "TV",
+    "Juego de cubiertos",
+    "Sofacama"
+  ],
+  "anfitrion": {
+    "nombre": "Annmary",
+    "imagen": null,
+    "miembroDesde": null,
+    "telefono": null,
+    "email": null,
+    "whatsapp": null
+  },
+  "imagenes": [
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/8h0b6e4P62F7OFd0E888rXlI60QwS9j0MZQ1X4o8ZJLPPO44yA.jpeg",
+      "alt": "apartamento-frente-al-mar-0",
+      "orden": 1,
+      "esPrincipal": true,
+      "archivoLocal": "img/img_1.jpeg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/8042y4278a4g0D313FByUW1215mY5Y4U1ue5kDm26Y0MN41815.jpeg",
+      "alt": "apartamento-frente-al-mar-1",
+      "orden": 2,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_2.jpeg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/8Ru70d01a3J87Ril5l96a0k6v32915L33RB791xO33dShs107K.jpeg",
+      "alt": "apartamento-frente-al-mar-2",
+      "orden": 3,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_3.jpeg"
+    },
+    {
+      "url": "https://avilatek.sfo3.digitaloceanspaces.com/stg/p166yCiQ58LzW7721bGL078r2rs1r99Wdyd83156AiRlEU7RSh.jpeg",
+      "alt": "apartamento-frente-al-mar-3",
+      "orden": 4,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_4.jpeg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/uB6NI3785CT6QMPu4coH1xLyaYH50T94W7F0k14Ge3n25Z2YN5.jpeg",
+      "alt": "1757976427276458050",
+      "orden": 5,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_5.jpeg"
+    }
+  ]
+}

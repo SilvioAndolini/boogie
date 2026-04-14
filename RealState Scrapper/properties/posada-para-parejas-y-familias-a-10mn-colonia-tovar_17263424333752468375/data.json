@@ -1,0 +1,114 @@
+{
+  "id": "17263424333752468375",
+  "slug": "posada-para-parejas-y-familias-a-10mn-colonia-tovar",
+  "url": "https://estei.app/stay/17263424333752468375/profile",
+  "scrapedAt": "2026-04-14T17:03:36.044Z",
+  "titulo": "Posada para Parejas y Familias a 10mn Colonia Tovar",
+  "descripcion": "Descubre Posada Otilia, una impresionante cabaña con estilo rustico ubicada en una zona tranquila y exclusiva, a solo 10 minutos del famoso Pueblo de la Colonia Tovar (Aragua) y a 1 hora de las Playa Puerto Cruz (La Guaira). Específicamente en la zona privilegiada del Monumento Nacional Pico Codaz...",
+  "tipoPropiedad": "APARTAMENTO",
+  "precioPorNoche": 30,
+  "precioOriginal": "$30 USD",
+  "moneda": "USD",
+  "capacidadMaxima": 2,
+  "habitaciones": null,
+  "banos": 1,
+  "camas": 1,
+  "direccion": "Posada Otilia, Urbanización Gengibrillar, callejon el Profesor, Carayaca 1167, La Guaira, Venezuela",
+  "ciudad": "",
+  "estado": "",
+  "latitud": null,
+  "longitud": null,
+  "reglas": null,
+  "politicaCancelacion": "",
+  "horarioCheckIn": "14:00 - 20:00",
+  "horarioCheckOut": "10:00 - 12:00",
+  "estanciaMinima": 1,
+  "estanciaMaxima": 365,
+  "amenidades": [
+    "Montaña",
+    "Pet Friendly",
+    "Parque para niños",
+    "Agua caliente",
+    "Patio",
+    "Estacionamiento",
+    "Seguridad",
+    "Tanque de agua",
+    "Copas",
+    "Vajilla",
+    "Juego de cubiertos",
+    "Nevera",
+    "Vasos",
+    "TV",
+    "Mesa de comedor",
+    "Parrillera",
+    "Licuadora",
+    "Playa",
+    "WiFi",
+    "Servicios de streaming",
+    "Cocina equipada",
+    "Juego de ollas",
+    "Terraza",
+    "Cafetera",
+    "Lavadora",
+    "Secadora"
+  ],
+  "anfitrion": {
+    "nombre": "POSADA",
+    "imagen": null,
+    "miembroDesde": null,
+    "telefono": null,
+    "email": null,
+    "whatsapp": null
+  },
+  "imagenes": [
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/SwC282vhOo1qrl4iX074ZfD11Gj882YAT1u32BJN5vqq3G6137.jpeg",
+      "alt": "posada-para-parejas-y-familias-a-10mn-colonia-tovar-0",
+      "orden": 1,
+      "esPrincipal": true,
+      "archivoLocal": "img/img_1.jpeg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/fz590OE89t148q7107C9h55c7UGix7b7PLcyoK6MmOM37q374C.jpeg",
+      "alt": "posada-para-parejas-y-familias-a-10mn-colonia-tovar-1",
+      "orden": 2,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_2.jpeg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/r9tgl1k57sIj44dWurm71aw61l8B1cL1y987ks6461UisA1p96.jpeg",
+      "alt": "posada-para-parejas-y-familias-a-10mn-colonia-tovar-2",
+      "orden": 3,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_3.jpeg"
+    },
+    {
+      "url": "https://avilatek.sfo3.digitaloceanspaces.com/stg/kBPb1rE2O8e8405CYK751vB3e56Uu8brSfKdHk24Qk25ol8bSb.jpeg",
+      "alt": "posada-para-parejas-y-familias-a-10mn-colonia-tovar-3",
+      "orden": 4,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_4.jpeg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/7tR0q0h323CH187V712d332drfmy8NiR3TU73395S9EPC3T9d2.jpg",
+      "alt": "1752206294687164061",
+      "orden": 5,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_5.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/04H1Qsu84i61m3hrsBOb3TmSZ9t20C046QxcRfl20G50mYu2oj.jpg",
+      "alt": "1748486285837100299",
+      "orden": 6,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_6.jpg"
+    },
+    {
+      "url": "https://ik.imagekit.io/g6qb6s7be/rj2rsd83215L1686pi7h1y0kLQ4M7N5O2O4I20CR0XV7mn48x6.jpeg",
+      "alt": "1763738811583215612",
+      "orden": 7,
+      "esPrincipal": false,
+      "archivoLocal": "img/img_7.jpeg"
+    }
+  ]
+}
