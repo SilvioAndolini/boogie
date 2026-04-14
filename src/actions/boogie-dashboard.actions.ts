@@ -18,9 +18,15 @@ export async function getBoogieDashboard(propiedadId: string) {
 
   if (!propiedad) return { error: 'Boogie no encontrado' }
 
+  propiedad.capacidad_maxima = propiedad.capacidad
+  propiedad.habitaciones = propiedad.dormitorios
+  propiedad.horario_checkin = propiedad.check_in
+  propiedad.horario_checkout = propiedad.check_out
+  propiedad.cantidad_resenas = propiedad.cantidad_resenas ?? propiedad.total_resenas ?? 0
+
   const supabase = createAdminClient()
 
-  const [gastosResult, fechasBloqueadasResult, preciosEspecialesResult] = await Promise.all([
+  const [gastosResult, fechasBloqueadasResult, preciosEspecialesResult, reservasResult, amenidadesResult] = await Promise.all([
     supabase
       .from('gastos_mantenimiento')
       .select('*')
@@ -34,24 +40,30 @@ export async function getBoogieDashboard(propiedadId: string) {
       .from('precios_especiales')
       .select('*')
       .eq('propiedad_id', propiedadId),
+    supabase
+      .from('reservas')
+      .select('id, estado, fecha_entrada, fecha_salida, noches, monto_total:total, moneda, cantidad_huespedes, huesped:usuarios!huesped_id(nombre, apellido, email, avatar_url)')
+      .eq('propiedad_id', propiedadId)
+      .order('fecha_entrada', { ascending: false }),
+    supabase
+      .from('propiedad_amenidades')
+      .select('amenidad:amenidades(nombre)')
+      .eq('propiedad_id', propiedadId),
   ])
 
   const { data: gastos } = gastosResult
   const { data: fechasBloqueadas } = fechasBloqueadasResult
   const { data: preciosEspeciales } = preciosEspecialesResult
+  const { data: reservasRaw } = reservasResult
+  const { data: amenidadesRaw } = amenidadesResult
 
-  let reservasList: Record<string, unknown>[] = []
-  let amenidades: string[] = []
-  try {
-    const [reservasData, amenidadesData] = await Promise.all([
-      goGet<Record<string, unknown>[]>(`/api/v1/propiedades/${propiedadId}/reservas`),
-      goGet<{ nombre: string }[]>(`/api/v1/propiedades/${propiedadId}/amenidades`),
-    ])
-    reservasList = reservasData || []
-    amenidades = (amenidadesData || []).map((a) => a.nombre).filter(Boolean)
-  } catch (err) {
-    console.error('[getBoogieDashboard] Go API error:', err)
-  }
+  const reservasList: Record<string, unknown>[] = (reservasRaw || []) as Record<string, unknown>[]
+  const amenidades: string[] = (amenidadesRaw || [])
+    .map((a: Record<string, unknown>) => {
+      const amenidad = a.amenidad as Record<string, unknown> | null
+      return amenidad?.nombre as string
+    })
+    .filter(Boolean)
 
   propiedad.amenidades = amenidades
 
