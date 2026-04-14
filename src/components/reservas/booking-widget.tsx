@@ -8,7 +8,6 @@ import { formatPrecio, formatFechaCorta } from '@/lib/format'
 import { BookingCalendar } from '@/components/reservas/booking-calendar'
 import { COMISION_PLATAFORMA_HUESPED } from '@/lib/constants'
 import { NegociaTuBoogie } from '@/components/propiedades/negocia-tu-boogie'
-import { verificarDisponibilidad } from '@/lib/reservas/disponibilidad'
 
 interface BookingWidgetProps {
   precioPorNoche: number
@@ -70,18 +69,27 @@ export function BookingWidget({
     if (!fechaEntrada || !fechaSalida) return
     setReservando(true)
     try {
-      const verif = await verificarDisponibilidad(propiedadId, fechaEntrada, fechaSalida)
-      if (!verif.disponible) {
-        alert('Las fechas seleccionadas ya no estan disponibles. Por favor selecciona otras fechas.')
-        setReservando(false)
-        return
-      }
       const params = new URLSearchParams({
+        propiedadId,
+        fechaEntrada: fechaEntrada.toISOString(),
+        fechaSalida: fechaSalida.toISOString(),
+      })
+      const res = await fetch(`/api/reservas/disponibilidad?${params}`)
+      if (res.ok) {
+        const body = await res.json()
+        const data = body?.data ?? body
+        if (!data.disponible) {
+          alert('Las fechas seleccionadas ya no estan disponibles. Por favor selecciona otras fechas.')
+          setReservando(false)
+          return
+        }
+      }
+      const redirectParams = new URLSearchParams({
         entrada: fechaEntrada.toISOString(),
         salida: fechaSalida.toISOString(),
         huespedes: huespedes.toString(),
       })
-      window.location.href = `/propiedades/${propiedadId}/reservar?${params.toString()}`
+      window.location.href = `/propiedades/${propiedadId}/reservar?${redirectParams.toString()}`
     } catch {
       alert('Error al verificar disponibilidad. Intenta de nuevo.')
     } finally {
