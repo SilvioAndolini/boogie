@@ -59,7 +59,8 @@ export function CryptoPayment({
           setStatus('waiting')
           onPagoRegistradoRef.current(data.reservaId || reservaId || '')
         } else if (!cancelled) {
-          toast.error(data.error || 'Error al generar direccion')
+          const errMsg = typeof data.error === 'string' ? data.error : data.error?.message || 'Error al generar direccion'
+          toast.error(errMsg)
         }
       } catch {
         if (!cancelled) toast.error('Error de conexion con CryptAPI')
