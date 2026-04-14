@@ -1,11 +1,17 @@
 import { goGet } from '@/lib/go-api-client'
 import type { VerificacionDisponibilidad } from '@/types/reserva'
 
+export interface FechaOcupada {
+  inicio: string
+  fin: string
+  estado: string
+}
+
 export async function obtenerFechasOcupadas(
   propiedadId: string
-): Promise<{ inicio: Date; fin: Date }[]> {
+): Promise<{ inicio: Date; fin: Date; estado: string }[]> {
   try {
-    const data = await goGet<{ inicio: string; fin: string }[]>(
+    const data = await goGet<FechaOcupada[]>(
       `/api/v1/reservas/fechas-ocupadas?propiedadId=${propiedadId}`
     )
     if (!data) return []
@@ -14,7 +20,7 @@ export async function obtenerFechasOcupadas(
       const fin = new Date(r.fin)
       inicio.setHours(0, 0, 0, 0)
       fin.setHours(0, 0, 0, 0)
-      return { inicio, fin }
+      return { inicio, fin, estado: r.estado }
     })
   } catch {
     return []

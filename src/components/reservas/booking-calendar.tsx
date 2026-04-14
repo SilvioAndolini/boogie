@@ -1,20 +1,21 @@
-// Calendario de disponibilidad para reservas
 'use client'
 
 import { useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { verificarDisponibilidad } from '@/lib/reservas/disponibilidad'
 
 interface BookingCalendarProps {
   fechaEntrada?: Date
   fechaSalida?: Date
-  fechasOcupadas?: { inicio: Date; fin: Date }[]
+  fechasOcupadas?: { inicio: Date; fin: Date; estado: string }[]
   onFechaEntradaChange?: (fecha: Date) => void
   onFechaSalidaChange?: (fecha: Date) => void
+  propiedadId?: string
 }
 
-const DIAS_SEMANA = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do']
+const DIAS_SEMANA = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa', 'Do']
 const MESES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
@@ -24,13 +25,38 @@ function soloFecha(d: Date): number {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
 }
 
-function obtenerDiasOcupados(rangos: { inicio: Date; fin: Date }[]): Set<number> {
-  const dias = new Set<number>()
-  for (const { inicio, fin } of rangos) {
+type DiaEstado = 'disponible' | 'pendiente' | 'ocupada' | 'bloqueada'
+
+function obtenerEstadosPorDia(rangos: { inicio: Date; fin: Date; estado: string }[]): Map<number, DiaEstado> {
+  const dias = new Map<number, DiaEstado>()
+  const prioridad: Record<DiaEstado, number> = {
+    bloqueada: 4,
+    ocupada: 3,
+    pendiente: 2,
+    disponible: 1,
+  }
+
+  function clasificar(estado: string): DiaEstado {
+    switch (estado) {
+      case 'PENDIENTE_CONFIRMACION':
+      case 'PENDIENTE_PAGO':
+        return 'pendiente'
+      case 'BLOQUEADA':
+        return 'bloqueada'
+      default:
+        return 'ocupada'
+    }
+  }
+
+  for (const { inicio, fin, estado } of rangos) {
     const start = soloFecha(inicio)
     const end = soloFecha(fin)
-    for (let t = start; t <= end; t += 86400000) {
-      dias.add(t)
+    const tipo = clasificar(estado)
+    for (let t = start; t < end; t += 86400000) {
+      const actual = dias.get(t)
+      if (!actual || prioridad[tipo] > prioridad[actual]) {
+        dias.set(t, tipo)
+      }
     }
   }
   return dias
@@ -42,30 +68,33 @@ export function BookingCalendar({
   fechasOcupadas = [],
   onFechaEntradaChange,
   onFechaSalidaChange,
+  propiedadId,
 }: BookingCalendarProps) {
   const [mesActual, setMesActual] = useState(new Date())
+  const [verificando, setVerificando] = useState(false)
 
-  const año = mesActual.getFullYear()
+  const ano = mesActual.getFullYear()
   const mes = mesActual.getMonth()
 
-  const primerDia = new Date(año, mes, 1).getDay()
+  const primerDia = new Date(ano, mes, 1).getDay()
   const ajustePrimerDia = primerDia === 0 ? 6 : primerDia - 1
-  const diasEnMes = new Date(año, mes + 1, 0).getDate()
+  const diasEnMes = new Date(ano, mes + 1, 0).getDate()
 
-  const diasOcupados = obtenerDiasOcupados(fechasOcupadas)
+  const estadosPorDia = obtenerEstadosPorDia(fechasOcupadas)
 
-  const mesAnterior = () => {
-    setMesActual(new Date(año, mes - 1, 1))
+  const mesAnterior = () => setMesActual(new Date(ano, mes - 1, 1))
+  const mesSiguiente = () => setMesActual(new Date(ano, mes + 1, 1))
+
+  const estadoDia = (ts: number): DiaEstado => estadosPorDia.get(ts) || 'disponible'
+
+  const esNoSeleccionable = (ts: number): boolean => {
+    const e = estadoDia(ts)
+    return e === 'ocupada' || e === 'bloqueada'
   }
-  const mesSiguiente = () => {
-    setMesActual(new Date(año, mes + 1, 1))
-  }
 
-  const estaOcupada = (ts: number) => diasOcupados.has(ts)
-
-  const rangoTieneOcupados = (startTs: number, endTs: number) => {
+  const rangoTieneBloqueados = (startTs: number, endTs: number) => {
     for (let t = startTs; t <= endTs; t += 86400000) {
-      if (diasOcupados.has(t)) return true
+      if (esNoSeleccionable(t)) return true
     }
     return false
   }
@@ -77,19 +106,34 @@ export function BookingCalendar({
     return ts > entTs && ts < salTs
   }
 
-  const handleDiaClick = (dia: number) => {
-    const fecha = new Date(año, mes, dia)
+  const handleDiaClick = async (dia: number) => {
+    const fecha = new Date(ano, mes, dia)
     const ts = soloFecha(fecha)
     const hoyTs = soloFecha(new Date())
 
-    if (estaOcupada(ts) || ts < hoyTs) return
+    if (esNoSeleccionable(ts) || ts < hoyTs) return
 
     if (!fechaEntrada || (fechaEntrada && fechaSalida)) {
       onFechaEntradaChange?.(fecha)
       onFechaSalidaChange?.(undefined as unknown as Date)
     } else {
       const entTs = soloFecha(fechaEntrada)
-      if (ts > entTs && !rangoTieneOcupados(entTs, ts)) {
+      if (ts > entTs && !rangoTieneBloqueados(entTs, ts)) {
+        if (propiedadId) {
+          setVerificando(true)
+          try {
+            const verif = await verificarDisponibilidad(propiedadId, fechaEntrada, fecha)
+            if (!verif.disponible) {
+              onFechaEntradaChange?.(fecha)
+              onFechaSalidaChange?.(undefined as unknown as Date)
+              return
+            }
+          } catch {
+            return
+          } finally {
+            setVerificando(false)
+          }
+        }
         onFechaSalidaChange?.(fecha)
       } else if (ts > entTs) {
         onFechaEntradaChange?.(fecha)
@@ -112,7 +156,7 @@ export function BookingCalendar({
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <span className="text-sm font-semibold text-[#1A1A1A]">
-          {MESES[mes]} {año}
+          {MESES[mes]} {ano}
         </span>
         <Button variant="ghost" size="icon" onClick={mesSiguiente}>
           <ChevronRight className="h-4 w-4" />
@@ -133,34 +177,52 @@ export function BookingCalendar({
         ))}
         {Array.from({ length: diasEnMes }).map((_, i) => {
           const dia = i + 1
-          const ts = soloFecha(new Date(año, mes, dia))
+          const ts = soloFecha(new Date(ano, mes, dia))
           const pasado = ts < hoyTs
-          const ocupada = estaOcupada(ts)
+          const estado = estadoDia(ts)
+          const noSeleccionable = pasado || estado === 'ocupada' || estado === 'bloqueada'
           const esEntrada = entTs !== null && ts === entTs
           const esSalida = salTs !== null && ts === salTs
           const enMedio = enRango(ts)
-          const seleccionable = !pasado && !ocupada
 
           return (
             <button
               key={dia}
-              disabled={!seleccionable}
+              disabled={noSeleccionable || verificando}
               onClick={() => handleDiaClick(dia)}
               className={cn(
                 'flex h-10 w-full items-center justify-center rounded-md text-sm transition-colors sm:h-8',
-                seleccionable && 'hover:bg-[#D8F3DC] cursor-pointer',
-                pasado && !ocupada && 'text-[#D8D3CC] cursor-not-allowed',
-                ocupada && 'bg-[#FEE2E2] text-[#B91C1C] cursor-not-allowed line-through',
-                esEntrada && !ocupada && 'bg-[#1B4332] text-white rounded-l-md',
-                esSalida && !ocupada && 'bg-[#1B4332] text-white rounded-r-md',
-                enMedio && !ocupada && 'bg-[#D8F3DC] text-[#1B4332]',
-                ts === hoyTs && !esEntrada && !esSalida && !ocupada && 'font-bold text-[#1B4332]',
+                estado === 'disponible' && !pasado && !esEntrada && !esSalida && !enMedio && 'text-[#1B4332] bg-[#D8F3DC]/40 hover:bg-[#D8F3DC] cursor-pointer',
+                estado === 'pendiente' && !pasado && 'bg-[#FEF3C7] text-[#92400E] cursor-pointer',
+                estado === 'ocupada' && 'bg-[#FEE2E2] text-[#B91C1C] cursor-not-allowed line-through',
+                estado === 'bloqueada' && 'bg-[#E5E7EB] text-[#6B7280] cursor-not-allowed line-through',
+                pasado && estado === 'disponible' && 'bg-transparent text-[#D8D3CC] cursor-not-allowed',
+                esEntrada && (estado === 'disponible' || estado === 'pendiente') && 'bg-[#1B4332] !text-white rounded-l-md',
+                esSalida && (estado === 'disponible' || estado === 'pendiente') && 'bg-[#1B4332] !text-white rounded-r-md',
+                enMedio && (estado === 'disponible' || estado === 'pendiente') && 'bg-[#D8F3DC] text-[#1B4332]',
+                ts === hoyTs && !esEntrada && !esSalida && estado === 'disponible' && 'font-bold text-[#1B4332]',
+                verificando && 'opacity-60',
               )}
             >
               {dia}
             </button>
           )
         })}
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-3 text-[10px] text-[#6B6560]">
+        <div className="flex items-center gap-1">
+          <span className="inline-block h-2.5 w-2.5 rounded-sm bg-[#D8F3DC]/60" />
+          Disponible
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="inline-block h-2.5 w-2.5 rounded-sm bg-[#FEF3C7]" />
+          Por confirmar
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="inline-block h-2.5 w-2.5 rounded-sm bg-[#FEE2E2]" />
+          Ocupada
+        </div>
       </div>
     </div>
   )

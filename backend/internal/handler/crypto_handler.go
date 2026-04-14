@@ -105,6 +105,20 @@ func (h *CryptoHandler) Create(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		callbackURL := h.cryptoSvc.BuildCallbackURL(map[string]string{
+			"propiedadId":  req.PropiedadID,
+			"fechaEntrada": req.FechaEntrada,
+			"fechaSalida":  req.FechaSalida,
+			"secret":       h.cryptoSvc.Config.CallbackSecret,
+		})
+
+		cryptoResult, err := h.cryptoSvc.CreateAddress(callbackURL)
+		if err != nil {
+			slog.Error("[crypto/create] cryptapi error", "error", err)
+			ErrorJSON(w, http.StatusInternalServerError, "CRYPTAPI_ERROR", err.Error())
+			return
+		}
+
 		newReservaID, err := h.cryptoRepo.InsertReservaCrypto(
 			r.Context(), req.PropiedadID, userID, precioPorNoche, enums.Moneda(moneda),
 			req.FechaEntrada, req.FechaSalida, req.CantidadHuespedes,
@@ -117,6 +131,15 @@ func (h *CryptoHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 		reservaIDFinal = newReservaID
 
+		callbackURL2 := h.cryptoSvc.BuildCallbackURL(map[string]string{
+			"reservaId":    reservaIDFinal,
+			"propiedadId":  req.PropiedadID,
+			"fechaEntrada": req.FechaEntrada,
+			"fechaSalida":  req.FechaSalida,
+			"secret":       h.cryptoSvc.Config.CallbackSecret,
+		})
+		_ = callbackURL2
+
 		if nerr := h.cryptoRepo.InsertNotificacion(r.Context(),
 			"NUEVA_RESERVA", "Nueva reserva recibida",
 			fmt.Sprintf("Tienes una nueva reserva cripto para \"%s\"", titulo),
@@ -124,6 +147,20 @@ func (h *CryptoHandler) Create(w http.ResponseWriter, r *http.Request) {
 		); nerr != nil {
 			slog.Error("[crypto/create] notificacion error", "error", nerr)
 		}
+
+		if err := h.cryptoRepo.InsertCryptoPago(r.Context(), reservaIDFinal, userID, req.Monto, cryptoResult.AddressIn); err != nil {
+			slog.Error("[crypto/create] pago insert error", "error", err)
+		}
+
+		JSON(w, http.StatusOK, map[string]interface{}{
+			"address":   cryptoResult.AddressIn,
+			"reservaId": reservaIDFinal,
+			"ticker":    service.CryptapiTicker,
+			"network":   service.CryptapiNetwork,
+			"currency":  service.CryptapiCurrency,
+			"amount":    req.Monto,
+		})
+		return
 	}
 
 	callbackURL := h.cryptoSvc.BuildCallbackURL(map[string]string{

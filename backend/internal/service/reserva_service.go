@@ -88,11 +88,12 @@ func (r *ReservaDisponibilidad) ObtenerPropiedad(ctx context.Context, propiedadI
 type FechaOcupada struct {
 	Inicio time.Time `json:"inicio"`
 	Fin    time.Time `json:"fin"`
+	Estado string    `json:"estado"`
 }
 
 func (r *ReservaDisponibilidad) ObtenerFechasOcupadas(ctx context.Context, propiedadID string) ([]FechaOcupada, error) {
 	rows, err := r.pool.Query(ctx, `
-		SELECT fecha_entrada, fecha_salida FROM reservas
+		SELECT fecha_entrada, fecha_salida, estado FROM reservas
 		WHERE propiedad_id = $1
 		  AND estado IN ('PENDIENTE_PAGO', 'PENDIENTE', 'PENDIENTE_CONFIRMACION', 'CONFIRMADA', 'EN_CURSO')
 	`, propiedadID)
@@ -104,7 +105,7 @@ func (r *ReservaDisponibilidad) ObtenerFechasOcupadas(ctx context.Context, propi
 	var results []FechaOcupada
 	for rows.Next() {
 		var f FechaOcupada
-		if err := rows.Scan(&f.Inicio, &f.Fin); err != nil {
+		if err := rows.Scan(&f.Inicio, &f.Fin, &f.Estado); err != nil {
 			return nil, err
 		}
 		results = append(results, f)
@@ -124,6 +125,7 @@ func (r *ReservaDisponibilidad) ObtenerFechasOcupadas(ctx context.Context, propi
 		if err := blockedRows.Scan(&f.Inicio, &f.Fin); err != nil {
 			return nil, err
 		}
+		f.Estado = "BLOQUEADA"
 		results = append(results, f)
 	}
 

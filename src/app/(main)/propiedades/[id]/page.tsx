@@ -49,6 +49,7 @@ export default async function PropiedadDetallePage({ params }: Props) {
   const fechasOcupadas = fechasOcupadasRaw.map((r) => ({
     inicio: r.inicio.toISOString(),
     fin: r.fin.toISOString(),
+    estado: r.estado,
   }))
 
   const reglas = propiedad.reglas

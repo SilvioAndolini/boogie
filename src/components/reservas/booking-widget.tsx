@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Users, Shield, ArrowLeftRight, ChevronDown, ChevronUp } from 'lucide-react'
+import { Users, Shield, ArrowLeftRight, ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { formatPrecio, formatFechaCorta } from '@/lib/format'
 import { BookingCalendar } from '@/components/reservas/booking-calendar'
 import { COMISION_PLATAFORMA_HUESPED } from '@/lib/constants'
 import { NegociaTuBoogie } from '@/components/propiedades/negocia-tu-boogie'
+import { verificarDisponibilidad } from '@/lib/reservas/disponibilidad'
 
 interface BookingWidgetProps {
   precioPorNoche: number
@@ -16,7 +17,7 @@ interface BookingWidgetProps {
   estanciaMinima: number
   propiedadId: string
   tasaEuro: number
-  fechasOcupadas?: { inicio: string; fin: string }[]
+  fechasOcupadas?: { inicio: string; fin: string; estado: string }[]
 }
 
 export function BookingWidget({
@@ -34,10 +35,12 @@ export function BookingWidget({
   const [mostrarCalendario, setMostrarCalendario] = useState(false)
   const [mostrarHuespedes, setMostrarHuespedes] = useState(false)
   const [monedaDisplay, setMonedaDisplay] = useState<'USD' | 'VES'>(moneda)
+  const [reservando, setReservando] = useState(false)
 
   const fechasOcupadas = (fechasOcupadasISO || []).map((r) => ({
     inicio: new Date(r.inicio),
     fin: new Date(r.fin),
+    estado: r.estado,
   }))
 
   useEffect(() => {
@@ -63,14 +66,27 @@ export function BookingWidget({
     setMonedaDisplay((prev) => prev === 'USD' ? 'VES' : 'USD')
   }
 
-  const handleReservar = () => {
+  const handleReservar = async () => {
     if (!fechaEntrada || !fechaSalida) return
-    const params = new URLSearchParams({
-      entrada: fechaEntrada.toISOString(),
-      salida: fechaSalida.toISOString(),
-      huespedes: huespedes.toString(),
-    })
-    window.location.href = `/propiedades/${propiedadId}/reservar?${params.toString()}`
+    setReservando(true)
+    try {
+      const verif = await verificarDisponibilidad(propiedadId, fechaEntrada, fechaSalida)
+      if (!verif.disponible) {
+        alert('Las fechas seleccionadas ya no estan disponibles. Por favor selecciona otras fechas.')
+        setReservando(false)
+        return
+      }
+      const params = new URLSearchParams({
+        entrada: fechaEntrada.toISOString(),
+        salida: fechaSalida.toISOString(),
+        huespedes: huespedes.toString(),
+      })
+      window.location.href = `/propiedades/${propiedadId}/reservar?${params.toString()}`
+    } catch {
+      alert('Error al verificar disponibilidad. Intenta de nuevo.')
+    } finally {
+      setReservando(false)
+    }
   }
 
   return (
@@ -166,6 +182,7 @@ export function BookingWidget({
                 fechasOcupadas={fechasOcupadas}
                 onFechaEntradaChange={setFechaEntrada}
                 onFechaSalidaChange={setFechaSalida}
+                propiedadId={propiedadId}
               />
             </div>
           </motion.div>
@@ -211,10 +228,12 @@ export function BookingWidget({
       <Button
         onClick={handleReservar}
         className="w-full bg-[#1B4332] py-6 text-base font-semibold text-white hover:bg-[#2D6A4F]"
-        disabled={!fechaEntrada || !fechaSalida || (noches > 0 && noches < estanciaMinima)}
+        disabled={!fechaEntrada || !fechaSalida || (noches > 0 && noches < estanciaMinima) || reservando}
       >
-        {noches > 0 && noches < estanciaMinima
-          ? `Estancia mínima: ${estanciaMinima} noches`
+        {reservando ? (
+          <Loader2 className="h-5 w-5 animate-spin" />
+        ) : noches > 0 && noches < estanciaMinima
+          ? `Estancia minima: ${estanciaMinima} noches`
           : fechaEntrada && fechaSalida
             ? 'Reservar ahora'
             : 'Selecciona las fechas'}
