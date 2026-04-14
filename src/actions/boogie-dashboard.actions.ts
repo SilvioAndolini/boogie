@@ -26,7 +26,11 @@ export async function getBoogieDashboard(propiedadId: string) {
         gastos: (data.gastos as Record<string, unknown>[]) || [],
         fechasBloqueadas: (data.fechasBloqueadas as Record<string, unknown>[]) || [],
         preciosEspeciales: (data.preciosEspeciales as Record<string, unknown>[]) || [],
-        kpis: data.kpis,
+        kpis: data.kpis as {
+          totalIngresos: number; totalGastos: number; totalGastosVes: number;
+          balance: number; totalReservas: number; reservasActivas: number;
+          reservasConfirmadas: number; totalNoches: number; tarifaPromedio: number;
+        },
         ingresosByMonth: (data.ingresosByMonth as Record<string, number>) || {},
         gastosByMonth: (data.gastosByMonth as Record<string, number>) || {},
         ocupadas: (data.ocupadas as Record<string, unknown>[]) || [],
