@@ -33,7 +33,7 @@ export async function getBoogieDashboard(propiedadId: string) {
         },
         ingresosByMonth: (data.ingresosByMonth as Record<string, number>) || {},
         gastosByMonth: (data.gastosByMonth as Record<string, number>) || {},
-        ocupadas: (data.ocupadas as Record<string, unknown>[]) || [],
+        ocupadas: (data.ocupadas as { fecha_entrada: string; fecha_salida: string; estado: string; huesped?: string }[]) || [],
       }
     } catch (err: any) {
       return { error: err.message || 'Boogie no encontrado' }
