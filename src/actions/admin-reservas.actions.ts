@@ -12,6 +12,7 @@ type ReservasResult = {
 }
 
 type ReservasStatsResult = {
+  PENDIENTE_PAGO?: number;
   PENDIENTE?: number;
   CONFIRMADA?: number;
   EN_CURSO?: number;
@@ -19,6 +20,7 @@ type ReservasStatsResult = {
   CANCELADA_HUESPED?: number;
   CANCELADA_ANFITRION?: number;
   RECHAZADA?: number;
+  ANULADA?: number;
   error?: string;
 }
 
@@ -53,6 +55,7 @@ export async function getReservaDetalleAdmin(reservaId: string) {
     const cotizacion = await getCotizacionEuro()
     return {
       reserva: data,
+      timeline: (data?.timeline ?? []) as Array<Record<string, unknown>>,
       tasaBCV: cotizacion.tasa,
       fuenteBCV: cotizacion.fuente,
     }
