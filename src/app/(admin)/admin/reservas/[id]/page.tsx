@@ -31,7 +31,7 @@ interface TimelineEntry {
   accion: string
   creado_en: string
   detalles: Record<string, unknown>
-  usuarios: { nombre: string; apellido: string; email: string } | null
+  admin: { nombre: string; apellido: string; email: string } | null
 }
 
 interface ReservaDetalle {
