@@ -377,6 +377,7 @@ func New(opts *RouterOpts) http.Handler {
 		if opts.ReservaHandlers != nil {
 			r.Route("/reservas", func(r chi.Router) {
 				r.Get("/fechas-ocupadas", opts.ReservaHandlers.FechasOcupadas)
+				r.Get("/disponibilidad", opts.ReservaHandlers.Disponibilidad)
 
 				r.Group(func(r chi.Router) {
 					r.Use(opts.AuthVerifier.Middleware)
@@ -384,7 +385,6 @@ func New(opts *RouterOpts) http.Handler {
 					r.Post("/crear-con-pago", opts.ReservaHandlers.CrearConPago)
 					r.Get("/mias", opts.ReservaHandlers.MisReservas)
 					r.Get("/recibidas", opts.ReservaHandlers.ReservasRecibidas)
-					r.Get("/disponibilidad", opts.ReservaHandlers.Disponibilidad)
 					r.Post("/cron/auto-confirmar", opts.ReservaHandlers.AutoConfirmarExpiradas)
 					r.Get("/{id}", opts.ReservaHandlers.GetByID)
 					r.Post("/{id}/cancelar", opts.ReservaHandlers.Cancelar)
