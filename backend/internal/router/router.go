@@ -14,13 +14,15 @@ import (
 )
 
 type Handlers struct {
-	Healthz            http.HandlerFunc
-	Exchange           http.HandlerFunc
-	Ubicaciones        http.HandlerFunc
-	CryptoCreate       http.HandlerFunc
-	CryptoCallback     http.HandlerFunc
-	CryptoCallbackPost http.HandlerFunc
-	MetamapWebhook     http.HandlerFunc
+	Healthz                  http.HandlerFunc
+	Exchange                 http.HandlerFunc
+	Ubicaciones              http.HandlerFunc
+	CryptoCreate             http.HandlerFunc
+	CryptoCallback           http.HandlerFunc
+	CryptoCallbackPost       http.HandlerFunc
+	CryptoVerificar          http.HandlerFunc
+	CryptoVerificacionManual http.HandlerFunc
+	MetamapWebhook           http.HandlerFunc
 }
 
 type PagoHandlers struct {
@@ -233,6 +235,8 @@ func New(opts *RouterOpts) http.Handler {
 		r.Group(func(r chi.Router) {
 			r.Use(opts.AuthVerifier.Middleware)
 			r.Post("/crypto/create", opts.Handlers.CryptoCreate)
+			r.Get("/crypto/verificar", opts.Handlers.CryptoVerificar)
+			r.Post("/crypto/verificacion-manual", opts.Handlers.CryptoVerificacionManual)
 		})
 
 		r.Get("/crypto/callback", opts.Handlers.CryptoCallback)

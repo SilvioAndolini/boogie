@@ -279,3 +279,65 @@ func (h *CryptoHandler) Callback(w http.ResponseWriter, r *http.Request) {
 func (h *CryptoHandler) CallbackPost(w http.ResponseWriter, r *http.Request) {
 	h.Callback(w, r)
 }
+
+func (h *CryptoHandler) Verificar(w http.ResponseWriter, r *http.Request) {
+	reservaID := r.URL.Query().Get("reservaId")
+	if reservaID == "" {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_PARAMS", "reservaId requerido")
+		return
+	}
+
+	var estado, txHash string
+	var confirmations int
+	err := h.cryptoRepo.Pool().QueryRow(r.Context(), `
+		SELECT estado, COALESCE(crypto_tx_hash,''), COALESCE(crypto_confirmations,0)
+		FROM pagos WHERE reserva_id = $1 AND metodo_pago = 'CRIPTO'
+		ORDER BY fecha_creacion DESC LIMIT 1
+	`, reservaID).Scan(&estado, &txHash, &confirmations)
+	if err != nil {
+		ErrorJSON(w, http.StatusNotFound, "PAGO_NOT_FOUND", "Pago no encontrado")
+		return
+	}
+
+	JSON(w, http.StatusOK, map[string]interface{}{
+		"estado":     estado,
+		"txHash":     txHash,
+		"confirmado": estado == "VERIFICADO" || estado == "ACREDITADO",
+	})
+}
+
+func (h *CryptoHandler) SolicitarVerificacionManual(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetUserID(r.Context())
+	if userID == "" {
+		ErrorJSON(w, http.StatusUnauthorized, "AUTH_REQUIRED", "No autenticado")
+		return
+	}
+
+	var req struct {
+		ReservaID string `json:"reservaId"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.ReservaID == "" {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "reservaId requerido")
+		return
+	}
+
+	_, err := h.cryptoRepo.Pool().Exec(r.Context(), `
+		UPDATE pagos SET estado = 'VERIFICACION_MANUAL', referencia = 'Verificacion manual solicitada'
+		WHERE reserva_id = $1 AND metodo_pago = 'CRIPTO'
+	`, req.ReservaID)
+	if err != nil {
+		slog.Error("[crypto/manual] update error", "error", err)
+		ErrorJSON(w, http.StatusInternalServerError, "DB_ERROR", "Error al solicitar verificacion")
+		return
+	}
+
+	if nerr := h.cryptoRepo.InsertNotificacion(r.Context(),
+		"VERIFICACION_MANUAL", "Verificacion manual de pago cripto",
+		fmt.Sprintf("El huesped solicita verificacion manual de pago cripto para reserva %s", req.ReservaID[:8]),
+		"", "/admin/reservas",
+	); nerr != nil {
+		slog.Error("[crypto/manual] notificacion error", "error", nerr)
+	}
+
+	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+}

@@ -157,8 +157,8 @@ func (r *SeccionesRepo) GetPropiedadesByIDs(ctx context.Context, ids []string) (
 	rows, err := r.pool.Query(ctx, `
 		SELECT p.id, p.titulo, p.tipo_propiedad, p.precio_por_noche, p.moneda,
 		       p.ciudad, p.estado, p.slug,
-		       COALESCE(p.dormitorios, 1), COALESCE(p.camas, 1), COALESCE(p.banos, 1),
-		       COALESCE(p.calificacion, 0), COALESCE(p.cantidad_resenas, 0),
+		       COALESCE(p.habitaciones, 1), COALESCE(p.camas, 1), COALESCE(p.banos, 1),
+		       COALESCE(p.rating_promedio, 0), COALESCE(p.total_resenas, 0),
 		       u.plan_suscripcion
 		FROM propiedades p
 		LEFT JOIN usuarios u ON u.id = p.propietario_id
@@ -176,8 +176,8 @@ func (r *SeccionesRepo) GetPropiedadesFiltradas(ctx context.Context, tipoFiltro 
 	query := `
 		SELECT p.id, p.titulo, p.tipo_propiedad, p.precio_por_noche, p.moneda,
 		       p.ciudad, p.estado, p.slug,
-		       COALESCE(p.dormitorios, 1), COALESCE(p.camas, 1), COALESCE(p.banos, 1),
-		       COALESCE(p.calificacion, 0), COALESCE(p.cantidad_resenas, 0),
+		       COALESCE(p.habitaciones, 1), COALESCE(p.camas, 1), COALESCE(p.banos, 1),
+		       COALESCE(p.rating_promedio, 0), COALESCE(p.total_resenas, 0),
 		       u.plan_suscripcion
 		FROM propiedades p
 		LEFT JOIN usuarios u ON u.id = p.propietario_id
@@ -197,9 +197,9 @@ func (r *SeccionesRepo) GetPropiedadesFiltradas(ctx context.Context, tipoFiltro 
 	}
 
 	if tipoFiltro == "RATING" {
-		query += " ORDER BY p.calificacion DESC NULLS LAST"
+		query += " ORDER BY p.rating_promedio DESC NULLS LAST"
 	} else {
-		query += " ORDER BY p.cantidad_resenas DESC NULLS LAST"
+		query += " ORDER BY p.total_resenas DESC NULLS LAST"
 	}
 
 	query += fmt.Sprintf(" LIMIT $%d", argIdx)
@@ -328,7 +328,7 @@ type PropiedadPreview struct {
 func (r *SeccionesRepo) PreviewPropiedades(ctx context.Context, tipoFiltro string, filtroEstado, filtroCiudad *string) ([]PropiedadPreview, error) {
 	query := `
 		SELECT p.id, p.titulo, p.ciudad, p.estado, p.precio_por_noche, p.moneda,
-		       COALESCE(p.calificacion, 0), COALESCE(p.cantidad_resenas, 0), i.url
+		       COALESCE(p.rating_promedio, 0), COALESCE(p.total_resenas, 0), i.url
 		FROM propiedades p
 		LEFT JOIN LATERAL (SELECT url FROM imagenes_propiedad WHERE propiedad_id = p.id ORDER BY orden LIMIT 1) i ON true
 		WHERE p.estado_publicacion = 'PUBLICADA'`
@@ -347,9 +347,9 @@ func (r *SeccionesRepo) PreviewPropiedades(ctx context.Context, tipoFiltro strin
 	}
 
 	if tipoFiltro == "RATING" {
-		query += " ORDER BY p.calificacion DESC NULLS LAST"
+		query += " ORDER BY p.rating_promedio DESC NULLS LAST"
 	} else {
-		query += " ORDER BY p.cantidad_resenas DESC NULLS LAST"
+		query += " ORDER BY p.total_resenas DESC NULLS LAST"
 	}
 
 	query += " LIMIT 10"

@@ -5,6 +5,7 @@ import { QRCodeSVG } from 'qrcode.react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Copy, Check, ExternalLink, Loader2, Clock, Shield, AlertTriangle,
+  CheckCircle2, XCircle, ArrowLeft,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -18,20 +19,26 @@ interface CryptoPaymentProps {
   onPagoRegistrado: (reservaId: string) => void
 }
 
+type CryptoStatus = 'generating' | 'waiting' | 'confirming' | 'confirmed' | 'failed' | 'manual'
+
+const POLL_INTERVAL = 5000
+const MAX_POLL_ATTEMPTS = 36
+const TRUST_WALLET_DEEPLINK = 'https://link.trustwallet.com'
+
 function formatUSD(n: number) {
   return `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
-
-const TRUST_WALLET_DEEPLINK = 'https://link.trustwallet.com'
 
 export function CryptoPayment({
   reservaId, monto, propiedadId, fechaEntrada, fechaSalida, cantidadHuespedes, onPagoRegistrado,
 }: CryptoPaymentProps) {
   const [cryptoAddress, setCryptoAddress] = useState<string | null>(null)
+  const [createdReservaId, setCreatedReservaId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
-  const [status, setStatus] = useState<'generating' | 'waiting' | 'confirmed'>('generating')
+  const [status, setStatus] = useState<CryptoStatus>('generating')
   const [elapsed, setElapsed] = useState(0)
+  const [pollAttempts, setPollAttempts] = useState(0)
   const onPagoRegistradoRef = useRef(onPagoRegistrado)
   onPagoRegistradoRef.current = onPagoRegistrado
 
@@ -56,6 +63,7 @@ export function CryptoPayment({
 
         if (!cancelled && data.address) {
           setCryptoAddress(data.address)
+          setCreatedReservaId(data.reservaId || reservaId || null)
           setStatus('waiting')
           onPagoRegistradoRef.current(data.reservaId || reservaId || '')
         } else if (!cancelled) {
@@ -81,6 +89,34 @@ export function CryptoPayment({
     return () => clearInterval(interval)
   }, [status])
 
+  useEffect(() => {
+    if (status !== 'confirming') return
+    if (pollAttempts >= MAX_POLL_ATTEMPTS) {
+      setStatus('failed')
+      return
+    }
+
+    const timeout = setTimeout(async () => {
+      const rid = createdReservaId || reservaId
+      if (!rid) { setStatus('failed'); return }
+
+      try {
+        const res = await fetch(`/api/crypto/verificar?reservaId=${rid}`)
+        if (res.ok) {
+          const body = await res.json()
+          const data = body?.data ?? body
+          if (data.confirmado) {
+            setStatus('confirmed')
+            return
+          }
+        }
+      } catch {}
+      setPollAttempts((prev) => prev + 1)
+    }, POLL_INTERVAL)
+
+    return () => clearTimeout(timeout)
+  }, [status, pollAttempts, createdReservaId, reservaId])
+
   const formatElapsed = useCallback((seconds: number) => {
     const m = Math.floor(seconds / 60)
     const s = seconds % 60
@@ -95,15 +131,34 @@ export function CryptoPayment({
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const handleOpenTrust = () => {
-    if (!cryptoAddress) return
-    const url = `${TRUST_WALLET_DEEPLINK}?action=send&coin=195&address=${cryptoAddress}&amount=${monto}`
-    window.open(url, '_blank')
+  const handleConfirmPayment = () => {
+    setStatus('confirming')
+    setPollAttempts(0)
   }
 
-  const handleOpenExplorer = () => {
-    if (!cryptoAddress) return
-    window.open(`https://tronscan.org/#/address/${cryptoAddress}`, '_blank')
+  const handleManualVerification = async () => {
+    const rid = createdReservaId || reservaId
+    if (!rid) return
+    try {
+      const res = await fetch('/api/crypto/verificacion-manual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reservaId: rid }),
+      })
+      if (res.ok) {
+        setStatus('manual')
+        toast.success('Solicitud de verificacion manual enviada')
+      } else {
+        toast.error('Error al solicitar verificacion manual')
+      }
+    } catch {
+      toast.error('Error de conexion')
+    }
+  }
+
+  const handleGoBack = () => {
+    setStatus('waiting')
+    setPollAttempts(0)
   }
 
   if (loading) {
@@ -118,6 +173,107 @@ export function CryptoPayment({
         <div className="text-center">
           <p className="text-sm font-semibold text-[#1A1A1A]">Generando direccion de pago</p>
           <p className="text-xs text-[#9E9892] mt-1">Conectando con CryptAPI...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (status === 'confirmed') {
+    return (
+      <div className="flex flex-col items-center gap-4 py-8">
+        <motion.div
+          initial={{ scale: 0 }} animate={{ scale: 1 }}
+          className="flex h-20 w-20 items-center justify-center rounded-full bg-[#D8F3DC]"
+        >
+          <CheckCircle2 className="h-10 w-10 text-[#1B4332]" />
+        </motion.div>
+        <div className="text-center">
+          <p className="text-lg font-bold text-[#1B4332]">Pago confirmado</p>
+          <p className="text-sm text-[#6B6560] mt-1">Tu reserva ha sido confirmada exitosamente</p>
+        </div>
+        <button
+          onClick={() => window.location.href = '/dashboard/mis-reservas'}
+          className="mt-2 h-11 rounded-xl bg-[#1B4332] px-8 text-sm font-semibold text-white hover:bg-[#2D6A4F]"
+        >
+          Ver mis reservas
+        </button>
+      </div>
+    )
+  }
+
+  if (status === 'manual') {
+    return (
+      <div className="flex flex-col items-center gap-4 py-8">
+        <motion.div
+          initial={{ scale: 0 }} animate={{ scale: 1 }}
+          className="flex h-20 w-20 items-center justify-center rounded-full bg-[#FEF3C7]"
+        >
+          <Clock className="h-10 w-10 text-[#92400E]" />
+        </motion.div>
+        <div className="text-center">
+          <p className="text-lg font-bold text-[#1A1A1A]">Verificacion manual solicitada</p>
+          <p className="text-sm text-[#6B6560] mt-1">Nuestro equipo revisara tu pago en un plazo de 30 minutos a 1 hora.</p>
+          <p className="text-xs text-[#9E9892] mt-2">Te notificaremos por correo una vez verificado.</p>
+        </div>
+        <button
+          onClick={() => window.location.href = '/dashboard/mis-reservas'}
+          className="mt-2 h-11 rounded-xl bg-[#1B4332] px-8 text-sm font-semibold text-white hover:bg-[#2D6A4F]"
+        >
+          Ver mis reservas
+        </button>
+      </div>
+    )
+  }
+
+  if (status === 'failed') {
+    return (
+      <div className="flex flex-col items-center gap-4 py-8">
+        <motion.div
+          initial={{ scale: 0 }} animate={{ scale: 1 }}
+          className="flex h-20 w-20 items-center justify-center rounded-full bg-[#FEE2E2]"
+        >
+          <XCircle className="h-10 w-10 text-[#C1121F]" />
+        </motion.div>
+        <div className="text-center">
+          <p className="text-lg font-bold text-[#1A1A1A]">No pudimos verificar tu pago</p>
+          <p className="text-sm text-[#6B6560] mt-1">La transaccion no ha podido ser verificada automaticamente.</p>
+        </div>
+        <div className="flex w-full max-w-sm flex-col gap-2 mt-2">
+          <button
+            onClick={handleGoBack}
+            className="flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E8E4DF] text-sm font-medium text-[#1A1A1A] hover:bg-[#F8F6F3]"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Volver atras
+          </button>
+          <button
+            onClick={handleManualVerification}
+            className="flex h-11 items-center justify-center gap-2 rounded-xl bg-[#1B4332] text-sm font-semibold text-white hover:bg-[#2D6A4F]"
+          >
+            Verificar pago manualmente
+          </button>
+          <p className="text-center text-[10px] text-[#9E9892]">
+            Las verificaciones manuales pueden tardar de 30 minutos a 1 hora
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  if (status === 'confirming') {
+    return (
+      <div className="flex flex-col items-center gap-4 py-8">
+        <div className="relative">
+          <div className="h-16 w-16 rounded-full border-2 border-t-[#1B4332] border-[#E8E4DF] animate-spin" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Shield className="h-6 w-6 text-[#1B4332]" />
+          </div>
+        </div>
+        <div className="text-center">
+          <p className="text-sm font-semibold text-[#1A1A1A]">Confirmando tu pago, espera un momento</p>
+          <p className="text-xs text-[#9E9892] mt-1">
+            Verificando transaccion en la blockchain... (intento {pollAttempts + 1}/{MAX_POLL_ATTEMPTS})
+          </p>
         </div>
       </div>
     )
@@ -140,7 +296,6 @@ export function CryptoPayment({
             </div>
           </div>
 
-          {/* Monto */}
           <div className="mb-4 rounded-xl bg-[#1B4332] p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -153,7 +308,6 @@ export function CryptoPayment({
             </div>
           </div>
 
-          {/* QR Code */}
           <div className="mb-4 flex justify-center">
             <div className="rounded-xl border border-[#E8E4DF] bg-white p-4">
               {cryptoAddress && (
@@ -169,7 +323,6 @@ export function CryptoPayment({
             </div>
           </div>
 
-          {/* Direccion */}
           <div className="mb-4">
             <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-[#9E9892]">
               Direccion de deposito
@@ -195,20 +348,16 @@ export function CryptoPayment({
             </div>
           </div>
 
-          {/* Timer */}
-          {status === 'waiting' && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="mb-4 flex items-center justify-center gap-2 rounded-xl border border-[#FEF3C7] bg-[#FEFCF9] py-2.5"
-            >
-              <Clock className="h-3.5 w-3.5 text-[#92400E]" />
-              <span className="text-xs font-medium text-[#92400E]">Esperando pago</span>
-              <span className="font-mono text-xs font-bold text-[#92400E]">{formatElapsed(elapsed)}</span>
-            </motion.div>
-          )}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="mb-4 flex items-center justify-center gap-2 rounded-xl border border-[#FEF3C7] bg-[#FEFCF9] py-2.5"
+          >
+            <Clock className="h-3.5 w-3.5 text-[#92400E]" />
+            <span className="text-xs font-medium text-[#92400E]">Esperando pago</span>
+            <span className="font-mono text-xs font-bold text-[#92400E]">{formatElapsed(elapsed)}</span>
+          </motion.div>
 
-          {/* Botones de accion */}
           <div className="space-y-2">
             <button
               onClick={handleOpenTrust}
@@ -225,9 +374,16 @@ export function CryptoPayment({
               Ver en Tronscan
               <ExternalLink className="h-3 w-3" />
             </button>
+
+            <button
+              onClick={handleConfirmPayment}
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1B4332] text-sm font-bold text-white transition-all hover:bg-[#2D6A4F] active:scale-[0.98] mt-3"
+            >
+              <CheckCircle2 className="h-5 w-5" />
+              Pago efectuado, confirmar
+            </button>
           </div>
 
-          {/* Aviso */}
           <div className="mt-4 flex items-start gap-2 rounded-xl bg-[#F8F6F3] p-3">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#B8860B]" />
             <div className="text-[10px] leading-relaxed text-[#6B6560]">
@@ -239,4 +395,14 @@ export function CryptoPayment({
       </div>
     </div>
   )
+
+  function handleOpenTrust() {
+    if (!cryptoAddress) return
+    window.open(`${TRUST_WALLET_DEEPLINK}?action=send&coin=195&address=${cryptoAddress}&amount=${monto}`, '_blank')
+  }
+
+  function handleOpenExplorer() {
+    if (!cryptoAddress) return
+    window.open(`https://tronscan.org/#/address/${cryptoAddress}`, '_blank')
+  }
 }

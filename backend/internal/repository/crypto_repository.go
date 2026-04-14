@@ -19,6 +19,10 @@ func NewCryptoRepo(pool *pgxpool.Pool) *CryptoRepo {
 	return &CryptoRepo{pool: pool}
 }
 
+func (r *CryptoRepo) Pool() *pgxpool.Pool {
+	return r.pool
+}
+
 // InsertReservaCrypto creates a reserva in PENDIENTE_PAGO state with crypto payment info.
 func (r *CryptoRepo) InsertReservaCrypto(ctx context.Context, propiedadID, huespedID string, precioPorNoche float64, moneda enums.Moneda, fechaEntrada, fechaSalida string, cantidadHuespedes int) (string, error) {
 	id := idgen.New()
