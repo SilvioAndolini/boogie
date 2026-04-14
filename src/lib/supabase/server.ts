@@ -1,5 +1,7 @@
 // Cliente de Supabase para uso en Server Components y Server Actions
 
+import 'server-only'
+
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
