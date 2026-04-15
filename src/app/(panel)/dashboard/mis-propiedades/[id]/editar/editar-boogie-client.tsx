@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Home, MapPin, Sparkles, Check, Upload, X, Loader2, DollarSign, Clock, Pencil, BedDouble, Bath, CookingPot, Sofa, TreePine, Waves, Mountain, HelpCircle, ChevronDown } from 'lucide-react'
+import { ArrowLeft, Home, MapPin, Sparkles, Check, Upload, X, Loader2, DollarSign, Clock, Pencil, BedDouble, Bath, CookingPot, Sofa, TreePine, Waves, Mountain, HelpCircle, ChevronDown, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -73,6 +73,7 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
   const router = useRouter()
   const boogieId = boogie.id as string
   const [enviando, setEnviando] = useState(false)
+  const [intentadoEnviar, setIntentadoEnviar] = useState(false)
   const [amenidadesSeleccionadas, setAmenidadesSeleccionadas] = useState<string[]>(
     (boogie.amenidades as string[]) || []
   )
@@ -245,21 +246,22 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
   }
 
   const handleGuardar = async () => {
+    setIntentadoEnviar(true)
     const esValido = await trigger()
     if (!esValido) {
-      const firstError = Object.keys(errors)[0]
-      if (firstError) {
-        const seccionMap: Record<string, SeccionId> = {
-          titulo: 'info', descripcion: 'info', tipoPropiedad: 'info',
-          precioPorNoche: 'precios', moneda: 'precios',
-          capacidadMaxima: 'precios', habitaciones: 'precios', banos: 'precios', camas: 'precios',
-          direccion: 'ubicacion', ciudad: 'ubicacion', estado: 'ubicacion', zona: 'ubicacion',
-          reglas: 'politicas', politicaCancelacion: 'politicas',
-          horarioCheckIn: 'politicas', horarioCheckOut: 'politicas', estanciaMinima: 'politicas',
-        }
-        setSeccionExpandida(seccionMap[firstError] || 'info')
+      const errorFields = Object.keys(errors)
+      const seccionMap: Record<string, SeccionId> = {
+        titulo: 'info', descripcion: 'info', tipoPropiedad: 'info',
+        precioPorNoche: 'precios', moneda: 'precios',
+        capacidadMaxima: 'precios', habitaciones: 'precios', banos: 'precios', camas: 'precios',
+        direccion: 'ubicacion', ciudad: 'ubicacion', estado: 'ubicacion', zona: 'ubicacion',
+        reglas: 'politicas', politicaCancelacion: 'politicas',
+        horarioCheckIn: 'politicas', horarioCheckOut: 'politicas', estanciaMinima: 'politicas',
       }
-      toast.error('Por favor completa todos los campos requeridos')
+      if (errorFields.length > 0) {
+        setSeccionExpandida(seccionMap[errorFields[0]] || 'info')
+      }
+      toast.error(`${errorFields.length} campo${errorFields.length !== 1 ? 's' : ''} requiere atención`)
       return
     }
 
@@ -295,7 +297,11 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
     }
   }
 
-  const ic = "h-11 border-[#E8E4DF] bg-[#FDFCFA] text-sm focus-visible:border-[#1B4332] focus-visible:ring-[#1B4332]/20"
+  const ic = (field?: string) => `h-11 text-sm ${
+    field && errors[field as keyof typeof errors] && intentadoEnviar
+      ? 'border-[#C1121F] bg-[#FEF2F2] focus-visible:border-[#C1121F] focus-visible:ring-[#C1121F]/20'
+      : 'border-[#E8E4DF] bg-[#FDFCFA] focus-visible:border-[#1B4332] focus-visible:ring-[#1B4332]/20'
+  }`
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="visible" className="mx-auto max-w-3xl">
@@ -339,17 +345,39 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
       {/* ====== FORM ====== */}
       <motion.div variants={fadeUp} className="rounded-2xl border border-[#E8E4DF] bg-gradient-to-b from-[#1B4332]/5 via-white to-white overflow-hidden">
 
-        {SECCIONES.map((sec) => (
+        {SECCIONES.map((sec) => {
+          const seccionCampos: Record<SeccionId, string[]> = {
+            info: ['titulo', 'descripcion', 'tipoPropiedad', 'capacidadMaxima', 'habitaciones', 'banos', 'camas'],
+            ubicacion: ['direccion', 'ciudad', 'estado', 'zona'],
+            precios: ['precioPorNoche', 'moneda'],
+            politicas: ['politicaCancelacion', 'horarioCheckIn', 'horarioCheckOut', 'estanciaMinima', 'reglas'],
+            amenidades: [],
+          }
+          const errorCount = seccionCampos[sec.id].filter((c) => errors[c as keyof typeof errors]).length
+          return (
           <div key={sec.id} className="border-b border-[#E8E4DF] last:border-b-0">
             <button
               type="button"
               onClick={() => setSeccionExpandida(seccionExpandida === sec.id ? '' as SeccionId : sec.id)}
-              className="flex w-full items-center gap-3 px-5 py-4 text-left hover:bg-[#FDFCFA] transition-colors"
+              className={`flex w-full items-center gap-3 px-5 py-4 text-left transition-colors ${
+                errorCount > 0 && intentadoEnviar ? 'bg-[#FEF2F2] hover:bg-[#FEE2E2]' : 'hover:bg-[#FDFCFA]'
+              }`}
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#D8F3DC]">
-                <sec.icon className="h-4 w-4 text-[#1B4332]" />
+              <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${
+                errorCount > 0 && intentadoEnviar ? 'bg-[#FEE2E2]' : 'bg-[#D8F3DC]'
+              }`}>
+                {errorCount > 0 && intentadoEnviar ? (
+                  <AlertCircle className="h-4 w-4 text-[#C1121F]" />
+                ) : (
+                  <sec.icon className="h-4 w-4 text-[#1B4332]" />
+                )}
               </div>
               <span className="flex-1 text-sm font-semibold text-[#1A1A1A]">{sec.label}</span>
+              {errorCount > 0 && intentadoEnviar && (
+                <span className="flex items-center gap-1 rounded-full bg-[#C1121F] px-2 py-0.5 text-[10px] font-bold text-white">
+                  {errorCount} error{errorCount !== 1 ? 'es' : ''}
+                </span>
+              )}
               <span className="text-lg text-[#D4CFC9]">{seccionExpandida === sec.id ? '−' : '+'}</span>
             </button>
 
@@ -367,12 +395,16 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
                     {sec.id === 'info' && (<>
                       <div className="space-y-1.5">
                         <label className="text-xs font-semibold text-[#6B6560]">Título</label>
-                        <Input placeholder="Ej: Apartamento moderno en Chacao" {...register('titulo')} className={ic} />
+                        <Input placeholder="Ej: Apartamento moderno en Chacao" {...register('titulo')} className={ic('titulo')} />
                         {errors.titulo && <p className="text-xs text-[#C1121F]">{errors.titulo.message as string}</p>}
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-xs font-semibold text-[#6B6560]">Descripción</label>
-                        <Textarea placeholder="Describe tu boogie..." rows={4} {...register('descripcion')} className="border-[#E8E4DF] bg-[#FDFCFA] text-sm" />
+                        <Textarea placeholder="Describe tu boogie..." rows={4} {...register('descripcion')} className={`border text-sm ${
+                          errors.descripcion && intentadoEnviar
+                            ? 'border-[#C1121F] bg-[#FEF2F2] focus-visible:border-[#C1121F] focus-visible:ring-[#C1121F]/20'
+                            : 'border-[#E8E4DF] bg-[#FDFCFA] focus-visible:border-[#1B4332] focus-visible:ring-[#1B4332]/20'
+                        }`} />
                         {errors.descripcion && <p className="text-xs text-[#C1121F]">{errors.descripcion.message as string}</p>}
                       </div>
                       <div className="grid grid-cols-2 gap-3">
@@ -389,21 +421,21 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
                          </div>
                         <div className="space-y-1.5">
                           <label className="text-xs font-semibold text-[#6B6560]">Capacidad máxima</label>
-                          <Input type="number" min={1} {...register('capacidadMaxima', { valueAsNumber: true })} className={ic} />
+                          <Input type="number" min={1} {...register('capacidadMaxima', { valueAsNumber: true })} className={ic('capacidadMaxima')} />
                         </div>
                       </div>
                       <div className="grid grid-cols-3 gap-3">
                         <div className="space-y-1.5">
                           <label className="text-xs font-semibold text-[#6B6560]">Habitaciones</label>
-                          <Input type="number" min={0} {...register('habitaciones', { valueAsNumber: true })} className={ic} />
+                          <Input type="number" min={0} {...register('habitaciones', { valueAsNumber: true })} className={ic('habitaciones')} />
                         </div>
                         <div className="space-y-1.5">
                           <label className="text-xs font-semibold text-[#6B6560]">Baños</label>
-                          <Input type="number" min={1} {...register('banos', { valueAsNumber: true })} className={ic} />
+                          <Input type="number" min={1} {...register('banos', { valueAsNumber: true })} className={ic('banos')} />
                         </div>
                         <div className="space-y-1.5">
                           <label className="text-xs font-semibold text-[#6B6560]">Camas</label>
-                          <Input type="number" min={1} {...register('camas', { valueAsNumber: true })} className={ic} />
+                          <Input type="number" min={1} {...register('camas', { valueAsNumber: true })} className={ic('camas')} />
                         </div>
                       </div>
                     </>)}
@@ -450,8 +482,14 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
                       <input type="hidden" {...register('ciudad')} />
                       <input type="hidden" {...register('estado')} />
                       <input type="hidden" {...register('zona')} />
-                      {(errors.direccion || errors.ciudad || errors.estado) && (
-                        <p className="text-xs text-[#C1121F]">Selecciona una ubicación en el mapa</p>
+                      {intentadoEnviar && (errors.direccion || errors.ciudad || errors.estado) && (
+                        <div className="rounded-lg border border-[#C1121F]/20 bg-[#FEF2F2] p-3 space-y-1">
+                          <p className="text-xs font-semibold text-[#C1121F]">Campos de ubicación incompletos:</p>
+                          {errors.direccion && <p className="text-xs text-[#C1121F]">• {errors.direccion.message as string}</p>}
+                          {errors.ciudad && <p className="text-xs text-[#C1121F]">• {errors.ciudad.message as string}</p>}
+                          {errors.estado && <p className="text-xs text-[#C1121F]">• {errors.estado.message as string}</p>}
+                          <p className="text-[10px] text-[#92400E]">Usa el mapa para seleccionar la ubicación, o edita los campos manualmente</p>
+                        </div>
                       )}
                     </>)}
 
@@ -459,7 +497,7 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1.5">
                           <label className="text-xs font-semibold text-[#6B6560]">Precio por noche</label>
-                          <Input type="number" step="0.01" min={1} placeholder="0.00" {...register('precioPorNoche', { valueAsNumber: true })} className={ic} />
+                          <Input type="number" step="0.01" min={1} placeholder="0.00" {...register('precioPorNoche', { valueAsNumber: true })} className={ic('precioPorNoche')} />
                           {errors.precioPorNoche && <p className="text-xs text-[#C1121F]">{errors.precioPorNoche.message as string}</p>}
                         </div>
                          <div className="space-y-1.5">
@@ -492,16 +530,16 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1.5">
                           <label className="text-xs font-semibold text-[#6B6560]">Check-in</label>
-                          <Input type="time" {...register('horarioCheckIn')} className={ic} />
+                          <Input type="time" {...register('horarioCheckIn')} className={ic('horarioCheckIn')} />
                         </div>
                         <div className="space-y-1.5">
                           <label className="text-xs font-semibold text-[#6B6560]">Check-out</label>
-                          <Input type="time" {...register('horarioCheckOut')} className={ic} />
+                          <Input type="time" {...register('horarioCheckOut')} className={ic('horarioCheckOut')} />
                         </div>
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-xs font-semibold text-[#6B6560]">Estancia mínima (noches)</label>
-                        <Input type="number" min={1} {...register('estanciaMinima', { valueAsNumber: true })} className={ic} />
+                        <Input type="number" min={1} {...register('estanciaMinima', { valueAsNumber: true })} className={ic('estanciaMinima')} />
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-xs font-semibold text-[#6B6560]">Reglas del boogie</label>
@@ -533,7 +571,8 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
               )}
             </AnimatePresence>
           </div>
-        ))}
+          )
+        })}
 
         {/* ====== EXISTING IMAGES ====== */}
         {imagenesExistentes.length > 0 && (() => {
