@@ -75,7 +75,7 @@ func (s *PropiedadesService) GetBySlug(ctx context.Context, slug string) (*repos
 }
 
 func (s *PropiedadesService) GetByIDOrSlug(ctx context.Context, idOrSlug string) (*repository.PropiedadDetalleFull, error) {
-	if isID(idOrSlug) {
+	if isUUID(idOrSlug) {
 		return s.repo.GetByID(ctx, idOrSlug)
 	}
 	return s.repo.GetBySlug(ctx, idOrSlug)
@@ -121,16 +121,22 @@ func FilterByDistance(results []repository.PropiedadListado, lat, lng, radiusKm 
 	return filtered
 }
 
-func isID(s string) bool {
-	if len(s) == 0 || len(s) > 64 {
+func isUUID(s string) bool {
+	if len(s) != 36 {
 		return false
 	}
-	for _, c := range s {
-		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '-') {
-			return false
+	for i, c := range s {
+		if i == 8 || i == 13 || i == 18 || i == 23 {
+			if c != '-' {
+				return false
+			}
+		} else {
+			if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')) {
+				return false
+			}
 		}
 	}
-	return len(s) >= 20
+	return true
 }
 
 var _ = math.Pi
