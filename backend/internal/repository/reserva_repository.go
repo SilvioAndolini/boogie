@@ -533,10 +533,10 @@ func (r *ReservaRepo) InsertPagoManual(ctx context.Context, pago *NuevoPago) (st
 	id := idgen.New()
 	_, err := r.pool.Exec(ctx, `
 		INSERT INTO pagos (id, reserva_id, usuario_id, monto, moneda, metodo_pago, estado,
-		                   referencia, comprobante, banco_emisor, telefono_emisor, notas, fecha_creacion)
-		VALUES ($1, $2, $3, $4, $5, $6, 'PENDIENTE', $7, $8, $9, $10, $11, NOW())
+		                   referencia, comprobante, banco_emisor, telefono_emisor, fecha_creacion)
+		VALUES ($1, $2, $3, $4, $5, $6, 'PENDIENTE', $7, $8, $9, $10, NOW())
 	`, id, pago.ReservaID, pago.UsuarioID, pago.Monto, string(pago.Moneda), string(pago.MetodoPago),
-		pago.Referencia, pago.ComprobanteURL, pago.BancoEmisor, pago.TelefonoEmisor, pago.Notas)
+		pago.Referencia, pago.ComprobanteURL, pago.BancoEmisor, pago.TelefonoEmisor)
 	if err != nil {
 		return "", fmt.Errorf("insert pago manual: %w", err)
 	}

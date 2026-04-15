@@ -1534,7 +1534,7 @@ func (r *AdminRepo) GetReservaByIDFull(ctx context.Context, id string) (*AdminRe
 		FROM reservas r
 		LEFT JOIN propiedades p ON r.propiedad_id = p.id
 		LEFT JOIN usuarios u ON r.huesped_id = u.id
-		LEFT JOIN usuarios a ON p.usuario_id = a.id
+		LEFT JOIN usuarios a ON p.propietario_id = a.id
 		WHERE r.id = $1`, id).Scan(
 		&res.ID, &res.Codigo, &res.FechaEntrada, &res.FechaSalida, &res.Noches,
 		&res.PrecioPorNoche, &res.Subtotal, &res.ComisionPlataforma, &res.ComisionAnfitrion, &res.Total, &res.Moneda,
