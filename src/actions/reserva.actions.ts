@@ -203,6 +203,11 @@ export async function confirmarReservaAction(formData: FormData) {
   if (!result.exito) {
     console.error('[confirmarReservaAction]', result.error)
   }
+  revalidatePath('/dashboard/reservas-recibidas')
+  revalidatePath('/dashboard/mis-reservas')
+  revalidatePath('/dashboard/pagos')
+  revalidatePath('/admin/reservas')
+  revalidatePath('/admin/pagos')
 }
 
 export async function rechazarReservaAction(formData: FormData) {
@@ -211,6 +216,11 @@ export async function rechazarReservaAction(formData: FormData) {
   if (!result.exito) {
     console.error('[rechazarReservaAction]', result.error)
   }
+  revalidatePath('/dashboard/reservas-recibidas')
+  revalidatePath('/dashboard/mis-reservas')
+  revalidatePath('/dashboard/pagos')
+  revalidatePath('/admin/reservas')
+  revalidatePath('/admin/pagos')
 }
 
 export async function cancelarReservaAction(formData: FormData) {

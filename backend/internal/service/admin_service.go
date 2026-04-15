@@ -56,9 +56,9 @@ func (s *AdminService) AccionReserva(ctx context.Context, reservaID, accion, use
 	}
 
 	transiciones := map[string][]string{
-		"PENDIENTE":    {"CONFIRMADA", "RECHAZADA"},
-		"CONFIRMADA":   {"CANCELADA_ANFITRION"},
-		"EN_CURSO":     {"COMPLETADA"},
+		"PENDIENTE":  {"CONFIRMADA", "RECHAZADA"},
+		"CONFIRMADA": {"CANCELADA_ANFITRION"},
+		"EN_CURSO":   {"COMPLETADA"},
 	}
 
 	var nuevoEstado string
@@ -124,9 +124,9 @@ func (s *AdminService) VerificarPago(ctx context.Context, pagoID, nuevoEstado st
 	}
 
 	transiciones := map[string][]string{
-		"PENDIENTE":      {"VERIFICADO", "RECHAZADO"},
+		"PENDIENTE":       {"VERIFICADO", "RECHAZADO"},
 		"EN_VERIFICACION": {"VERIFICADO", "RECHAZADO"},
-		"VERIFICADO":     {"ACREDITADO", "RECHAZADO"},
+		"VERIFICADO":      {"ACREDITADO", "RECHAZADO"},
 	}
 
 	permitidos, ok := transiciones[estadoActual]
@@ -162,10 +162,9 @@ func (s *AdminService) VerificarPago(ctx context.Context, pagoID, nuevoEstado st
 		reservaID, _ := s.repo.GetPagoReservaID(ctx, pagoID)
 		if reservaID != nil {
 			res, err := s.repo.GetReservaByID(ctx, *reservaID)
-			if err == nil && res.Estado == "PENDIENTE" {
-				confirmacion := time.Now()
-				if err := s.repo.UpdateReservaEstado(ctx, *reservaID, "CONFIRMADA", &confirmacion, nil); err != nil {
-					slog.Error("[admin/verificar-pago] error auto-confirming reserva", "error", err, "reservaId", *reservaID)
+			if err == nil && (res.Estado == "PENDIENTE" || res.Estado == "PENDIENTE_PAGO") {
+				if err := s.repo.UpdateReservaEstado(ctx, *reservaID, "PENDIENTE_CONFIRMACION", nil, nil); err != nil {
+					slog.Error("[admin/verificar-pago] error setting PENDIENTE_CONFIRMACION", "error", err, "reservaId", *reservaID)
 				}
 			}
 		}

@@ -59,7 +59,8 @@ function SubmitButton({ variant }: { variant: 'confirmar' | 'rechazar' }) {
 }
 
 function ReservaRecibidaCard({ reserva }: { reserva: ReservaConPropiedad }) {
-  const esPendiente = reserva.estado === 'PENDIENTE'
+  const esPendiente = reserva.estado === 'PENDIENTE' || reserva.estado === 'PENDIENTE_CONFIRMACION'
+  const puedeConfirmar = reserva.estado === 'PENDIENTE_CONFIRMACION'
 
   return (
     <Card className="border-[#E8E4DF] transition-all hover:border-[#52B788]/50 hover:shadow-md">
@@ -98,15 +99,25 @@ function ReservaRecibidaCard({ reserva }: { reserva: ReservaConPropiedad }) {
               {formatPrecio(Number(reserva.total), reserva.moneda)}
             </span>
             {esPendiente && (
-              <div className="flex gap-2">
-                <form action={confirmarReservaAction}>
-                  <input type="hidden" name="reservaId" value={reserva.id} />
-                  <SubmitButton variant="confirmar" />
-                </form>
-                <form action={rechazarReservaAction}>
-                  <input type="hidden" name="reservaId" value={reserva.id} />
-                  <SubmitButton variant="rechazar" />
-                </form>
+              <div className="flex flex-col items-end gap-2">
+                {reserva.estado === 'PENDIENTE_PAGO' && (
+                  <span className="text-[10px] font-medium text-[#C2410C]">Esperando pago del huesped</span>
+                )}
+                {reserva.estado === 'PENDIENTE' && (
+                  <span className="text-[10px] font-medium text-[#92400E]">Esperando pago del huesped</span>
+                )}
+                {puedeConfirmar && (
+                  <div className="flex gap-2">
+                    <form action={confirmarReservaAction}>
+                      <input type="hidden" name="reservaId" value={reserva.id} />
+                      <SubmitButton variant="confirmar" />
+                    </form>
+                    <form action={rechazarReservaAction}>
+                      <input type="hidden" name="reservaId" value={reserva.id} />
+                      <SubmitButton variant="rechazar" />
+                    </form>
+                  </div>
+                )}
               </div>
             )}
           </div>
