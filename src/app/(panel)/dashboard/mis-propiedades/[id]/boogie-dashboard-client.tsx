@@ -1,24 +1,20 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
 import {
   ArrowLeft, BarChart3, Calendar, Receipt, Pencil, Check,
   DollarSign, TrendingUp, Users, Clock, Loader2,
   Plus, Trash2, ChevronLeft, ChevronRight, MapPin,
-  Eye, X, Upload, Home, Sparkles, Bed, Bath, DoorOpen,
-  BedDouble, CookingPot, Sofa, TreePine, Waves, Mountain, HelpCircle,
+  Eye, Bed, Bath, DoorOpen,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts'
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -27,11 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { propiedadSchema } from '@/lib/validations'
-import { TIPOS_PROPIEDAD, ESTADOS_VENEZUELA, POLITICAS_CANCELACION, MAX_IMAGENES_PROPIEDAD } from '@/lib/constants'
 import { crearGastoMantenimiento, eliminarGastoMantenimiento } from '@/actions/boogie-dashboard.actions'
-import { actualizarPropiedad } from '@/actions/propiedad.actions'
-import { optimizeImage } from '@/lib/image-optimize'
 
 type DashboardData = {
   propiedad: Record<string, unknown>
@@ -79,13 +71,6 @@ const ESTADO_PUBLICACION: Record<string, { label: string; color: string }> = {
   PAUSADA: { label: 'Pausada', color: 'bg-[#FEF3C7] text-[#92400E]' },
 }
 
-const AMENIDADES = [
-  'Wi-Fi', 'Aire acondicionado', 'Piscina', 'Estacionamiento',
-  'Cocina equipada', 'Lavadora', 'TV / Smart TV', 'Agua caliente',
-  'Seguridad 24h', 'Jardín', 'Parrilla', 'Balcón',
-  'Vista al mar', 'Acceso a playa', 'Pet friendly', 'Gimnasio',
-]
-
 const TABS = [
   { id: 'resumen', label: 'Resumen', icon: BarChart3 },
   { id: 'reservas', label: 'Reservas', icon: Receipt },
@@ -116,7 +101,6 @@ const fadeUp = {
 export default function BoogieDashboardClient({ data }: { data: DashboardData }) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<TabId>('resumen')
-  const [editando, setEditando] = useState(false)
   const [showGastoForm, setShowGastoForm] = useState(false)
   const [gastoMoneda, setGastoMoneda] = useState('USD')
   const [gastoCategoria, setGastoCategoria] = useState('')
@@ -124,7 +108,6 @@ export default function BoogieDashboardClient({ data }: { data: DashboardData })
   const [calYear, setCalYear] = useState(new Date().getFullYear())
   const [guardandoGasto, setGuardandoGasto] = useState(false)
   const [eliminandoGasto, setEliminandoGasto] = useState<string | null>(null)
-  const [guardandoEdicion, setGuardandoEdicion] = useState(false)
 
   const propiedad = data.propiedad
   const kpis = data.kpis
@@ -277,9 +260,9 @@ export default function BoogieDashboardClient({ data }: { data: DashboardData })
           {TABS.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => { setActiveTab(tab.id); if (editando) setEditando(false) }}
+              onClick={() => setActiveTab(tab.id)}
               className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                activeTab === tab.id && !editando ? 'bg-[#1B4332] text-white' : 'text-[#6B6560] hover:bg-[#F8F6F3]'
+                activeTab === tab.id ? 'bg-[#1B4332] text-white' : 'text-[#6B6560] hover:bg-[#F8F6F3]'
               }`}
             >
               <tab.icon className="h-4 w-4" />
@@ -288,27 +271,15 @@ export default function BoogieDashboardClient({ data }: { data: DashboardData })
           ))}
         </div>
         <button
-          onClick={() => setEditando(!editando)}
-          className={`flex h-11 w-11 items-center justify-center rounded-xl border transition-all shrink-0 ${
-            editando ? 'bg-[#1B4332] text-white border-[#1B4332]' : 'border-[#E8E4DF] bg-white text-[#6B6560] hover:bg-[#F8F6F3]'
-          }`}
+          onClick={() => router.push(`/dashboard/mis-propiedades/${propId}/editar`)}
+          className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#E8E4DF] bg-white text-[#6B6560] transition-all hover:bg-[#F8F6F3] shrink-0"
         >
-          {editando ? <Check className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
+          <Pencil className="h-4 w-4" />
         </button>
       </motion.div>
 
       {/* ====== CONTENT ====== */}
-      <AnimatePresence mode="wait">
-        {editando ? (
-          <EditMode key="edit" propiedad={propiedad} onSave={async (formData) => {
-            setGuardandoEdicion(true)
-            const res = await actualizarPropiedad(propId, formData)
-            if (res.error) toast.error(res.error)
-            else { toast.success('Boogie actualizado'); setEditando(false); router.refresh() }
-            setGuardandoEdicion(false)
-          }} guardando={guardandoEdicion} onCancel={() => setEditando(false)} />
-        ) : (
-          <motion.div key="view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
 
             {/* ====== RESUMEN ====== */}
             {activeTab === 'resumen' && (
@@ -601,265 +572,9 @@ export default function BoogieDashboardClient({ data }: { data: DashboardData })
                 </div>
               </div>
             )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      </motion.div>
     </motion.div>
   )
 }
 
-/* ====== INLINE EDIT MODE ====== */
-function EditMode({ propiedad, onSave, guardando, onCancel }: {
-  propiedad: Record<string, unknown>
-  onSave: (formData: FormData) => Promise<void>
-  guardando: boolean
-  onCancel: () => void
-}) {
-  const [amenidadesSel, setAmenidadesSel] = useState<string[]>((propiedad.amenidades as string[]) || [])
-  const [imagenes, setImagenes] = useState<File[]>([])
-  const [previews, setPreviews] = useState<string[]>([])
-  const [imagenCategorias, setImagenCategorias] = useState<string[]>([])
-  const [optimizando, setOptimizando] = useState(false)
-  const [seccionExpandida, setSeccionExpandida] = useState<string>('info')
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const imagenesExistentes = (propiedad.imagenes as { id: string; url: string; es_principal: boolean }[]) || []
 
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm({
-    resolver: zodResolver(propiedadSchema),
-    defaultValues: {
-      titulo: (propiedad.titulo as string) || '',
-      descripcion: (propiedad.descripcion as string) || '',
-      tipoPropiedad: ((propiedad.tipo_propiedad as string) || 'APARTAMENTO') as 'APARTAMENTO' | 'CASA' | 'VILLA' | 'CABANA' | 'ESTUDIO' | 'HABITACION' | 'LOFT' | 'PENTHOUSE' | 'FINCA' | 'OTRO',
-      precioPorNoche: (propiedad.precio_por_noche as number) || 0,
-      moneda: ((propiedad.moneda as string) || 'USD') as 'USD' | 'VES',
-      capacidadMaxima: (propiedad.capacidad_maxima as number) || 1,
-      habitaciones: (propiedad.habitaciones as number) || 1,
-      banos: (propiedad.banos as number) || 1,
-      camas: (propiedad.camas as number) || 1,
-      direccion: (propiedad.direccion as string) || '',
-      ciudad: (propiedad.ciudad as string) || '',
-      estado: (propiedad.estado as string) || '',
-      zona: (propiedad.zona as string) || '',
-      reglas: (propiedad.reglas as string) || '',
-      politicaCancelacion: ((propiedad.politica_cancelacion as string) || 'MODERADA') as 'FLEXIBLE' | 'MODERADA' | 'ESTRICTA',
-      horarioCheckIn: (propiedad.horario_checkin as string) || '14:00',
-      horarioCheckOut: (propiedad.horario_checkout as string) || '11:00',
-      estanciaMinima: (propiedad.estancia_minima as number) || 1,
-      estanciaMaxima: (propiedad.estancia_maxima as number) || undefined,
-    },
-  })
-
-  const handleImagenes = useCallback(async (files: FileList | null) => {
-    if (!files) return
-    setOptimizando(true)
-    const nuevas: File[] = []
-    const nuevasPreview: string[] = []
-    const max = MAX_IMAGENES_PROPIEDAD - imagenesExistentes.length - imagenes.length
-    for (const file of Array.from(files).slice(0, max)) {
-      if (!file.type.startsWith('image/')) continue
-      try {
-        const opt = await optimizeImage(file)
-        nuevas.push(opt)
-        nuevasPreview.push(URL.createObjectURL(opt))
-      } catch { /* skip */ }
-    }
-    setImagenes((p) => [...p, ...nuevas])
-    setPreviews((p) => [...p, ...nuevasPreview])
-    setImagenCategorias((p) => [...p, ...nuevas.map(() => 'otro')])
-    setOptimizando(false)
-  }, [imagenes.length, imagenesExistentes.length])
-
-  const removeImagen = (idx: number) => {
-    URL.revokeObjectURL(previews[idx])
-    setImagenes((p) => p.filter((_, i) => i !== idx))
-    setPreviews((p) => p.filter((_, i) => i !== idx))
-    setImagenCategorias((p) => p.filter((_, i) => i !== idx))
-  }
-
-  const onSubmit = async (data: Record<string, unknown>) => {
-    const formData = new FormData()
-    const fields = ['titulo', 'descripcion', 'tipoPropiedad', 'precioPorNoche', 'moneda', 'capacidadMaxima', 'habitaciones', 'banos', 'camas', 'direccion', 'ciudad', 'estado', 'zona', 'reglas', 'politicaCancelacion', 'horarioCheckIn', 'horarioCheckOut', 'estanciaMinima', 'estanciaMaxima']
-    for (const f of fields) {
-      const val = data[f]
-      if (val !== undefined && val !== null && val !== '') formData.append(f, String(val))
-    }
-    amenidadesSel.forEach((a) => formData.append('amenidades', a))
-    imagenes.forEach((img) => formData.append('imagenes', img))
-    imagenCategorias.forEach((c) => formData.append('imagen_categorias', c))
-    await onSave(formData)
-  }
-
-  const ic = "h-11 border-[#E8E4DF] bg-[#FDFCFA] text-sm focus-visible:border-[#1B4332] focus-visible:ring-[#1B4332]/20"
-
-  const secciones = [
-    { id: 'info', label: 'Información básica', icon: Home },
-    { id: 'ubicacion', label: 'Ubicación', icon: MapPin },
-    { id: 'precios', label: 'Precios y capacidad', icon: DollarSign },
-    { id: 'politicas', label: 'Políticas y reglas', icon: Clock },
-    { id: 'amenidades', label: 'Amenidades', icon: Sparkles },
-  ] as const
-
-  return (
-    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.3 }}>
-      <div className="rounded-2xl border border-[#E8E4DF] bg-gradient-to-b from-[#1B4332]/5 via-white to-white p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-lg font-bold text-[#1A1A1A]">Editar boogie</h2>
-            <p className="text-xs text-[#9E9892]">Modifica los campos que necesites y guarda los cambios</p>
-          </div>
-          <Button variant="outline" className="border-[#E8E4DF]" onClick={onCancel}>Cancelar</Button>
-        </div>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {secciones.map((sec) => (
-            <div key={sec.id} className="rounded-xl border border-[#E8E4DF] overflow-hidden">
-              <button type="button" onClick={() => setSeccionExpandida(seccionExpandida === sec.id ? '' : sec.id)} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-[#FDFCFA] transition-colors">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#D8F3DC]"><sec.icon className="h-4 w-4 text-[#1B4332]" /></div>
-                <span className="flex-1 text-sm font-semibold text-[#1A1A1A]">{sec.label}</span>
-                <span className="text-[#D4CFC9]">{seccionExpandida === sec.id ? '−' : '+'}</span>
-              </button>
-              <AnimatePresence>
-                {seccionExpandida === sec.id && (
-                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
-                    <div className="border-t border-[#F4F1EC] p-4 space-y-4">
-                      {sec.id === 'info' && (<>
-                        <div className="space-y-1.5"><label className="text-xs font-semibold text-[#6B6560]">Título</label><Input {...register('titulo')} className={ic} />{errors.titulo && <p className="text-xs text-[#C1121F]">{String(errors.titulo.message)}</p>}</div>
-                        <div className="space-y-1.5"><label className="text-xs font-semibold text-[#6B6560]">Descripción</label><Textarea {...register('descripcion')} rows={3} className="border-[#E8E4DF] bg-[#FDFCFA] text-sm" /></div>
-                         <div className="grid grid-cols-2 gap-3">
-                           <div className="space-y-1.5"><Label className="text-xs font-semibold text-[#6B6560]">Tipo</Label><Select onValueChange={(v) => setValue('tipoPropiedad', v as any)} defaultValue={(propiedad.tipo_propiedad as string) || 'APARTAMENTO'}><SelectTrigger className="h-11 border-[#E8E4DF] bg-[#FDFCFA] text-sm focus:ring-[#1B4332]/20"><SelectValue /></SelectTrigger><SelectContent>{Object.entries(TIPOS_PROPIEDAD).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}</SelectContent></Select></div>
-                          <div className="space-y-1.5"><label className="text-xs font-semibold text-[#6B6560]">Capacidad</label><Input {...register('capacidadMaxima', { valueAsNumber: true })} type="number" min={1} className={ic} /></div>
-                        </div>
-                        <div className="grid grid-cols-3 gap-3">
-                          <div className="space-y-1.5"><label className="text-xs font-semibold text-[#6B6560]">Habitaciones</label><Input {...register('habitaciones', { valueAsNumber: true })} type="number" min={0} className={ic} /></div>
-                          <div className="space-y-1.5"><label className="text-xs font-semibold text-[#6B6560]">Baños</label><Input {...register('banos', { valueAsNumber: true })} type="number" min={1} className={ic} /></div>
-                          <div className="space-y-1.5"><label className="text-xs font-semibold text-[#6B6560]">Camas</label><Input {...register('camas', { valueAsNumber: true })} type="number" min={1} className={ic} /></div>
-                        </div>
-                      </>)}
-                      {sec.id === 'ubicacion' && (<>
-                        <div className="space-y-1.5"><label className="text-xs font-semibold text-[#6B6560]">Dirección</label><Input {...register('direccion')} className={ic} /></div>
-                         <div className="grid grid-cols-2 gap-3">
-                           <div className="space-y-1.5"><Label className="text-xs font-semibold text-[#6B6560]">Ciudad</Label><Input {...register('ciudad')} className={ic} /></div>
-                           <div className="space-y-1.5"><Label className="text-xs font-semibold text-[#6B6560]">Estado</Label><Select onValueChange={(v) => setValue('estado', v ?? '')} defaultValue={(propiedad.estado as string) || ''}><SelectTrigger className="h-11 border-[#E8E4DF] bg-[#FDFCFA] text-sm focus:ring-[#1B4332]/20"><SelectValue placeholder="Selecciona un estado" /></SelectTrigger><SelectContent>{ESTADOS_VENEZUELA.map((e) => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent></Select></div>
-                         </div>
-                        <div className="space-y-1.5"><label className="text-xs font-semibold text-[#6B6560]">Zona</label><Input {...register('zona')} className={ic} /></div>
-                      </>)}
-                      {sec.id === 'precios' && (<div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5"><label className="text-xs font-semibold text-[#6B6560]">Precio por noche</label><Input {...register('precioPorNoche', { valueAsNumber: true })} type="number" step="0.01" min={1} className={ic} /></div>
-                         <div className="space-y-1.5"><Label className="text-xs font-semibold text-[#6B6560]">Moneda</Label><Select onValueChange={(v) => setValue('moneda', v as 'USD' | 'VES')} defaultValue={(propiedad.moneda as string) || 'USD'}><SelectTrigger className="h-11 border-[#E8E4DF] bg-[#FDFCFA] text-sm focus:ring-[#1B4332]/20"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="USD">USD ($)</SelectItem><SelectItem value="VES">VES (Bs.)</SelectItem></SelectContent></Select></div>
-                      </div>)}
-                      {sec.id === 'politicas' && (<>
-                         <div className="space-y-1.5"><Label className="text-xs font-semibold text-[#6B6560]">Política de cancelación</Label><Select onValueChange={(v) => setValue('politicaCancelacion', v as any)} defaultValue={(propiedad.politica_cancelacion as string) || 'MODERADA'}><SelectTrigger className="h-11 border-[#E8E4DF] bg-[#FDFCFA] text-sm focus:ring-[#1B4332]/20"><SelectValue /></SelectTrigger><SelectContent>{Object.entries(POLITICAS_CANCELACION).map(([k, v]) => <SelectItem key={k} value={k}>{v.nombre}</SelectItem>)}</SelectContent></Select></div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1.5"><label className="text-xs font-semibold text-[#6B6560]">Check-in</label><Input {...register('horarioCheckIn')} type="time" className={ic} /></div>
-                          <div className="space-y-1.5"><label className="text-xs font-semibold text-[#6B6560]">Check-out</label><Input {...register('horarioCheckOut')} type="time" className={ic} /></div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1.5"><label className="text-xs font-semibold text-[#6B6560]">Estancia mínima</label><Input {...register('estanciaMinima', { valueAsNumber: true })} type="number" min={1} className={ic} /></div>
-                          <div className="space-y-1.5"><label className="text-xs font-semibold text-[#6B6560]">Estancia máxima</label><Input {...register('estanciaMaxima', { valueAsNumber: true })} type="number" min={1} className={ic} /></div>
-                        </div>
-                        <div className="space-y-1.5"><label className="text-xs font-semibold text-[#6B6560]">Reglas</label><Textarea {...register('reglas')} rows={3} className="border-[#E8E4DF] bg-[#FDFCFA] text-sm" /></div>
-                      </>)}
-                      {sec.id === 'amenidades' && (<div className="flex flex-wrap gap-2">
-                        {AMENIDADES.map((a) => (
-                          <button key={a} type="button" onClick={() => setAmenidadesSel(amenidadesSel.includes(a) ? amenidadesSel.filter(x => x !== a) : [...amenidadesSel, a])} className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${amenidadesSel.includes(a) ? 'bg-[#1B4332] text-white' : 'bg-[#F4F1EC] text-[#6B6560] hover:bg-[#E8E4DF]'}`}>{a}</button>
-                        ))}
-                      </div>)}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          ))}
-
-          <div className="rounded-xl border border-[#E8E4DF] p-4">
-            <div className="mb-3 flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#D8F3DC]">
-                <Upload className="h-3.5 w-3.5 text-[#1B4332]" />
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-[#1A1A1A]">Fotos</h3>
-                <p className="text-[10px] text-[#9E9892]">Clasifica cada foto nueva en su sección</p>
-              </div>
-            </div>
-            {imagenesExistentes.length > 0 && (
-              <div className="mb-3">
-                <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-[#9E9892]">Fotos actuales</p>
-                <div className="flex flex-wrap gap-2">
-                  {imagenesExistentes.map((img, i) => (
-                    <div key={img.id ?? `img-${i}`} className="relative h-16 w-16 overflow-hidden rounded-lg border border-[#E8E4DF]"><Image fill src={img.url} alt="" className="h-full w-full object-cover" /></div>
-                  ))}
-                </div>
-              </div>
-            )}
-            {previews.length > 0 && (
-              <div className="mb-3 space-y-2">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9E9892]">Nuevas fotos</p>
-                {previews.map((url, i) => {
-                  const cats = [
-                    { value: 'habitaciones', label: 'Hab.', icon: BedDouble, color: 'bg-blue-50 text-blue-700 ring-blue-200' },
-                    { value: 'banos', label: 'Baño', icon: Bath, color: 'bg-cyan-50 text-cyan-700 ring-cyan-200' },
-                    { value: 'cocina', label: 'Cocina', icon: CookingPot, color: 'bg-amber-50 text-amber-700 ring-amber-200' },
-                    { value: 'areas_comunes', label: 'Común', icon: Sofa, color: 'bg-purple-50 text-purple-700 ring-purple-200' },
-                    { value: 'exterior', label: 'Ext.', icon: TreePine, color: 'bg-green-50 text-green-700 ring-green-200' },
-                    { value: 'piscina', label: 'Piscina', icon: Waves, color: 'bg-sky-50 text-sky-700 ring-sky-200' },
-                    { value: 'vistas', label: 'Vista', icon: Mountain, color: 'bg-rose-50 text-rose-700 ring-rose-200' },
-                  ]
-                  const customColor = 'bg-orange-50 text-orange-700 ring-orange-200'
-                  const rawCat = imagenCategorias[i] || 'otro'
-                  const isCustom = rawCat.startsWith('personalizada:')
-                  const activeLabel = isCustom ? rawCat.slice(14) : (cats.find((c) => c.value === rawCat)?.label ?? 'Otro')
-                  const activeIcon = isCustom ? HelpCircle : (cats.find((c) => c.value === rawCat)?.icon ?? HelpCircle)
-                  const activeColor = isCustom ? customColor : (cats.find((c) => c.value === rawCat)?.color ?? 'bg-gray-50 text-gray-600 ring-gray-200')
-                  const ActiveIcon = activeIcon
-                  return (
-                    <div key={i} className="group rounded-lg border border-[#1B4332]/20 bg-[#FDFCFA]">
-                      <div className="flex gap-2.5 p-2">
-                        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md">
-                          <Image fill src={url} alt="" className="h-full w-full object-cover" />
-                          <button type="button" onClick={() => removeImagen(i)} className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#EF4444] text-white"><X className="h-2.5 w-2.5" /></button>
-                        </div>
-                        <div className="flex flex-1 flex-col justify-center gap-1">
-                          <span className={`inline-flex w-fit items-center gap-0.5 rounded px-1 py-0.5 text-[9px] font-semibold ring-1 ring-inset ${activeColor}`}>
-                            <ActiveIcon className="h-2.5 w-2.5" />{activeLabel}
-                          </span>
-                          <div className="flex flex-wrap gap-0.5">
-                            {cats.map((c) => {
-                              const isAct = rawCat === c.value
-                              return (
-                                <button key={c.value} type="button" onClick={() => setImagenCategorias((p) => { const n = [...p]; n[i] = c.value; return n })}
-                                  className={`inline-flex items-center gap-0.5 rounded px-1 py-px text-[8px] font-medium transition-all ${isAct ? `${c.color} ring-1 ring-inset` : 'bg-white text-[#9E9892] hover:bg-[#F4F1EC]'}`}>
-                                  <c.icon className="h-2 w-2" />{c.label}
-                                </button>
-                              )
-                            })}
-                            <button type="button" onClick={() => {
-                              const label = prompt('Nombre de la categoría personalizada:')
-                              if (label?.trim()) setImagenCategorias((p) => { const n = [...p]; n[i] = `personalizada:${label.trim()}`; return n })
-                            }} className={`inline-flex items-center gap-0.5 rounded px-1 py-px text-[8px] font-medium transition-all ${isCustom ? `${customColor} ring-1 ring-inset` : 'bg-white text-[#9E9892] hover:bg-[#F4F1EC]'}`}>
-                              <HelpCircle className="h-2 w-2" />Personalizar
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-            <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleImagenes(e.target.files)} />
-            <Button type="button" variant="outline" className="w-full border-dashed border-[#E8E4DF]" onClick={() => fileInputRef.current?.click()} disabled={optimizando}>
-              {optimizando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}Subir más fotos
-            </Button>
-          </div>
-
-          <div className="flex gap-3 pt-2">
-            <Button type="button" variant="outline" className="flex-1 border-[#E8E4DF] h-12" onClick={onCancel}>Cancelar</Button>
-            <Button type="submit" className="flex-1 bg-[#1B4332] text-white hover:bg-[#2D6A4F] h-12" disabled={guardando}>
-              {guardando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}Guardar cambios
-            </Button>
-          </div>
-        </form>
-      </div>
-    </motion.div>
-  )
-}
