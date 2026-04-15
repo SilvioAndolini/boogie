@@ -110,7 +110,7 @@ export async function verificarOtpYRegistrar(formData: FormData) {
       apellido: datos.apellido,
       telefono: telefonoCompleto,
       cedula: datos.numeroDocumento,
-      verificado: true,
+      verificado: false,
       rol: 'BOOGER',
       plan_suscripcion: 'FREE',
     })
