@@ -1,31 +1,28 @@
-// Página de Detalle de Zona - Propiedades en una zona específica
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { MapPin, Home, ArrowLeft, Search, Clock } from 'lucide-react'
+import { MapPin, Home, ArrowLeft, Search } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { PropertyCard, type PropiedadCard } from '@/components/propiedades/property-card'
+import { getPropiedadesPublicas } from '@/actions/propiedad.actions'
+import { ZONAS_POR_SLUG, ZONAS_SLUGS } from '@/lib/zonas'
+import type { Metadata } from 'next'
 
-const ZONAS_ACTIVAS = ['distrito-capital', 'vargas']
-
-const NOMBRES_VISUALES: Record<string, string> = {
-  'distrito-capital': 'Distrito Capital',
-  'vargas': 'Vargas',
+export async function generateStaticParams() {
+  return ZONAS_SLUGS.map(slug => ({ slug }))
 }
 
-const DESCRIPCIONES_ZONA: Record<string, string> = {
-  'distrito-capital': 'Caracas, la cosmopolita capital venezolana entre montañas.',
-  'vargas': 'La costa central con playas, el aeropuerto internacional y El Ávila.',
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
+  const zona = ZONAS_POR_SLUG.get(slug)
+  if (!zona) return {}
+  return {
+    title: `Boogies en ${zona.nombre}, ${zona.estado}`,
+    description: zona.descripcion,
+  }
 }
 
-interface PropiedadZona {
-  id: string
-  titulo: string
-  precioPorNoche: number
-  moneda: 'USD' | 'VES'
-  ciudad: string
-}
-
-const propiedadesZona: PropiedadZona[] = []
+export const dynamic = 'force-dynamic'
 
 interface ZonaPageProps {
   params: Promise<{ slug: string }>
@@ -33,17 +30,30 @@ interface ZonaPageProps {
 
 export default async function ZonaDetallePage({ params }: ZonaPageProps) {
   const { slug } = await params
+  const zona = ZONAS_POR_SLUG.get(slug)
+  if (!zona) notFound()
 
-  if (!ZONAS_ACTIVAS.includes(slug)) {
-    notFound()
-  }
+  const resultado = await getPropiedadesPublicas({ ubicacion: zona.estado })
 
-  const nombreEstado = NOMBRES_VISUALES[slug] || slug
-  const descripcion = DESCRIPCIONES_ZONA[slug] || `Descubre propiedades en ${nombreEstado}, Venezuela.`
+  const propiedades: PropiedadCard[] = resultado.datos.map((p) => ({
+    id: p.id,
+    titulo: p.titulo,
+    tipoPropiedad: p.tipoPropiedad as PropiedadCard['tipoPropiedad'],
+    precioPorNoche: Number(p.precioPorNoche),
+    moneda: p.moneda as PropiedadCard['moneda'],
+    ciudad: p.ciudad,
+    estado: p.estado,
+    ratingPromedio: p.ratingPromedio ?? 0,
+    totalResenas: p.totalResenas,
+    imagenes: p.imagenes.map((img) => img.url),
+    habitaciones: p.habitaciones ?? 0,
+    camas: p.camas ?? 0,
+    banos: p.banos ?? 0,
+    propietario: (p as unknown as Record<string, unknown>).propietario as { reputacion: number | null; plan_suscripcion: string } | null,
+  }))
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      {/* Navegación de regreso */}
       <Link
         href="/zonas"
         className="mb-6 inline-flex items-center gap-2 text-sm text-[#6B6560] transition-colors hover:text-[#1B4332]"
@@ -52,7 +62,6 @@ export default async function ZonaDetallePage({ params }: ZonaPageProps) {
         Todas las zonas
       </Link>
 
-      {/* Encabezado de la zona */}
       <div className="mb-12">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#D8F3DC]">
@@ -60,26 +69,24 @@ export default async function ZonaDetallePage({ params }: ZonaPageProps) {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-[#1A1A1A] sm:text-4xl">
-              {nombreEstado}
+              {zona.nombre}
             </h1>
-            <p className="text-sm text-[#6B6560]">Venezuela</p>
+            <p className="text-sm text-[#6B6560]">{zona.estado}, Venezuela</p>
           </div>
         </div>
-        <p className="mt-4 max-w-2xl text-[#6B6560]">{descripcion}</p>
+        <p className="mt-4 max-w-2xl text-[#6B6560]">{zona.descripcion}</p>
       </div>
 
-      {/* Boogies en la zona */}
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-[#1A1A1A]">
-          Boogies en {nombreEstado}
+          Boogies en {zona.nombre}
         </h2>
         <span className="text-sm text-[#9E9892]">
-          {propiedadesZona.length} Boogie{propiedadesZona.length !== 1 ? 's' : ''}
+          {resultado.total} Boogie{resultado.total !== 1 ? 's' : ''}
         </span>
       </div>
 
-      {/* Estado vacío */}
-      {propiedadesZona.length === 0 && (
+      {propiedades.length === 0 && (
         <Card className="border-[#E8E4DF]">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#D8F3DC]">
@@ -89,47 +96,22 @@ export default async function ZonaDetallePage({ params }: ZonaPageProps) {
               Próximamente
             </h3>
             <p className="mt-1 max-w-sm text-sm text-[#6B6560]">
-              Aún no hay Boogies disponibles en {nombreEstado}. Sé el primero en publicar uno.
+              Aún no hay Boogies disponibles en {zona.nombre}. Sé el primero en publicar uno.
             </p>
             <Link href="/dashboard/mis-propiedades/nueva">
               <Button className="mt-6 bg-[#1B4332] text-white hover:bg-[#2D6A4F]">
                 <Home className="mr-1 h-4 w-4" />
-                Publicar boogie en {nombreEstado}
+                Publicar boogie en {zona.nombre}
               </Button>
             </Link>
           </CardContent>
         </Card>
       )}
 
-      {/* Grid de Boogies */}
-      {propiedadesZona.length > 0 && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {propiedadesZona.map((propiedad) => (
-            <Card key={propiedad.id} className="border-[#E8E4DF] transition-shadow hover:shadow-md">
-              {/* Imagen placeholder */}
-              <div className="relative aspect-[4/3] overflow-hidden rounded-t-xl bg-gradient-to-br from-[#D8F3DC] to-[#F8F6F3]">
-                <div className="flex h-full w-full items-center justify-center">
-                  <span className="text-5xl font-bold text-[#1B4332]/20">B</span>
-                </div>
-              </div>
-              <CardContent className="pt-3">
-                <h3 className="line-clamp-1 text-sm font-semibold text-[#1A1A1A]">
-                  {propiedad.titulo}
-                </h3>
-                <div className="mt-1 flex items-center gap-1 text-xs text-[#6B6560]">
-                  <MapPin className="h-3 w-3" />
-                  {propiedad.ciudad}
-                </div>
-                <div className="mt-2">
-                  <span className="text-sm font-bold text-[#1B4332]">
-                    {propiedad.moneda === 'USD'
-                      ? `$${propiedad.precioPorNoche.toLocaleString('en-US')}`
-                      : `Bs. ${propiedad.precioPorNoche.toLocaleString('es-VE')}`}
-                  </span>
-                  <span className="text-xs text-[#6B6560]"> / noche</span>
-                </div>
-              </CardContent>
-            </Card>
+      {propiedades.length > 0 && (
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {propiedades.map((propiedad) => (
+            <PropertyCard key={propiedad.id} propiedad={propiedad} />
           ))}
         </div>
       )}
