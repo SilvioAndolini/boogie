@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { registroSchema, loginSchema, recuperacionSchema } from '@/lib/validations'
 import { goPost, GoAPIError } from '@/lib/go-api-client'
@@ -101,18 +102,26 @@ export async function verificarOtpYRegistrar(formData: FormData) {
       return { error: 'No se pudo establecer la contraseña. Intenta de nuevo.' }
     }
 
-    try {
-      await goPost('/api/v1/auth/register', {
-        email: datos.email,
-        password: datos.password,
-        nombre: datos.nombre,
-        apellido: datos.apellido,
-        telefono: datos.telefono,
-        cedula: datos.numeroDocumento,
-        tipoDocumento: datos.tipoDocumento,
-      })
-    } catch (regErr) {
-      console.error('[registro] Go API register error:', regErr instanceof Error ? regErr.message : regErr)
+    const admin = createAdminClient()
+    const { error: profileError } = await admin.from('usuarios').insert({
+      id: userId,
+      email: datos.email,
+      nombre: datos.nombre,
+      apellido: datos.apellido,
+      telefono: telefonoCompleto,
+      cedula: datos.numeroDocumento,
+      verificado: true,
+      rol: 'BOOGER',
+      plan_suscripcion: 'FREE',
+    })
+
+    if (profileError) {
+      console.error('[registro] Profile insert error:', profileError.message)
+      if (profileError.code === '23505') {
+        console.log('[registro] Profile already exists, continuing')
+      } else {
+        return { error: 'No se pudo crear tu perfil. Intenta de nuevo.' }
+      }
     }
 
     await supabase.auth.signOut()

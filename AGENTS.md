@@ -12,3 +12,99 @@ Pattern: [thing] [action] [reason]. [next step].
 ACTIVE EVERY RESPONSE. No revert after many turns. No filler drift.
 Code/commits/PRs: normal. Off: "stop caveman" / "normal mode".
 <!-- END:caveman-always-on -->
+
+<!-- BEGIN:deployment-guide -->
+# Deployment Guide
+
+## Architecture Overview
+
+| Component | Stack | Host | How to deploy |
+|---|---|---|---|
+| **Frontend** | Next.js 16 (App Router) | Vercel | Auto-deploy from `master` branch |
+| **Backend** | Go + Chi | Linode (172.238.217.35) | SSH + Docker rebuild |
+| **Database** | PostgreSQL | Supabase | Managed — no deploy needed |
+
+## When to Deploy What
+
+### Frontend changes (`src/`, `prisma/`, `.env` vars like `NEXT_PUBLIC_*`)
+- Push to `master` on GitHub → Vercel auto-deploys
+- Environment variables: configure in **Vercel Dashboard → Settings → Environment Variables**
+- `.env` / `.env.local` are gitignored — never committed
+
+### Backend changes (`backend/`)
+- Build Docker image on Linode and restart container
+- Environment variables: `/opt/boogie-backend/.env` on Linode server
+
+### Shared changes (affects both)
+- Deploy backend first, then push frontend
+
+## Deploy Procedures
+
+### Frontend → Vercel (auto)
+
+```bash
+git add <files>
+git commit -m "message"
+git push origin master
+# Vercel picks up automatically
+```
+
+### Backend → Linode (manual)
+
+Docker Desktop must NOT be required. Build directly on Linode:
+
+```bash
+# 1. Ensure repo exists on Linode (first time only)
+ssh root@172.238.217.35 "git clone https://github.com/SilvioAndolini/boogie.git /opt/boogie-repo"
+
+# 2. Pull latest code
+ssh root@172.238.217.35 "cd /opt/boogie-repo && git pull origin master"
+
+# 3. Build Docker image
+ssh root@172.238.217.35 "cd /opt/boogie-repo && docker build -t boogie-backend:latest ./backend"
+
+# 4. Restart container
+ssh root@172.238.217.35 "docker stop boogie-backend; docker rm boogie-backend; docker run -d --name boogie-backend --restart unless-stopped --env-file /opt/boogie-backend/.env -p 8080:8080 boogie-backend:latest"
+
+# 5. Verify
+ssh root@172.238.217.35 "sleep 3 && curl -sf http://localhost:8080/healthz"
+# Expected: {"status":"ok"}
+```
+
+Alternative (local Docker): `bash backend/deploy.sh 172.238.217.35`
+- Requires Docker Desktop running locally
+- Uses `docker save | ssh docker load` pattern
+
+## Environment Variables
+
+### Frontend (Vercel Dashboard)
+| Variable | Production Value |
+|---|---|
+| `NEXT_PUBLIC_APP_URL` | `https://www.boogierent.com` |
+| `NEXTAUTH_URL` | `https://www.boogierent.com` |
+| `NEXT_PUBLIC_SUPABASE_URL` | (Supabase project URL) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | (Supabase anon key) |
+
+### Backend (Linode `/opt/boogie-backend/.env`)
+| Variable | Production Value |
+|---|---|
+| `APP_URL` | `https://www.boogierent.com` |
+| `PORT` | `8080` |
+| `SUPABASE_URL` | (Supabase project URL) |
+| `SUPABASE_SECRET_KEY` | (Supabase service role key) |
+| `SUPABASE_JWT_SECRET` | (JWT secret) |
+| `DATABASE_URL` | (Supabase pooler connection) |
+
+## Pre-Deploy Checklist
+
+1. **Tests pass**: `npm test` (frontend), `cd backend && go test ./...`
+2. **Lint clean**: `npm run lint` (frontend)
+3. **No secrets committed**: verify `.env*` files are gitignored
+4. **Backend .env synced**: if new env vars added, update `/opt/boogie-backend/.env` on Linode
+5. **Vercel env synced**: if new `NEXT_PUBLIC_*` or server-side vars added, update Vercel Dashboard
+
+## Rollback
+
+- **Frontend**: Vercel Dashboard → Deployments → Redeploy previous
+- **Backend**: `ssh root@172.238.217.35 "docker logs boogie-backend"` → if broken, `cd /opt/boogie-repo && git checkout <previous-commit> && docker build -t boogie-backend:latest ./backend` then restart
+<!-- END:deployment-guide -->

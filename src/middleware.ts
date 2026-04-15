@@ -101,7 +101,7 @@ export async function middleware(request: NextRequest) {
         .eq('id', user.id)
         .maybeSingle()
 
-      if (perfil && (!perfil.cedula || !perfil.telefono)) {
+      if (!perfil || !perfil.cedula || !perfil.telefono) {
         return NextResponse.redirect(new URL('/completar-perfil', request.url))
       }
     }
