@@ -2,38 +2,58 @@ package service
 
 import (
 	"context"
+	"time"
 
 	"github.com/boogie/backend/internal/repository"
 )
 
 type TiendaService struct {
-	repo *repository.TiendaRepo
+	repo  *repository.TiendaRepo
+	cache *CacheService
 }
 
 func NewTiendaService(repo *repository.TiendaRepo) *TiendaService {
-	return &TiendaService{repo: repo}
+	return &TiendaService{repo: repo, cache: GetCache()}
 }
 
 func (s *TiendaService) GetProductos(ctx context.Context) ([]repository.StoreProducto, error) {
-	prods, err := s.repo.GetProductosActivos(ctx)
+	const key = "tienda:productos"
+	const ttl = 30 * time.Minute
+
+	val, err := s.cache.GetOrFetch(key, ttl, func() (interface{}, error) {
+		prods, e := s.repo.GetProductosActivos(ctx)
+		if e != nil {
+			return nil, e
+		}
+		if prods == nil {
+			prods = []repository.StoreProducto{}
+		}
+		return prods, nil
+	})
 	if err != nil {
 		return nil, err
 	}
-	if prods == nil {
-		prods = []repository.StoreProducto{}
-	}
-	return prods, nil
+	return val.([]repository.StoreProducto), nil
 }
 
 func (s *TiendaService) GetServicios(ctx context.Context) ([]repository.StoreServicio, error) {
-	servs, err := s.repo.GetServiciosActivos(ctx)
+	const key = "tienda:servicios"
+	const ttl = 30 * time.Minute
+
+	val, err := s.cache.GetOrFetch(key, ttl, func() (interface{}, error) {
+		servs, e := s.repo.GetServiciosActivos(ctx)
+		if e != nil {
+			return nil, e
+		}
+		if servs == nil {
+			servs = []repository.StoreServicio{}
+		}
+		return servs, nil
+	})
 	if err != nil {
 		return nil, err
 	}
-	if servs == nil {
-		servs = []repository.StoreServicio{}
-	}
-	return servs, nil
+	return val.([]repository.StoreServicio), nil
 }
 
 func (s *TiendaService) GetAllProductos(ctx context.Context) ([]repository.StoreProducto, error) {

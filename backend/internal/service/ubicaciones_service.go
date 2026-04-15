@@ -14,6 +14,7 @@ import (
 
 type UbicacionesService struct {
 	httpClient *http.Client
+	cache      *CacheService
 }
 
 func NewUbicacionesService() *UbicacionesService {
@@ -21,22 +22,23 @@ func NewUbicacionesService() *UbicacionesService {
 		httpClient: &http.Client{
 			Timeout: 10 * time.Second,
 		},
+		cache: GetCache(),
 	}
 }
 
 var photonTipos = map[string]string{
-	"city":         "Ciudad",
-	"town":         "Ciudad",
-	"village":      "Pueblo",
-	"suburb":       "Zona",
-	"district":     "Zona",
+	"city":          "Ciudad",
+	"town":          "Ciudad",
+	"village":       "Pueblo",
+	"suburb":        "Zona",
+	"district":      "Zona",
 	"neighbourhood": "Barrio",
-	"quarter":      "Barrio",
-	"locality":     "Localidad",
-	"county":       "Municipio",
-	"state":        "Estado",
-	"island":       "Isla",
-	"country":      "País",
+	"quarter":       "Barrio",
+	"locality":      "Localidad",
+	"county":        "Municipio",
+	"state":         "Estado",
+	"island":        "Isla",
+	"country":       "País",
 }
 
 var photonInvalidValues = map[string]bool{
@@ -83,6 +85,19 @@ func (s *UbicacionesService) Search(q string) ([]models.LocationSuggestion, erro
 		return []models.LocationSuggestion{}, nil
 	}
 
+	key := "ubicaciones:" + q
+	ttl := 1 * time.Hour
+
+	val, err := s.cache.GetOrFetch(key, ttl, func() (interface{}, error) {
+		return s.searchAll(q)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return val.([]models.LocationSuggestion), nil
+}
+
+func (s *UbicacionesService) searchAll(q string) ([]models.LocationSuggestion, error) {
 	results, err := s.searchPhoton(q)
 	if err != nil {
 		slog.Warn("Photon search failed", "error", err)

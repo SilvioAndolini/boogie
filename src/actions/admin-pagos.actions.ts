@@ -66,6 +66,7 @@ export async function verificarPagoAdmin(formData: FormData) {
     await goPost('/api/v1/admin/pagos/verificar', { pagoId, accion, notasVerificacion })
     revalidatePath('/admin/pagos')
     revalidatePath('/admin/reservas')
+    revalidatePath('/admin/reservas/[id]')
     revalidatePath('/dashboard/mis-reservas')
     revalidatePath('/dashboard/reservas-recibidas')
     revalidatePath('/dashboard/pagos')

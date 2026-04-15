@@ -44,6 +44,7 @@ type ReservaConPropiedad struct {
 	PropiedadCiudad          string  `json:"propiedad_ciudad"`
 	PropiedadPoliticaCancel  string  `json:"propiedad_politica_cancelacion"`
 	PropiedadImagenPrincipal *string `json:"propiedad_imagen_principal"`
+	EstadoPago               string  `json:"estado_pago"`
 }
 
 type ReservaConHuesped struct {
@@ -55,6 +56,7 @@ type ReservaConHuesped struct {
 	HuespedApellido          string  `json:"huesped_apellido"`
 	HuespedEmail             string  `json:"huesped_email"`
 	HuespedAvatarURL         *string `json:"huesped_avatar_url"`
+	EstadoPago               string  `json:"estado_pago"`
 }
 
 type ReservasStats struct {
@@ -135,7 +137,8 @@ func (r *ReservaRepo) ListByHuesped(ctx context.Context, huespedID string, limit
 		       r.notas_huesped, r.fecha_creacion,
 		       p.titulo, p.slug, p.direccion, p.ciudad,
 		       COALESCE(p.politica_cancelacion, 'FLEXIBLE'),
-		       (SELECT ip.url FROM imagenes_propiedad ip WHERE ip.propiedad_id = p.id AND ip.es_principal = true LIMIT 1)
+		       (SELECT ip.url FROM imagenes_propiedad ip WHERE ip.propiedad_id = p.id AND ip.es_principal = true LIMIT 1),
+		       (SELECT COALESCE(p2.estado, '') FROM pagos p2 WHERE p2.reserva_id = r.id ORDER BY p2.fecha_creacion DESC LIMIT 1)
 		FROM reservas r
 		JOIN propiedades p ON p.id = r.propiedad_id
 		WHERE r.huesped_id = $1
@@ -159,6 +162,7 @@ func (r *ReservaRepo) ListByHuesped(ctx context.Context, huespedID string, limit
 			&notasHuesped, &item.CreatedAt,
 			&item.PropiedadTitulo, &item.PropiedadSlug, &item.PropiedadDireccion, &item.PropiedadCiudad,
 			&item.PropiedadPoliticaCancel, &item.PropiedadImagenPrincipal,
+			&item.EstadoPago,
 		)
 		if err != nil {
 			return nil, 0, fmt.Errorf("scan reserva huesped: %w", err)
@@ -200,7 +204,8 @@ func (r *ReservaRepo) ListByPropietario(ctx context.Context, propietarioID strin
 			       r.notas_huesped, r.fecha_creacion,
 			       p.titulo, p.slug,
 			       u.nombre, u.apellido, u.email, u.avatar_url,
-			       (SELECT ip.url FROM imagenes_propiedad ip WHERE ip.propiedad_id = p.id AND ip.es_principal = true LIMIT 1)
+			       (SELECT ip.url FROM imagenes_propiedad ip WHERE ip.propiedad_id = p.id AND ip.es_principal = true LIMIT 1),
+			       COALESCE((SELECT pg.estado FROM pagos pg WHERE pg.reserva_id = r.id ORDER BY pg.fecha_creacion DESC LIMIT 1), '')
 			FROM reservas r
 			JOIN propiedades p ON p.id = r.propiedad_id
 			JOIN usuarios u ON u.id = r.huesped_id
@@ -217,7 +222,8 @@ func (r *ReservaRepo) ListByPropietario(ctx context.Context, propietarioID strin
 			       r.notas_huesped, r.fecha_creacion,
 			       p.titulo, p.slug,
 			       u.nombre, u.apellido, u.email, u.avatar_url,
-			       (SELECT ip.url FROM imagenes_propiedad ip WHERE ip.propiedad_id = p.id AND ip.es_principal = true LIMIT 1)
+			       (SELECT ip.url FROM imagenes_propiedad ip WHERE ip.propiedad_id = p.id AND ip.es_principal = true LIMIT 1),
+			       COALESCE((SELECT pg.estado FROM pagos pg WHERE pg.reserva_id = r.id ORDER BY pg.fecha_creacion DESC LIMIT 1), '')
 			FROM reservas r
 			JOIN propiedades p ON p.id = r.propiedad_id
 			JOIN usuarios u ON u.id = r.huesped_id
@@ -244,6 +250,7 @@ func (r *ReservaRepo) ListByPropietario(ctx context.Context, propietarioID strin
 			&item.PropiedadTitulo, &item.PropiedadSlug,
 			&item.HuespedNombre, &item.HuespedApellido, &item.HuespedEmail, &item.HuespedAvatarURL,
 			&item.PropiedadImagenPrincipal,
+			&item.EstadoPago,
 		)
 		if err != nil {
 			return nil, 0, fmt.Errorf("scan reserva propietario: %w", err)

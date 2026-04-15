@@ -3,26 +3,28 @@ package service
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/boogie/backend/internal/repository"
 )
 
 type ResenaService struct {
-	repo *repository.ResenaRepo
+	repo  *repository.ResenaRepo
+	cache *CacheService
 }
 
 func NewResenaService(repo *repository.ResenaRepo) *ResenaService {
-	return &ResenaService{repo: repo}
+	return &ResenaService{repo: repo, cache: GetCache()}
 }
 
 type CrearResenaInput struct {
-	ReservaID     string
-	Calificacion  int
-	Limpieza      *int
-	Comunicacion  *int
-	Ubicacion     *int
-	Valor         *int
-	Comentario    string
+	ReservaID    string
+	Calificacion int
+	Limpieza     *int
+	Comunicacion *int
+	Ubicacion    *int
+	Valor        *int
+	Comentario   string
 }
 
 func (s *ResenaService) Crear(ctx context.Context, userID string, input *CrearResenaInput) (string, error) {
@@ -102,12 +104,27 @@ func (s *ResenaService) Responder(ctx context.Context, input *ResponderInput) er
 }
 
 func (s *ResenaService) ListByPropiedad(ctx context.Context, propiedadID string, page, perPage int) ([]repository.ResenaConAutor, int, error) {
-	resenas, total, err := s.repo.GetByPropiedad(ctx, propiedadID, page, perPage)
+	key := fmt.Sprintf("resenas:%s:page=%d:pp=%d", propiedadID, page, perPage)
+	ttl := 5 * time.Minute
+
+	val, err := s.cache.GetOrFetch(key, ttl, func() (interface{}, error) {
+		resenas, total, e := s.repo.GetByPropiedad(ctx, propiedadID, page, perPage)
+		if e != nil {
+			return nil, e
+		}
+		if resenas == nil {
+			resenas = []repository.ResenaConAutor{}
+		}
+		return resenasListResult{Items: resenas, Total: total}, nil
+	})
 	if err != nil {
 		return nil, 0, err
 	}
-	if resenas == nil {
-		resenas = []repository.ResenaConAutor{}
-	}
-	return resenas, total, nil
+	r := val.(resenasListResult)
+	return r.Items, r.Total, nil
+}
+
+type resenasListResult struct {
+	Items []repository.ResenaConAutor
+	Total int
 }

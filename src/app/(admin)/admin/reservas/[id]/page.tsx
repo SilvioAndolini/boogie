@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { getReservaDetalleAdmin, accionReservaAdmin } from '@/actions/admin-reservas.actions'
+import { verificarPagoAdmin } from '@/actions/admin-pagos.actions'
 import { ESTADO_RESERVA_LABELS, ESTADO_RESERVA_COLORS, ESTADO_PAGO_LABELS } from '@/types/reserva'
 import { METODOS_PAGO } from '@/lib/constants'
 import type { EstadoReserva } from '@/types'
@@ -409,6 +410,33 @@ export default function AdminReservaDetallePage() {
                                       </span>
                                     </div>
                                   </a>
+                                </div>
+                              )}
+
+                              {p.estado === 'VERIFICADO' && (
+                                <div className="pt-2 border-t border-[#E8E4DF]">
+                                  <button
+                                    disabled={accionando}
+                                    onClick={async () => {
+                                      setAccionando(true)
+                                      const fd = new FormData()
+                                      fd.append('pagoId', p.id)
+                                      fd.append('accion', 'ACREDITADO')
+                                      const res = await verificarPagoAdmin(fd)
+                                      if (res.error) {
+                                        toast.error(res.error)
+                                      } else {
+                                        toast.success('Pago acreditado al anfitrión')
+                                        const refreshed = await getReservaDetalleAdmin(reservaId)
+                                        if (!refreshed.error) setData(refreshed as unknown as typeof data)
+                                      }
+                                      setAccionando(false)
+                                    }}
+                                    className="flex h-9 w-full items-center justify-center gap-2 rounded-xl bg-[#1B4332] text-sm font-medium text-white transition-all hover:bg-[#2D6A4F] disabled:opacity-60"
+                                  >
+                                    {accionando ? <Loader2 className="h-4 w-4 animate-spin" /> : <DollarSign className="h-4 w-4" />}
+                                    Acreditar pago a anfitrión
+                                  </button>
                                 </div>
                               )}
                             </div>

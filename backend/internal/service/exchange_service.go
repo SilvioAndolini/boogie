@@ -5,23 +5,19 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/boogie/backend/internal/domain/models"
 )
 
 type ExchangeService struct {
-	mu         sync.RWMutex
-	cached     *models.CotizacionEuro
-	cachedAt   time.Time
-	cacheTTL   time.Duration
+	cache      *CacheService
 	httpClient *http.Client
 }
 
 func NewExchangeService() *ExchangeService {
 	return &ExchangeService{
-		cacheTTL: 15 * time.Minute,
+		cache: GetCache(),
 		httpClient: &http.Client{
 			Timeout: 10 * time.Second,
 		},
@@ -29,36 +25,21 @@ func NewExchangeService() *ExchangeService {
 }
 
 func (s *ExchangeService) GetCotizacion() (*models.CotizacionEuro, error) {
-	s.mu.RLock()
-	if s.cached != nil && time.Since(s.cachedAt) < s.cacheTTL {
-		result := s.cached
-		s.mu.RUnlock()
-		return result, nil
-	}
-	s.mu.RUnlock()
+	const key = "exchange:eur_ves"
+	const ttl = 15 * time.Minute
 
-	cotizacion, err := s.fetchCotizacion()
+	val, err := s.cache.GetOrFetch(key, ttl, func() (interface{}, error) {
+		return s.fetchCotizacion()
+	})
 	if err != nil {
 		slog.Error("failed to fetch exchange rate", "error", err)
-		s.mu.RLock()
-		stale := s.cached
-		s.mu.RUnlock()
-		if stale != nil {
-			return stale, nil
-		}
 		return &models.CotizacionEuro{
-			Tasa:              78.39,
-			Fuente:            "Ref.",
+			Tasa:                78.39,
+			Fuente:              "Ref.",
 			UltimaActualizacion: time.Now(),
 		}, nil
 	}
-
-	s.mu.Lock()
-	s.cached = cotizacion
-	s.cachedAt = time.Now()
-	s.mu.Unlock()
-
-	return cotizacion, nil
+	return val.(*models.CotizacionEuro), nil
 }
 
 func (s *ExchangeService) fetchCotizacion() (*models.CotizacionEuro, error) {
@@ -106,8 +87,8 @@ func (s *ExchangeService) fetchFromERApi() (*models.CotizacionEuro, error) {
 	}
 
 	return &models.CotizacionEuro{
-		Tasa:              ves,
-		Fuente:            "BCV",
+		Tasa:                ves,
+		Fuente:              "BCV",
 		UltimaActualizacion: time.Unix(data.TimeLastUpdateUnix, 0),
 	}, nil
 }
@@ -145,8 +126,8 @@ func (s *ExchangeService) fetchFromExchangeRateAPI() (*models.CotizacionEuro, er
 	}
 
 	return &models.CotizacionEuro{
-		Tasa:              ves,
-		Fuente:            "BCV",
+		Tasa:                ves,
+		Fuente:              "BCV",
 		UltimaActualizacion: lastUpdate,
 	}, nil
 }

@@ -4,18 +4,20 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"time"
 
 	"github.com/boogie/backend/internal/domain/enums"
 	"github.com/boogie/backend/internal/repository"
 )
 
 type PropiedadesService struct {
-	repo        *repository.PropiedadesRepo
-	maxFree     int
+	repo    *repository.PropiedadesRepo
+	maxFree int
+	cache   *CacheService
 }
 
 func NewPropiedadesService(repo *repository.PropiedadesRepo, maxFree int) *PropiedadesService {
-	return &PropiedadesService{repo: repo, maxFree: maxFree}
+	return &PropiedadesService{repo: repo, maxFree: maxFree, cache: GetCache()}
 }
 
 func (s *PropiedadesService) Search(ctx context.Context, filtros *repository.PropiedadesFiltros) ([]repository.PropiedadListado, int, error) {
@@ -25,15 +27,51 @@ func (s *PropiedadesService) Search(ctx context.Context, filtros *repository.Pro
 	if filtros.Pagina <= 0 {
 		filtros.Pagina = 1
 	}
-	return s.repo.SearchPublic(ctx, filtros)
+
+	key := fmt.Sprintf("propiedades:search:%s", filtros.CacheKey())
+	ttl := 2 * time.Minute
+
+	val, err := s.cache.GetOrFetch(key, ttl, func() (interface{}, error) {
+		items, total, e := s.repo.SearchPublic(ctx, filtros)
+		return propiedadesSearchResult{Items: items, Total: total}, e
+	})
+	if err != nil {
+		return nil, 0, err
+	}
+
+	r := val.(propiedadesSearchResult)
+	return r.Items, r.Total, nil
+}
+
+type propiedadesSearchResult struct {
+	Items []repository.PropiedadListado
+	Total int
 }
 
 func (s *PropiedadesService) GetByID(ctx context.Context, id string) (*repository.PropiedadDetalleFull, error) {
-	return s.repo.GetByID(ctx, id)
+	key := "propiedades:detail:" + id
+	ttl := 5 * time.Minute
+
+	val, err := s.cache.GetOrFetch(key, ttl, func() (interface{}, error) {
+		return s.repo.GetByID(ctx, id)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return val.(*repository.PropiedadDetalleFull), nil
 }
 
 func (s *PropiedadesService) GetBySlug(ctx context.Context, slug string) (*repository.PropiedadDetalleFull, error) {
-	return s.repo.GetBySlug(ctx, slug)
+	key := "propiedades:slug:" + slug
+	ttl := 5 * time.Minute
+
+	val, err := s.cache.GetOrFetch(key, ttl, func() (interface{}, error) {
+		return s.repo.GetBySlug(ctx, slug)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return val.(*repository.PropiedadDetalleFull), nil
 }
 
 func (s *PropiedadesService) GetByIDOrSlug(ctx context.Context, idOrSlug string) (*repository.PropiedadDetalleFull, error) {

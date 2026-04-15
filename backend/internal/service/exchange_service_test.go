@@ -26,40 +26,35 @@ func TestExchangeService_GetCotizacion_ReturnsFallbackOnFailure(t *testing.T) {
 
 func TestExchangeService_CacheWorks(t *testing.T) {
 	svc := NewExchangeService()
+	cache := GetCache()
 
-	cot1, _ := svc.GetCotizacion()
-
-	svc.mu.Lock()
-	svc.cached = &models.CotizacionEuro{
-		Tasa:              99.99,
-		Fuente:            "test",
+	cache.Set("exchange:eur_ves", &models.CotizacionEuro{
+		Tasa:                99.99,
+		Fuente:              "test",
 		UltimaActualizacion: time.Now(),
+	}, 15*time.Minute)
+
+	cot, _ := svc.GetCotizacion()
+
+	if cot.Tasa != 99.99 {
+		t.Errorf("expected cached tasa 99.99, got %f", cot.Tasa)
 	}
-	svc.cachedAt = time.Now()
-	svc.mu.Unlock()
-
-	cot2, _ := svc.GetCotizacion()
-
-	if cot2.Tasa != 99.99 {
-		t.Errorf("expected cached tasa 99.99, got %f", cot2.Tasa)
-	}
-
-	_ = cot1
 }
 
 func TestExchangeService_CacheExpires(t *testing.T) {
-	svc := NewExchangeService()
-
-	svc.mu.Lock()
-	svc.cached = &models.CotizacionEuro{
-		Tasa:              50.00,
-		Fuente:            "expired",
-		UltimaActualizacion: time.Now(),
+	cache := GetCache()
+	cache.entries["exchange:eur_ves"] = &cacheEntry{
+		value: &models.CotizacionEuro{
+			Tasa:                50.00,
+			Fuente:              "expired",
+			UltimaActualizacion: time.Now(),
+		},
+		cachedAt:  time.Now().Add(-20 * time.Minute),
+		ttl:       15 * time.Minute,
+		expiresAt: time.Now().Add(-5 * time.Minute),
 	}
-	svc.cachedAt = time.Now().Add(-20 * time.Minute)
-	svc.cacheTTL = 15 * time.Minute
-	svc.mu.Unlock()
 
+	svc := NewExchangeService()
 	cot, err := svc.GetCotizacion()
 	if err != nil {
 		t.Logf("GetCotizacion returned error (expected on no API): %v", err)

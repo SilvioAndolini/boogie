@@ -59,7 +59,7 @@ function SubmitButton({ variant }: { variant: 'confirmar' | 'rechazar' }) {
 }
 
 function ReservaRecibidaCard({ reserva }: { reserva: ReservaConPropiedad }) {
-  const esPendiente = reserva.estado === 'PENDIENTE' || reserva.estado === 'PENDIENTE_CONFIRMACION'
+  const esPendiente = reserva.estado === 'PENDIENTE' || reserva.estado === 'PENDIENTE_PAGO' || reserva.estado === 'PENDIENTE_CONFIRMACION'
   const puedeConfirmar = reserva.estado === 'PENDIENTE_CONFIRMACION'
 
   return (
@@ -99,12 +99,21 @@ function ReservaRecibidaCard({ reserva }: { reserva: ReservaConPropiedad }) {
               {formatPrecio(Number(reserva.total), reserva.moneda)}
             </span>
             {esPendiente && (
-              <div className="flex flex-col items-end gap-2">
-                {reserva.estado === 'PENDIENTE_PAGO' && (
-                  <span className="text-[10px] font-medium text-[#C2410C]">Esperando pago del huesped</span>
+              <div className="flex flex-col items-end gap-1.5 mt-0.5">
+                {(!reserva.estadoPago || reserva.estadoPago === 'PENDIENTE') && (
+                  <span className="text-[10px] font-medium text-[#C2410C] flex items-center gap-1">
+                    <Clock className="h-3 w-3" /> Esperando pago del huésped
+                  </span>
                 )}
-                {reserva.estado === 'PENDIENTE' && (
-                  <span className="text-[10px] font-medium text-[#92400E]">Esperando pago del huesped</span>
+                {reserva.estadoPago && ['VERIFICADO', 'ACREDITADO'].includes(reserva.estadoPago) && reserva.estado === 'PENDIENTE_CONFIRMACION' && (
+                  <span className="text-[10px] font-medium text-[#B45309] flex items-center gap-1">
+                    <Clock className="h-3 w-3" /> Esperando tu confirmación
+                  </span>
+                )}
+                {reserva.estadoPago && ['VERIFICADO', 'ACREDITADO'].includes(reserva.estadoPago) && reserva.estado !== 'PENDIENTE_CONFIRMACION' && (
+                  <span className="text-[10px] font-medium text-[#1B4332] flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3" /> Pago confirmado
+                  </span>
                 )}
                 {puedeConfirmar && (
                   <div className="flex gap-2">
@@ -130,7 +139,7 @@ function ReservaRecibidaCard({ reserva }: { reserva: ReservaConPropiedad }) {
 export function ReservasRecibidasClient({ reservas }: { reservas: ReservaConPropiedad[] }) {
   const [activa, setActiva] = useState<Pestana>('pendientes')
 
-  const pendientes = reservas.filter(r => r.estado === 'PENDIENTE' || r.estado === 'PENDIENTE_CONFIRMACION')
+  const pendientes = reservas.filter(r => ['PENDIENTE', 'PENDIENTE_PAGO', 'PENDIENTE_CONFIRMACION'].includes(r.estado))
   const confirmadas = reservas.filter(r => r.estado === 'CONFIRMADA' || r.estado === 'EN_CURSO')
   const completadas = reservas.filter(r => r.estado === 'COMPLETADA')
   const canceladas = reservas.filter(r => ['CANCELADA_HUESPED', 'CANCELADA_ANFITRION', 'RECHAZADA'].includes(r.estado))

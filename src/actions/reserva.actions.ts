@@ -94,6 +94,7 @@ export async function getMisReservas(): Promise<ReservaConPropiedad[]> {
       moneda: r.moneda as Moneda,
       cantidadHuespedes: r.cantidad_huespedes as number,
       estado: r.estado as EstadoReserva,
+      estadoPago: (r.estado_pago || '') as string,
       notasHuesped: r.notas_huesped as string | null,
       fechaCreacion: (r.fecha_creacion || r.created_at) as string,
       fechaConfirmacion: r.fecha_confirmacion as string | null,
@@ -146,6 +147,7 @@ export async function getReservasRecibidas(): Promise<ReservaConPropiedad[]> {
         apellido: (r.huesped_apellido || '') as string,
         avatarUrl: r.huesped_avatar_url as string | null,
       },
+      estadoPago: r.estado_pago as string | undefined,
     }))
   } catch (err) {
     console.error('[getReservasRecibidas] Error:', err)

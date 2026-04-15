@@ -68,6 +68,7 @@ export interface ReservaConPropiedad {
   moneda: Moneda
   cantidadHuespedes: number
   estado: EstadoReserva
+  estadoPago?: string
   notasHuesped: string | null
   fechaCreacion: string
   fechaConfirmacion: string | null

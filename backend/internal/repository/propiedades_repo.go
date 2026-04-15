@@ -23,23 +23,23 @@ func NewPropiedadesRepo(pool *pgxpool.Pool) *PropiedadesRepo {
 }
 
 type PropiedadListado struct {
-	ID             string   `json:"id"`
-	Titulo         string   `json:"titulo"`
-	Slug           string   `json:"slug"`
-	TipoPropiedad  string   `json:"tipo_propiedad"`
-	PrecioPorNoche float64  `json:"precio_por_noche"`
-	Moneda         string   `json:"moneda"`
-	Capacidad      int      `json:"capacidad"`
-	Dormitorios    int      `json:"dormitorios"`
-	Banos          int      `json:"banos"`
-	Ciudad         string   `json:"ciudad"`
-	Estado         string   `json:"estado"`
-	Latitud        *float64 `json:"latitud"`
-	Longitud       *float64 `json:"longitud"`
-	Calificacion   float64  `json:"calificacion"`
-	TotalResenas   int      `json:"total_resenas"`
-	ImagenPrincipal *string `json:"imagen_principal"`
-	PlanSuscripcion *string `json:"plan_suscripcion"`
+	ID              string   `json:"id"`
+	Titulo          string   `json:"titulo"`
+	Slug            string   `json:"slug"`
+	TipoPropiedad   string   `json:"tipo_propiedad"`
+	PrecioPorNoche  float64  `json:"precio_por_noche"`
+	Moneda          string   `json:"moneda"`
+	Capacidad       int      `json:"capacidad"`
+	Dormitorios     int      `json:"dormitorios"`
+	Banos           int      `json:"banos"`
+	Ciudad          string   `json:"ciudad"`
+	Estado          string   `json:"estado"`
+	Latitud         *float64 `json:"latitud"`
+	Longitud        *float64 `json:"longitud"`
+	Calificacion    float64  `json:"calificacion"`
+	TotalResenas    int      `json:"total_resenas"`
+	ImagenPrincipal *string  `json:"imagen_principal"`
+	PlanSuscripcion *string  `json:"plan_suscripcion"`
 }
 
 type PropiedadDetalleFull struct {
@@ -49,14 +49,14 @@ type PropiedadDetalleFull struct {
 }
 
 type PropietarioInfo struct {
-	ID               string   `json:"id"`
-	Nombre           string   `json:"nombre"`
-	Apellido         string   `json:"apellido"`
-	AvatarURL        *string  `json:"avatar_url"`
-	Verificado       bool     `json:"verificado"`
-	PlanSuscripcion  string   `json:"plan_suscripcion"`
-	Bio              *string  `json:"bio"`
-	Reputacion       float64  `json:"reputacion"`
+	ID              string  `json:"id"`
+	Nombre          string  `json:"nombre"`
+	Apellido        string  `json:"apellido"`
+	AvatarURL       *string `json:"avatar_url"`
+	Verificado      bool    `json:"verificado"`
+	PlanSuscripcion string  `json:"plan_suscripcion"`
+	Bio             *string `json:"bio"`
+	Reputacion      float64 `json:"reputacion"`
 }
 
 type AmenidadInfo struct {
@@ -67,20 +67,57 @@ type AmenidadInfo struct {
 }
 
 type PropiedadesFiltros struct {
-	Ubicacion      string
-	Lat            *float64
-	Lng            *float64
-	Radio          *float64
-	PrecioMin      *float64
-	PrecioMax      *float64
-	Huespedes      *int
-	TipoPropiedad  *string
-	Dormitorios    *int
-	Banos          *int
-	Amenidades     []string
-	OrdenarPor     string
-	Pagina         int
-	PorPagina      int
+	Ubicacion     string
+	Lat           *float64
+	Lng           *float64
+	Radio         *float64
+	PrecioMin     *float64
+	PrecioMax     *float64
+	Huespedes     *int
+	TipoPropiedad *string
+	Dormitorios   *int
+	Banos         *int
+	Amenidades    []string
+	OrdenarPor    string
+	Pagina        int
+	PorPagina     int
+}
+
+func (f *PropiedadesFiltros) CacheKey() string {
+	var b strings.Builder
+	b.WriteString(f.Ubicacion)
+	if f.Lat != nil {
+		fmt.Fprintf(&b, ":lat=%.4f", *f.Lat)
+	}
+	if f.Lng != nil {
+		fmt.Fprintf(&b, ":lng=%.4f", *f.Lng)
+	}
+	if f.Radio != nil {
+		fmt.Fprintf(&b, ":r=%.1f", *f.Radio)
+	}
+	if f.PrecioMin != nil {
+		fmt.Fprintf(&b, ":pmin=%.0f", *f.PrecioMin)
+	}
+	if f.PrecioMax != nil {
+		fmt.Fprintf(&b, ":pmax=%.0f", *f.PrecioMax)
+	}
+	if f.Huespedes != nil {
+		fmt.Fprintf(&b, ":h=%d", *f.Huespedes)
+	}
+	if f.TipoPropiedad != nil {
+		fmt.Fprintf(&b, ":t=%s", *f.TipoPropiedad)
+	}
+	if f.Dormitorios != nil {
+		fmt.Fprintf(&b, ":d=%d", *f.Dormitorios)
+	}
+	if f.Banos != nil {
+		fmt.Fprintf(&b, ":b=%d", *f.Banos)
+	}
+	for _, a := range f.Amenidades {
+		fmt.Fprintf(&b, ":a=%s", a)
+	}
+	fmt.Fprintf(&b, ":sort=%s:page=%d:pp=%d", f.OrdenarPor, f.Pagina, f.PorPagina)
+	return b.String()
 }
 
 func (r *PropiedadesRepo) SearchPublic(ctx context.Context, f *PropiedadesFiltros) ([]PropiedadListado, int, error) {
@@ -269,7 +306,7 @@ func (r *PropiedadesRepo) GetByID(ctx context.Context, id string) (*PropiedadDet
 	p.Imagenes = imagenes
 
 	return &PropiedadDetalleFull{
-		Propiedad:  p,
+		Propiedad:   p,
 		Propietario: propietario,
 		Amenidades:  amenidades,
 	}, nil

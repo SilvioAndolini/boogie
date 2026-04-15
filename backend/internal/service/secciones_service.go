@@ -3,19 +3,34 @@ package service
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/boogie/backend/internal/repository"
 )
 
 type SeccionesService struct {
-	repo *repository.SeccionesRepo
+	repo  *repository.SeccionesRepo
+	cache *CacheService
 }
 
 func NewSeccionesService(repo *repository.SeccionesRepo) *SeccionesService {
-	return &SeccionesService{repo: repo}
+	return &SeccionesService{repo: repo, cache: GetCache()}
 }
 
 func (s *SeccionesService) GetPublicas(ctx context.Context) ([]repository.SeccionConPropiedades, error) {
+	const key = "secciones:publicas"
+	const ttl = 5 * time.Minute
+
+	val, err := s.cache.GetOrFetch(key, ttl, func() (interface{}, error) {
+		return s.fetchPublicas(ctx)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return val.([]repository.SeccionConPropiedades), nil
+}
+
+func (s *SeccionesService) fetchPublicas(ctx context.Context) ([]repository.SeccionConPropiedades, error) {
 	secciones, err := s.repo.GetPublicas(ctx)
 	if err != nil {
 		return nil, err

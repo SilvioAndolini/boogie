@@ -94,8 +94,27 @@ function ReservaCard({ reserva, onCancelar }: { reserva: ReservaConPropiedad; on
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1">
           <Badge className={ESTADO_RESERVA_COLORS[reserva.estado] ?? 'bg-[#F8F6F3] text-[#6B6560]'}>
-            {ESTADO_RESERVA_LABELS[reserva.estado] ?? reserva.estado}
+            {reserva.estado === 'CONFIRMADA' ? 'Reserva confirmada' : ESTADO_RESERVA_LABELS[reserva.estado] ?? reserva.estado}
           </Badge>
+          {reserva.estado !== 'CONFIRMADA' && reserva.estado !== 'COMPLETADA' && reserva.estado !== 'EN_CURSO' && (
+            <div className="flex flex-col items-end gap-0.5 mt-0.5">
+              {(!reserva.estadoPago || reserva.estadoPago === 'PENDIENTE') && (
+                <span className="text-[10px] font-medium text-[#C2410C] flex items-center gap-1">
+                  <Clock className="h-3 w-3" /> Esperando pago
+                </span>
+              )}
+              {reserva.estadoPago && ['VERIFICADO', 'ACREDITADO'].includes(reserva.estadoPago) && reserva.estado === 'PENDIENTE_CONFIRMACION' && (
+                <span className="text-[10px] font-medium text-[#B45309] flex items-center gap-1">
+                  <Clock className="h-3 w-3" /> Esperando confirmacion del anfitrion
+                </span>
+              )}
+              {reserva.estadoPago && ['VERIFICADO', 'ACREDITADO'].includes(reserva.estadoPago) && reserva.estado !== 'PENDIENTE_CONFIRMACION' && (
+                <span className="text-[10px] font-medium text-[#1B4332] flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3" /> Pago confirmado
+                </span>
+              )}
+            </div>
+          )}
           <span className="text-sm font-bold text-[#1B4332]">
             {formatPrecio(Number(reserva.total), reserva.moneda)}
           </span>

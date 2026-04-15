@@ -7,6 +7,11 @@ export interface FechaOcupada {
   estado: string
 }
 
+function parseLocalDate(iso: string): Date {
+  const parts = iso.substring(0, 10).split('-')
+  return new Date(+parts[0], +parts[1] - 1, +parts[2])
+}
+
 export async function obtenerFechasOcupadas(
   propiedadId: string
 ): Promise<{ inicio: Date; fin: Date; estado: string }[]> {
@@ -16,10 +21,8 @@ export async function obtenerFechasOcupadas(
     )
     if (!data) return []
     return data.map((r) => {
-      const inicio = new Date(r.inicio)
-      const fin = new Date(r.fin)
-      inicio.setHours(0, 0, 0, 0)
-      fin.setHours(0, 0, 0, 0)
+      const inicio = parseLocalDate(r.inicio)
+      const fin = parseLocalDate(r.fin)
       return { inicio, fin, estado: r.estado }
     })
   } catch {
