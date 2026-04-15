@@ -183,7 +183,7 @@ func (r *OfertaRepo) GetPropietarioID(ctx context.Context, propiedadID string) (
 
 func (r *OfertaRepo) GetPropiedadPrecio(ctx context.Context, propiedadID string) (precio float64, moneda string, capacidad int, estanciaMin int, estanciaMax *int, propietarioID string, err error) {
 	err = r.pool.QueryRow(ctx, `
-		SELECT precio_por_noche, moneda, capacidad, estancia_minima, estancia_maxima, propietario_id
+		SELECT precio_por_noche, moneda, capacidad_maxima, estancia_minima, estancia_maxima, propietario_id
 		FROM propiedades WHERE id = $1 AND estado_publicacion = 'PUBLICADA'
 	`, propiedadID).Scan(&precio, &moneda, &capacidad, &estanciaMin, &estanciaMax, &propietarioID)
 	return
