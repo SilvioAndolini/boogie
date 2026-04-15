@@ -85,12 +85,12 @@ export function BookingCalendar({
 
   const esNoSeleccionable = (ts: number): boolean => {
     const e = estadoDia(ts)
-    return e === 'ocupada' || e === 'bloqueada'
+    return e === 'ocupada' || e === 'pendiente' || e === 'bloqueada'
   }
 
   const rangoTieneBloqueados = (startTs: number, endTs: number) => {
     for (let t = startTs; t <= endTs; t += 86400000) {
-      if (esNoSeleccionable(t)) return true
+      if (esNoSeleccionable(t) || t <= hoyTs) return true
     }
     return false
   }
@@ -107,7 +107,7 @@ export function BookingCalendar({
     const ts = soloFecha(fecha)
     const hoyTs = soloFecha(new Date())
 
-    if (esNoSeleccionable(ts) || ts < hoyTs) return
+    if (esNoSeleccionable(ts) || ts <= hoyTs) return
 
     if (!fechaEntrada || (fechaEntrada && fechaSalida)) {
       onFechaEntradaChange?.(fecha)
@@ -167,7 +167,8 @@ export function BookingCalendar({
           const ts = soloFecha(new Date(ano, mes, dia))
           const pasado = ts < hoyTs
           const estado = estadoDia(ts)
-          const noSeleccionable = pasado || estado === 'ocupada' || estado === 'bloqueada'
+          const hoy = ts === hoyTs
+          const noSeleccionable = pasado || hoy || estado === 'ocupada' || estado === 'pendiente' || estado === 'bloqueada'
           const esEntrada = entTs !== null && ts === entTs
           const esSalida = salTs !== null && ts === salTs
           const enMedio = enRango(ts)
@@ -180,13 +181,14 @@ export function BookingCalendar({
               className={cn(
                 'flex h-10 w-full items-center justify-center rounded-md text-sm transition-colors sm:h-8',
                 estado === 'disponible' && !pasado && !esEntrada && !esSalida && !enMedio && 'text-[#1B4332] bg-[#D8F3DC]/40 hover:bg-[#D8F3DC] cursor-pointer',
-                estado === 'pendiente' && !pasado && 'bg-[#FEF3C7] text-[#92400E] cursor-pointer',
+                estado === 'pendiente' && 'bg-[#FEF3C7] text-[#92400E] cursor-not-allowed line-through',
                 estado === 'ocupada' && 'bg-[#FEE2E2] text-[#B91C1C] cursor-not-allowed line-through',
                 estado === 'bloqueada' && 'bg-[#E5E7EB] text-[#6B7280] cursor-not-allowed line-through',
-                pasado && estado === 'disponible' && 'bg-transparent text-[#D8D3CC] cursor-not-allowed',
-                esEntrada && (estado === 'disponible' || estado === 'pendiente') && 'bg-[#1B4332] !text-white rounded-l-md',
-                esSalida && (estado === 'disponible' || estado === 'pendiente') && 'bg-[#1B4332] !text-white rounded-r-md',
-                enMedio && (estado === 'disponible' || estado === 'pendiente') && 'bg-[#D8F3DC] text-[#1B4332]',
+                pasado && 'bg-transparent text-[#D8D3CC] cursor-not-allowed',
+                hoy && estado === 'disponible' && !esEntrada && !esSalida && 'bg-[#F3F4F6] text-[#9E9892] cursor-not-allowed line-through',
+                esEntrada && estado === 'disponible' && 'bg-[#1B4332] !text-white rounded-l-md',
+                esSalida && estado === 'disponible' && 'bg-[#1B4332] !text-white rounded-r-md',
+                enMedio && estado === 'disponible' && 'bg-[#D8F3DC] text-[#1B4332]',
                 ts === hoyTs && !esEntrada && !esSalida && estado === 'disponible' && 'font-bold text-[#1B4332]',
               )}
             >
