@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { goGet, goPatch, goDelete, goFetch, getAuthToken } from '@/lib/go-api-client'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getUsuarioAutenticado } from '@/lib/auth'
 
 interface PropiedadPublica {
@@ -290,6 +291,17 @@ export async function actualizarPropiedad(propiedadId: string, formData: FormDat
   const user = await getUsuarioAutenticado()
   if (!user) return { error: 'No autenticado' }
 
+  const existentesCategorias = formData.getAll('existentes_categorias') as string[]
+  const imagenIds = formData.getAll('imagen_ids') as string[]
+
+  if (existentesCategorias.length > 0 && imagenIds.length > 0) {
+    const supabase = createAdminClient()
+    const updates = imagenIds.map((id, i) =>
+      supabase.from('imagenes_propiedad').update({ categoria: existentesCategorias[i] || 'otro' }).eq('id', id)
+    )
+    await Promise.all(updates)
+  }
+
   const token = await getAuthToken()
   const baseUrl = process.env.GO_BACKEND_URL || 'http://localhost:8080'
 
@@ -298,13 +310,6 @@ export async function actualizarPropiedad(propiedadId: string, formData: FormDat
     headers: { Authorization: `Bearer ${token}` },
     body: formData,
   })
-
-  const data = await res.json()
-
-  if (!res.ok) {
-    const err = (data as { error?: { message?: string } }).error
-    return { error: err?.message || 'Error al actualizar el boogie' }
-  }
 
   revalidatePath('/dashboard/mis-propiedades')
   return { exito: true }

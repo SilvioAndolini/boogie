@@ -82,6 +82,9 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
   const [customInputVisible, setCustomInputVisible] = useState<number | null>(null)
   const [customInputValue, setCustomInputValue] = useState('')
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
+  const [existentesCustomInputVisible, setExistentesCustomInputVisible] = useState<number | null>(null)
+  const [existentesCustomInputValue, setExistentesCustomInputValue] = useState('')
+  const [existentesCollapsedGroups, setExistentesCollapsedGroups] = useState<Set<string>>(new Set())
   const [optimizando, setOptimizando] = useState(false)
   const [latitud, setLatitud] = useState<number | null>(
     (boogie.latitud as number) ?? null
@@ -92,7 +95,10 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
   const [addressData, setAddressData] = useState<AddressData | null>(null)
   const [seccionExpandida, setSeccionExpandida] = useState<SeccionId>('info')
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const imagenesExistentes = (boogie.imagenes as { id: string; url: string; orden: number; es_principal: boolean }[]) || []
+  const imagenesExistentes = (boogie.imagenes as { id: string; url: string; orden: number; es_principal: boolean; categoria: string }[]) || []
+  const [existentesCategorias, setExistentesCategorias] = useState<string[]>(
+    imagenesExistentes.map((img) => img.categoria || 'otro')
+  )
 
   const {
     register,
@@ -270,6 +276,8 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
       amenidadesSeleccionadas.forEach((a) => formData.append('amenidades', a))
       imagenes.forEach((file) => formData.append('imagenes', file))
       imagenCategorias.forEach((c) => formData.append('imagen_categorias', c))
+      existentesCategorias.forEach((c) => formData.append('existentes_categorias', c))
+      imagenesExistentes.forEach((img) => formData.append('imagen_ids', img.id))
 
       const result = await actualizarPropiedad(boogieId, formData)
       if (result?.error) {
@@ -528,29 +536,190 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
         ))}
 
         {/* ====== EXISTING IMAGES ====== */}
-        {imagenesExistentes.length > 0 && (
-          <div className="border-t border-[#E8E4DF] px-5 py-5">
-            <div className="mb-3 flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#D8F3DC]">
-                <Image src={imagenesExistentes[0].url} alt="" width={14} height={14} className="h-3.5 w-3.5 rounded object-cover" />
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-[#1A1A1A]">Fotos actuales</h3>
-                <p className="text-[10px] text-[#9E9892]">{imagenesExistentes.length} foto{imagenesExistentes.length !== 1 ? 's' : ''} guardada{imagenesExistentes.length !== 1 ? 's' : ''}</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-5">
-              {imagenesExistentes.map((img) => (
-                <div key={img.id} className="group relative aspect-square overflow-hidden rounded-xl border border-[#E8E4DF]">
-                  <Image fill src={img.url} alt="" className="h-full w-full object-cover" />
-                  {img.es_principal && (
-                    <span className="absolute bottom-1 left-1 rounded bg-[#1B4332] px-1.5 py-px text-[9px] font-bold text-white">Principal</span>
-                  )}
+        {imagenesExistentes.length > 0 && (() => {
+          const groupedExistentes = (() => {
+            const map = new Map<string, { parsed: ReturnType<typeof parseCategoria>; indices: number[] }>()
+            imagenesExistentes.forEach((_, i) => {
+              const cat = existentesCategorias[i] || 'otro'
+              if (!map.has(cat)) map.set(cat, { parsed: parseCategoria(cat), indices: [] })
+              map.get(cat)!.indices.push(i)
+            })
+            const entries = Array.from(map.entries())
+            entries.sort((a, b) => {
+              const aIsOther = a[0] === 'otro'
+              const bIsOther = b[0] === 'otro'
+              if (aIsOther && !bIsOther) return 1
+              if (!aIsOther && bIsOther) return -1
+              const aIsCustom = a[0].startsWith('personalizada:')
+              const bIsCustom = b[0].startsWith('personalizada:')
+              if (aIsCustom && !bIsCustom) return 1
+              if (!aIsCustom && bIsCustom) return -1
+              return 0
+            })
+            return entries
+          })()
+
+          const setExistenteCategoria = (index: number, categoria: string) => {
+            setExistentesCategorias((prev) => {
+              const next = [...prev]
+              next[index] = categoria
+              return next
+            })
+            setExistentesCustomInputVisible(null)
+            setExistentesCustomInputValue('')
+          }
+
+          const confirmExistenteCustomCategoria = (index: number) => {
+            const trimmed = existentesCustomInputValue.trim()
+            if (!trimmed) return
+            setExistenteCategoria(index, `personalizada:${trimmed}`)
+          }
+
+          return (
+            <div className="border-t border-[#E8E4DF] px-5 py-5">
+              <div className="mb-3 flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#D8F3DC]">
+                  <Image src={imagenesExistentes[0].url} alt="" width={14} height={14} className="h-3.5 w-3.5 rounded object-cover" />
                 </div>
-              ))}
+                <div>
+                  <h3 className="text-sm font-semibold text-[#1A1A1A]">Fotos actuales</h3>
+                  <p className="text-[10px] text-[#9E9892]">{imagenesExistentes.length} foto{imagenesExistentes.length !== 1 ? 's' : ''} — clasifica cada una en su sección</p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                {groupedExistentes.map(([catKey, group]) => {
+                  const { parsed, indices } = group
+                  const GroupIcon = parsed.icon
+                  const isCollapsed = existentesCollapsedGroups.has(catKey)
+                  const isUnassigned = catKey === 'otro'
+                  return (
+                    <div key={catKey} className="overflow-hidden rounded-xl border border-[#E8E4DF]">
+                      <button
+                        type="button"
+                        onClick={() => setExistentesCollapsedGroups((prev) => {
+                          const next = new Set(prev)
+                          if (next.has(catKey)) next.delete(catKey)
+                          else next.add(catKey)
+                          return next
+                        })}
+                        className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-[#FDFCFA] ${isUnassigned ? 'bg-[#FDFCFA]' : 'bg-white'}`}
+                      >
+                        <span className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${parsed.color}`}>
+                          <GroupIcon className="h-3 w-3" />
+                          {isUnassigned ? 'Sin clasificar' : parsed.label}
+                        </span>
+                        <span className="text-[10px] text-[#9E9892]">{indices.length} {indices.length === 1 ? 'foto' : 'fotos'}</span>
+                        <ChevronDown className={`ml-auto h-4 w-4 text-[#9E9892] transition-transform ${isCollapsed ? '' : 'rotate-180'}`} />
+                      </button>
+                      <AnimatePresence>
+                        {!isCollapsed && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="border-t border-[#F4F1EC] p-3 space-y-2.5">
+                              {indices.map((imgIdx) => {
+                                const img = imagenesExistentes[imgIdx]
+                                const isCustomizing = existentesCustomInputVisible === imgIdx
+                                return (
+                                  <div key={img.id} className="group rounded-lg bg-[#FDFCFA] p-2 transition-all hover:bg-white">
+                                    <div className="flex gap-3">
+                                      <div className="relative h-18 w-18 shrink-0 overflow-hidden rounded-lg">
+                                        <Image src={img.url} alt="" width={72} height={72} className="h-[72px] w-[72px] object-cover" />
+                                        {img.es_principal && (
+                                          <span className="absolute bottom-0.5 left-0.5 rounded bg-[#1B4332] px-1.5 py-px text-[9px] font-bold text-white">Principal</span>
+                                        )}
+                                      </div>
+                                      <div className="flex flex-1 flex-col justify-center gap-1.5">
+                                        <div className="flex flex-wrap gap-1">
+                                          {CATEGORIAS_IMAGEN.map((c) => {
+                                            const isActive = (existentesCategorias[imgIdx] || 'otro') === c.value
+                                            return (
+                                              <button
+                                                key={c.value}
+                                                type="button"
+                                                onClick={() => setExistenteCategoria(imgIdx, c.value)}
+                                                className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[9px] font-medium transition-all ${isActive ? `${c.color} ring-1 ring-inset` : 'bg-white text-[#9E9892] hover:bg-[#F4F1EC]'}`}
+                                              >
+                                                <c.icon className="h-2.5 w-2.5" />
+                                                {c.label}
+                                              </button>
+                                            )
+                                          })}
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              if (isCustomizing) {
+                                                setExistentesCustomInputVisible(null)
+                                              } else {
+                                                setExistentesCustomInputVisible(imgIdx)
+                                                setExistentesCustomInputValue('')
+                                              }
+                                            }}
+                                            className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[9px] font-medium transition-all ${
+                                              (existentesCategorias[imgIdx] || 'otro').startsWith('personalizada:')
+                                                ? `${CUSTOM_COLOR} ring-1 ring-inset`
+                                                : isCustomizing
+                                                  ? 'bg-orange-50 text-orange-600 ring-1 ring-inset ring-orange-200'
+                                                  : 'bg-white text-[#9E9892] hover:bg-[#F4F1EC]'
+                                            }`}
+                                          >
+                                            <HelpCircle className="h-2.5 w-2.5" />
+                                            Personalizar
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <AnimatePresence>
+                                      {isCustomizing && (
+                                        <motion.div
+                                          initial={{ height: 0, opacity: 0 }}
+                                          animate={{ height: 'auto', opacity: 1 }}
+                                          exit={{ height: 0, opacity: 0 }}
+                                          transition={{ duration: 0.2 }}
+                                          className="overflow-hidden"
+                                        >
+                                          <div className="flex items-center gap-2 pt-2">
+                                            <input
+                                              type="text"
+                                              value={existentesCustomInputValue}
+                                              onChange={(e) => setExistentesCustomInputValue(e.target.value)}
+                                              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); confirmExistenteCustomCategoria(imgIdx) } }}
+                                              placeholder="Ej: Terraza, Garage, Lobby..."
+                                              maxLength={30}
+                                              className="h-7 flex-1 rounded-md border border-[#E8E4DF] bg-white px-2 text-[11px] text-[#1A1A1A] placeholder:text-[#C4BFBA] focus:border-[#1B4332] focus:outline-none focus:ring-1 focus:ring-[#1B4332]/20"
+                                              autoFocus
+                                            />
+                                            <button
+                                              type="button"
+                                              onClick={() => confirmExistenteCustomCategoria(imgIdx)}
+                                              disabled={!existentesCustomInputValue.trim()}
+                                              className="flex h-7 items-center gap-1 rounded-md bg-[#1B4332] px-2.5 text-[10px] font-medium text-white transition-colors hover:bg-[#2D6A4F] disabled:opacity-40"
+                                            >
+                                              <Check className="h-3 w-3" />
+                                              Aplicar
+                                            </button>
+                                          </div>
+                                        </motion.div>
+                                      )}
+                                    </AnimatePresence>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
-          </div>
-        )}
+          )
+        })()}
 
         {/* ====== NEW IMAGES ====== */}
         <div className="border-t border-[#E8E4DF] px-5 py-5">
