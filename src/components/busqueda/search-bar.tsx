@@ -688,7 +688,7 @@ export function SearchBar({ mode = 'estandar', inlineModeToggle, onModeChange }:
   const showDropdown = open && (resultados.length > 0 || (loading && ubicacion.length >= 2) || (!loading && resultados.length === 0 && ubicacion.length >= 2))
 
   return (
-    <div ref={containerRef} className="search-bar-container relative mx-auto w-full max-w-5xl">
+    <div ref={containerRef} className="search-bar-container relative mx-auto w-full max-w-6xl">
       <AnimatePresence mode="wait">
         <motion.div
           key={mode}
@@ -697,15 +697,15 @@ export function SearchBar({ mode = 'estandar', inlineModeToggle, onModeChange }:
           animate="animate"
           exit="exit"
           transition={barTransition}
-          className="hidden items-center gap-1 rounded-full border border-[#E8E4DF] bg-white px-2 py-2 shadow-md transition-shadow focus-within:shadow-lg sm:flex sm:gap-2 sm:px-3"
+          className="hidden items-center gap-0.5 rounded-full border border-[#E8E4DF] bg-white px-2 py-1 shadow-md transition-shadow focus-within:shadow-lg sm:flex sm:gap-1 sm:px-2 sm:py-1.5"
         >
           {inlineModeToggle && onModeChange && (
             <>
               <SearchModeToggle mode={mode} onChange={onModeChange} inline />
-              <div className="h-8 w-px bg-[#E8E4DF]" />
+              <div className="h-6 w-px bg-[#E8E4DF]" />
             </>
           )}
-          <div className="flex flex-1 items-center gap-2 rounded-full px-3 py-2 transition-colors hover:bg-[#F8F6F3] focus-within:bg-[#F8F6F3]">
+          <div className="flex flex-1 items-center gap-1.5 rounded-full px-2.5 py-1.5 transition-colors hover:bg-[#F8F6F3] focus-within:bg-[#F8F6F3]">
             <MapPin className="h-4 w-4 shrink-0 text-[#1B4332]" />
             <div className="flex flex-col min-w-0">
               <span className="text-[10px] font-semibold uppercase tracking-wide text-[#6B6560]">¿A dónde vas?</span>
@@ -717,65 +717,65 @@ export function SearchBar({ mode = 'estandar', inlineModeToggle, onModeChange }:
             </div>
           </div>
 
-          <div className="h-8 w-px bg-[#E8E4DF]" />
+          <div className="h-6 w-px bg-[#E8E4DF]" />
 
           {mode === 'sports' ? (
             <>
               <button ref={deporteButtonRef} type="button" onClick={() => { setDeporteDropdownOpen(!deporteDropdownOpen); setSportsDateOpen(false); setTimePickerOpen(false); setOpen(false); setDatePickerOpen(false); setGuestPickerOpen(false) }}
-                className="flex items-center gap-2 rounded-full px-3 py-2 transition-colors hover:bg-[#F8F6F3]">
-                <Trophy className="h-4 w-4 shrink-0 text-[#1B4332]" />
-                <div className="flex flex-col"><span className="text-[10px] font-semibold uppercase tracking-wide text-[#6B6560]">Deporte</span><span className="text-sm text-[#1A1A1A]">{deporte ? TIPOS_CANCHA[deporte as keyof typeof TIPOS_CANCHA] : 'Todos'}</span></div>
+                className="flex items-center gap-1.5 rounded-full px-2.5 py-1.5 transition-colors hover:bg-[#F8F6F3]">
+                <Trophy className="h-3.5 w-3.5 shrink-0 text-[#1B4332]" />
+                <div className="flex flex-col"><span className="text-[9px] font-semibold uppercase tracking-wide text-[#6B6560]">Deporte</span><span className="text-xs text-[#1A1A1A] leading-tight">{deporte ? TIPOS_CANCHA[deporte as keyof typeof TIPOS_CANCHA] : 'Todos'}</span></div>
               </button>
-              <div className="h-8 w-px bg-[#E8E4DF]" />
+              <div className="h-6 w-px bg-[#E8E4DF]" />
               <button ref={fechaButtonRef} type="button" onClick={() => { setSportsDateOpen(!sportsDateOpen); setDeporteDropdownOpen(false); setTimePickerOpen(false); setOpen(false); setDatePickerOpen(false); setGuestPickerOpen(false) }}
-                className="flex items-center gap-2 rounded-full px-3 py-2 transition-colors hover:bg-[#F8F6F3]">
-                <Calendar className="h-4 w-4 shrink-0 text-[#1B4332]" />
-                <div className="flex flex-col"><span className="text-[10px] font-semibold uppercase tracking-wide text-[#6B6560]">Fecha</span><span className="text-sm text-[#1A1A1A]">{fecha || 'Selecciona'}</span></div>
+                className="flex items-center gap-1.5 rounded-full px-2.5 py-1.5 transition-colors hover:bg-[#F8F6F3]">
+                <Calendar className="h-3.5 w-3.5 shrink-0 text-[#1B4332]" />
+                <div className="flex flex-col"><span className="text-[9px] font-semibold uppercase tracking-wide text-[#6B6560]">Fecha</span><span className="text-xs text-[#1A1A1A] leading-tight">{fecha || 'Selecciona'}</span></div>
               </button>
-              <div className="h-8 w-px bg-[#E8E4DF]" />
+              <div className="h-6 w-px bg-[#E8E4DF]" />
               <button ref={horaButtonRef} type="button" onClick={() => { setTimePickerOpen(!timePickerOpen); setDeporteDropdownOpen(false); setSportsDateOpen(false); setOpen(false); setDatePickerOpen(false); setGuestPickerOpen(false) }}
-                className="flex items-center gap-2 rounded-full px-3 py-2 transition-colors hover:bg-[#F8F6F3]">
-                <Clock className="h-4 w-4 shrink-0 text-[#1B4332]" />
-                <div className="flex flex-col"><span className="text-[10px] font-semibold uppercase tracking-wide text-[#6B6560]">Hora</span><span className="text-sm text-[#1A1A1A]">{horaInicio} → {horaFin}</span></div>
+                className="flex items-center gap-1.5 rounded-full px-2.5 py-1.5 transition-colors hover:bg-[#F8F6F3]">
+                <Clock className="h-3.5 w-3.5 shrink-0 text-[#1B4332]" />
+                <div className="flex flex-col"><span className="text-[9px] font-semibold uppercase tracking-wide text-[#6B6560]">Hora</span><span className="text-xs text-[#1A1A1A] leading-tight">{horaInicio} → {horaFin}</span></div>
               </button>
             </>
           ) : mode === 'express' ? (
             <>
-              <div className="flex items-center gap-2 rounded-full px-3 py-2">
-                <Zap className="h-4 w-4 shrink-0 text-[#F59E0B]" />
-                <span className="text-sm font-medium text-[#F59E0B]">Disponible hoy</span>
+              <div className="flex items-center gap-1.5 rounded-full px-2.5 py-1.5">
+                <Zap className="h-3.5 w-3.5 shrink-0 text-[#F59E0B]" />
+                <span className="text-xs font-medium text-[#F59E0B]">Disponible hoy</span>
               </div>
-              <div className="h-8 w-px bg-[#E8E4DF]" />
+              <div className="h-6 w-px bg-[#E8E4DF]" />
               <button ref={guestsButtonRef} type="button" onClick={() => { setGuestPickerOpen(!guestPickerOpen); setOpen(false) }}
-                className="flex flex-1 items-center gap-2 rounded-full px-3 py-2 transition-colors hover:bg-[#F8F6F3]">
-                <Users className="h-4 w-4 shrink-0 text-[#1B4332]" />
-                <div className="flex flex-col"><span className="text-[10px] font-semibold uppercase tracking-wide text-[#6B6560]">Huéspedes</span><span className="text-sm text-[#1A1A1A]">{huespedes === '1' ? '1 huésped' : `${huespedes} huéspedes`}</span></div>
+                className="flex flex-1 items-center gap-1.5 rounded-full px-2.5 py-1.5 transition-colors hover:bg-[#F8F6F3]">
+                <Users className="h-3.5 w-3.5 shrink-0 text-[#1B4332]" />
+                <div className="flex flex-col"><span className="text-[9px] font-semibold uppercase tracking-wide text-[#6B6560]">Huéspedes</span><span className="text-xs text-[#1A1A1A] leading-tight">{huespedes === '1' ? '1 huésped' : `${huespedes} huéspedes`}</span></div>
               </button>
             </>
           ) : (
             <>
               <button ref={datesButtonRef} type="button" onClick={() => { setDatePickerOpen(!datePickerOpen); setOpen(false); setGuestPickerOpen(false) }}
-                className="flex-1 cursor-pointer items-center gap-2 rounded-full px-3 py-2 transition-colors hover:bg-[#F8F6F3] flex">
-                <Calendar className="h-4 w-4 shrink-0 text-[#1B4332]" />
-                <div className="flex flex-col"><span className="text-[10px] font-semibold uppercase tracking-wide text-[#6B6560]">Fechas</span><span className="text-sm text-[#1A1A1A]">{dateRange.from && dateRange.to ? `${dateRange.from.getDate()}/${dateRange.from.getMonth() + 1} - ${dateRange.to.getDate()}/${dateRange.to.getMonth() + 1}` : dateRange.from ? `${dateRange.from.getDate()}/${dateRange.from.getMonth() + 1} - ...` : '¿Cuándo viajas?'}</span></div>
+                className="flex-1 cursor-pointer items-center gap-1.5 rounded-full px-2.5 py-1.5 transition-colors hover:bg-[#F8F6F3] flex">
+                <Calendar className="h-3.5 w-3.5 shrink-0 text-[#1B4332]" />
+                <div className="flex flex-col"><span className="text-[9px] font-semibold uppercase tracking-wide text-[#6B6560]">Fechas</span><span className="text-xs text-[#1A1A1A] leading-tight">{dateRange.from && dateRange.to ? `${dateRange.from.getDate()}/${dateRange.from.getMonth() + 1} - ${dateRange.to.getDate()}/${dateRange.to.getMonth() + 1}` : dateRange.from ? `${dateRange.from.getDate()}/${dateRange.from.getMonth() + 1} - ...` : '¿Cuándo viajas?'}</span></div>
               </button>
-              <div className="h-8 w-px bg-[#E8E4DF]" />
+              <div className="h-6 w-px bg-[#E8E4DF]" />
               <button ref={guestsButtonRef} type="button" onClick={() => { setGuestPickerOpen(!guestPickerOpen); setOpen(false); setDatePickerOpen(false) }}
-                className="flex flex-1 items-center gap-2 rounded-full px-3 py-2 transition-colors hover:bg-[#F8F6F3]">
-                <Users className="h-4 w-4 shrink-0 text-[#1B4332]" />
-                <div className="flex flex-col"><span className="text-[10px] font-semibold uppercase tracking-wide text-[#6B6560]">Huéspedes</span><span className="text-sm text-[#1A1A1A]">{huespedes === '1' ? '1 huésped' : `${huespedes} huéspedes`}</span></div>
+                className="flex flex-1 items-center gap-1.5 rounded-full px-2.5 py-1.5 transition-colors hover:bg-[#F8F6F3]">
+                <Users className="h-3.5 w-3.5 shrink-0 text-[#1B4332]" />
+                <div className="flex flex-col"><span className="text-[9px] font-semibold uppercase tracking-wide text-[#6B6560]">Huéspedes</span><span className="text-xs text-[#1A1A1A] leading-tight">{huespedes === '1' ? '1 huésped' : `${huespedes} huéspedes`}</span></div>
               </button>
             </>
           )}
 
           <button type="button" onClick={() => { setUbicacion(''); setSelectedLocation(null); setDateRange({ from: undefined, to: undefined }); setHuespedes('1'); router.push('/propiedades') }}
-            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-colors ${ubicacion || dateRange.from || dateRange.to || huespedes !== '1' ? 'border-[#1B4332] text-[#1B4332] hover:bg-[#1B4332]/10' : 'border-[#E8E4DF] text-[#D0CBC4]'}`}
+            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border transition-colors ${ubicacion || dateRange.from || dateRange.to || huespedes !== '1' ? 'border-[#1B4332] text-[#1B4332] hover:bg-[#1B4332]/10' : 'border-[#E8E4DF] text-[#D0CBC4]'}`}
             aria-label="Limpiar filtros"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M8 6V4h8v2" /><path d="M5 6l1 14h12l1-14" /><path d="M10 11v5" /><path d="M14 11v5" /></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M8 6V4h8v2" /><path d="M5 6l1 14h12l1-14" /><path d="M10 11v5" /><path d="M14 11v5" /></svg>
           </button>
 
-          <Button size="icon" className="h-10 w-10 shrink-0 rounded-full bg-[#1B4332] hover:bg-[#2D6A4F]" aria-label="Buscar Boogies"
+          <Button size="icon" className="h-9 w-9 shrink-0 rounded-full bg-[#1B4332] hover:bg-[#2D6A4F]" aria-label="Buscar Boogies"
             onClick={() => { closeAll(); doSearch() }}
           >
             <Search className="h-4 w-4 text-white" />
