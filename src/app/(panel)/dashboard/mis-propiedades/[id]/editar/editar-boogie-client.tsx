@@ -74,6 +74,7 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
   const boogieId = boogie.id as string
   const [enviando, setEnviando] = useState(false)
   const [intentadoEnviar, setIntentadoEnviar] = useState(false)
+  const [erroresValidacion, setErroresValidacion] = useState<Record<string, string>>({})
   const [amenidadesSeleccionadas, setAmenidadesSeleccionadas] = useState<string[]>(
     (boogie.amenidades as string[]) || []
   )
@@ -104,10 +105,9 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
   const {
     register,
     setValue,
-    trigger,
     getValues,
     watch,
-    formState: { errors },
+    formState: { },
   } = useForm({
     resolver: zodResolver(propiedadSchema),
     defaultValues: {
@@ -247,9 +247,18 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
 
   const handleGuardar = async () => {
     setIntentadoEnviar(true)
-    const esValido = await trigger()
-    if (!esValido) {
-      const errorFields = Object.keys(errors)
+    setErroresValidacion({})
+    const data = getValues()
+    const result = propiedadSchema.safeParse(data)
+
+    if (!result.success) {
+      const fieldErrors = result.error.flatten().fieldErrors
+      const errorFields = Object.keys(fieldErrors)
+      const errores: Record<string, string> = {}
+      for (const [field, msgs] of Object.entries(fieldErrors)) {
+        if (msgs && msgs.length > 0) errores[field] = msgs[0]
+      }
+      setErroresValidacion(errores)
       const seccionMap: Record<string, SeccionId> = {
         titulo: 'info', descripcion: 'info', tipoPropiedad: 'info',
         precioPorNoche: 'precios', moneda: 'precios',
@@ -298,7 +307,7 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
   }
 
   const ic = (field?: string) => `h-11 text-sm ${
-    field && errors[field as keyof typeof errors] && intentadoEnviar
+    field && erroresValidacion[field] && intentadoEnviar
       ? 'border-[#C1121F] bg-[#FEF2F2] focus-visible:border-[#C1121F] focus-visible:ring-[#C1121F]/20'
       : 'border-[#E8E4DF] bg-[#FDFCFA] focus-visible:border-[#1B4332] focus-visible:ring-[#1B4332]/20'
   }`
@@ -353,7 +362,7 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
             politicas: ['politicaCancelacion', 'horarioCheckIn', 'horarioCheckOut', 'estanciaMinima', 'reglas'],
             amenidades: [],
           }
-          const errorCount = seccionCampos[sec.id].filter((c) => errors[c as keyof typeof errors]).length
+          const errorCount = seccionCampos[sec.id].filter((c) => erroresValidacion[c]).length
           return (
           <div key={sec.id} className="border-b border-[#E8E4DF] last:border-b-0">
             <button
@@ -396,16 +405,16 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
                       <div className="space-y-1.5">
                         <label className="text-xs font-semibold text-[#6B6560]">Título</label>
                         <Input placeholder="Ej: Apartamento moderno en Chacao" {...register('titulo')} className={ic('titulo')} />
-                        {errors.titulo && <p className="text-xs text-[#C1121F]">{errors.titulo.message as string}</p>}
+                        {erroresValidacion.titulo && <p className="text-xs text-[#C1121F]">{erroresValidacion.titulo}</p>}
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-xs font-semibold text-[#6B6560]">Descripción</label>
                         <Textarea placeholder="Describe tu boogie..." rows={4} {...register('descripcion')} className={`border text-sm ${
-                          errors.descripcion && intentadoEnviar
+                          erroresValidacion.descripcion && intentadoEnviar
                             ? 'border-[#C1121F] bg-[#FEF2F2] focus-visible:border-[#C1121F] focus-visible:ring-[#C1121F]/20'
                             : 'border-[#E8E4DF] bg-[#FDFCFA] focus-visible:border-[#1B4332] focus-visible:ring-[#1B4332]/20'
                         }`} />
-                        {errors.descripcion && <p className="text-xs text-[#C1121F]">{errors.descripcion.message as string}</p>}
+                        {erroresValidacion.descripcion && <p className="text-xs text-[#C1121F]">{erroresValidacion.descripcion}</p>}
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                          <div className="space-y-1.5">
@@ -482,12 +491,12 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
                       <input type="hidden" {...register('ciudad')} />
                       <input type="hidden" {...register('estado')} />
                       <input type="hidden" {...register('zona')} />
-                      {intentadoEnviar && (errors.direccion || errors.ciudad || errors.estado) && (
+                      {intentadoEnviar && (erroresValidacion.direccion || erroresValidacion.ciudad || erroresValidacion.estado) && (
                         <div className="rounded-lg border border-[#C1121F]/20 bg-[#FEF2F2] p-3 space-y-1">
                           <p className="text-xs font-semibold text-[#C1121F]">Campos de ubicación incompletos:</p>
-                          {errors.direccion && <p className="text-xs text-[#C1121F]">• {errors.direccion.message as string}</p>}
-                          {errors.ciudad && <p className="text-xs text-[#C1121F]">• {errors.ciudad.message as string}</p>}
-                          {errors.estado && <p className="text-xs text-[#C1121F]">• {errors.estado.message as string}</p>}
+                          {erroresValidacion.direccion && <p className="text-xs text-[#C1121F]">• {erroresValidacion.direccion}</p>}
+                          {erroresValidacion.ciudad && <p className="text-xs text-[#C1121F]">• {erroresValidacion.ciudad}</p>}
+                          {erroresValidacion.estado && <p className="text-xs text-[#C1121F]">• {erroresValidacion.estado}</p>}
                           <p className="text-[10px] text-[#92400E]">Usa el mapa para seleccionar la ubicación, o edita los campos manualmente</p>
                         </div>
                       )}
@@ -498,7 +507,7 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
                         <div className="space-y-1.5">
                           <label className="text-xs font-semibold text-[#6B6560]">Precio por noche</label>
                           <Input type="number" step="0.01" min={1} placeholder="0.00" {...register('precioPorNoche', { valueAsNumber: true })} className={ic('precioPorNoche')} />
-                          {errors.precioPorNoche && <p className="text-xs text-[#C1121F]">{errors.precioPorNoche.message as string}</p>}
+                          {erroresValidacion.precioPorNoche && <p className="text-xs text-[#C1121F]">{erroresValidacion.precioPorNoche}</p>}
                         </div>
                          <div className="space-y-1.5">
                            <Label className="text-xs font-semibold text-[#6B6560]">Moneda</Label>
