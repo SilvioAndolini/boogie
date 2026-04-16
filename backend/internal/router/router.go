@@ -285,6 +285,240 @@ func New(opts *RouterOpts) http.Handler {
 				})
 			})
 		}
+
+		if opts.WalletHandlers != nil {
+			r.Route("/wallet", func(r chi.Router) {
+				r.Use(opts.AuthVerifier.Middleware)
+				r.Get("/", opts.WalletHandlers.Get)
+				r.Post("/activar", opts.WalletHandlers.Activar)
+				r.Post("/recarga", opts.WalletHandlers.Recarga)
+				r.Get("/{walletId}/transacciones", opts.WalletHandlers.Transacciones)
+			})
+		}
+
+		if opts.MetodoPagoHandlers != nil {
+			r.Route("/metodos-pago", func(r chi.Router) {
+				r.Use(opts.AuthVerifier.Middleware)
+				r.Get("/", opts.MetodoPagoHandlers.List)
+				r.Post("/", opts.MetodoPagoHandlers.Crear)
+				r.Delete("/{id}", opts.MetodoPagoHandlers.Eliminar)
+			})
+		}
+
+		if opts.ResenaHandlers != nil {
+			r.Route("/resenas", func(r chi.Router) {
+				r.Group(func(r chi.Router) {
+					r.Use(opts.AuthVerifier.Middleware)
+					r.Post("/", opts.ResenaHandlers.Crear)
+					r.Post("/{id}/responder", opts.ResenaHandlers.Responder)
+				})
+			})
+
+			r.Get("/propiedades/{propiedadId}/resenas", opts.ResenaHandlers.ListByPropiedad)
+		}
+
+		if opts.VerificacionHandlers != nil {
+			r.Route("/verificacion", func(r chi.Router) {
+				r.Use(opts.AuthVerifier.Middleware)
+				r.Get("/", opts.VerificacionHandlers.GetByUser)
+				r.Post("/iniciar-metamap", opts.VerificacionHandlers.IniciarMetaMap)
+				r.Post("/subir-documento", opts.VerificacionHandlers.SubirDocumento)
+			})
+		}
+
+		if opts.ChatHandlers != nil {
+			r.Route("/chat", func(r chi.Router) {
+				r.Use(opts.AuthVerifier.Middleware)
+				r.Get("/conversaciones", opts.ChatHandlers.GetConversaciones)
+				r.Post("/conversaciones", opts.ChatHandlers.GetOrCreateConversacion)
+				r.Get("/conversaciones/{id}", opts.ChatHandlers.GetConversacionInfo)
+				r.Get("/mensajes", opts.ChatHandlers.GetMensajes)
+				r.Post("/mensajes", opts.ChatHandlers.EnviarMensaje)
+				r.Get("/no-leidos", opts.ChatHandlers.CountNoLeidos)
+				r.Get("/mensajes-rapidos", opts.ChatHandlers.GetMensajesRapidos)
+				r.Post("/mensajes-rapidos", opts.ChatHandlers.CrearMensajeRapido)
+				r.Post("/mensajes-rapidos/seed", opts.ChatHandlers.SeedMensajesRapidos)
+				r.Put("/mensajes-rapidos/{id}", opts.ChatHandlers.ActualizarMensajeRapido)
+				r.Delete("/mensajes-rapidos/{id}", opts.ChatHandlers.EliminarMensajeRapido)
+				r.Post("/imagen", opts.ChatHandlers.SubirImagen)
+			})
+		}
+
+		if opts.OfertaHandlers != nil {
+			r.Route("/ofertas", func(r chi.Router) {
+				r.Group(func(r chi.Router) {
+					r.Use(opts.AuthVerifier.Middleware)
+					r.Post("/", opts.OfertaHandlers.Crear)
+					r.Get("/{id}", opts.OfertaHandlers.GetByID)
+					r.Post("/{id}/responder", opts.OfertaHandlers.Responder)
+					r.Get("/recibidas", opts.OfertaHandlers.GetRecibidas)
+					r.Get("/enviadas", opts.OfertaHandlers.GetEnviadas)
+				})
+			})
+		}
+
+		if opts.TiendaHandlers != nil {
+			r.Get("/tienda/productos", opts.TiendaHandlers.GetProductos)
+			r.Get("/tienda/servicios", opts.TiendaHandlers.GetServicios)
+		}
+
+		if opts.PropiedadesHandlers != nil {
+			r.Route("/propiedades", func(r chi.Router) {
+				r.Get("/publicas", opts.PropiedadesHandlers.Search)
+				r.Get("/buscar", opts.PropiedadesHandlers.Search)
+
+				r.Group(func(r chi.Router) {
+					r.Use(opts.AuthVerifier.Middleware)
+					r.Get("/mias", opts.PropiedadesHandlers.MisPropiedades)
+					r.Post("/", opts.PropiedadesHandlers.Crear)
+				})
+
+				r.Route("/{id}", func(r chi.Router) {
+					r.Get("/", opts.PropiedadesHandlers.GetByID)
+					r.Group(func(r chi.Router) {
+						r.Use(opts.AuthVerifier.Middleware)
+						r.Patch("/estado", opts.PropiedadesHandlers.UpdateEstado)
+						r.Put("/", opts.PropiedadesHandlers.Actualizar)
+						r.Get("/editar", opts.PropiedadesHandlers.GetByID)
+						r.Delete("/", opts.PropiedadesHandlers.Delete)
+						r.Post("/imagenes", opts.PropiedadesHandlers.AgregarImagenes)
+						r.Put("/imagenes", opts.PropiedadesHandlers.ActualizarImagenes)
+						if opts.DashboardHandlers != nil {
+							r.Get("/dashboard", opts.DashboardHandlers.GetDashboard)
+							r.Post("/gastos", opts.DashboardHandlers.CrearGasto)
+							r.Delete("/gastos/{gastoId}", opts.DashboardHandlers.EliminarGasto)
+						}
+						r.Get("/reservas", func(w http.ResponseWriter, r *http.Request) {
+							w.WriteHeader(http.StatusNotImplemented)
+						})
+						r.Get("/amenidades", func(w http.ResponseWriter, r *http.Request) {
+							w.WriteHeader(http.StatusNotImplemented)
+						})
+					})
+				})
+			})
+		}
+
+		if opts.SeccionesHandlers != nil {
+			r.Get("/secciones-destacadas", opts.SeccionesHandlers.GetPublicas)
+		}
+
+		if opts.CanchasHandlers != nil {
+			r.Get("/canchas/{id}/disponibilidad", opts.CanchasHandlers.GetDisponibilidad)
+		}
+
+		if opts.ReservaHandlers != nil {
+			r.Route("/reservas", func(r chi.Router) {
+				r.Get("/fechas-ocupadas", opts.ReservaHandlers.FechasOcupadas)
+				r.Get("/disponibilidad", opts.ReservaHandlers.Disponibilidad)
+				r.Get("/calcular-reembolso", opts.ReservaHandlers.CalcularReembolso)
+
+				r.Group(func(r chi.Router) {
+					r.Use(opts.AuthVerifier.Middleware)
+					r.Post("/", opts.ReservaHandlers.Crear)
+					r.Post("/crear-con-pago", opts.ReservaHandlers.CrearConPago)
+					r.Get("/mias", opts.ReservaHandlers.MisReservas)
+					r.Get("/recibidas", opts.ReservaHandlers.ReservasRecibidas)
+					r.Post("/cron/auto-confirmar", opts.ReservaHandlers.AutoConfirmarExpiradas)
+					r.Get("/{id}", opts.ReservaHandlers.GetByID)
+					r.Post("/{id}/cancelar", opts.ReservaHandlers.Cancelar)
+					r.Post("/{id}/confirmar", opts.ReservaHandlers.ConfirmarORechazar)
+					r.Post("/{id}/rechazar", opts.ReservaHandlers.ConfirmarORechazar)
+				})
+			})
+		}
+
+		if opts.AdminHandlers != nil || opts.VerificacionHandlers != nil || opts.TiendaHandlers != nil {
+			r.Route("/admin", func(r chi.Router) {
+				r.Use(opts.AuthVerifier.Middleware)
+				r.Use(auth.RequireAdmin)
+
+				if opts.VerificacionHandlers != nil {
+					r.Get("/verificaciones", opts.VerificacionHandlers.ListAll)
+					r.Post("/verificaciones/{id}/revisar", opts.VerificacionHandlers.Revisar)
+					r.Get("/counts", opts.VerificacionHandlers.AdminCounts)
+				}
+
+				if opts.TiendaHandlers != nil {
+					r.Get("/tienda/productos", opts.TiendaHandlers.GetAllProductos)
+					r.Get("/tienda/servicios", opts.TiendaHandlers.GetAllServicios)
+				}
+
+				if opts.SeccionesHandlers != nil {
+					r.Get("/secciones-destacadas", opts.SeccionesHandlers.GetAdmin)
+					r.Post("/secciones-destacadas", opts.SeccionesHandlers.Upsert)
+					r.Put("/secciones-destacadas", opts.SeccionesHandlers.Upsert)
+					r.Delete("/secciones-destacadas", opts.SeccionesHandlers.Delete)
+					r.Get("/secciones-destacadas/propiedades", opts.SeccionesHandlers.SearchPropiedades)
+					r.Get("/secciones-destacadas/propiedades/publicadas", opts.SeccionesHandlers.SearchPropiedades)
+					r.Get("/secciones-destacadas/propiedades/por-ids", opts.SeccionesHandlers.GetPropiedadesByIDs)
+					r.Get("/secciones-destacadas/propiedades/preview", opts.SeccionesHandlers.PreviewPropiedades)
+				}
+
+				if opts.AdminHandlers != nil {
+					r.Get("/dashboard", opts.AdminHandlers.GetDashboard)
+					r.Get("/reservas", opts.AdminHandlers.GetReservas)
+					r.Get("/reservas/stats", opts.AdminHandlers.GetReservasStats)
+					r.Post("/reservas/accion", opts.AdminHandlers.AccionReserva)
+					r.Get("/reservas/{id}", opts.AdminHandlers.GetReservaByID)
+					r.Get("/pagos", opts.AdminHandlers.GetPagos)
+					r.Get("/pagos/stats", opts.AdminHandlers.GetPagosStats)
+					r.Post("/pagos/verificar", opts.AdminHandlers.VerificarPago)
+					r.Get("/propiedades", opts.AdminHandlers.GetPropiedades)
+					r.Get("/propiedades/ciudades", opts.AdminHandlers.GetCiudades)
+					r.Get("/propiedades/{id}", opts.AdminHandlers.GetPropiedadByID)
+					r.Get("/propiedades/{id}/ingresos", opts.AdminHandlers.GetPropiedadIngresos)
+					r.Patch("/propiedades", opts.AdminHandlers.UpdatePropiedad)
+					r.Delete("/propiedades/{id}", opts.AdminHandlers.DeletePropiedad)
+					r.Get("/resenas", opts.AdminHandlers.GetResenas)
+					r.Post("/resenas/moderar", opts.AdminHandlers.ModerarResena)
+					r.Get("/usuarios", opts.AdminHandlers.GetUsuarios)
+					r.Post("/usuarios", opts.AdminHandlers.CrearUsuario)
+					r.Patch("/usuarios/{id}", opts.AdminHandlers.UpdateUsuario)
+					r.Delete("/usuarios/{id}", opts.AdminHandlers.DeleteUsuario)
+					r.Get("/cupones", opts.AdminHandlers.GetCupones)
+					r.Get("/cupones/{id}", opts.AdminHandlers.GetCuponByID)
+					r.Post("/cupones", opts.AdminHandlers.CrearCupon)
+					r.Put("/cupones", opts.AdminHandlers.EditarCupon)
+					r.Patch("/cupones/{id}/activo", opts.AdminHandlers.ToggleCuponActivo)
+					r.Delete("/cupones/{id}", opts.AdminHandlers.DeleteCupon)
+					r.Get("/cupon-usos", opts.AdminHandlers.GetCuponUsos)
+					r.Get("/comisiones", opts.AdminHandlers.GetComisiones)
+					r.Put("/comisiones", opts.AdminHandlers.UpdateComisiones)
+					r.Get("/auditoria", opts.AdminHandlers.GetAuditLog)
+					r.Get("/notificaciones", opts.AdminHandlers.GetNotificaciones)
+					r.Post("/notificaciones", opts.AdminHandlers.EnviarNotificacion)
+					r.Post("/store/productos", opts.AdminHandlers.CrearProductoStore)
+					r.Patch("/store/productos/{id}", opts.AdminHandlers.ActualizarProductoStore)
+					r.Delete("/store/productos/{id}", opts.AdminHandlers.EliminarProductoStore)
+					r.Post("/store/servicios", opts.AdminHandlers.CrearServicioStore)
+					r.Patch("/store/servicios/{id}", opts.AdminHandlers.ActualizarServicioStore)
+					r.Delete("/store/servicios/{id}", opts.AdminHandlers.EliminarServicioStore)
+					r.Post("/store/upload-imagen", opts.AdminHandlers.SubirImagenStore)
+				}
+			})
+		}
+
+		if opts.AuthHandlers != nil {
+			r.Post("/auth/login", opts.AuthHandlers.Login)
+			r.Post("/auth/login-admin", opts.AuthHandlers.LoginAdmin)
+			r.Post("/auth/otp/email", opts.AuthHandlers.SendOtpEmail)
+			r.Post("/auth/otp/sms", opts.AuthHandlers.SendOtpSms)
+			r.Post("/auth/otp/verify", opts.AuthHandlers.VerifyOtp)
+			r.Post("/auth/register", opts.AuthHandlers.Register)
+			r.Post("/auth/reset-password", opts.AuthHandlers.ResetPassword)
+			r.Get("/auth/google", opts.AuthHandlers.GoogleOAuthURL)
+			r.Get("/auth/google/callback", opts.AuthHandlers.GoogleCallback)
+
+			r.Group(func(r chi.Router) {
+				r.Use(opts.AuthVerifier.Middleware)
+				r.Post("/auth/completar-perfil", opts.AuthHandlers.CompletarPerfil)
+				r.Get("/auth/me", opts.AuthHandlers.Me)
+				r.Put("/auth/perfil", opts.AuthHandlers.ActualizarPerfil)
+				r.Post("/auth/password", opts.AuthHandlers.CambiarContrasena)
+				r.Post("/auth/avatar", opts.AuthHandlers.SubirAvatar)
+			})
+		}
 	})
 
 	return r
