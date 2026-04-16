@@ -94,3 +94,21 @@ const (
 	PlanFree  PlanSuscripcion = "FREE"
 	PlanUltra PlanSuscripcion = "ULTRA"
 )
+
+type CategoriaPropiedad string
+
+const (
+	CategoriaPropiedadAlojamiento CategoriaPropiedad = "ALOJAMIENTO"
+	CategoriaPropiedadDeporte     CategoriaPropiedad = "DEPORTE"
+)
+
+type TipoCancha string
+
+const (
+	TipoCanchaFutbol       TipoCancha = "FUTBOL"
+	TipoCanchaBaloncesto   TipoCancha = "BALONCESTO"
+	TipoCanchaTenis        TipoCancha = "TENIS"
+	TipoCanchaPaddle       TipoCancha = "PADDLE"
+	TipoCanchaTenisDeMesa  TipoCancha = "TENIS_DE_MESA"
+	TipoCanchaMultideporte TipoCancha = "MULTIDEPORTE"
+)

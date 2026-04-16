@@ -83,6 +83,7 @@ func main() {
 	var dashboardHandlers *router.DashboardHandlers
 	var seccionesHandlers *router.SeccionesHandlers
 	var propiedadesHandlers *router.PropiedadesHandlers
+	var canchasHandlers *router.CanchasHandlers
 	var reservaHandlers *router.ReservaHandlers
 
 	authClient := auth.NewSupabaseAuthClient(cfg.SupabaseURL, cfg.SupabaseSecretKey)
@@ -163,6 +164,7 @@ func main() {
 		verifRepo := repository.NewVerificacionRepo(db)
 		verifSvc := service.NewVerificacionService(verifRepo)
 		verifH := handler.NewVerificacionHandler(verifSvc)
+		verifH.WithStorage(authClient, cfg.SupabaseURL, cfg.SupabaseSecretKey)
 
 		verifHandlers = &router.VerificacionHandlers{
 			GetByUser:      verifH.GetByUser,
@@ -204,6 +206,7 @@ func main() {
 		ofertaHandlers = &router.OfertaHandlers{
 			Crear:        ofertaH.Crear,
 			Responder:    ofertaH.Responder,
+			GetByID:      ofertaH.GetByID,
 			GetRecibidas: ofertaH.GetRecibidas,
 			GetEnviadas:  ofertaH.GetEnviadas,
 		}
@@ -218,6 +221,7 @@ func main() {
 		adminRepo := repository.NewAdminRepo(db)
 		adminSvc := service.NewAdminService(adminRepo)
 		adminH := handler.NewAdminHandler(adminSvc, tiendaSvc)
+		adminH.WithStorage(authClient, cfg.SupabaseURL, cfg.SupabaseSecretKey)
 
 		adminHandlers = &router.AdminHandlers{
 			GetDashboard:            adminH.GetDashboard,
@@ -258,18 +262,29 @@ func main() {
 			CrearServicioStore:      adminH.CrearServicioStore,
 			ActualizarServicioStore: adminH.ActualizarServicioStore,
 			EliminarServicioStore:   adminH.EliminarServicioStore,
+			SubirImagenStore:        adminH.SubirImagenStore,
 		}
 
 		propiedadesRepo := repository.NewPropiedadesRepo(db)
-		propiedadesSvc := service.NewPropiedadesService(propiedadesRepo, 3)
+		propiedadesSvc := service.NewPropiedadesService(propiedadesRepo, 2)
 		propiedadesH := handler.NewPropiedadesHandler(propiedadesSvc)
 
 		propiedadesHandlers = &router.PropiedadesHandlers{
-			Search:         propiedadesH.Search,
-			GetByID:        propiedadesH.GetByID,
-			MisPropiedades: propiedadesH.MisPropiedades,
-			UpdateEstado:   propiedadesH.UpdateEstado,
-			Delete:         propiedadesH.Delete,
+			Search:             propiedadesH.Search,
+			GetByID:            propiedadesH.GetByID,
+			MisPropiedades:     propiedadesH.MisPropiedades,
+			UpdateEstado:       propiedadesH.UpdateEstado,
+			Delete:             propiedadesH.Delete,
+			Crear:              propiedadesH.Crear,
+			Actualizar:         propiedadesH.Actualizar,
+			AgregarImagenes:    propiedadesH.AgregarImagenes,
+			ActualizarImagenes: propiedadesH.ActualizarImagenes,
+		}
+
+		canchasH := handler.NewCanchasHandler(propiedadesRepo, propiedadesSvc)
+
+		canchasHandlers = &router.CanchasHandlers{
+			GetDisponibilidad: canchasH.GetDisponibilidad,
 		}
 
 		dashboardRepo := repository.NewDashboardRepo(db)
@@ -343,6 +358,7 @@ func main() {
 			AdminHandlers:        adminHandlers,
 			AuthHandlers:         authHandlers,
 			PropiedadesHandlers:  propiedadesHandlers,
+			CanchasHandlers:      canchasHandlers,
 			DashboardHandlers:    dashboardHandlers,
 			SeccionesHandlers:    seccionesHandlers,
 			ReservaHandlers:      reservaHandlers,

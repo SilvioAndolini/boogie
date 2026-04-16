@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Home, MapPin, Sparkles, Check, Upload, X, Loader2, DollarSign, Clock, Pencil, BedDouble, Bath, CookingPot, Sofa, TreePine, Waves, Mountain, HelpCircle, ChevronDown, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Home, MapPin, Sparkles, Check, Upload, X, Loader2, DollarSign, Clock, Pencil, BedDouble, Bath, CookingPot, Sofa, TreePine, Waves, Mountain, HelpCircle, ChevronDown, AlertCircle, Zap, Trophy } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { propiedadSchema } from '@/lib/validations'
-import { TIPOS_PROPIEDAD, POLITICAS_CANCELACION, MAX_IMAGENES_PROPIEDAD } from '@/lib/constants'
+import { TIPOS_PROPIEDAD, POLITICAS_CANCELACION, MAX_IMAGENES_PROPIEDAD, TIPOS_CANCHA } from '@/lib/constants'
 import { actualizarPropiedad } from '@/actions/propiedad.actions'
 import { optimizeImage } from '@/lib/image-optimize'
 import { LocationPickerMap, type AddressData } from '@/components/propiedades/location-picker'
@@ -134,6 +134,14 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
       horarioCheckIn: (boogie.horario_checkin as string) || '14:00',
       horarioCheckOut: (boogie.horario_checkout as string) || '11:00',
       estanciaMinima: (boogie.estancia_minima as number) || 1,
+      categoria: ((boogie.categoria as string) || 'ALOJAMIENTO') as 'ALOJAMIENTO' | 'DEPORTE',
+      tipoCancha: (boogie.tipo_cancha as 'FUTBOL' | 'BALONCESTO' | 'TENIS' | 'PADDLE' | 'TENIS_DE_MESA' | 'MULTIDEPORTE') || undefined,
+      precioPorHora: (boogie.precio_por_hora as number) || undefined as unknown as number,
+      horaApertura: (boogie.hora_apertura as string) || '06:00',
+      horaCierre: (boogie.hora_cierre as string) || '23:00',
+      duracionMinimaMin: (boogie.duracion_minima_min as number) || 60,
+      esExpress: (boogie.es_express as boolean) || false,
+      precioExpress: (boogie.precio_express as number) || undefined as unknown as number,
     },
   })
 
@@ -263,23 +271,25 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
       }
       setErroresValidacion(errores)
       const seccionMap: Record<string, SeccionId> = {
-        titulo: 'info', descripcion: 'info', tipoPropiedad: 'info',
-        precioPorNoche: 'precios', moneda: 'precios',
+        titulo: 'info', descripcion: 'info', tipoPropiedad: 'info', categoria: 'info', tipoCancha: 'info',
+        precioPorNoche: 'precios', moneda: 'precios', precioPorHora: 'precios', esExpress: 'precios', precioExpress: 'precios',
         capacidadMaxima: 'precios', habitaciones: 'precios', banos: 'precios', camas: 'precios',
         direccion: 'ubicacion', ciudad: 'ubicacion', estado: 'ubicacion', zona: 'ubicacion',
         reglas: 'politicas', politicaCancelacion: 'politicas',
         horarioCheckIn: 'politicas', horarioCheckOut: 'politicas', estanciaMinima: 'politicas',
+        horaApertura: 'politicas', horaCierre: 'politicas', duracionMinimaMin: 'politicas',
       }
       if (errorFields.length > 0) {
         setSeccionExpandida(seccionMap[errorFields[0]] || 'info')
       }
       const nombreCampo: Record<string, string> = {
-        titulo: 'Título', descripcion: 'Descripción', tipoPropiedad: 'Tipo',
-        precioPorNoche: 'Precio por noche', moneda: 'Moneda',
+        titulo: 'Título', descripcion: 'Descripción', tipoPropiedad: 'Tipo', categoria: 'Categoría', tipoCancha: 'Tipo de cancha',
+        precioPorNoche: 'Precio por noche', moneda: 'Moneda', precioPorHora: 'Precio por hora', esExpress: 'Express', precioExpress: 'Precio Express',
         capacidadMaxima: 'Capacidad máxima', habitaciones: 'Habitaciones', banos: 'Baños', camas: 'Camas',
         direccion: 'Dirección', ciudad: 'Ciudad', estado: 'Estado', zona: 'Zona',
         reglas: 'Reglas', politicaCancelacion: 'Política de cancelación',
         horarioCheckIn: 'Check-in', horarioCheckOut: 'Check-out', estanciaMinima: 'Estancia mínima',
+        horaApertura: 'Hora apertura', horaCierre: 'Hora cierre', duracionMinimaMin: 'Duración mínima',
       }
       const detalles = errorFields.map((f) => `${nombreCampo[f] || f}: ${errores[f]}`).join('\n')
       toast.error(`${errorFields.length} campo${errorFields.length !== 1 ? 's' : ''} requiere atención:\n${detalles}`, { duration: 8000 })
@@ -368,10 +378,10 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
 
         {SECCIONES.map((sec) => {
           const seccionCampos: Record<SeccionId, string[]> = {
-            info: ['titulo', 'descripcion', 'tipoPropiedad', 'capacidadMaxima', 'habitaciones', 'banos', 'camas'],
+            info: ['titulo', 'descripcion', 'tipoPropiedad', 'capacidadMaxima', 'habitaciones', 'banos', 'camas', 'categoria', 'tipoCancha'],
             ubicacion: ['direccion', 'ciudad', 'estado', 'zona'],
-            precios: ['precioPorNoche', 'moneda'],
-            politicas: ['politicaCancelacion', 'horarioCheckIn', 'horarioCheckOut', 'estanciaMinima', 'reglas'],
+            precios: ['precioPorNoche', 'moneda', 'precioPorHora', 'esExpress', 'precioExpress'],
+            politicas: ['politicaCancelacion', 'horarioCheckIn', 'horarioCheckOut', 'estanciaMinima', 'reglas', 'horaApertura', 'horaCierre', 'duracionMinimaMin'],
             amenidades: [],
           }
           const errorCount = seccionCampos[sec.id].filter((c) => erroresValidacion[c]).length
@@ -414,52 +424,82 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
                   <div className="border-t border-[#F4F1EC] px-5 py-5 space-y-4">
 
                     {sec.id === 'info' && (<>
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-[#6B6560]">Título</label>
-                        <Input placeholder="Ej: Apartamento moderno en Chacao" {...register('titulo')} className={ic('titulo')} />
-                        {erroresValidacion.titulo && <p className="text-xs text-[#C1121F]">{erroresValidacion.titulo}</p>}
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-[#6B6560]">Descripción</label>
-                        <Textarea placeholder="Describe tu boogie..." rows={4} {...register('descripcion')} className={`border text-sm ${
-                          erroresValidacion.descripcion && intentadoEnviar
-                            ? 'border-[#C1121F] bg-[#FEF2F2] focus-visible:border-[#C1121F] focus-visible:ring-[#C1121F]/20'
-                            : 'border-[#E8E4DF] bg-[#FDFCFA] focus-visible:border-[#1B4332] focus-visible:ring-[#1B4332]/20'
-                        }`} />
-                        {erroresValidacion.descripcion && <p className="text-xs text-[#C1121F]">{erroresValidacion.descripcion}</p>}
-                      </div>
                       <div className="grid grid-cols-2 gap-3">
                          <div className="space-y-1.5">
-                           <Label className="text-xs font-semibold text-[#6B6560]">Tipo de boogie</Label>
-                           <Select onValueChange={(v) => setValue('tipoPropiedad', v as any)} defaultValue={(boogie.tipo_propiedad as string) || 'APARTAMENTO'}>
+                           <Label className="text-xs font-semibold text-[#6B6560]">Categoría</Label>
+                           <Select onValueChange={(v) => setValue('categoria', v as 'ALOJAMIENTO' | 'DEPORTE')} defaultValue={(boogie.categoria as string) || 'ALOJAMIENTO'}>
                              <SelectTrigger className="h-11 border-[#E8E4DF] bg-[#FDFCFA] text-sm focus:ring-[#1B4332]/20">
                                <SelectValue />
                              </SelectTrigger>
                              <SelectContent>
-                               {Object.entries(TIPOS_PROPIEDAD).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                               <SelectItem value="ALOJAMIENTO">Alojamiento</SelectItem>
+                               <SelectItem value="DEPORTE">Cancha deportiva</SelectItem>
                              </SelectContent>
                            </Select>
                          </div>
-                        <div className="space-y-1.5">
-                          <label className="text-xs font-semibold text-[#6B6560]">Capacidad máxima</label>
-                          <Input type="number" min={1} {...register('capacidadMaxima', { valueAsNumber: true })} className={ic('capacidadMaxima')} />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-3 gap-3">
-                        <div className="space-y-1.5">
-                          <label className="text-xs font-semibold text-[#6B6560]">Habitaciones</label>
-                          <Input type="number" min={0} {...register('habitaciones', { valueAsNumber: true })} className={ic('habitaciones')} />
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-xs font-semibold text-[#6B6560]">Baños</label>
-                          <Input type="number" min={1} {...register('banos', { valueAsNumber: true })} className={ic('banos')} />
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-xs font-semibold text-[#6B6560]">Camas</label>
+                         {watch('categoria') === 'DEPORTE' ? (
+                           <div className="space-y-1.5">
+                             <Label className="text-xs font-semibold text-[#6B6560]">Tipo de cancha</Label>
+                             <Select onValueChange={(v) => setValue('tipoCancha', v as any)} defaultValue={(boogie.tipo_cancha as string) || ''}>
+                               <SelectTrigger className="h-11 border-[#E8E4DF] bg-[#FDFCFA] text-sm focus:ring-[#1B4332]/20">
+                                 <SelectValue placeholder="Selecciona..." />
+                               </SelectTrigger>
+                               <SelectContent>
+                                 {Object.entries(TIPOS_CANCHA).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                               </SelectContent>
+                             </Select>
+                           </div>
+                         ) : (
+                           <div className="space-y-1.5">
+                             <Label className="text-xs font-semibold text-[#6B6560]">Tipo de boogie</Label>
+                             <Select onValueChange={(v) => setValue('tipoPropiedad', v as any)} defaultValue={(boogie.tipo_propiedad as string) || 'APARTAMENTO'}>
+                               <SelectTrigger className="h-11 border-[#E8E4DF] bg-[#FDFCFA] text-sm focus:ring-[#1B4332]/20">
+                                 <SelectValue />
+                               </SelectTrigger>
+                               <SelectContent>
+                                 {Object.entries(TIPOS_PROPIEDAD).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                               </SelectContent>
+                             </Select>
+                           </div>
+                         )}
+                       </div>
+                       <div className="space-y-1.5">
+                         <label className="text-xs font-semibold text-[#6B6560]">Título</label>
+                         <Input placeholder={watch('categoria') === 'DEPORTE' ? 'Ej: Cancha de fútbol Tech field' : 'Ej: Apartamento moderno en Chacao'} {...register('titulo')} className={ic('titulo')} />
+                         {erroresValidacion.titulo && <p className="text-xs text-[#C1121F]">{erroresValidacion.titulo}</p>}
+                       </div>
+                       <div className="space-y-1.5">
+                         <label className="text-xs font-semibold text-[#6B6560]">Descripción</label>
+                         <Textarea placeholder="Describe tu boogie..." rows={4} {...register('descripcion')} className={`border text-sm ${
+                           erroresValidacion.descripcion && intentadoEnviar
+                             ? 'border-[#C1121F] bg-[#FEF2F2] focus-visible:border-[#C1121F] focus-visible:ring-[#C1121F]/20'
+                             : 'border-[#E8E4DF] bg-[#FDFCFA] focus-visible:border-[#1B4332] focus-visible:ring-[#1B4332]/20'
+                         }`} />
+                         {erroresValidacion.descripcion && <p className="text-xs text-[#C1121F]">{erroresValidacion.descripcion}</p>}
+                       </div>
+                       <div className="grid grid-cols-2 gap-3">
+                         <div className="space-y-1.5">
+                           <label className="text-xs font-semibold text-[#6B6560]">Capacidad máxima</label>
+                           <Input type="number" min={1} {...register('capacidadMaxima', { valueAsNumber: true })} className={ic('capacidadMaxima')} />
+                         </div>
+                       </div>
+                       {watch('categoria') !== 'DEPORTE' && (
+                       <div className="grid grid-cols-3 gap-3">
+                         <div className="space-y-1.5">
+                           <label className="text-xs font-semibold text-[#6B6560]">Habitaciones</label>
+                           <Input type="number" min={0} {...register('habitaciones', { valueAsNumber: true })} className={ic('habitaciones')} />
+                         </div>
+                         <div className="space-y-1.5">
+                           <label className="text-xs font-semibold text-[#6B6560]">Baños</label>
+                           <Input type="number" min={1} {...register('banos', { valueAsNumber: true })} className={ic('banos')} />
+                         </div>
+                         <div className="space-y-1.5">
+                           <label className="text-xs font-semibold text-[#6B6560]">Camas</label>
                           <Input type="number" min={1} {...register('camas', { valueAsNumber: true })} className={ic('camas')} />
-                        </div>
-                      </div>
-                    </>)}
+                         </div>
+                       </div>
+                       )}
+                     </>)}
 
                     {sec.id === 'ubicacion' && (<>
                       <div className="space-y-1.5">
@@ -515,26 +555,52 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
                     </>)}
 
                     {sec.id === 'precios' && (<>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                          <label className="text-xs font-semibold text-[#6B6560]">Precio por noche</label>
-                          <Input type="number" step="0.01" min={1} placeholder="0.00" {...register('precioPorNoche', { valueAsNumber: true })} className={ic('precioPorNoche')} />
-                          {erroresValidacion.precioPorNoche && <p className="text-xs text-[#C1121F]">{erroresValidacion.precioPorNoche}</p>}
-                        </div>
+                       <div className="grid grid-cols-2 gap-3">
                          <div className="space-y-1.5">
-                           <Label className="text-xs font-semibold text-[#6B6560]">Moneda</Label>
-                           <Select onValueChange={(v) => setValue('moneda', v as 'USD' | 'VES')} defaultValue={(boogie.moneda as string) || 'USD'}>
-                             <SelectTrigger className="h-11 border-[#E8E4DF] bg-[#FDFCFA] text-sm focus:ring-[#1B4332]/20">
-                               <SelectValue />
-                             </SelectTrigger>
-                             <SelectContent>
-                               <SelectItem value="USD">USD ($)</SelectItem>
-                               <SelectItem value="VES">VES (Bs.)</SelectItem>
-                             </SelectContent>
-                           </Select>
+                           <label className="text-xs font-semibold text-[#6B6560]">{watch('categoria') === 'DEPORTE' ? 'Precio por hora' : 'Precio por noche'}</label>
+                           {watch('categoria') === 'DEPORTE' ? (
+                             <Input type="number" step="0.01" min={1} placeholder="0.00" {...register('precioPorHora', { valueAsNumber: true })} className={ic('precioPorHora')} />
+                           ) : (
+                             <Input type="number" step="0.01" min={1} placeholder="0.00" {...register('precioPorNoche', { valueAsNumber: true })} className={ic('precioPorNoche')} />
+                           )}
+                           {erroresValidacion.precioPorNoche && <p className="text-xs text-[#C1121F]">{erroresValidacion.precioPorNoche}</p>}
+                           {erroresValidacion.precioPorHora && <p className="text-xs text-[#C1121F]">{erroresValidacion.precioPorHora}</p>}
                          </div>
-                      </div>
-                    </>)}
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-semibold text-[#6B6560]">Moneda</Label>
+                            <Select onValueChange={(v) => setValue('moneda', v as 'USD' | 'VES')} defaultValue={(boogie.moneda as string) || 'USD'}>
+                              <SelectTrigger className="h-11 border-[#E8E4DF] bg-[#FDFCFA] text-sm focus:ring-[#1B4332]/20">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="USD">USD ($)</SelectItem>
+                                <SelectItem value="VES">VES (Bs.)</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                       </div>
+                       {watch('categoria') !== 'DEPORTE' && (
+                         <div className="rounded-xl border border-[#F4A261]/30 bg-[#F4A261]/5 p-4 space-y-3">
+                           <div className="flex items-center justify-between">
+                             <div className="flex items-center gap-2">
+                               <Zap className="h-4 w-4 text-[#F4A261]" />
+                               <span className="text-xs font-bold text-[#1A1A1A]">Modo Express</span>
+                             </div>
+                             <label className="relative inline-flex cursor-pointer items-center">
+                               <input type="checkbox" {...register('esExpress')} className="peer sr-only" />
+                               <div className="h-6 w-11 rounded-full bg-[#E8E4DF] peer-checked:bg-[#1B4332] after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:after:translate-x-full" />
+                             </label>
+                           </div>
+                           <p className="text-[10px] text-[#6B6560]">Activa Express para permitir reservas el mismo día (máx 14h). Se aplica una comisión adicional del 10%.</p>
+                           {watch('esExpress') && (
+                             <div className="space-y-1.5">
+                               <label className="text-xs font-semibold text-[#6B6560]">Precio Express</label>
+                               <Input type="number" step="0.01" min={1} placeholder="Precio especial Express" {...register('precioExpress', { valueAsNumber: true })} className={ic('precioExpress')} />
+                             </div>
+                           )}
+                         </div>
+                       )}
+                     </>)}
 
                     {sec.id === 'politicas' && (<>
                        <div className="space-y-1.5">
@@ -548,20 +614,28 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
                            </SelectContent>
                          </Select>
                        </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                          <label className="text-xs font-semibold text-[#6B6560]">Check-in</label>
-                          <Input type="time" {...register('horarioCheckIn')} className={ic('horarioCheckIn')} />
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-xs font-semibold text-[#6B6560]">Check-out</label>
-                          <Input type="time" {...register('horarioCheckOut')} className={ic('horarioCheckOut')} />
-                        </div>
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-[#6B6560]">Estancia mínima (noches)</label>
-                        <Input type="number" min={1} {...register('estanciaMinima', { valueAsNumber: true })} className={ic('estanciaMinima')} />
-                      </div>
+                       <div className="grid grid-cols-2 gap-3">
+                         <div className="space-y-1.5">
+                           <label className="text-xs font-semibold text-[#6B6560]">{watch('categoria') === 'DEPORTE' ? 'Hora apertura' : 'Check-in'}</label>
+                           <Input type="time" {...register(watch('categoria') === 'DEPORTE' ? 'horaApertura' : 'horarioCheckIn')} className={ic(watch('categoria') === 'DEPORTE' ? 'horaApertura' : 'horarioCheckIn')} />
+                         </div>
+                         <div className="space-y-1.5">
+                           <label className="text-xs font-semibold text-[#6B6560]">{watch('categoria') === 'DEPORTE' ? 'Hora cierre' : 'Check-out'}</label>
+                           <Input type="time" {...register(watch('categoria') === 'DEPORTE' ? 'horaCierre' : 'horarioCheckOut')} className={ic(watch('categoria') === 'DEPORTE' ? 'horaCierre' : 'horarioCheckOut')} />
+                         </div>
+                       </div>
+                       {watch('categoria') === 'DEPORTE' && (
+                         <div className="space-y-1.5">
+                           <label className="text-xs font-semibold text-[#6B6560]">Duración mínima (minutos)</label>
+                           <Input type="number" min={15} step={15} {...register('duracionMinimaMin', { valueAsNumber: true })} className={ic('duracionMinimaMin')} />
+                         </div>
+                       )}
+                       {watch('categoria') !== 'DEPORTE' && (
+                         <div className="space-y-1.5">
+                           <label className="text-xs font-semibold text-[#6B6560]">Estancia mínima (noches)</label>
+                           <Input type="number" min={1} {...register('estanciaMinima', { valueAsNumber: true })} className={ic('estanciaMinima')} />
+                         </div>
+                       )}
                       <div className="space-y-1.5">
                         <label className="text-xs font-semibold text-[#6B6560]">Reglas del boogie</label>
                         <Textarea placeholder="Ej: No fumar, no mascotas, no fiestas..." rows={3} {...register('reglas')} className="border-[#E8E4DF] bg-[#FDFCFA] text-sm" />

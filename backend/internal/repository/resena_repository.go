@@ -3,9 +3,9 @@ package repository
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"time"
 
+	"github.com/boogie/backend/internal/domain/idgen"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -105,7 +105,7 @@ func (r *ResenaRepo) ExistsByReserva(ctx context.Context, reservaID string) (boo
 }
 
 func (r *ResenaRepo) Insert(ctx context.Context, reservaID, propiedadID, autorID, anfitrionID string, calificacion int, limpieza, comunicacion, ubicacion, valor *int, comentario string) (string, error) {
-	id := fmt.Sprintf("%016x", rand.Int63())
+	id := idgen.New()
 	_, err := r.pool.Exec(ctx, `
 		INSERT INTO resenas (id, reserva_id, propiedad_id, autor_id, anfitrion_id,
 			calificacion, limpieza, comunicacion, ubicacion, valor, comentario, fecha_creacion)
@@ -120,8 +120,8 @@ func (r *ResenaRepo) Insert(ctx context.Context, reservaID, propiedadID, autorID
 func (r *ResenaRepo) UpdatePropiedadRating(ctx context.Context, propiedadID string) error {
 	_, err := r.pool.Exec(ctx, `
 		UPDATE propiedades SET
-			calificacion = (SELECT ROUND(AVG(calificacion)::numeric, 1) FROM resenas WHERE propiedad_id = $1 AND oculta = false),
-			cantidad_resenas = (SELECT COUNT(*) FROM resenas WHERE propiedad_id = $1 AND oculta = false),
+			rating_promedio = (SELECT ROUND(AVG(calificacion)::numeric, 1) FROM resenas WHERE propiedad_id = $1 AND oculta = false),
+			total_resenas = (SELECT COUNT(*) FROM resenas WHERE propiedad_id = $1 AND oculta = false),
 			fecha_actualizacion = NOW()
 		WHERE id = $1
 	`, propiedadID)

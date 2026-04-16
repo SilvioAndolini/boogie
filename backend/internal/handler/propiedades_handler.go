@@ -47,8 +47,8 @@ func (h *PropiedadesHandler) Search(w http.ResponseWriter, r *http.Request) {
 	if max, err := strconv.ParseFloat(q.Get("precioMax"), 64); err == nil {
 		filtros.PrecioMax = &max
 	}
-	if h, err := strconv.Atoi(q.Get("huespedes")); err == nil {
-		filtros.Huespedes = &h
+	if hu, err := strconv.Atoi(q.Get("huespedes")); err == nil {
+		filtros.Huespedes = &hu
 	}
 	if tp := q.Get("tipoPropiedad"); tp != "" {
 		filtros.TipoPropiedad = &tp
@@ -61,6 +61,16 @@ func (h *PropiedadesHandler) Search(w http.ResponseWriter, r *http.Request) {
 	}
 	if am := q.Get("amenidades"); am != "" {
 		filtros.Amenidades = []string{am}
+	}
+	if cat := q.Get("categoria"); cat != "" {
+		filtros.Categoria = &cat
+	}
+	if tc := q.Get("tipoCancha"); tc != "" {
+		filtros.TipoCancha = &tc
+	}
+	if exp := q.Get("esExpress"); exp == "true" {
+		v := true
+		filtros.EsExpress = &v
 	}
 	if p, err := strconv.Atoi(q.Get("pagina")); err == nil && p > 0 {
 		filtros.Pagina = p
@@ -129,6 +139,253 @@ func (h *PropiedadesHandler) MisPropiedades(w http.ResponseWriter, r *http.Reque
 	}
 
 	JSON(w, http.StatusOK, results)
+}
+
+func (h *PropiedadesHandler) Crear(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetUserID(r.Context())
+	if userID == "" {
+		ErrorJSON(w, http.StatusUnauthorized, "AUTH_REQUIRED", "No autenticado")
+		return
+	}
+
+	var req struct {
+		Titulo              string   `json:"titulo"`
+		Descripcion         string   `json:"descripcion"`
+		TipoPropiedad       string   `json:"tipoPropiedad"`
+		PrecioPorNoche      float64  `json:"precioPorNoche"`
+		Moneda              string   `json:"moneda"`
+		CapacidadMaxima     int      `json:"capacidadMaxima"`
+		Habitaciones        int      `json:"habitaciones"`
+		Banos               int      `json:"banos"`
+		Camas               int      `json:"camas"`
+		Direccion           string   `json:"direccion"`
+		Ciudad              string   `json:"ciudad"`
+		Estado              string   `json:"estado"`
+		Zona                *string  `json:"zona"`
+		Latitud             *float64 `json:"latitud"`
+		Longitud            *float64 `json:"longitud"`
+		Reglas              *string  `json:"reglas"`
+		PoliticaCancelacion string   `json:"politicaCancelacion"`
+		HorarioCheckIn      string   `json:"horarioCheckIn"`
+		HorarioCheckOut     string   `json:"horarioCheckOut"`
+		EstanciaMinima      int      `json:"estanciaMinima"`
+		EstanciaMaxima      *int     `json:"estanciaMaxima"`
+		Categoria           string   `json:"categoria"`
+		TipoCancha          *string  `json:"tipoCancha"`
+		PrecioPorHora       *float64 `json:"precioPorHora"`
+		HoraApertura        *string  `json:"horaApertura"`
+		HoraCierre          *string  `json:"horaCierre"`
+		DuracionMinimaMin   *int     `json:"duracionMinimaMin"`
+		EsExpress           bool     `json:"esExpress"`
+		PrecioExpress       *float64 `json:"precioExpress"`
+		Amenidades          []string `json:"amenidades"`
+	}
+	if err := DecodeJSON(r, &req); err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "JSON invalido")
+		return
+	}
+
+	input := &repository.CrearPropiedadInput{
+		Titulo:              req.Titulo,
+		Descripcion:         req.Descripcion,
+		TipoPropiedad:       req.TipoPropiedad,
+		PrecioPorNoche:      req.PrecioPorNoche,
+		Moneda:              req.Moneda,
+		CapacidadMaxima:     req.CapacidadMaxima,
+		Habitaciones:        req.Habitaciones,
+		Banos:               req.Banos,
+		Camas:               req.Camas,
+		Direccion:           req.Direccion,
+		Ciudad:              req.Ciudad,
+		Estado:              req.Estado,
+		Zona:                req.Zona,
+		Latitud:             req.Latitud,
+		Longitud:            req.Longitud,
+		Reglas:              req.Reglas,
+		PoliticaCancelacion: req.PoliticaCancelacion,
+		HorarioCheckIn:      req.HorarioCheckIn,
+		HorarioCheckOut:     req.HorarioCheckOut,
+		EstanciaMinima:      req.EstanciaMinima,
+		EstanciaMaxima:      req.EstanciaMaxima,
+		Categoria:           req.Categoria,
+		TipoCancha:          req.TipoCancha,
+		PrecioPorHora:       req.PrecioPorHora,
+		HoraApertura:        req.HoraApertura,
+		HoraCierre:          req.HoraCierre,
+		DuracionMinimaMin:   req.DuracionMinimaMin,
+		EsExpress:           req.EsExpress,
+		PrecioExpress:       req.PrecioExpress,
+	}
+
+	result, err := h.svc.Crear(r.Context(), userID, input, req.Amenidades)
+	if err != nil {
+		slog.Error("[propiedades/crear] error", "error", err, "userID", userID)
+		ErrorJSON(w, http.StatusBadRequest, "CREATE_ERROR", err.Error())
+		return
+	}
+
+	JSON(w, http.StatusCreated, result)
+}
+
+func (h *PropiedadesHandler) Actualizar(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetUserID(r.Context())
+	if userID == "" {
+		ErrorJSON(w, http.StatusUnauthorized, "AUTH_REQUIRED", "No autenticado")
+		return
+	}
+
+	id := chi.URLParam(r, "id")
+	if id == "" {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_ID", "ID requerido")
+		return
+	}
+
+	var req struct {
+		Titulo              string   `json:"titulo"`
+		Descripcion         string   `json:"descripcion"`
+		TipoPropiedad       string   `json:"tipoPropiedad"`
+		PrecioPorNoche      float64  `json:"precioPorNoche"`
+		Moneda              string   `json:"moneda"`
+		CapacidadMaxima     int      `json:"capacidadMaxima"`
+		Habitaciones        int      `json:"habitaciones"`
+		Banos               int      `json:"banos"`
+		Camas               int      `json:"camas"`
+		Direccion           string   `json:"direccion"`
+		Ciudad              string   `json:"ciudad"`
+		Estado              string   `json:"estado"`
+		Zona                *string  `json:"zona"`
+		Latitud             *float64 `json:"latitud"`
+		Longitud            *float64 `json:"longitud"`
+		Reglas              *string  `json:"reglas"`
+		PoliticaCancelacion string   `json:"politicaCancelacion"`
+		HorarioCheckIn      string   `json:"horarioCheckIn"`
+		HorarioCheckOut     string   `json:"horarioCheckOut"`
+		EstanciaMinima      int      `json:"estanciaMinima"`
+		EstanciaMaxima      *int     `json:"estanciaMaxima"`
+		Categoria           string   `json:"categoria"`
+		TipoCancha          *string  `json:"tipoCancha"`
+		PrecioPorHora       *float64 `json:"precioPorHora"`
+		HoraApertura        *string  `json:"horaApertura"`
+		HoraCierre          *string  `json:"horaCierre"`
+		DuracionMinimaMin   *int     `json:"duracionMinimaMin"`
+		EsExpress           bool     `json:"esExpress"`
+		PrecioExpress       *float64 `json:"precioExpress"`
+		Amenidades          []string `json:"amenidades"`
+	}
+	if err := DecodeJSON(r, &req); err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "JSON invalido")
+		return
+	}
+
+	input := &repository.CrearPropiedadInput{
+		Titulo:              req.Titulo,
+		Descripcion:         req.Descripcion,
+		TipoPropiedad:       req.TipoPropiedad,
+		PrecioPorNoche:      req.PrecioPorNoche,
+		Moneda:              req.Moneda,
+		CapacidadMaxima:     req.CapacidadMaxima,
+		Habitaciones:        req.Habitaciones,
+		Banos:               req.Banos,
+		Camas:               req.Camas,
+		Direccion:           req.Direccion,
+		Ciudad:              req.Ciudad,
+		Estado:              req.Estado,
+		Zona:                req.Zona,
+		Latitud:             req.Latitud,
+		Longitud:            req.Longitud,
+		Reglas:              req.Reglas,
+		PoliticaCancelacion: req.PoliticaCancelacion,
+		HorarioCheckIn:      req.HorarioCheckIn,
+		HorarioCheckOut:     req.HorarioCheckOut,
+		EstanciaMinima:      req.EstanciaMinima,
+		EstanciaMaxima:      req.EstanciaMaxima,
+		Categoria:           req.Categoria,
+		TipoCancha:          req.TipoCancha,
+		PrecioPorHora:       req.PrecioPorHora,
+		HoraApertura:        req.HoraApertura,
+		HoraCierre:          req.HoraCierre,
+		DuracionMinimaMin:   req.DuracionMinimaMin,
+		EsExpress:           req.EsExpress,
+		PrecioExpress:       req.PrecioExpress,
+	}
+
+	result, err := h.svc.Actualizar(r.Context(), userID, id, input, req.Amenidades)
+	if err != nil {
+		slog.Error("[propiedades/actualizar] error", "error", err, "id", id, "userID", userID)
+		ErrorJSON(w, http.StatusBadRequest, "UPDATE_ERROR", err.Error())
+		return
+	}
+
+	JSON(w, http.StatusOK, result)
+}
+
+func (h *PropiedadesHandler) AgregarImagenes(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetUserID(r.Context())
+	if userID == "" {
+		ErrorJSON(w, http.StatusUnauthorized, "AUTH_REQUIRED", "No autenticado")
+		return
+	}
+
+	id := chi.URLParam(r, "id")
+	if id == "" {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_ID", "ID requerido")
+		return
+	}
+
+	var req struct {
+		Imagenes []repository.ImagenInput `json:"imagenes"`
+	}
+	if err := DecodeJSON(r, &req); err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "JSON invalido")
+		return
+	}
+
+	if len(req.Imagenes) == 0 {
+		ErrorJSON(w, http.StatusBadRequest, "EMPTY_IMAGES", "No se enviaron imagenes")
+		return
+	}
+	if len(req.Imagenes) > 20 {
+		ErrorJSON(w, http.StatusBadRequest, "TOO_MANY_IMAGES", "Maximo 20 imagenes por request")
+		return
+	}
+
+	if err := h.svc.AgregarImagenes(r.Context(), userID, id, req.Imagenes); err != nil {
+		slog.Error("[propiedades/agregar-imagenes] error", "error", err, "id", id)
+		ErrorJSON(w, http.StatusBadRequest, "IMAGE_ERROR", err.Error())
+		return
+	}
+
+	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+}
+
+func (h *PropiedadesHandler) ActualizarImagenes(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetUserID(r.Context())
+	if userID == "" {
+		ErrorJSON(w, http.StatusUnauthorized, "AUTH_REQUIRED", "No autenticado")
+		return
+	}
+
+	id := chi.URLParam(r, "id")
+	if id == "" {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_ID", "ID requerido")
+		return
+	}
+
+	var req struct {
+		Updates []repository.ImagenUpdate `json:"updates"`
+	}
+	if err := DecodeJSON(r, &req); err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "JSON invalido")
+		return
+	}
+
+	if err := h.svc.ActualizarImagenes(r.Context(), userID, id, req.Updates); err != nil {
+		slog.Error("[propiedades/actualizar-imagenes] error", "error", err, "id", id)
+		ErrorJSON(w, http.StatusBadRequest, "IMAGE_ERROR", err.Error())
+		return
+	}
+
+	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
 }
 
 func (h *PropiedadesHandler) UpdateEstado(w http.ResponseWriter, r *http.Request) {

@@ -1,13 +1,13 @@
 package handler
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/boogie/backend/internal/auth"
 	"github.com/boogie/backend/internal/repository"
@@ -530,7 +530,7 @@ func (h *AuthHandler) SubirAvatar(w http.ResponseWriter, r *http.Request) {
 
 	JSON(w, http.StatusOK, map[string]interface{}{
 		"ok":  true,
-		"url": fmt.Sprintf("%s?t=%d", publicURL, json.Number(fmt.Sprintf("%d", 0))),
+		"url": fmt.Sprintf("%s?t=%d", publicURL, time.Now().Unix()),
 	})
 }
 

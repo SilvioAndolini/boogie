@@ -523,7 +523,7 @@ func (r *AdminRepo) GetPagoReservaID(ctx context.Context, pagoID string) (*strin
 	return reservaID, nil
 }
 
-func (r *AdminRepo) GetPropiedadesAdmin(ctx context.Context, estado, ciudad, busqueda string, pagina, limite int) ([]AdminPropiedad, int, error) {
+func (r *AdminRepo) GetPropiedadesAdmin(ctx context.Context, estado, ciudad, busqueda, categoria string, pagina, limite int) ([]AdminPropiedad, int, error) {
 	offset := (pagina - 1) * limite
 
 	where := []string{}
@@ -544,6 +544,11 @@ func (r *AdminRepo) GetPropiedadesAdmin(ctx context.Context, estado, ciudad, bus
 		where = append(where, fmt.Sprintf("(pr.titulo ILIKE $%d OR pr.ciudad ILIKE $%d OR pr.estado ILIKE $%d)", argIdx, argIdx+1, argIdx+2))
 		args = append(args, "%"+busqueda+"%", "%"+busqueda+"%", "%"+busqueda+"%")
 		argIdx += 3
+	}
+	if categoria != "" {
+		where = append(where, fmt.Sprintf("pr.categoria = $%d", argIdx))
+		args = append(args, categoria)
+		argIdx++
 	}
 
 	whereClause := ""

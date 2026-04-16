@@ -13,6 +13,15 @@ ACTIVE EVERY RESPONSE. No revert after many turns. No filler drift.
 Code/commits/PRs: normal. Off: "stop caveman" / "normal mode".
 <!-- END:caveman-always-on -->
 
+<!-- BEGIN:project-core-rules -->
+# Project Core Rules — PERMANENT
+
+1. **NO deadlines.** Solutions implemented correctly regardless of time. No rushed patches.
+2. **Data flows through backend.** Frontend → Go backend (validate/authorize/sanitize) → Database. NEVER write to DB directly from frontend Server Actions unless explicitly approved by project owner.
+3. **Consult before implementing.** If unsure about approach, ask the project owner. Bad solutions worse than delayed solutions.
+4. **Security over speed.** Every data mutation must have server-side validation, authorization, and sanitization in Go.
+<!-- END:project-core-rules -->
+
 <!-- BEGIN:deployment-guide -->
 # Deployment Guide
 

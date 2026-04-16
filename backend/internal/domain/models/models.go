@@ -67,6 +67,14 @@ type Propiedad struct {
 	Imagenes            []ImagenPropiedad         `json:"imagenes"`
 	CreatedAt           time.Time                 `json:"created_at"`
 	UpdatedAt           time.Time                 `json:"updated_at"`
+	Categoria           enums.CategoriaPropiedad  `json:"categoria"`
+	TipoCancha          *enums.TipoCancha         `json:"tipo_cancha"`
+	PrecioPorHora       *float64                  `json:"precio_por_hora"`
+	HoraApertura        *string                   `json:"hora_apertura"`
+	HoraCierre          *string                   `json:"hora_cierre"`
+	DuracionMinimaMin   *int                      `json:"duracion_minima_min"`
+	EsExpress           bool                      `json:"es_express"`
+	PrecioExpress       *float64                  `json:"precio_express"`
 }
 
 type ImagenPropiedad struct {

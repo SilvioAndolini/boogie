@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
 	"time"
 
@@ -40,6 +41,11 @@ type PropiedadListado struct {
 	TotalResenas    int      `json:"total_resenas"`
 	ImagenPrincipal *string  `json:"imagen_principal"`
 	PlanSuscripcion *string  `json:"plan_suscripcion"`
+	Categoria       string   `json:"categoria"`
+	TipoCancha      *string  `json:"tipo_cancha"`
+	PrecioPorHora   *float64 `json:"precio_por_hora"`
+	EsExpress       bool     `json:"es_express"`
+	PrecioExpress   *float64 `json:"precio_express"`
 }
 
 type PropiedadDetalleFull struct {
@@ -81,6 +87,9 @@ type PropiedadesFiltros struct {
 	OrdenarPor    string
 	Pagina        int
 	PorPagina     int
+	Categoria     *string
+	TipoCancha    *string
+	EsExpress     *bool
 }
 
 func (f *PropiedadesFiltros) CacheKey() string {
@@ -115,6 +124,15 @@ func (f *PropiedadesFiltros) CacheKey() string {
 	}
 	for _, a := range f.Amenidades {
 		fmt.Fprintf(&b, ":a=%s", a)
+	}
+	if f.Categoria != nil {
+		fmt.Fprintf(&b, ":cat=%s", *f.Categoria)
+	}
+	if f.TipoCancha != nil {
+		fmt.Fprintf(&b, ":tc=%s", *f.TipoCancha)
+	}
+	if f.EsExpress != nil {
+		fmt.Fprintf(&b, ":exp=%v", *f.EsExpress)
 	}
 	fmt.Fprintf(&b, ":sort=%s:page=%d:pp=%d", f.OrdenarPor, f.Pagina, f.PorPagina)
 	return b.String()
@@ -158,6 +176,21 @@ func (r *PropiedadesRepo) SearchPublic(ctx context.Context, f *PropiedadesFiltro
 	if f.Banos != nil {
 		where = append(where, fmt.Sprintf("p.banos >= $%d", argIdx))
 		args = append(args, *f.Banos)
+		argIdx++
+	}
+	if f.Categoria != nil && *f.Categoria != "" {
+		where = append(where, fmt.Sprintf("p.categoria = $%d", argIdx))
+		args = append(args, *f.Categoria)
+		argIdx++
+	}
+	if f.TipoCancha != nil && *f.TipoCancha != "" {
+		where = append(where, fmt.Sprintf("p.tipo_cancha = $%d", argIdx))
+		args = append(args, *f.TipoCancha)
+		argIdx++
+	}
+	if f.EsExpress != nil {
+		where = append(where, fmt.Sprintf("p.es_express = $%d", argIdx))
+		args = append(args, *f.EsExpress)
 		argIdx++
 	}
 
@@ -204,7 +237,9 @@ func (r *PropiedadesRepo) SearchPublic(ctx context.Context, f *PropiedadesFiltro
 		       COALESCE(p.capacidad_maxima, 1), COALESCE(p.habitaciones, 0), p.banos, p.ciudad, p.estado,
 		       p.latitud, p.longitud, COALESCE(p.rating_promedio, 0), COALESCE(p.total_resenas, 0),
 		       (SELECT url FROM imagenes_propiedad WHERE propiedad_id = p.id ORDER BY orden LIMIT 1) as imagen_principal,
-		       u.plan_suscripcion
+		       u.plan_suscripcion,
+		       COALESCE(p.categoria, 'ALOJAMIENTO'), p.tipo_cancha, p.precio_por_hora,
+		       COALESCE(p.es_express, false), p.precio_express
 		FROM propiedades p
 		LEFT JOIN usuarios u ON u.id = p.propietario_id
 		WHERE %s
@@ -228,6 +263,8 @@ func (r *PropiedadesRepo) SearchPublic(ctx context.Context, f *PropiedadesFiltro
 			&item.Dormitorios, &item.Banos, &item.Ciudad, &item.Estado,
 			&item.Latitud, &item.Longitud, &item.Calificacion, &item.TotalResenas,
 			&item.ImagenPrincipal, &item.PlanSuscripcion,
+			&item.Categoria, &item.TipoCancha, &item.PrecioPorHora,
+			&item.EsExpress, &item.PrecioExpress,
 		); err != nil {
 			return nil, 0, fmt.Errorf("scan propiedad: %w", err)
 		}
@@ -498,5 +535,297 @@ func HaversineDistance(lat1, lon1, lat2, lon2 float64) float64 {
 	return R * c
 }
 
+type BloqueHorario struct {
+	Hora       string `json:"hora"`
+	Disponible bool   `json:"disponible"`
+}
+
+func (r *PropiedadesRepo) GetDisponibilidadHoraria(ctx context.Context, propiedadID, fecha string) ([]BloqueHorario, error) {
+	var horaApertura, horaCierre string
+	err := r.pool.QueryRow(ctx,
+		`SELECT COALESCE(hora_apertura, '06:00'), COALESCE(hora_cierre, '23:00') FROM propiedades WHERE id = $1`,
+		propiedadID,
+	).Scan(&horaApertura, &horaCierre)
+	if err != nil {
+		return nil, fmt.Errorf("get horarios cancha: %w", err)
+	}
+
+	aperturaH, _ := strconv.Atoi(strings.Split(horaApertura, ":")[0])
+	cierreH, _ := strconv.Atoi(strings.Split(horaCierre, ":")[0])
+	if cierreH == 0 {
+		cierreH = 23
+	}
+
+	rows, err := r.pool.Query(ctx, `
+		SELECT hora_inicio, hora_fin FROM reservas
+		WHERE propiedad_id = $1
+		  AND fecha_entrada::date = $2::date
+		  AND estado NOT IN ('CANCELADA_HUESPED', 'CANCELADA_ANFITRION', 'RECHAZADA', 'ANULADA')
+	`, propiedadID, fecha)
+	if err != nil {
+		return nil, fmt.Errorf("get reservas cancha: %w", err)
+	}
+	defer rows.Close()
+
+	ocupadas := map[int]bool{}
+	for rows.Next() {
+		var hi, hf *string
+		if err := rows.Scan(&hi, &hf); err != nil {
+			continue
+		}
+		if hi != nil && hf != nil {
+			start, _ := strconv.Atoi(strings.Split(*hi, ":")[0])
+			end, _ := strconv.Atoi(strings.Split(*hf, ":")[0])
+			for h := start; h < end; h++ {
+				ocupadas[h] = true
+			}
+		}
+	}
+
+	var bloques []BloqueHorario
+	for h := aperturaH; h < cierreH; h++ {
+		horaStr := fmt.Sprintf("%02d:00", h)
+		bloques = append(bloques, BloqueHorario{
+			Hora:       horaStr,
+			Disponible: !ocupadas[h],
+		})
+	}
+	return bloques, nil
+}
+
 var _ = enums.EstadoPublicacionPublicada
 var _ = time.Time{}
+
+type CrearPropiedadInput struct {
+	Titulo              string
+	Descripcion         string
+	TipoPropiedad       string
+	PrecioPorNoche      float64
+	Moneda              string
+	CapacidadMaxima     int
+	Habitaciones        int
+	Banos               int
+	Camas               int
+	Direccion           string
+	Ciudad              string
+	Estado              string
+	Zona                *string
+	Latitud             *float64
+	Longitud            *float64
+	Reglas              *string
+	PoliticaCancelacion string
+	HorarioCheckIn      string
+	HorarioCheckOut     string
+	EstanciaMinima      int
+	EstanciaMaxima      *int
+	Categoria           string
+	TipoCancha          *string
+	PrecioPorHora       *float64
+	HoraApertura        *string
+	HoraCierre          *string
+	DuracionMinimaMin   *int
+	EsExpress           bool
+	PrecioExpress       *float64
+}
+
+type CrearPropiedadResult struct {
+	ID     string `json:"id"`
+	Slug   string `json:"slug"`
+	Estado string `json:"estado_publicacion"`
+}
+
+func (r *PropiedadesRepo) CrearPropiedad(ctx context.Context, propietarioID string, input CrearPropiedadInput, amenidadIDs []string) (*CrearPropiedadResult, error) {
+	id := generatePropiedadID()
+	slug := GenerateSlug(input.Titulo)
+
+	_, err := r.pool.Exec(ctx, `
+		INSERT INTO propiedades (
+			id, propietario_id, titulo, slug, descripcion, tipo_propiedad,
+			precio_por_noche, moneda, capacidad_maxima, habitaciones, banos, camas,
+			direccion, ciudad, estado, zona, latitud, longitud,
+			reglas, politica_cancelacion, horario_checkin, horario_checkout,
+			estancia_minima, estancia_maxima,
+			estado_publicacion, categoria, tipo_cancha, precio_por_hora,
+			hora_apertura, hora_cierre, duracion_minima_min,
+			es_express, precio_express, fecha_actualizacion
+		) VALUES (
+			$1, $2, $3, $4, $5, $6,
+			$7, $8, $9, $10, $11, $12,
+			$13, $14, $15, $16, $17, $18,
+			$19, $20, $21, $22,
+			$23, $24,
+			'PENDIENTE_REVISION', $25, $26, $27,
+			$28, $29, $30,
+			$31, $32, NOW()
+		)`,
+		id, propietarioID, input.Titulo, slug, input.Descripcion, input.TipoPropiedad,
+		input.PrecioPorNoche, input.Moneda, input.CapacidadMaxima, input.Habitaciones, input.Banos, input.Camas,
+		input.Direccion, input.Ciudad, input.Estado, input.Zona, input.Latitud, input.Longitud,
+		input.Reglas, input.PoliticaCancelacion, input.HorarioCheckIn, input.HorarioCheckOut,
+		input.EstanciaMinima, input.EstanciaMaxima,
+		input.Categoria, input.TipoCancha, input.PrecioPorHora,
+		input.HoraApertura, input.HoraCierre, input.DuracionMinimaMin,
+		input.EsExpress, input.PrecioExpress,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("insert propiedad: %w", err)
+	}
+
+	if len(amenidadIDs) > 0 {
+		for _, aID := range amenidadIDs {
+			_, err = r.pool.Exec(ctx, `
+				INSERT INTO propiedad_amenidades (propiedad_id, amenidad_id) VALUES ($1, $2)
+			`, id, aID)
+			if err != nil {
+				return nil, fmt.Errorf("insert amenidad join: %w", err)
+			}
+		}
+	}
+
+	return &CrearPropiedadResult{ID: id, Slug: slug, Estado: "PENDIENTE_REVISION"}, nil
+}
+
+func (r *PropiedadesRepo) ActualizarPropiedad(ctx context.Context, propiedadID, propietarioID string, input CrearPropiedadInput, amenidadIDs []string) error {
+	tag, err := r.pool.Exec(ctx, `
+		UPDATE propiedades SET
+			titulo = $1, descripcion = $2, tipo_propiedad = $3,
+			precio_por_noche = $4, moneda = $5, capacidad_maxima = $6,
+			habitaciones = $7, banos = $8, camas = $9,
+			direccion = $10, ciudad = $11, estado = $12, zona = $13,
+			latitud = $14, longitud = $15,
+			reglas = $16, politica_cancelacion = $17,
+			horario_checkin = $18, horario_checkout = $19,
+			estancia_minima = $20, estancia_maxima = $21,
+			categoria = $22, tipo_cancha = $23, precio_por_hora = $24,
+			hora_apertura = $25, hora_cierre = $26, duracion_minima_min = $27,
+			es_express = $28, precio_express = $29,
+			estado_publicacion = 'PENDIENTE_REVISION',
+			fecha_actualizacion = NOW()
+		WHERE id = $30 AND propietario_id = $31`,
+		input.Titulo, input.Descripcion, input.TipoPropiedad,
+		input.PrecioPorNoche, input.Moneda, input.CapacidadMaxima,
+		input.Habitaciones, input.Banos, input.Camas,
+		input.Direccion, input.Ciudad, input.Estado, input.Zona,
+		input.Latitud, input.Longitud,
+		input.Reglas, input.PoliticaCancelacion,
+		input.HorarioCheckIn, input.HorarioCheckOut,
+		input.EstanciaMinima, input.EstanciaMaxima,
+		input.Categoria, input.TipoCancha, input.PrecioPorHora,
+		input.HoraApertura, input.HoraCierre, input.DuracionMinimaMin,
+		input.EsExpress, input.PrecioExpress,
+		propiedadID, propietarioID,
+	)
+	if err != nil {
+		return fmt.Errorf("update propiedad: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("propiedad no encontrada o no eres el propietario")
+	}
+
+	_, err = r.pool.Exec(ctx, `DELETE FROM propiedad_amenidades WHERE propiedad_id = $1`, propiedadID)
+	if err != nil {
+		return fmt.Errorf("delete amenidades: %w", err)
+	}
+
+	for _, aID := range amenidadIDs {
+		_, err = r.pool.Exec(ctx, `INSERT INTO propiedad_amenidades (propiedad_id, amenidad_id) VALUES ($1, $2)`, propiedadID, aID)
+		if err != nil {
+			return fmt.Errorf("insert amenidad: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func (r *PropiedadesRepo) FindAmenidadesByNombres(ctx context.Context, nombres []string) ([]string, error) {
+	if len(nombres) == 0 {
+		return nil, nil
+	}
+	rows, err := r.pool.Query(ctx, `
+		SELECT id FROM amenidades WHERE nombre = ANY($1)
+	`, nombres)
+	if err != nil {
+		return nil, fmt.Errorf("find amenidades: %w", err)
+	}
+	defer rows.Close()
+
+	var ids []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	return ids, nil
+}
+
+type ImagenInput struct {
+	URL       string `json:"url"`
+	Categoria string `json:"categoria"`
+	Orden     int    `json:"orden"`
+}
+
+func (r *PropiedadesRepo) AgregarImagenes(ctx context.Context, propiedadID string, imagenes []ImagenInput) error {
+	for _, img := range imagenes {
+		id := generatePropiedadID()
+		_, err := r.pool.Exec(ctx, `
+			INSERT INTO imagenes_propiedad (id, propiedad_id, url, categoria, orden, es_principal)
+			VALUES ($1, $2, $3, $4, $5, false)
+		`, id, propiedadID, img.URL, img.Categoria, img.Orden)
+		if err != nil {
+			return fmt.Errorf("insert imagen: %w", err)
+		}
+	}
+	return nil
+}
+
+type ImagenUpdate struct {
+	ID        string  `json:"id"`
+	Categoria *string `json:"categoria,omitempty"`
+	Orden     *int    `json:"orden,omitempty"`
+	Eliminar  bool    `json:"eliminar,omitempty"`
+}
+
+func (r *PropiedadesRepo) ActualizarImagenes(ctx context.Context, propiedadID string, updates []ImagenUpdate) error {
+	for _, u := range updates {
+		if u.Eliminar {
+			_, err := r.pool.Exec(ctx, `DELETE FROM imagenes_propiedad WHERE id = $1 AND propiedad_id = $2`, u.ID, propiedadID)
+			if err != nil {
+				return fmt.Errorf("delete imagen: %w", err)
+			}
+			continue
+		}
+		if u.Categoria != nil {
+			_, err := r.pool.Exec(ctx, `UPDATE imagenes_propiedad SET categoria = $1 WHERE id = $2 AND propiedad_id = $3`, *u.Categoria, u.ID, propiedadID)
+			if err != nil {
+				return fmt.Errorf("update imagen categoria: %w", err)
+			}
+		}
+		if u.Orden != nil {
+			_, err := r.pool.Exec(ctx, `UPDATE imagenes_propiedad SET orden = $1 WHERE id = $2 AND propiedad_id = $3`, *u.Orden, u.ID, propiedadID)
+			if err != nil {
+				return fmt.Errorf("update imagen orden: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+func (r *PropiedadesRepo) GetUserPlan(ctx context.Context, userID string) (string, error) {
+	var plan string
+	err := r.pool.QueryRow(ctx, `SELECT plan_suscripcion FROM usuarios WHERE id = $1`, userID).Scan(&plan)
+	return plan, err
+}
+
+func (r *PropiedadesRepo) GetPropiedadOwner(ctx context.Context, propiedadID string) (string, error) {
+	var ownerID string
+	err := r.pool.QueryRow(ctx, `SELECT propietario_id FROM propiedades WHERE id = $1`, propiedadID).Scan(&ownerID)
+	return ownerID, err
+}
+
+func generatePropiedadID() string {
+	b := make([]byte, 12)
+	_, _ = rand.Read(b)
+	return hex.EncodeToString(b)
+}

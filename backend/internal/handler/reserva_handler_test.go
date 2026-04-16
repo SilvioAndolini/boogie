@@ -2,7 +2,6 @@ package handler
 
 import (
 	"bytes"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -81,50 +80,6 @@ func TestReservasRecibidas_MissingAuth(t *testing.T) {
 
 	h := &ReservaHandler{}
 	h.ReservasRecibidas(w, req)
-
-	resp := w.Result()
-	if resp.StatusCode != http.StatusUnauthorized {
-		t.Errorf("expected 401, got %d", resp.StatusCode)
-	}
-}
-
-func TestRegistrarPago_MissingAuth(t *testing.T) {
-	body, _ := json.Marshal(map[string]interface{}{
-		"reservaId": "test",
-		"monto":     100,
-		"metodoPago": "ZELLE",
-	})
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/reservas/pagos", bytes.NewReader(body))
-	w := httptest.NewRecorder()
-
-	h := &ReservaHandler{}
-	h.RegistrarPago(w, req)
-
-	resp := w.Result()
-	if resp.StatusCode != http.StatusUnauthorized {
-		t.Errorf("expected 401, got %d", resp.StatusCode)
-	}
-}
-
-func TestRegistrarPago_InvalidBody(t *testing.T) {
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/reservas/pagos", bytes.NewReader([]byte("bad")))
-	w := httptest.NewRecorder()
-
-	h := &ReservaHandler{}
-	h.RegistrarPago(w, req)
-
-	resp := w.Result()
-	if resp.StatusCode != http.StatusUnauthorized {
-		t.Errorf("expected 401, got %d", resp.StatusCode)
-	}
-}
-
-func TestStats_MissingAuth(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/reservas/stats?rol=anfitrion", nil)
-	w := httptest.NewRecorder()
-
-	h := &ReservaHandler{}
-	h.Stats(w, req)
 
 	resp := w.Result()
 	if resp.StatusCode != http.StatusUnauthorized {

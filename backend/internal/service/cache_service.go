@@ -63,6 +63,12 @@ func (c *CacheService) Set(key string, value interface{}, ttl time.Duration) {
 	c.mu.Unlock()
 }
 
+func (c *CacheService) Delete(key string) {
+	c.mu.Lock()
+	delete(c.entries, key)
+	c.mu.Unlock()
+}
+
 func (c *CacheService) GetOrFetch(key string, ttl time.Duration, fetch func() (interface{}, error)) (interface{}, error) {
 	val, valid := c.Get(key)
 	if valid {

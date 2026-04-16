@@ -8,11 +8,23 @@ import (
 	"github.com/boogie/backend/internal/repository"
 )
 
-type OfertaService struct {
-	repo *repository.OfertaRepo
+type ofertaRepository interface {
+	Crear(ctx context.Context, o *repository.Oferta) (string, error)
+	GetByID(ctx context.Context, id string) (*repository.Oferta, error)
+	GetDetalleByID(ctx context.Context, id string) (*repository.OfertaDetalle, error)
+	ExistsActive(ctx context.Context, propiedadID, huespedID string) (bool, error)
+	Responder(ctx context.Context, ofertaID, estado string, motivoRechazo *string) error
+	GetRecibidas(ctx context.Context, propietarioID string) ([]repository.OfertaConPropiedad, error)
+	GetEnviadas(ctx context.Context, huespedID string) ([]repository.OfertaConPropiedad, error)
+	GetPropietarioID(ctx context.Context, propiedadID string) (string, error)
+	GetPropiedadPrecio(ctx context.Context, propiedadID string) (precio float64, moneda string, capacidad int, estanciaMin int, estanciaMax *int, propietarioID string, err error)
 }
 
-func NewOfertaService(repo *repository.OfertaRepo) *OfertaService {
+type OfertaService struct {
+	repo ofertaRepository
+}
+
+func NewOfertaService(repo ofertaRepository) *OfertaService {
 	return &OfertaService{repo: repo}
 }
 
@@ -143,4 +155,15 @@ func (s *OfertaService) GetByID(ctx context.Context, ofertaID, userID string) (*
 		return nil, fmt.Errorf("no tienes permiso para ver esta oferta")
 	}
 	return oferta, nil
+}
+
+func (s *OfertaService) GetDetalleByID(ctx context.Context, ofertaID, userID string) (*repository.OfertaDetalle, error) {
+	detalle, err := s.repo.GetDetalleByID(ctx, ofertaID)
+	if err != nil {
+		return nil, fmt.Errorf("oferta no encontrada")
+	}
+	if detalle.HuespedID != userID && detalle.PropietarioID != userID {
+		return nil, fmt.Errorf("no tienes permiso para ver esta oferta")
+	}
+	return detalle, nil
 }

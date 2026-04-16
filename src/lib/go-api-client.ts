@@ -22,9 +22,14 @@ async function goFetch<T = unknown>(
 ): Promise<T> {
   const { token, body, raw, ...rest } = options
 
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData
+
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
     ...(rest.headers as Record<string, string>),
+  }
+
+  if (!isFormData) {
+    headers['Content-Type'] = 'application/json'
   }
 
   if (token) {
@@ -34,7 +39,7 @@ async function goFetch<T = unknown>(
   const res = await fetch(`${GO_BASE_URL}${path}`, {
     ...rest,
     headers,
-    body: body ? JSON.stringify(body) : undefined,
+    body: isFormData ? (body as FormData) : body ? JSON.stringify(body) : undefined,
   })
 
   const data = await res.json()

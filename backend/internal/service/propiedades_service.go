@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/boogie/backend/internal/domain/enums"
@@ -141,3 +142,190 @@ func isUUID(s string) bool {
 
 var _ = math.Pi
 var _ = enums.PlanFree
+
+var validTipoPropiedad = map[string]bool{
+	"APARTAMENTO": true, "CASA": true, "VILLA": true, "CABANA": true,
+	"ESTUDIO": true, "HABITACION": true, "LOFT": true, "PENTHOUSE": true,
+	"FINCA": true, "OTRO": true,
+}
+
+var validMoneda = map[string]bool{"USD": true, "VES": true}
+var validPolitica = map[string]bool{"FLEXIBLE": true, "MODERADA": true, "ESTRICTA": true}
+var validCategoria = map[string]bool{"ALOJAMIENTO": true, "DEPORTE": true}
+
+var validTipoCancha = map[string]bool{
+	"FUTBOL": true, "BALONCESTO": true, "TENIS": true,
+	"PADDLE": true, "TENIS_DE_MESA": true, "MULTIDEPORTE": true,
+}
+
+func validarCrearInput(input *repository.CrearPropiedadInput) error {
+	input.Titulo = strings.TrimSpace(input.Titulo)
+	input.Descripcion = strings.TrimSpace(input.Descripcion)
+	input.Direccion = strings.TrimSpace(input.Direccion)
+	input.Ciudad = strings.TrimSpace(input.Ciudad)
+	input.Estado = strings.TrimSpace(input.Estado)
+
+	if input.Titulo == "" || len(input.Titulo) > 120 {
+		return fmt.Errorf("titulo requerido (max 120 caracteres)")
+	}
+	if input.Descripcion == "" || len(input.Descripcion) > 5000 {
+		return fmt.Errorf("descripcion requerida (max 5000 caracteres)")
+	}
+	if !validTipoPropiedad[input.TipoPropiedad] {
+		return fmt.Errorf("tipo_propiedad invalido: %s", input.TipoPropiedad)
+	}
+	if input.PrecioPorNoche <= 0 {
+		return fmt.Errorf("precio_por_noche debe ser mayor a 0")
+	}
+	if !validMoneda[input.Moneda] {
+		return fmt.Errorf("moneda invalida: %s", input.Moneda)
+	}
+	if input.CapacidadMaxima < 1 || input.CapacidadMaxima > 50 {
+		return fmt.Errorf("capacidad_maxima debe estar entre 1 y 50")
+	}
+	if input.Habitaciones < 0 || input.Habitaciones > 50 {
+		return fmt.Errorf("habitaciones debe estar entre 0 y 50")
+	}
+	if input.Banos < 0 || input.Banos > 50 {
+		return fmt.Errorf("banos debe estar entre 0 y 50")
+	}
+	if input.Camas < 0 || input.Camas > 50 {
+		return fmt.Errorf("camas debe estar entre 0 y 50")
+	}
+	if input.Direccion == "" {
+		return fmt.Errorf("direccion requerida")
+	}
+	if input.Ciudad == "" {
+		return fmt.Errorf("ciudad requerida")
+	}
+	if input.Estado == "" {
+		return fmt.Errorf("estado requerido")
+	}
+	if !validPolitica[input.PoliticaCancelacion] {
+		return fmt.Errorf("politica_cancelacion invalida: %s", input.PoliticaCancelacion)
+	}
+	if !validCategoria[input.Categoria] {
+		return fmt.Errorf("categoria invalida: %s", input.Categoria)
+	}
+	if input.Categoria == "DEPORTE" {
+		if input.TipoCancha == nil || !validTipoCancha[*input.TipoCancha] {
+			return fmt.Errorf("tipo_cancha requerido y valido para categoria DEPORTE")
+		}
+		if input.PrecioPorHora == nil || *input.PrecioPorHora <= 0 {
+			return fmt.Errorf("precio_por_hora requerido para categoria DEPORTE")
+		}
+	}
+	if input.EsExpress {
+		if input.PrecioExpress == nil || *input.PrecioExpress <= 0 {
+			return fmt.Errorf("precio_express requerido cuando es_express es true")
+		}
+	}
+	if input.EstanciaMinima < 1 {
+		input.EstanciaMinima = 1
+	}
+	if input.HorarioCheckIn == "" {
+		input.HorarioCheckIn = "14:00"
+	}
+	if input.HorarioCheckOut == "" {
+		input.HorarioCheckOut = "11:00"
+	}
+	if input.PoliticaCancelacion == "" {
+		input.PoliticaCancelacion = "MODERADA"
+	}
+	return nil
+}
+
+func (s *PropiedadesService) Crear(ctx context.Context, userID string, input *repository.CrearPropiedadInput, amenidadNombres []string) (*repository.CrearPropiedadResult, error) {
+	if err := validarCrearInput(input); err != nil {
+		return nil, fmt.Errorf("validacion: %w", err)
+	}
+
+	plan, err := s.repo.GetUserPlan(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("error al obtener plan: %w", err)
+	}
+	if err := s.CanCreate(ctx, userID, plan); err != nil {
+		return nil, err
+	}
+
+	var amenidadIDs []string
+	if len(amenidadNombres) > 0 {
+		amenidadIDs, err = s.repo.FindAmenidadesByNombres(ctx, amenidadNombres)
+		if err != nil {
+			return nil, fmt.Errorf("error al buscar amenidades: %w", err)
+		}
+	}
+
+	result, err := s.repo.CrearPropiedad(ctx, userID, *input, amenidadIDs)
+	if err != nil {
+		return nil, fmt.Errorf("error al crear propiedad: %w", err)
+	}
+
+	return result, nil
+}
+
+func (s *PropiedadesService) Actualizar(ctx context.Context, userID, propiedadID string, input *repository.CrearPropiedadInput, amenidadNombres []string) (*repository.PropiedadDetalleFull, error) {
+	if err := validarCrearInput(input); err != nil {
+		return nil, fmt.Errorf("validacion: %w", err)
+	}
+
+	ownerID, err := s.repo.GetPropiedadOwner(ctx, propiedadID)
+	if err != nil {
+		return nil, fmt.Errorf("propiedad no encontrada")
+	}
+	if ownerID != userID {
+		return nil, fmt.Errorf("no eres el propietario de esta propiedad")
+	}
+
+	var amenidadIDs []string
+	if len(amenidadNombres) > 0 {
+		amenidadIDs, err = s.repo.FindAmenidadesByNombres(ctx, amenidadNombres)
+		if err != nil {
+			return nil, fmt.Errorf("error al buscar amenidades: %w", err)
+		}
+	}
+
+	if err := s.repo.ActualizarPropiedad(ctx, propiedadID, userID, *input, amenidadIDs); err != nil {
+		return nil, fmt.Errorf("error al actualizar propiedad: %w", err)
+	}
+
+	detalle, err := s.repo.GetByID(ctx, propiedadID)
+	if err != nil {
+		return nil, fmt.Errorf("error al obtener propiedad actualizada: %w", err)
+	}
+
+	return detalle, nil
+}
+
+func (s *PropiedadesService) AgregarImagenes(ctx context.Context, userID, propiedadID string, imagenes []repository.ImagenInput) error {
+	ownerID, err := s.repo.GetPropiedadOwner(ctx, propiedadID)
+	if err != nil {
+		return fmt.Errorf("propiedad no encontrada")
+	}
+	if ownerID != userID {
+		return fmt.Errorf("no eres el propietario de esta propiedad")
+	}
+
+	for i := range imagenes {
+		if imagenes[i].URL == "" {
+			return fmt.Errorf("url de imagen requerida")
+		}
+		if !strings.HasPrefix(imagenes[i].URL, "https://") && !strings.HasPrefix(imagenes[i].URL, "http://") {
+			return fmt.Errorf("url de imagen debe ser HTTPS")
+		}
+	}
+
+	return s.repo.AgregarImagenes(ctx, propiedadID, imagenes)
+}
+
+func (s *PropiedadesService) ActualizarImagenes(ctx context.Context, userID, propiedadID string, updates []repository.ImagenUpdate) error {
+	ownerID, err := s.repo.GetPropiedadOwner(ctx, propiedadID)
+	if err != nil {
+		return fmt.Errorf("propiedad no encontrada")
+	}
+	if ownerID != userID {
+		return fmt.Errorf("no eres el propietario de esta propiedad")
+	}
+
+	return s.repo.ActualizarImagenes(ctx, propiedadID, updates)
+}

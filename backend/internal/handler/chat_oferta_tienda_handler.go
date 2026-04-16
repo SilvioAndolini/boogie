@@ -493,6 +493,81 @@ func (h *OfertaHandler) GetRecibidas(w http.ResponseWriter, r *http.Request) {
 	JSON(w, http.StatusOK, ofertas)
 }
 
+func (h *OfertaHandler) GetByID(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetUserID(r.Context())
+	if userID == "" {
+		ErrorJSON(w, http.StatusUnauthorized, "AUTH_REQUIRED", "No autenticado")
+		return
+	}
+
+	ofertaID := chi.URLParam(r, "id")
+	if ofertaID == "" {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_ID", "ID de oferta requerido")
+		return
+	}
+
+	detalle, err := h.svc.GetDetalleByID(r.Context(), ofertaID, userID)
+	if err != nil {
+		slog.Error("[ofertas/detalle] error", "error", err, "ofertaID", ofertaID)
+		ErrorJSON(w, http.StatusNotFound, "NOT_FOUND", err.Error())
+		return
+	}
+
+	imagenURL := ""
+	if detalle.ImagenPrincipal != nil {
+		imagenURL = *detalle.ImagenPrincipal
+	}
+	huespedAvatar := ""
+	if detalle.HuespedAvatar != nil {
+		huespedAvatar = *detalle.HuespedAvatar
+	}
+
+	JSON(w, http.StatusOK, map[string]interface{}{
+		"id":                 detalle.ID,
+		"codigo":             detalle.Codigo,
+		"propiedad_id":       detalle.PropiedadID,
+		"huesped_id":         detalle.HuespedID,
+		"estado":             detalle.Estado,
+		"precio_ofertado":    detalle.PrecioOfertado,
+		"precio_original":    detalle.PrecioOriginal,
+		"moneda":             detalle.Moneda,
+		"fecha_entrada":      detalle.FechaEntrada.Format("2006-01-02"),
+		"fecha_salida":       detalle.FechaSalida.Format("2006-01-02"),
+		"noches":             detalle.Noches,
+		"cantidad_huespedes": detalle.CantidadHuespedes,
+		"mensaje":            detalle.Mensaje,
+		"motivo_rechazo":     detalle.MotivoRechazo,
+		"fecha_creacion":     detalle.FechaCreacion,
+		"fecha_aprobada":     detalle.FechaAprobada,
+		"fecha_expiracion":   detalle.FechaExpiracion,
+		"fecha_rechazada":    detalle.FechaRechazada,
+		"reserva_id":         detalle.ReservaID,
+		"propiedad": map[string]interface{}{
+			"id":               detalle.PropiedadID,
+			"titulo":           detalle.PropiedadTitulo,
+			"precio_por_noche": detalle.PropiedadPrecio,
+			"moneda":           detalle.PropiedadMoneda,
+			"propietario_id":   detalle.PropietarioID,
+			"imagenes":         buildImagenList(imagenURL),
+		},
+		"huesped": map[string]interface{}{
+			"id":         detalle.HuespedID,
+			"nombre":     detalle.HuespedNombre,
+			"apellido":   detalle.HuespedApellido,
+			"email":      detalle.HuespedEmail,
+			"avatar_url": huespedAvatar,
+			"verificado": detalle.HuespedVerificado,
+		},
+	})
+}
+
+func buildImagenList(url string) []map[string]interface{} {
+	if url == "" {
+		return []map[string]interface{}{}
+	}
+	return []map[string]interface{}{{"url": url, "es_principal": true}}
+}
+
 func (h *OfertaHandler) GetEnviadas(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserID(r.Context())
 	if userID == "" {

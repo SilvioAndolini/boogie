@@ -3,6 +3,8 @@
 export type Rol = 'BOOGER' | 'ANFITRION' | 'AMBOS' | 'ADMIN'
 export type PlanSuscripcion = 'FREE' | 'ULTRA'
 export type TipoPropiedad = 'APARTAMENTO' | 'CASA' | 'VILLA' | 'CABANA' | 'ESTUDIO' | 'HABITACION' | 'LOFT' | 'PENTHOUSE' | 'FINCA' | 'OTRO'
+export type CategoriaPropiedad = 'ALOJAMIENTO' | 'DEPORTE'
+export type TipoCancha = 'FUTBOL' | 'BALONCESTO' | 'TENIS' | 'PADDLE' | 'TENIS_DE_MESA' | 'MULTIDEPORTE'
 export type Moneda = 'USD' | 'VES'
 export type PoliticaCancelacion = 'FLEXIBLE' | 'MODERADA' | 'ESTRICTA'
 export type EstadoPublicacion = 'BORRADOR' | 'PENDIENTE_REVISION' | 'PUBLICADA' | 'PAUSADA' | 'SUSPENDIDA'

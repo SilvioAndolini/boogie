@@ -9,6 +9,7 @@ export async function getPropiedadesAdmin(filters: {
   busqueda?: string
   pagina?: number
   limite?: number
+  categoria?: string
 }) {
   try {
     const params = new URLSearchParams()
@@ -17,6 +18,7 @@ export async function getPropiedadesAdmin(filters: {
     if (filters.busqueda) params.set('busqueda', filters.busqueda)
     if (filters.pagina) params.set('pagina', String(filters.pagina))
     if (filters.limite) params.set('limite', String(filters.limite))
+    if (filters.categoria) params.set('categoria', filters.categoria)
     const qs = params.toString()
     const outer = await goApi<Record<string, unknown>>(qs ? `/api/v1/admin/propiedades?${qs}` : '/api/v1/admin/propiedades', { raw: true })
     const obj: Record<string, unknown> = (outer?.data as Record<string, unknown>) ?? outer

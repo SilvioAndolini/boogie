@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { goGet, goPatch, goDelete, goFetch, getAuthToken } from '@/lib/go-api-client'
+import { goGet, goPost, goPut, goPatch, goDelete, goFetch, getAuthToken } from '@/lib/go-api-client'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getUsuarioAutenticado } from '@/lib/auth'
 
@@ -27,6 +27,11 @@ interface PropiedadPublica {
   totalResenas: number
   imagenes: { url: string; es_principal: boolean }[]
   propietario: { reputacion: number | null; plan_suscripcion: string } | null
+  categoria?: string
+  tipoCancha?: string | null
+  precioPorHora?: number | null
+  esExpress?: boolean
+  precioExpress?: number | null
 }
 
 interface PropiedadDetalle {
@@ -58,6 +63,13 @@ interface PropiedadDetalle {
   imagenes: { id: string; url: string; alt: string | null; orden: number; es_principal: boolean; categoria: string }[]
   amenidades: { amenidadId: string; amenidad: { id: string; nombre: string; icono: string | null; categoria: string } }[]
   resenas: { id: string; calificacion: number; comentario: string; fechaCreacion: string; autor: { nombre: string; apellido: string; avatar_url: string | null } }[]
+  tipoCancha?: string | null
+  precioPorHora?: number | null
+  horaApertura?: string | null
+  horaCierre?: string | null
+  duracionMinimaMin?: number | null
+  esExpress?: boolean
+  precioExpress?: number | null
 }
 
 interface GoPropiedadItem {
@@ -132,6 +144,13 @@ interface GoPropiedadDetail {
     categoria: string
     orden: number
   }[] | null
+  tipo_cancha?: string | null
+  precio_por_hora?: number | null
+  hora_apertura?: string | null
+  hora_cierre?: string | null
+  duracion_minima_min?: number | null
+  es_express?: boolean
+  precio_express?: number | null
 }
 
 function mapPropiedadItem(item: GoPropiedadItem): PropiedadPublica {
@@ -217,6 +236,13 @@ function mapPropiedadDetail(d: GoPropiedadDetail): PropiedadDetalle {
     imagenes,
     amenidades,
     resenas: [],
+    tipoCancha: d.tipo_cancha ?? null,
+    precioPorHora: d.precio_por_hora ?? null,
+    horaApertura: d.hora_apertura ?? null,
+    horaCierre: d.hora_cierre ?? null,
+    duracionMinimaMin: d.duracion_minima_min ?? null,
+    esExpress: d.es_express ?? false,
+    precioExpress: d.precio_express ?? null,
   }
 }
 
@@ -224,23 +250,116 @@ export async function crearPropiedad(formData: FormData) {
   const user = await getUsuarioAutenticado()
   if (!user) redirect('/login')
 
-  const token = await getAuthToken()
-  const baseUrl = process.env.GO_BACKEND_URL || 'http://localhost:8080'
+  const titulo = formData.get('titulo') as string
+  const descripcion = formData.get('descripcion') as string
+  const tipoPropiedad = formData.get('tipoPropiedad') as string
+  const precioPorNoche = parseFloat(formData.get('precioPorNoche') as string) || 0
+  const moneda = (formData.get('moneda') as string) || 'USD'
+  const capacidadMaxima = parseInt(formData.get('capacidadMaxima') as string) || 1
+  const habitaciones = parseInt(formData.get('habitaciones') as string) || 1
+  const banos = parseInt(formData.get('banos') as string) || 1
+  const camas = parseInt(formData.get('camas') as string) || 1
+  const direccion = formData.get('direccion') as string
+  const ciudad = formData.get('ciudad') as string
+  const estado = formData.get('estado') as string
+  const zona = (formData.get('zona') as string) || null
+  const latitud = formData.get('latitud') ? parseFloat(formData.get('latitud') as string) : null
+  const longitud = formData.get('longitud') ? parseFloat(formData.get('longitud') as string) : null
+  const reglas = (formData.get('reglas') as string) || null
+  const politicaCancelacion = (formData.get('politicaCancelacion') as string) || 'MODERADA'
+  const horarioCheckIn = (formData.get('horarioCheckIn') as string) || '14:00'
+  const horarioCheckOut = (formData.get('horarioCheckOut') as string) || '11:00'
+  const estanciaMinima = parseInt(formData.get('estanciaMinima') as string) || 1
+  const estanciaMaxima = formData.get('estanciaMaxima') ? parseInt(formData.get('estanciaMaxima') as string) : null
+  const categoria = (formData.get('categoria') as string) || 'ALOJAMIENTO'
+  const tipoCancha = (formData.get('tipoCancha') as string) || null
+  const precioPorHora = formData.get('precioPorHora') ? parseFloat(formData.get('precioPorHora') as string) : null
+  const horaApertura = (formData.get('horaApertura') as string) || null
+  const horaCierre = (formData.get('horaCierre') as string) || null
+  const duracionMinimaMin = formData.get('duracionMinimaMin') ? parseInt(formData.get('duracionMinimaMin') as string) : null
+  const esExpress = formData.get('esExpress') === 'true'
+  const precioExpress = formData.get('precioExpress') ? parseFloat(formData.get('precioExpress') as string) : null
 
-  const res = await fetch(`${baseUrl}/api/v1/propiedades`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
-    body: formData,
-  })
+  const amenidades = formData.getAll('amenidades') as string[]
+  const imagenCategorias = formData.getAll('imagen_categorias') as string[]
+  const imagenFiles = formData.getAll('imagenes') as File[]
 
-  const data = await res.json()
-
-  if (!res.ok) {
-    const err = (data as { error?: { message?: string } }).error
-    return { error: err?.message || 'Error al crear el boogie' }
+  let result: { id: string; slug: string }
+  try {
+    result = await goPost('/api/v1/propiedades', {
+      titulo,
+      descripcion,
+      tipoPropiedad,
+      precioPorNoche,
+      moneda,
+      capacidadMaxima,
+      habitaciones,
+      banos,
+      camas,
+      direccion,
+      ciudad,
+      estado,
+      zona,
+      latitud,
+      longitud,
+      reglas,
+      politicaCancelacion,
+      horarioCheckIn,
+      horarioCheckOut,
+      estanciaMinima,
+      estanciaMaxima,
+      categoria,
+      tipoCancha,
+      precioPorHora,
+      horaApertura,
+      horaCierre,
+      duracionMinimaMin,
+      esExpress,
+      precioExpress,
+      amenidades,
+    })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : 'Error al crear el boogie'
+    return { error: msg }
   }
 
-  const propiedadId = ((data as { data?: { id?: string } }).data ?? data)?.id
+  const propiedadId = result.id
+
+  if (imagenFiles.length > 0) {
+    const supabase = createAdminClient()
+    const bucket = 'imagenes'
+    const imagenes: { url: string; categoria: string; orden: number }[] = []
+
+    for (let i = 0; i < imagenFiles.length; i++) {
+      const file = imagenFiles[i]
+      const ext = file.name.replace(/.*\./, '.') || '.webp'
+      const path = `propiedades/${propiedadId}/${Date.now()}-${i}${ext}`
+      const arrayBuffer = await file.arrayBuffer()
+      const uint8 = new Uint8Array(arrayBuffer)
+
+      const { error: uploadError } = await supabase.storage
+        .from(bucket)
+        .upload(path, uint8, { contentType: file.type || 'image/webp', upsert: false })
+
+      if (uploadError) {
+        console.error('[crearPropiedad] upload error:', uploadError)
+        continue
+      }
+
+      const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path)
+      const publicUrl = urlData?.publicUrl || ''
+
+      imagenes.push({ url: publicUrl, categoria: imagenCategorias[i] || 'otro', orden: i })
+    }
+
+    if (imagenes.length > 0) {
+      try {
+        await goPost(`/api/v1/propiedades/${propiedadId}/imagenes`, { imagenes })
+      } catch (e: unknown) {
+        console.error('[crearPropiedad] error saving image records:', e)
+      }
+    }
+  }
 
   revalidatePath('/dashboard/mis-propiedades')
   return { exito: true, id: propiedadId }
@@ -291,27 +410,133 @@ export async function actualizarPropiedad(propiedadId: string, formData: FormDat
   const user = await getUsuarioAutenticado()
   if (!user) return { error: 'No autenticado' }
 
+  const titulo = formData.get('titulo') as string
+  const descripcion = formData.get('descripcion') as string
+  const tipoPropiedad = formData.get('tipoPropiedad') as string
+  const precioPorNoche = parseFloat(formData.get('precioPorNoche') as string) || 0
+  const moneda = (formData.get('moneda') as string) || 'USD'
+  const capacidadMaxima = parseInt(formData.get('capacidadMaxima') as string) || 1
+  const habitaciones = parseInt(formData.get('habitaciones') as string) || 1
+  const banos = parseInt(formData.get('banos') as string) || 1
+  const camas = parseInt(formData.get('camas') as string) || 1
+  const direccion = formData.get('direccion') as string
+  const ciudad = formData.get('ciudad') as string
+  const estado = formData.get('estado') as string
+  const zona = (formData.get('zona') as string) || null
+  const latitud = formData.get('latitud') ? parseFloat(formData.get('latitud') as string) : null
+  const longitud = formData.get('longitud') ? parseFloat(formData.get('longitud') as string) : null
+  const reglas = (formData.get('reglas') as string) || null
+  const politicaCancelacion = (formData.get('politicaCancelacion') as string) || 'MODERADA'
+  const horarioCheckIn = (formData.get('horarioCheckIn') as string) || '14:00'
+  const horarioCheckOut = (formData.get('horarioCheckOut') as string) || '11:00'
+  const estanciaMinima = parseInt(formData.get('estanciaMinima') as string) || 1
+  const estanciaMaxima = formData.get('estanciaMaxima') ? parseInt(formData.get('estanciaMaxima') as string) : null
+  const categoria = (formData.get('categoria') as string) || 'ALOJAMIENTO'
+  const tipoCancha = (formData.get('tipoCancha') as string) || null
+  const precioPorHora = formData.get('precioPorHora') ? parseFloat(formData.get('precioPorHora') as string) : null
+  const horaApertura = (formData.get('horaApertura') as string) || null
+  const horaCierre = (formData.get('horaCierre') as string) || null
+  const duracionMinimaMin = formData.get('duracionMinimaMin') ? parseInt(formData.get('duracionMinimaMin') as string) : null
+  const esExpress = formData.get('esExpress') === 'true'
+  const precioExpress = formData.get('precioExpress') ? parseFloat(formData.get('precioExpress') as string) : null
+
+  const amenidades = formData.getAll('amenidades') as string[]
+  const imagenCategorias = formData.getAll('imagen_categorias') as string[]
+  const imagenFiles = formData.getAll('imagenes') as File[]
   const existentesCategorias = formData.getAll('existentes_categorias') as string[]
   const imagenIds = formData.getAll('imagen_ids') as string[]
 
-  if (existentesCategorias.length > 0 && imagenIds.length > 0) {
-    const supabase = createAdminClient()
-    const updates = imagenIds.map((id, i) =>
-      supabase.from('imagenes_propiedad').update({ categoria: existentesCategorias[i] || 'otro' }).eq('id', id)
-    )
-    await Promise.all(updates)
+  try {
+    await goPut(`/api/v1/propiedades/${propiedadId}`, {
+      titulo,
+      descripcion,
+      tipoPropiedad,
+      precioPorNoche,
+      moneda,
+      capacidadMaxima,
+      habitaciones,
+      banos,
+      camas,
+      direccion,
+      ciudad,
+      estado,
+      zona,
+      latitud,
+      longitud,
+      reglas,
+      politicaCancelacion,
+      horarioCheckIn,
+      horarioCheckOut,
+      estanciaMinima,
+      estanciaMaxima,
+      categoria,
+      tipoCancha,
+      precioPorHora,
+      horaApertura,
+      horaCierre,
+      duracionMinimaMin,
+      esExpress,
+      precioExpress,
+      amenidades,
+    })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : 'Error al actualizar el boogie'
+    return { error: msg }
   }
 
-  const token = await getAuthToken()
-  const baseUrl = process.env.GO_BACKEND_URL || 'http://localhost:8080'
+  const imageUpdates: { id: string; categoria?: string; eliminar?: boolean }[] = []
+  if (existentesCategorias.length > 0 && imagenIds.length > 0) {
+    for (let i = 0; i < imagenIds.length; i++) {
+      imageUpdates.push({ id: imagenIds[i], categoria: existentesCategorias[i] || 'otro' })
+    }
+  }
+  if (imageUpdates.length > 0) {
+    try {
+      await goPut(`/api/v1/propiedades/${propiedadId}/imagenes`, { updates: imageUpdates })
+    } catch (e: unknown) {
+      console.error('[actualizarPropiedad] error updating image categories:', e)
+    }
+  }
 
-  const res = await fetch(`${baseUrl}/api/v1/propiedades/${propiedadId}`, {
-    method: 'PUT',
-    headers: { Authorization: `Bearer ${token}` },
-    body: formData,
-  })
+  if (imagenFiles.length > 0) {
+    const supabase = createAdminClient()
+    const bucket = 'imagenes'
+    const imagenes: { url: string; categoria: string; orden: number }[] = []
+
+    for (let i = 0; i < imagenFiles.length; i++) {
+      const file = imagenFiles[i]
+      const ext = file.name.replace(/.*\./, '.') || '.webp'
+      const path = `propiedades/${propiedadId}/${Date.now()}-${i}${ext}`
+      const arrayBuffer = await file.arrayBuffer()
+      const uint8 = new Uint8Array(arrayBuffer)
+
+      const { error: uploadError } = await supabase.storage
+        .from(bucket)
+        .upload(path, uint8, { contentType: file.type || 'image/webp', upsert: false })
+
+      if (uploadError) {
+        console.error('[actualizarPropiedad] upload error:', uploadError)
+        continue
+      }
+
+      const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path)
+      const publicUrl = urlData?.publicUrl || ''
+
+      imagenes.push({ url: publicUrl, categoria: imagenCategorias[i] || 'otro', orden: imagenIds.length + i })
+    }
+
+    if (imagenes.length > 0) {
+      try {
+        await goPost(`/api/v1/propiedades/${propiedadId}/imagenes`, { imagenes })
+      } catch (e: unknown) {
+        console.error('[actualizarPropiedad] error saving new image records:', e)
+      }
+    }
+  }
 
   revalidatePath('/dashboard/mis-propiedades')
+  revalidatePath(`/propiedades/${propiedadId}`)
+  revalidatePath(`/canchas/${propiedadId}`)
   return { exito: true }
 }
 
@@ -341,6 +566,9 @@ export async function getPropiedadesPublicas(filtros?: {
   ordenarPor?: string
   pagina?: number
   porPagina?: number
+  categoria?: string
+  tipoCancha?: string
+  esExpress?: boolean
 }) {
   const params = new URLSearchParams()
 
@@ -358,6 +586,9 @@ export async function getPropiedadesPublicas(filtros?: {
   if (filtros?.ordenarPor) params.set('ordenarPor', filtros.ordenarPor)
   if (filtros?.pagina != null) params.set('pagina', String(filtros.pagina))
   if (filtros?.porPagina != null) params.set('porPagina', String(filtros.porPagina))
+  if (filtros?.categoria) params.set('categoria', filtros.categoria)
+  if (filtros?.tipoCancha) params.set('tipoCancha', filtros.tipoCancha)
+  if (filtros?.esExpress) params.set('esExpress', 'true')
 
   try {
     const raw = await goFetch<{

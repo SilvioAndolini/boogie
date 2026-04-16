@@ -181,6 +181,49 @@ func (r *OfertaRepo) GetPropietarioID(ctx context.Context, propiedadID string) (
 	return id, err
 }
 
+type OfertaDetalle struct {
+	Oferta
+	PropiedadTitulo   string  `json:"propiedad_titulo"`
+	PropiedadPrecio   float64 `json:"propiedad_precio"`
+	PropiedadMoneda   string  `json:"propiedad_moneda"`
+	PropietarioID     string  `json:"propietario_id"`
+	ImagenPrincipal   *string `json:"imagen_principal"`
+	HuespedNombre     string  `json:"huesped_nombre"`
+	HuespedApellido   string  `json:"huesped_apellido"`
+	HuespedEmail      string  `json:"huesped_email"`
+	HuespedAvatar     *string `json:"huesped_avatar"`
+	HuespedVerificado bool    `json:"huesped_verificado"`
+}
+
+func (r *OfertaRepo) GetDetalleByID(ctx context.Context, id string) (*OfertaDetalle, error) {
+	var d OfertaDetalle
+	err := r.pool.QueryRow(ctx, `
+		SELECT o.id, COALESCE(o.codigo,''), o.propiedad_id, o.huesped_id,
+		       o.fecha_entrada, o.fecha_salida, o.noches,
+		       o.cantidad_huespedes, o.precio_original, o.precio_ofertado, o.moneda, o.estado,
+		       o.mensaje, o.motivo_rechazo, o.fecha_creacion, o.fecha_aprobada, o.fecha_expiracion, o.fecha_rechazada, o.reserva_id,
+		       p.titulo, p.precio_por_noche, p.moneda, p.propietario_id,
+		       (SELECT url FROM imagenes_propiedad WHERE propiedad_id = p.id AND es_principal = true ORDER BY orden LIMIT 1),
+		       u.nombre, u.apellido, u.email, u.avatar_url, u.verificado
+		FROM boogie_ofertas o
+		JOIN propiedades p ON p.id = o.propiedad_id
+		JOIN usuarios u ON u.id = o.huesped_id
+		WHERE o.id = $1
+	`, id).Scan(
+		&d.ID, &d.Codigo, &d.PropiedadID, &d.HuespedID,
+		&d.FechaEntrada, &d.FechaSalida, &d.Noches,
+		&d.CantidadHuespedes, &d.PrecioOriginal, &d.PrecioOfertado, &d.Moneda, &d.Estado,
+		&d.Mensaje, &d.MotivoRechazo, &d.FechaCreacion, &d.FechaAprobada, &d.FechaExpiracion, &d.FechaRechazada, &d.ReservaID,
+		&d.PropiedadTitulo, &d.PropiedadPrecio, &d.PropiedadMoneda, &d.PropietarioID,
+		&d.ImagenPrincipal,
+		&d.HuespedNombre, &d.HuespedApellido, &d.HuespedEmail, &d.HuespedAvatar, &d.HuespedVerificado,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &d, nil
+}
+
 func (r *OfertaRepo) GetPropiedadPrecio(ctx context.Context, propiedadID string) (precio float64, moneda string, capacidad int, estanciaMin int, estanciaMax *int, propietarioID string, err error) {
 	err = r.pool.QueryRow(ctx, `
 		SELECT precio_por_noche, moneda, capacidad_maxima, estancia_minima, estancia_maxima, propietario_id

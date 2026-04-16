@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -37,21 +38,49 @@ func TestVerificacionSubirDocumento_Unauthorized(t *testing.T) {
 	svc := service.NewVerificacionService(nil)
 	h := NewVerificacionHandler(svc)
 
-	body := `{"fotoFrontalUrl":"http://a.com","fotoTraseraUrl":"http://b.com","fotoSelfieUrl":"http://c.com"}`
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/verificacion/subir-documento", strings.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
+	var buf strings.Builder
+	writer := multipart.NewWriter(&buf)
+	writer.WriteField("fotoFrontal", "dummy")
+	writer.Close()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/verificacion/subir-documento", strings.NewReader(buf.String()))
+	req.Header.Set("Content-Type", writer.FormDataContentType())
 	w := httptest.NewRecorder()
 	h.SubirDocumento(w, req)
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+func TestVerificacionSubirDocumento_StorageNotConfigured(t *testing.T) {
+	svc := service.NewVerificacionService(nil)
+	h := NewVerificacionHandler(svc)
+
+	var buf strings.Builder
+	writer := multipart.NewWriter(&buf)
+	writer.Close()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/verificacion/subir-documento", strings.NewReader(buf.String()))
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	ctx := context.WithValue(req.Context(), auth.UserIDKey, "user-1")
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	h.SubirDocumento(w, req)
+	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
+
+	var resp map[string]interface{}
+	json.NewDecoder(w.Body).Decode(&resp)
+	errBody := resp["error"].(map[string]interface{})
+	assert.Equal(t, "SERVICE_UNAVAILABLE", errBody["code"])
 }
 
 func TestVerificacionSubirDocumento_MissingFotos(t *testing.T) {
 	svc := service.NewVerificacionService(nil)
 	h := NewVerificacionHandler(svc)
 
-	body := `{"fotoFrontalUrl":"http://a.com"}`
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/verificacion/subir-documento", strings.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
+	var buf strings.Builder
+	writer := multipart.NewWriter(&buf)
+	writer.WriteField("fotoFrontal", "dummy")
+	writer.Close()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/verificacion/subir-documento", strings.NewReader(buf.String()))
+	req.Header.Set("Content-Type", writer.FormDataContentType())
 	ctx := context.WithValue(req.Context(), auth.UserIDKey, "user-1")
 	req = req.WithContext(ctx)
 	w := httptest.NewRecorder()
@@ -62,14 +91,14 @@ func TestVerificacionSubirDocumento_MissingFotos(t *testing.T) {
 	var resp map[string]interface{}
 	json.NewDecoder(w.Body).Decode(&resp)
 	errBody := resp["error"].(map[string]interface{})
-	assert.Equal(t, "MISSING_FOTOS", errBody["code"])
+	assert.Equal(t, "UPLOAD_FRONTAL", errBody["code"])
 }
 
 func TestVerificacionSubirDocumento_InvalidBody(t *testing.T) {
 	svc := service.NewVerificacionService(nil)
 	h := NewVerificacionHandler(svc)
 
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/verificacion/subir-documento", strings.NewReader("not json"))
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/verificacion/subir-documento", strings.NewReader("not multipart"))
 	req.Header.Set("Content-Type", "application/json")
 	ctx := context.WithValue(req.Context(), auth.UserIDKey, "user-1")
 	req = req.WithContext(ctx)

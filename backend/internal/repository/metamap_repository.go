@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -53,7 +52,7 @@ func (r *MetamapRepo) SetMotivoRechazo(ctx context.Context, verifID, motivo stri
 		UPDATE verificaciones_documento SET motivo_rechazo = $1 WHERE id = $2
 	`, motivo, verifID)
 	if err != nil {
-		slog.Error("[metamap-repo] set motivo rechazo", "error", err, "verifID", verifID)
+		return fmt.Errorf("set motivo rechazo: %w", err)
 	}
 	return nil
 }
@@ -64,7 +63,7 @@ func (r *MetamapRepo) SetFechaRevision(ctx context.Context, verifID string) erro
 		UPDATE verificaciones_documento SET fecha_revision = NOW() WHERE id = $1
 	`, verifID)
 	if err != nil {
-		slog.Error("[metamap-repo] set fecha revision", "error", err, "verifID", verifID)
+		return fmt.Errorf("set fecha revision: %w", err)
 	}
 	return nil
 }
@@ -75,7 +74,7 @@ func (r *MetamapRepo) MarcarUsuarioVerificado(ctx context.Context, usuarioID str
 		UPDATE usuarios SET verificado = true WHERE id = $1
 	`, usuarioID)
 	if err != nil {
-		slog.Error("[metamap-repo] marcar usuario verificado", "error", err, "usuarioID", usuarioID)
+		return fmt.Errorf("marcar usuario verificado: %w", err)
 	}
 	return nil
 }

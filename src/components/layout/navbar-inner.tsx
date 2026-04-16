@@ -47,7 +47,7 @@ export function NavbarInner({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const pathname = usePathname()
-  const isPropiedades = pathname.startsWith('/propiedades')
+  const isPropiedades = pathname.startsWith('/propiedades') || pathname.startsWith('/canchas')
   const { count: unreadCount } = useUnreadCount()
 
   const tasaFormateada = cotizacionEuro
@@ -74,6 +74,12 @@ export function NavbarInner({
               className="text-base font-medium text-[#6B6560] transition-colors hover:text-[#1B4332]"
             >
               Buscar
+            </Link>
+            <Link
+              href="/canchas"
+              className="text-base font-medium text-[#6B6560] transition-colors hover:text-[#1B4332]"
+            >
+              Sports
             </Link>
             <Link
               href="/zonas"

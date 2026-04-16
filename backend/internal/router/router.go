@@ -77,6 +77,7 @@ type ChatHandlers struct {
 type OfertaHandlers struct {
 	Crear        http.HandlerFunc
 	Responder    http.HandlerFunc
+	GetByID      http.HandlerFunc
 	GetRecibidas http.HandlerFunc
 	GetEnviadas  http.HandlerFunc
 }
@@ -89,11 +90,19 @@ type TiendaHandlers struct {
 }
 
 type PropiedadesHandlers struct {
-	Search         http.HandlerFunc
-	GetByID        http.HandlerFunc
-	MisPropiedades http.HandlerFunc
-	UpdateEstado   http.HandlerFunc
-	Delete         http.HandlerFunc
+	Search             http.HandlerFunc
+	GetByID            http.HandlerFunc
+	MisPropiedades     http.HandlerFunc
+	UpdateEstado       http.HandlerFunc
+	Delete             http.HandlerFunc
+	Crear              http.HandlerFunc
+	Actualizar         http.HandlerFunc
+	AgregarImagenes    http.HandlerFunc
+	ActualizarImagenes http.HandlerFunc
+}
+
+type CanchasHandlers struct {
+	GetDisponibilidad http.HandlerFunc
 }
 
 type MetodoPagoHandlers struct {
@@ -171,6 +180,7 @@ type AdminHandlers struct {
 	CrearServicioStore      http.HandlerFunc
 	ActualizarServicioStore http.HandlerFunc
 	EliminarServicioStore   http.HandlerFunc
+	SubirImagenStore        http.HandlerFunc
 }
 
 type AuthHandlers struct {
@@ -200,6 +210,7 @@ type RouterOpts struct {
 	OfertaHandlers       *OfertaHandlers
 	TiendaHandlers       *TiendaHandlers
 	PropiedadesHandlers  *PropiedadesHandlers
+	CanchasHandlers      *CanchasHandlers
 	MetodoPagoHandlers   *MetodoPagoHandlers
 	DashboardHandlers    *DashboardHandlers
 	SeccionesHandlers    *SeccionesHandlers
@@ -326,6 +337,7 @@ func New(opts *RouterOpts) http.Handler {
 				r.Group(func(r chi.Router) {
 					r.Use(opts.AuthVerifier.Middleware)
 					r.Post("/", opts.OfertaHandlers.Crear)
+					r.Get("/{id}", opts.OfertaHandlers.GetByID)
 					r.Post("/{id}/responder", opts.OfertaHandlers.Responder)
 					r.Get("/recibidas", opts.OfertaHandlers.GetRecibidas)
 					r.Get("/enviadas", opts.OfertaHandlers.GetEnviadas)
@@ -346,10 +358,7 @@ func New(opts *RouterOpts) http.Handler {
 				r.Group(func(r chi.Router) {
 					r.Use(opts.AuthVerifier.Middleware)
 					r.Get("/mias", opts.PropiedadesHandlers.MisPropiedades)
-					r.Post("/", func(w http.ResponseWriter, r *http.Request) {
-						w.WriteHeader(http.StatusNotImplemented)
-						w.Write([]byte(`{"error":{"code":"NOT_IMPLEMENTED","message":"Use Supabase storage for property creation"}}`))
-					})
+					r.Post("/", opts.PropiedadesHandlers.Crear)
 				})
 
 				r.Route("/{id}", func(r chi.Router) {
@@ -357,12 +366,11 @@ func New(opts *RouterOpts) http.Handler {
 					r.Group(func(r chi.Router) {
 						r.Use(opts.AuthVerifier.Middleware)
 						r.Patch("/estado", opts.PropiedadesHandlers.UpdateEstado)
-						r.Put("/", func(w http.ResponseWriter, r *http.Request) {
-							w.WriteHeader(http.StatusNotImplemented)
-							w.Write([]byte(`{"error":{"code":"NOT_IMPLEMENTED","message":"Use Supabase storage for property update"}}`))
-						})
+						r.Put("/", opts.PropiedadesHandlers.Actualizar)
 						r.Get("/editar", opts.PropiedadesHandlers.GetByID)
 						r.Delete("/", opts.PropiedadesHandlers.Delete)
+						r.Post("/imagenes", opts.PropiedadesHandlers.AgregarImagenes)
+						r.Put("/imagenes", opts.PropiedadesHandlers.ActualizarImagenes)
 						if opts.DashboardHandlers != nil {
 							r.Get("/dashboard", opts.DashboardHandlers.GetDashboard)
 							r.Post("/gastos", opts.DashboardHandlers.CrearGasto)
@@ -381,6 +389,10 @@ func New(opts *RouterOpts) http.Handler {
 
 		if opts.SeccionesHandlers != nil {
 			r.Get("/secciones-destacadas", opts.SeccionesHandlers.GetPublicas)
+		}
+
+		if opts.CanchasHandlers != nil {
+			r.Get("/canchas/{id}/disponibilidad", opts.CanchasHandlers.GetDisponibilidad)
 		}
 
 		if opts.ReservaHandlers != nil {
@@ -470,6 +482,7 @@ func New(opts *RouterOpts) http.Handler {
 					r.Post("/store/servicios", opts.AdminHandlers.CrearServicioStore)
 					r.Patch("/store/servicios/{id}", opts.AdminHandlers.ActualizarServicioStore)
 					r.Delete("/store/servicios/{id}", opts.AdminHandlers.EliminarServicioStore)
+					r.Post("/store/upload-imagen", opts.AdminHandlers.SubirImagenStore)
 				}
 			})
 		}

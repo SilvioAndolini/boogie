@@ -55,26 +55,25 @@ func (s *DashboardService) GetDashboard(ctx context.Context, propiedadID, userID
 		return nil, fmt.Errorf("no eres propietario de esta propiedad")
 	}
 
-	gastos, _ := s.repo.GetGastos(ctx, propiedadID)
-	fechasBloqueadas, _ := s.repo.GetFechasBloqueadas(ctx, propiedadID)
-	preciosEspeciales, _ := s.repo.GetPreciosEspeciales(ctx, propiedadID)
-	reservas, _ := s.repo.GetReservasDashboard(ctx, propiedadID)
-	amenidades, _ := s.repo.GetAmenidades(ctx, propiedadID)
-
-	if gastos == nil {
-		gastos = []repository.GastoMantenimiento{}
+	gastos, err := s.repo.GetGastos(ctx, propiedadID)
+	if err != nil {
+		return nil, fmt.Errorf("error al obtener gastos: %w", err)
 	}
-	if fechasBloqueadas == nil {
-		fechasBloqueadas = []repository.FechaBloqueada{}
+	fechasBloqueadas, err := s.repo.GetFechasBloqueadas(ctx, propiedadID)
+	if err != nil {
+		return nil, fmt.Errorf("error al obtener fechas bloqueadas: %w", err)
 	}
-	if preciosEspeciales == nil {
-		preciosEspeciales = []repository.PrecioEspecial{}
+	preciosEspeciales, err := s.repo.GetPreciosEspeciales(ctx, propiedadID)
+	if err != nil {
+		return nil, fmt.Errorf("error al obtener precios especiales: %w", err)
 	}
-	if reservas == nil {
-		reservas = []repository.ReservaDashboard{}
+	reservas, err := s.repo.GetReservasDashboard(ctx, propiedadID)
+	if err != nil {
+		return nil, fmt.Errorf("error al obtener reservas: %w", err)
 	}
-	if amenidades == nil {
-		amenidades = []string{}
+	amenidades, err := s.repo.GetAmenidades(ctx, propiedadID)
+	if err != nil {
+		return nil, fmt.Errorf("error al obtener amenidades: %w", err)
 	}
 
 	var totalIngresos, totalGastos, totalGastosVes float64

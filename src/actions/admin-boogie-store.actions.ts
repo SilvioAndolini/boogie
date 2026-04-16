@@ -1,7 +1,6 @@
 'use server'
 
-import { goGet, goPost, goPatch, goDelete, GoAPIError } from '@/lib/go-api-client'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { goGet, goPost, goPatch, goDelete, goApi, GoAPIError } from '@/lib/go-api-client'
 import { requireAdmin } from '@/lib/admin-auth'
 import { revalidatePath } from 'next/cache'
 
@@ -9,24 +8,15 @@ export async function subirImagenStore(formData: FormData): Promise<{ url?: stri
   const auth = await requireAdmin()
   if (auth.error) return { error: auth.error }
 
-  const file = formData.get('imagen') as File | null
-  if (!file) return { error: 'No se recibio la imagen' }
-
   try {
-    const admin = createAdminClient()
-    const ext = file.name.split('.').pop() || 'webp'
-    const path = `store/${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${ext}`
-    const buffer = Buffer.from(await file.arrayBuffer())
-
-    const { error: uploadError } = await admin.storage
-      .from('imagenes')
-      .upload(path, buffer, { contentType: file.type, upsert: true })
-
-    if (uploadError) return { error: 'Error al subir la imagen' }
-
-    const { data: urlData } = admin.storage.from('imagenes').getPublicUrl(path)
-    return { url: urlData.publicUrl }
+    const result = await goApi<{ ok: boolean; url: string }>('/api/v1/admin/store/upload-imagen', {
+      method: 'POST',
+      body: formData,
+      raw: true,
+    })
+    return { url: result.url }
   } catch (err) {
+    if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al subir la imagen' }
   }
 }

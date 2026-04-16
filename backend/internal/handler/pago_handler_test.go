@@ -13,9 +13,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func newTestPagoHandler() *PagoHandler {
+	return NewPagoHandler(nil, nil, "", "", nil)
+}
+
 func TestMisPagos_Unauthorized(t *testing.T) {
 	svc := service.NewPagoService(nil)
-	h := NewPagoHandler(svc)
+	h := NewPagoHandler(svc, nil, "", "", nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/pagos/mis-pagos", nil)
 	w := httptest.NewRecorder()
@@ -26,8 +30,7 @@ func TestMisPagos_Unauthorized(t *testing.T) {
 }
 
 func TestRegistrarSimple_Unauthorized(t *testing.T) {
-	svc := service.NewPagoService(nil)
-	h := NewPagoHandler(svc)
+	h := newTestPagoHandler()
 
 	body := `{"reservaId":"r1","monto":100,"moneda":"USD","metodoPago":"ZELLE","referencia":"REF123"}`
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/pagos/registrar", strings.NewReader(body))
@@ -40,8 +43,7 @@ func TestRegistrarSimple_Unauthorized(t *testing.T) {
 }
 
 func TestRegistrarSimple_MissingReservaID(t *testing.T) {
-	svc := service.NewPagoService(nil)
-	h := NewPagoHandler(svc)
+	h := newTestPagoHandler()
 
 	body := `{"monto":100,"moneda":"USD","metodoPago":"ZELLE","referencia":"REF123"}`
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/pagos/registrar", strings.NewReader(body))
@@ -60,8 +62,7 @@ func TestRegistrarSimple_MissingReservaID(t *testing.T) {
 }
 
 func TestRegistrarSimple_InvalidMonto(t *testing.T) {
-	svc := service.NewPagoService(nil)
-	h := NewPagoHandler(svc)
+	h := newTestPagoHandler()
 
 	body := `{"reservaId":"r1","monto":0,"moneda":"USD","metodoPago":"ZELLE","referencia":"REF123"}`
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/pagos/registrar", strings.NewReader(body))
@@ -76,8 +77,7 @@ func TestRegistrarSimple_InvalidMonto(t *testing.T) {
 }
 
 func TestRegistrarSimple_InvalidMetodo(t *testing.T) {
-	svc := service.NewPagoService(nil)
-	h := NewPagoHandler(svc)
+	h := newTestPagoHandler()
 
 	body := `{"reservaId":"r1","monto":100,"moneda":"USD","metodoPago":"INVALID","referencia":"REF123"}`
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/pagos/registrar", strings.NewReader(body))
@@ -92,8 +92,7 @@ func TestRegistrarSimple_InvalidMetodo(t *testing.T) {
 }
 
 func TestRegistrarSimple_InvalidBody(t *testing.T) {
-	svc := service.NewPagoService(nil)
-	h := NewPagoHandler(svc)
+	h := newTestPagoHandler()
 
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/pagos/registrar", strings.NewReader("not json"))
 	req.Header.Set("Content-Type", "application/json")
@@ -107,8 +106,7 @@ func TestRegistrarSimple_InvalidBody(t *testing.T) {
 }
 
 func TestVerificar_Unauthorized(t *testing.T) {
-	svc := service.NewPagoService(nil)
-	h := NewPagoHandler(svc)
+	h := newTestPagoHandler()
 
 	body := `{"aprobado":true}`
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/pagos/p1/verificar", strings.NewReader(body))

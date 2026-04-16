@@ -2,8 +2,11 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -15,12 +18,22 @@ import (
 )
 
 type AdminHandler struct {
-	svc        *service.AdminService
-	tiendaSvc  *service.TiendaService
+	svc         *service.AdminService
+	tiendaSvc   *service.TiendaService
+	storage     StorageUploader
+	supabaseURL string
+	serviceKey  string
 }
 
 func NewAdminHandler(svc *service.AdminService, tiendaSvc *service.TiendaService) *AdminHandler {
 	return &AdminHandler{svc: svc, tiendaSvc: tiendaSvc}
+}
+
+func (h *AdminHandler) WithStorage(uploader StorageUploader, supabaseURL, serviceKey string) *AdminHandler {
+	h.storage = uploader
+	h.supabaseURL = supabaseURL
+	h.serviceKey = serviceKey
+	return h
 }
 
 func requireAdmin(w http.ResponseWriter, r *http.Request) (bool, string, string) {
@@ -150,9 +163,9 @@ func (h *AdminHandler) GetPagosStats(w http.ResponseWriter, r *http.Request) {
 }
 
 type adminVerificarPagoRequest struct {
-	PagoID    string  `json:"pagoId"`
-	Accion    string  `json:"accion"`
-	Notas     *string `json:"notasVerificacion"`
+	PagoID string  `json:"pagoId"`
+	Accion string  `json:"accion"`
+	Notas  *string `json:"notasVerificacion"`
 }
 
 func (h *AdminHandler) VerificarPago(w http.ResponseWriter, r *http.Request) {
@@ -183,9 +196,10 @@ func (h *AdminHandler) GetPropiedades(w http.ResponseWriter, r *http.Request) {
 	estado := r.URL.Query().Get("estado")
 	ciudad := r.URL.Query().Get("ciudad")
 	busqueda := r.URL.Query().Get("busqueda")
+	categoria := r.URL.Query().Get("categoria")
 	pagina := intQueryParam(r, "pagina", 1)
 
-	result, err := h.svc.GetPropiedades(r.Context(), estado, ciudad, busqueda, pagina)
+	result, err := h.svc.GetPropiedades(r.Context(), estado, ciudad, busqueda, categoria, pagina)
 	if err != nil {
 		slog.Error("[admin/propiedades] error", "error", err)
 		ErrorJSON(w, http.StatusInternalServerError, "LIST_ERROR", err.Error())
@@ -195,10 +209,10 @@ func (h *AdminHandler) GetPropiedades(w http.ResponseWriter, r *http.Request) {
 }
 
 type updatePropiedadRequest struct {
-	PropiedadID      string  `json:"propiedadId"`
+	PropiedadID       string  `json:"propiedadId"`
 	EstadoPublicacion *string `json:"estadoPublicacion"`
-	Destacada        *bool   `json:"destacada"`
-	Motivo           *string `json:"motivo"`
+	Destacada         *bool   `json:"destacada"`
+	Motivo            *string `json:"motivo"`
 }
 
 func (h *AdminHandler) UpdatePropiedad(w http.ResponseWriter, r *http.Request) {
@@ -447,20 +461,48 @@ func (h *AdminHandler) EditarCupon(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fields := map[string]interface{}{}
-	if req.Codigo != nil { fields["codigo"] = *req.Codigo }
-	if req.Nombre != nil { fields["nombre"] = *req.Nombre }
-	if req.Descripcion != nil { fields["descripcion"] = *req.Descripcion }
-	if req.TipoDescuento != nil { fields["tipo_descuento"] = *req.TipoDescuento }
-	if req.ValorDescuento != nil { fields["valor_descuento"] = *req.ValorDescuento }
-	if req.Moneda != nil { fields["moneda"] = *req.Moneda }
-	if req.MaxDescuento != nil { fields["max_descuento"] = *req.MaxDescuento }
-	if req.TipoAplicacion != nil { fields["tipo_aplicacion"] = *req.TipoAplicacion }
-	if req.ValorAplicacion != nil { fields["valor_aplicacion"] = *req.ValorAplicacion }
-	if req.MinCompra != nil { fields["min_compra"] = *req.MinCompra }
-	if req.MinNoches != nil { fields["min_noches"] = *req.MinNoches }
-	if req.MaxUsos != nil { fields["max_usos"] = *req.MaxUsos }
-	if req.MaxUsosPorUsuario != nil { fields["max_usos_por_usuario"] = *req.MaxUsosPorUsuario }
-	if req.Activo != nil { fields["activo"] = *req.Activo }
+	if req.Codigo != nil {
+		fields["codigo"] = *req.Codigo
+	}
+	if req.Nombre != nil {
+		fields["nombre"] = *req.Nombre
+	}
+	if req.Descripcion != nil {
+		fields["descripcion"] = *req.Descripcion
+	}
+	if req.TipoDescuento != nil {
+		fields["tipo_descuento"] = *req.TipoDescuento
+	}
+	if req.ValorDescuento != nil {
+		fields["valor_descuento"] = *req.ValorDescuento
+	}
+	if req.Moneda != nil {
+		fields["moneda"] = *req.Moneda
+	}
+	if req.MaxDescuento != nil {
+		fields["max_descuento"] = *req.MaxDescuento
+	}
+	if req.TipoAplicacion != nil {
+		fields["tipo_aplicacion"] = *req.TipoAplicacion
+	}
+	if req.ValorAplicacion != nil {
+		fields["valor_aplicacion"] = *req.ValorAplicacion
+	}
+	if req.MinCompra != nil {
+		fields["min_compra"] = *req.MinCompra
+	}
+	if req.MinNoches != nil {
+		fields["min_noches"] = *req.MinNoches
+	}
+	if req.MaxUsos != nil {
+		fields["max_usos"] = *req.MaxUsos
+	}
+	if req.MaxUsosPorUsuario != nil {
+		fields["max_usos_por_usuario"] = *req.MaxUsosPorUsuario
+	}
+	if req.Activo != nil {
+		fields["activo"] = *req.Activo
+	}
 	if req.FechaInicio != nil {
 		fi, err := time.Parse("2006-01-02", *req.FechaInicio)
 		if err != nil {
@@ -534,7 +576,7 @@ func (h *AdminHandler) GetCuponUsos(w http.ResponseWriter, r *http.Request) {
 }
 
 type updateComisionesRequest struct {
-	ComisionHuesped  float64 `json:"comisionHuesped"`
+	ComisionHuesped   float64 `json:"comisionHuesped"`
 	ComisionAnfitrion float64 `json:"comisionAnfitrion"`
 }
 
@@ -639,13 +681,13 @@ func (h *AdminHandler) CrearProductoStore(w http.ResponseWriter, r *http.Request
 		return
 	}
 	var req struct {
-		Nombre      string   `json:"nombre"`
-		Descripcion *string  `json:"descripcion"`
-		Precio      float64  `json:"precio"`
-		Moneda      string   `json:"moneda"`
-		ImagenURL   *string  `json:"imagenUrl"`
-		Categoria   string   `json:"categoria"`
-		Orden       *int     `json:"orden"`
+		Nombre      string  `json:"nombre"`
+		Descripcion *string `json:"descripcion"`
+		Precio      float64 `json:"precio"`
+		Moneda      string  `json:"moneda"`
+		ImagenURL   *string `json:"imagenUrl"`
+		Categoria   string  `json:"categoria"`
+		Orden       *int    `json:"orden"`
 	}
 	if err := DecodeJSON(r, &req); err != nil {
 		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "JSON invalido")
@@ -716,14 +758,14 @@ func (h *AdminHandler) CrearServicioStore(w http.ResponseWriter, r *http.Request
 		return
 	}
 	var req struct {
-		Nombre      string   `json:"nombre"`
-		Descripcion *string  `json:"descripcion"`
-		Precio      float64  `json:"precio"`
-		Moneda      string   `json:"moneda"`
-		TipoPrecio  string   `json:"tipoPrecio"`
-		ImagenURL   *string  `json:"imagenUrl"`
-		Categoria   string   `json:"categoria"`
-		Orden       *int     `json:"orden"`
+		Nombre      string  `json:"nombre"`
+		Descripcion *string `json:"descripcion"`
+		Precio      float64 `json:"precio"`
+		Moneda      string  `json:"moneda"`
+		TipoPrecio  string  `json:"tipoPrecio"`
+		ImagenURL   *string `json:"imagenUrl"`
+		Categoria   string  `json:"categoria"`
+		Orden       *int    `json:"orden"`
 	}
 	if err := DecodeJSON(r, &req); err != nil {
 		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "JSON invalido")
@@ -818,12 +860,12 @@ func (h *AdminHandler) CrearUsuario(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		Email     string  `json:"email"`
-		Password  string  `json:"password"`
-		Nombre    string  `json:"nombre"`
-		Apellido  string  `json:"apellido"`
-		Telefono  *string `json:"telefono"`
-		Rol       string  `json:"rol"`
+		Email    string  `json:"email"`
+		Password string  `json:"password"`
+		Nombre   string  `json:"nombre"`
+		Apellido string  `json:"apellido"`
+		Telefono *string `json:"telefono"`
+		Rol      string  `json:"rol"`
 	}
 	if err := DecodeJSON(r, &req); err != nil {
 		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "JSON invalido")
@@ -935,4 +977,52 @@ func (h *AdminHandler) GetReservaByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	JSON(w, http.StatusOK, result)
+}
+
+const storeImagenMaxSize = 5 << 20
+
+func (h *AdminHandler) SubirImagenStore(w http.ResponseWriter, r *http.Request) {
+	if ok, _, _ := requireAdmin(w, r); !ok {
+		return
+	}
+
+	if h.storage == nil {
+		ErrorJSON(w, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE", "Storage no configurado")
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, storeImagenMaxSize+1024)
+	if err := r.ParseMultipartForm(storeImagenMaxSize); err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "FILE_TOO_LARGE", "Imagen muy grande (max 5MB)")
+		return
+	}
+
+	file, header, err := r.FormFile("imagen")
+	if err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_FILE", "No se encontro imagen")
+		return
+	}
+	defer file.Close()
+
+	contentType := header.Header.Get("Content-Type")
+	ext := filepath.Ext(header.Filename)
+	if ext == "" {
+		ext = ".webp"
+	}
+	storagePath := fmt.Sprintf("store/%d%s", time.Now().UnixMilli(), ext)
+
+	fileBytes, err := io.ReadAll(file)
+	if err != nil {
+		ErrorJSON(w, http.StatusInternalServerError, "READ_ERROR", "Error al leer archivo")
+		return
+	}
+
+	publicURL, err := h.storage.UploadStorage(r.Context(), h.supabaseURL, h.serviceKey, "imagenes", storagePath, fileBytes, contentType)
+	if err != nil {
+		slog.Error("[admin/store/upload-imagen] upload error", "error", err)
+		ErrorJSON(w, http.StatusInternalServerError, "UPLOAD_ERROR", "Error al subir imagen")
+		return
+	}
+
+	JSON(w, http.StatusOK, map[string]interface{}{"ok": true, "url": publicURL})
 }

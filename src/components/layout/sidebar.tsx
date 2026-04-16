@@ -14,6 +14,7 @@ import {
   Shield,
   MessageCircle,
   Handshake,
+  Trophy,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -28,6 +29,12 @@ const menuItems = [
     titulo: 'Mis boogies',
     href: '/dashboard/mis-propiedades',
     icono: Home,
+    grupo: 'general',
+  },
+  {
+    titulo: 'Mis canchas',
+    href: '/dashboard/mis-canchas',
+    icono: Trophy,
     grupo: 'general',
   },
   {

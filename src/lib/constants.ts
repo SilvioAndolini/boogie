@@ -47,6 +47,19 @@ export const MAX_BOOGIES_FREE = 5
 
 export type CategoriaBoogie = 'ALOJAMIENTO' | 'DEPORTE' | 'SERVICIO'
 
+export type SearchMode = 'estandar' | 'sports' | 'express'
+
+export const TIPOS_CANCHA = {
+  FUTBOL: 'Fútbol',
+  BALONCESTO: 'Baloncesto',
+  TENIS: 'Tenis',
+  PADDLE: 'Paddle',
+  TENIS_DE_MESA: 'Tenis de mesa',
+  MULTIDEPORTE: 'Multideporte',
+} as const
+
+export const COMISION_EXPRESS_EXTRA = 0.10
+
 // Paginación
 export const PROPIEDADES_POR_PAGINA = 12
 export const RESENAS_POR_PAGINA = 10

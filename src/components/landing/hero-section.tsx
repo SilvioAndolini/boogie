@@ -1,12 +1,17 @@
 'use client'
 
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { SearchBar } from '@/components/busqueda/search-bar'
+import { SearchModeToggle } from '@/components/busqueda/search-mode-toggle'
 import { ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import { ZONAS } from '@/lib/zonas'
+import type { SearchMode } from '@/lib/constants'
 
 export function HeroSection() {
+  const [searchMode, setSearchMode] = useState<SearchMode>('estandar')
+
   return (
     <section className="relative">
       <div className="relative mx-auto max-w-7xl px-4 pb-20 pt-16 sm:px-6 sm:pb-28 sm:pt-24 lg:px-8">
@@ -28,12 +33,13 @@ export function HeroSection() {
         </motion.div>
 
         <motion.div
-          className="mt-12"
+          className="mt-12 flex flex-col items-center gap-3"
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.15, ease: [0.25, 0.1, 0.25, 1] }}
         >
-          <SearchBar />
+          <SearchModeToggle mode={searchMode} onChange={setSearchMode} />
+          <SearchBar mode={searchMode} />
         </motion.div>
 
         <motion.div

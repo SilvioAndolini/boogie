@@ -20,6 +20,7 @@ import {
   X,
   LayoutGrid,
   ShoppingBag,
+  Trophy,
 } from 'lucide-react'
 import { getAdminCounts } from '@/actions/verificacion.actions'
 import { AdminBadgeCount } from './admin-badge-count'
@@ -34,6 +35,7 @@ interface AdminLink {
 const ADMIN_LINKS: AdminLink[] = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/propiedades', label: 'Boogies', icon: Building2 },
+  { href: '/admin/canchas', label: 'Canchas', icon: Trophy },
   { href: '/admin/reservas', label: 'Reservas', icon: CalendarDays, badgeKey: 'reservasPendientes' },
   { href: '/admin/pagos', label: 'Pagos', icon: CreditCard, badgeKey: 'pagosPendientes' },
   { href: '/admin/verificaciones', label: 'Verificaciones', icon: FileCheck, badgeKey: 'verificacionesPendientes' },

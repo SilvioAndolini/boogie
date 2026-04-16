@@ -46,3 +46,4 @@ yarn-error.log*
 skills/
 skills-lock.json
 tmp_query.sql
+opencode.json

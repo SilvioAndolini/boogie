@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"os"
 	"strings"
 
@@ -56,7 +55,7 @@ func (s *PagoService) Verificar(ctx context.Context, pagoID, userID string, apro
 
 	if aprobado && (estadoReserva == "PENDIENTE" || estadoReserva == "PENDIENTE_PAGO") {
 		if err := s.pagoRepo.SetReservaPendienteConfirm(ctx, reservaID); err != nil {
-			slog.Warn("[pago/verificar] no se pudo pasar a PENDIENTE_CONFIRMACION", "error", err)
+			return fmt.Errorf("pago verificado pero error al actualizar reserva: %w", err)
 		}
 	}
 

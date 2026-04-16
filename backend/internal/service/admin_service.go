@@ -173,12 +173,12 @@ func (s *AdminService) VerificarPago(ctx context.Context, pagoID, nuevoEstado st
 	return nil
 }
 
-func (s *AdminService) GetPropiedades(ctx context.Context, estado, ciudad, busqueda string, pagina int) (*PaginatedResult, error) {
+func (s *AdminService) GetPropiedades(ctx context.Context, estado, ciudad, busqueda, categoria string, pagina int) (*PaginatedResult, error) {
 	limite := 20
 	if pagina < 1 {
 		pagina = 1
 	}
-	props, total, err := s.repo.GetPropiedadesAdmin(ctx, estado, ciudad, busqueda, pagina, limite)
+	props, total, err := s.repo.GetPropiedadesAdmin(ctx, estado, ciudad, busqueda, categoria, pagina, limite)
 	if err != nil {
 		return nil, fmt.Errorf("error al obtener propiedades: %w", err)
 	}

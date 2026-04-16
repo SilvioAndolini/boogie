@@ -4,26 +4,21 @@ import {
   ArrowLeft,
   Star,
   MapPin,
-  Users,
-  BedDouble,
-  Bath,
-  DoorOpen,
   Clock,
   ShieldCheck,
-  CalendarDays,
   Zap,
+  Trophy,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { GoldStar } from '@/components/ui/gold-star'
 import { getPropiedadPorId } from '@/actions/propiedad.actions'
 import { PropertyGalleryWrapper } from './gallery-wrapper'
-import { BookingWidget } from '@/components/reservas/booking-widget'
+import { CanchaBookingWidget } from '@/components/canchas/cancha-booking-widget'
 import { HostCard } from '@/components/propiedades/host-card'
 import { AmenidadIcon } from '@/components/propiedades/amenidad-icon'
-import { TIPOS_PROPIEDAD, POLITICAS_CANCELACION } from '@/lib/constants'
-import { getCotizacionEuro } from '@/lib/services/exchange-rate'
-import { obtenerFechasOcupadas } from '@/lib/reservas/disponibilidad'
 import { LocationViewMap } from '@/components/propiedades/location-view'
+import { TIPOS_CANCHA } from '@/lib/constants'
+import { getCotizacionEuro } from '@/lib/services/exchange-rate'
 import type { Metadata } from 'next'
 
 type Props = { params: Promise<{ id: string }> }
@@ -31,14 +26,14 @@ type Props = { params: Promise<{ id: string }> }
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
   const propiedad = await getPropiedadPorId(id)
-  if (!propiedad) return { title: 'Boogie no encontrado' }
+  if (!propiedad) return { title: 'Cancha no encontrada' }
   return {
     title: propiedad.titulo,
     description: propiedad.descripcion.slice(0, 160),
   }
 }
 
-export default async function PropiedadDetallePage({ params }: Props) {
+export default async function CanchaDetallePage({ params }: Props) {
   const { id } = await params
   const propiedad = await getPropiedadPorId(id)
 
@@ -46,30 +41,22 @@ export default async function PropiedadDetallePage({ params }: Props) {
 
   const cotizacion = await getCotizacionEuro()
 
-  const fechasOcupadasRaw = await obtenerFechasOcupadas(id)
-  const fechasOcupadas = fechasOcupadasRaw.map((r) => ({
-    inicio: r.inicio.toISOString(),
-    fin: r.fin.toISOString(),
-    estado: r.estado,
-  }))
-
-  const reglas = propiedad.reglas
-    ? propiedad.reglas.split('\n').filter(Boolean)
-    : []
-
-  const politicaKey = propiedad.politicaCancelacion as keyof typeof POLITICAS_CANCELACION
-  const politica = POLITICAS_CANCELACION[politicaKey]
+  const tipoCanchaKey = propiedad.tipoCancha
+  const tipoCanchaLabel = tipoCanchaKey ? TIPOS_CANCHA[tipoCanchaKey as keyof typeof TIPOS_CANCHA] ?? tipoCanchaKey : null
+  const precioPorHora = propiedad.precioPorHora
+  const horaApertura = propiedad.horaApertura
+  const horaCierre = propiedad.horaCierre
 
   return (
     <div className="min-h-screen bg-[#FEFCF9]">
       <div className="border-b border-[#E8E4DF] bg-white/80 backdrop-blur-sm">
         <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
           <Link
-            href="/propiedades"
+            href="/canchas"
             className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-medium text-[#6B6560] transition-colors hover:bg-[#F4F1EC] hover:text-[#1B4332]"
           >
             <ArrowLeft className="h-4 w-4" />
-            Volver a boogies
+            Volver a canchas
           </Link>
         </div>
       </div>
@@ -85,20 +72,15 @@ export default async function PropiedadDetallePage({ params }: Props) {
             {/* ====== TITULO + BADGES ====== */}
             <div className="mb-6">
               <div className="mb-2.5 flex flex-wrap items-center gap-2">
-                <Badge className="rounded-lg bg-[#D8F3DC] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#1B4332] ring-1 ring-inset ring-[#1B4332]/10 hover:bg-[#D8F3DC]">
-                  {TIPOS_PROPIEDAD[propiedad.tipoPropiedad as keyof typeof TIPOS_PROPIEDAD] ?? propiedad.tipoPropiedad}
+                {tipoCanchaLabel && (
+                  <Badge className="rounded-lg bg-[#D8F3DC] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#1B4332] ring-1 ring-inset ring-[#1B4332]/10 hover:bg-[#D8F3DC]">
+                    <Trophy className="mr-1 h-3 w-3" />
+                    {tipoCanchaLabel}
+                  </Badge>
+                )}
+                <Badge variant="outline" className="rounded-lg border-[#E8E4DF] px-2.5 py-1 text-[10px] font-medium text-[#6B6560]">
+                  Cancha deportiva
                 </Badge>
-                {politica && (
-                  <Badge variant="outline" className="rounded-lg border-[#E8E4DF] px-2.5 py-1 text-[10px] font-medium text-[#6B6560]">
-                    Cancelación {politica.nombre.toLowerCase()}
-                  </Badge>
-                )}
-                {propiedad.esExpress && (
-                  <Badge className="rounded-lg bg-[#F4A261] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white">
-                    <Zap className="mr-0.5 h-3 w-3" />
-                    Express
-                  </Badge>
-                )}
               </div>
               <h1 className="text-2xl font-bold tracking-tight text-[#1A1A1A] sm:text-3xl">
                 {propiedad.titulo}
@@ -117,54 +99,33 @@ export default async function PropiedadDetallePage({ params }: Props) {
               </div>
             </div>
 
-            {/* ====== STATS ====== */}
-            <div className="mb-8 grid grid-cols-2 gap-2 rounded-xl border border-[#E8E4DF] bg-white px-3 py-2.5 sm:grid-cols-4">
+            {/* ====== STATS CANCHA ====== */}
+            <div className="mb-8 grid grid-cols-2 gap-2 rounded-xl border border-[#E8E4DF] bg-white px-3 py-2.5 sm:grid-cols-3">
               <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 shrink-0 text-[#1B4332]" />
+                <Trophy className="h-4 w-4 shrink-0 text-[#1B4332]" />
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold text-[#1A1A1A]">{propiedad.capacidadMaxima}</p>
-                  <p className="text-[9px] text-[#9E9892]">Huéspedes</p>
+                  <p className="text-xs font-semibold text-[#1A1A1A]">{tipoCanchaLabel ?? 'Cancha'}</p>
+                  <p className="text-[9px] text-[#9E9892]">Tipo</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <DoorOpen className="h-4 w-4 shrink-0 text-[#1B4332]" />
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold text-[#1A1A1A]">{propiedad.habitaciones}</p>
-                  <p className="text-[9px] text-[#9E9892]">Habitaciones</p>
+              {precioPorHora != null && (
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 shrink-0 text-[#1B4332]" />
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-[#1A1A1A]">${precioPorHora.toFixed(2)}</p>
+                    <p className="text-[9px] text-[#9E9892]">Por hora</p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <BedDouble className="h-4 w-4 shrink-0 text-[#1B4332]" />
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold text-[#1A1A1A]">{propiedad.camas}</p>
-                  <p className="text-[9px] text-[#9E9892]">Camas</p>
+              )}
+              {horaApertura && horaCierre && (
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 shrink-0 text-[#1B4332]" />
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-[#1A1A1A]">{horaApertura} - {horaCierre}</p>
+                    <p className="text-[9px] text-[#9E9892]">Horario</p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Bath className="h-4 w-4 shrink-0 text-[#1B4332]" />
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold text-[#1A1A1A]">{propiedad.banos}</p>
-                  <p className="text-[9px] text-[#9E9892]">Baños</p>
-                </div>
-              </div>
-            </div>
-
-            {/* ====== CHECK IN/OUT ====== */}
-            <div className="mb-8 grid grid-cols-2 gap-3">
-              <div className="flex items-center gap-3 rounded-xl border border-[#E8E4DF] bg-white px-4 py-3">
-                <Clock className="h-4 w-4 text-[#1B4332]" />
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider text-[#9E9892]">Check-in</p>
-                  <p className="text-sm font-semibold text-[#1A1A1A]">{propiedad.horarioCheckIn || '14:00'}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 rounded-xl border border-[#E8E4DF] bg-white px-4 py-3">
-                <Clock className="h-4 w-4 text-[#1B4332]" />
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider text-[#9E9892]">Check-out</p>
-                  <p className="text-sm font-semibold text-[#1A1A1A]">{propiedad.horarioCheckOut || '11:00'}</p>
-                </div>
-              </div>
+              )}
             </div>
 
             {/* ====== DESCRIPCION ====== */}
@@ -185,7 +146,7 @@ export default async function PropiedadDetallePage({ params }: Props) {
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#D8F3DC]">
                     <Star className="h-3.5 w-3.5 text-[#1B4332]" />
                   </div>
-                  Amenidades
+                  Instalaciones
                 </h2>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {propiedad.amenidades.map((pa) => (
@@ -226,17 +187,17 @@ export default async function PropiedadDetallePage({ params }: Props) {
             )}
 
             {/* ====== REGLAS ====== */}
-            {reglas.length > 0 && (
+            {propiedad.reglas && (
               <div className="mb-8">
                 <h2 className="mb-3 flex items-center gap-2 text-base font-bold text-[#1A1A1A]">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#D8F3DC]">
                     <ShieldCheck className="h-3.5 w-3.5 text-[#1B4332]" />
                   </div>
-                  Reglas del alojamiento
+                  Reglas de uso
                 </h2>
                 <div className="rounded-xl border border-[#E8E4DF] bg-white p-4">
                   <ul className="space-y-2">
-                    {reglas.map((regla, i) => (
+                    {propiedad.reglas.split('\n').filter(Boolean).map((regla, i) => (
                       <li key={i} className="flex items-start gap-2.5 text-sm text-[#3D3832]">
                         <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#1B4332]" />
                         {regla}
@@ -298,7 +259,7 @@ export default async function PropiedadDetallePage({ params }: Props) {
                     Aún no hay reseñas
                   </p>
                   <p className="mt-1 text-xs text-[#9E9892]">
-                    Las reseñas aparecerán cuando el alojamiento reciba calificaciones
+                    Las reseñas aparecerán cuando la cancha reciba calificaciones
                   </p>
                 </div>
               )}
@@ -308,14 +269,17 @@ export default async function PropiedadDetallePage({ params }: Props) {
           {/* ====== SIDEBAR ====== */}
           <div className="lg:w-[40%]">
             <div className="lg:sticky lg:top-4 space-y-4">
-              <BookingWidget
-                precioPorNoche={Number(propiedad.precioPorNoche)}
-                moneda={propiedad.moneda as 'USD' | 'VES'}
-                capacidadMaxima={propiedad.capacidadMaxima}
-                estanciaMinima={propiedad.estanciaMinima}
+              <CanchaBookingWidget
                 propiedadId={propiedad.id}
+                titulo={propiedad.titulo}
+                ciudad={propiedad.ciudad}
+                estado={propiedad.estado}
+                imagenes={propiedad.imagenes}
+                precioPorHora={precioPorHora ?? Number(propiedad.precioPorNoche)}
+                moneda={propiedad.moneda as 'USD' | 'VES'}
+                horaApertura={horaApertura ?? '08:00'}
+                horaCierre={horaCierre ?? '22:00'}
                 tasaEuro={cotizacion.tasa}
-                fechasOcupadas={fechasOcupadas}
               />
 
               {propiedad.propietario && (

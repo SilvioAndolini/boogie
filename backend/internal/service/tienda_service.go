@@ -79,25 +79,49 @@ func (s *TiendaService) GetAllServicios(ctx context.Context) ([]repository.Store
 }
 
 func (s *TiendaService) CrearProducto(ctx context.Context, nombre string, descripcion *string, precio float64, moneda string, imagenURL *string, categoria string, orden int) error {
-	return s.repo.CrearProducto(ctx, nombre, descripcion, precio, moneda, categoria, imagenURL, orden)
+	if err := s.repo.CrearProducto(ctx, nombre, descripcion, precio, moneda, categoria, imagenURL, orden); err != nil {
+		return err
+	}
+	s.cache.Delete("tienda:productos")
+	return nil
 }
 
 func (s *TiendaService) ActualizarProducto(ctx context.Context, id string, nombre *string, descripcion *string, precio *float64, moneda *string, imagenURL *string, categoria *string, activo *bool, orden *int) error {
-	return s.repo.ActualizarProducto(ctx, id, nombre, descripcion, precio, moneda, imagenURL, categoria, activo, orden)
+	if err := s.repo.ActualizarProducto(ctx, id, nombre, descripcion, precio, moneda, imagenURL, categoria, activo, orden); err != nil {
+		return err
+	}
+	s.cache.Delete("tienda:productos")
+	return nil
 }
 
 func (s *TiendaService) EliminarProducto(ctx context.Context, id string) error {
-	return s.repo.EliminarProducto(ctx, id)
+	if err := s.repo.EliminarProducto(ctx, id); err != nil {
+		return err
+	}
+	s.cache.Delete("tienda:productos")
+	return nil
 }
 
 func (s *TiendaService) CrearServicio(ctx context.Context, nombre string, descripcion *string, precio float64, moneda, tipoPrecio, categoria string, imagenURL *string, orden int) error {
-	return s.repo.CrearServicio(ctx, nombre, descripcion, precio, moneda, tipoPrecio, categoria, imagenURL, orden)
+	if err := s.repo.CrearServicio(ctx, nombre, descripcion, precio, moneda, tipoPrecio, categoria, imagenURL, orden); err != nil {
+		return err
+	}
+	s.cache.Delete("tienda:servicios")
+	return nil
 }
 
 func (s *TiendaService) ActualizarServicio(ctx context.Context, id string, nombre *string, descripcion *string, precio *float64, moneda *string, tipoPrecio *string, imagenURL *string, categoria *string, activo *bool, orden *int) error {
-	return s.repo.ActualizarServicio(ctx, id, nombre, descripcion, precio, moneda, tipoPrecio, imagenURL, categoria, activo, orden)
+	if err := s.repo.ActualizarServicio(ctx, id, nombre, descripcion, precio, moneda, tipoPrecio, imagenURL, categoria, activo, orden); err != nil {
+		return err
+	}
+	s.cache.Delete("tienda:servicios")
+	return nil
 }
 
 func (s *TiendaService) EliminarServicio(ctx context.Context, id string) error {
-	return s.repo.EliminarServicio(ctx, id)
+	if err := s.repo.EliminarServicio(ctx, id); err != nil {
+		return err
+	}
+	s.cache.Delete("tienda:servicios")
+	return nil
 }

@@ -59,6 +59,25 @@ async function main() {
     { nombre: 'Se permiten mascotas', icono: 'paw-print', categoria: CategoriaAmenidad.SERVICIOS },
     { nombre: 'Adecuado para familias', icono: 'baby', categoria: CategoriaAmenidad.SERVICIOS },
     { nombre: 'Adecuado para eventos', icono: 'party-popper', categoria: CategoriaAmenidad.SERVICIOS },
+
+    // Deporte
+    { nombre: 'Iluminación nocturna', icono: 'sun', categoria: CategoriaAmenidad.DEPORTE },
+    { nombre: 'Vestuarios', icono: 'shirt', categoria: CategoriaAmenidad.DEPORTE },
+    { nombre: 'Duchas', icono: 'droplets', categoria: CategoriaAmenidad.DEPORTE },
+    { nombre: 'Estacionamiento', icono: 'car', categoria: CategoriaAmenidad.DEPORTE },
+    { nombre: 'Graderías', icono: 'users', categoria: CategoriaAmenidad.DEPORTE },
+    { nombre: 'Marcador electrónico', icono: 'monitor', categoria: CategoriaAmenidad.DEPORTE },
+    { nombre: 'Césped sintético', icono: 'grid-3x3', categoria: CategoriaAmenidad.DEPORTE },
+    { nombre: 'Piso de madera', icono: 'square', categoria: CategoriaAmenidad.DEPORTE },
+    { nombre: 'Piso de cemento', icono: 'square', categoria: CategoriaAmenidad.DEPORTE },
+    { nombre: 'Redes', icono: 'grip', categoria: CategoriaAmenidad.DEPORTE },
+    { nombre: 'Canasta de basketball', icono: 'target', categoria: CategoriaAmenidad.DEPORTE },
+    { nombre: 'Red de tenis', icono: 'grip', categoria: CategoriaAmenidad.DEPORTE },
+    { nombre: 'Mesa de ping-pong', icono: 'table', categoria: CategoriaAmenidad.DEPORTE },
+    { nombre: 'Bebedero', icono: 'droplets', categoria: CategoriaAmenidad.DEPORTE },
+    { nombre: 'Área de calentamiento', icono: 'flame', categoria: CategoriaAmenidad.DEPORTE },
+    { nombre: 'Tienda deportiva', icono: 'shopping-bag', categoria: CategoriaAmenidad.DEPORTE },
+    { nombre: 'Alquiler de equipos', icono: 'package', categoria: CategoriaAmenidad.DEPORTE },
   ]
 
   // Crear amenidades (upsert para evitar duplicados)

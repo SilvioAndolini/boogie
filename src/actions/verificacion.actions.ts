@@ -1,8 +1,7 @@
 'use server'
 
-import { goApi, goGet, goPost, goPatch, goDelete, GoAPIError } from '@/lib/go-api-client'
+import { goApi, goGet, goPost, goPatch, goDelete, GoAPIError, getAuthToken } from '@/lib/go-api-client'
 import { getUsuarioAutenticado } from '@/lib/auth'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 
 export async function getVerificacionUsuario() {
@@ -43,39 +42,30 @@ export async function subirDocumentoManual(formData: FormData) {
     return { error: 'Debes subir las 3 fotos del documento' }
   }
 
-  const admin = createAdminClient()
-  const timestamp = Date.now()
-
-  const uploadImage = async (file: File, suffix: string) => {
-    const ext = file.name.split('.').pop() || 'webp'
-    const path = `verificaciones/${user.id}/${timestamp}_${suffix}.${ext}`
-    const buffer = Buffer.from(await file.arrayBuffer())
-    const { error: uploadError } = await admin.storage
-      .from('imagenes')
-      .upload(path, buffer, { contentType: file.type, upsert: true })
-    if (uploadError) return null
-    const { data: urlData } = admin.storage.from('imagenes').getPublicUrl(path)
-    return urlData.publicUrl
-  }
-
-  const [fotoFrontalUrl, fotoTraseraUrl, fotoSelfieUrl] = await Promise.all([
-    uploadImage(fotoFrontal, 'frontal'),
-    uploadImage(fotoTrasera, 'trasera'),
-    uploadImage(fotoSelfie, 'selfie'),
-  ])
-
-  if (!fotoFrontalUrl || !fotoTraseraUrl || !fotoSelfieUrl) {
-    return { error: 'Error al subir las imágenes. Intenta de nuevo.' }
-  }
+  const goFormData = new FormData()
+  goFormData.append('fotoFrontal', fotoFrontal)
+  goFormData.append('fotoTrasera', fotoTrasera)
+  goFormData.append('fotoSelfie', fotoSelfie)
 
   try {
-    const verificacion = await goPost<Record<string, unknown>>('/api/v1/verificacion/subir-documento', {
-      fotoFrontalUrl,
-      fotoTraseraUrl,
-      fotoSelfieUrl,
+    const token = await getAuthToken()
+    const res = await fetch(`${process.env.GO_BACKEND_URL || 'http://localhost:8080'}/api/v1/verificacion/subir-documento`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: goFormData,
     })
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      const err = (data as { error?: { code?: string; message?: string } }).error
+      return { error: err?.message || 'Error al subir documento' }
+    }
+
     revalidatePath('/dashboard/verificar-identidad')
-    return { verificacion }
+    return { verificacion: (data as { data?: unknown }).data ?? data }
   } catch (err) {
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al registrar verificación' }

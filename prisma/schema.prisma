@@ -96,6 +96,15 @@ model Propiedad {
   ratingPromedio Float? @map("rating_promedio")
   totalResenas   Int    @default(0) @map("total_resenas")
 
+  categoria          CategoriaPropiedad @default(ALOJAMIENTO)
+  tipoCancha         TipoCancha?
+  precioPorHora      Decimal?           @map("precio_por_hora") @db.Decimal(10, 2)
+  horaApertura       String?            @default("06:00") @map("hora_apertura")
+  horaCierre         String?            @default("23:00") @map("hora_cierre")
+  duracionMinimaMin  Int?               @default(60) @map("duracion_minima_min")
+  esExpress          Boolean            @default(false) @map("es_express")
+  precioExpress      Decimal?           @map("precio_express") @db.Decimal(10, 2)
+
   propietarioId     String              @map("propietario_id")
   propietario       Usuario             @relation("Propietario", fields: [propietarioId], references: [id])
   boogiesOfertas    BoogieOferta[]      @relation("PropiedadOfertas")
@@ -111,6 +120,9 @@ model Propiedad {
   @@index([estadoPublicacion])
   @@index([precioPorNoche])
   @@index([ratingPromedio])
+  @@index([categoria])
+  @@index([tipoCancha])
+  @@index([esExpress])
   @@map("propiedades")
 }
 
@@ -125,6 +137,20 @@ enum TipoPropiedad {
   PENTHOUSE
   FINCA
   OTRO
+}
+
+enum CategoriaPropiedad {
+  ALOJAMIENTO
+  DEPORTE
+}
+
+enum TipoCancha {
+  FUTBOL
+  BALONCESTO
+  TENIS
+  PADDLE
+  TENIS_DE_MESA
+  MULTIDEPORTE
 }
 
 enum Moneda {
@@ -188,6 +214,7 @@ enum CategoriaAmenidad {
   COCINA
   BANO
   SERVICIOS
+  DEPORTE
 }
 
 model PropiedadAmenidad {
@@ -211,6 +238,9 @@ model Reserva {
   fechaEntrada DateTime @map("fecha_entrada")
   fechaSalida  DateTime @map("fecha_salida")
   noches       Int
+
+  horaInicio String? @map("hora_inicio")
+  horaFin    String? @map("hora_fin")
 
   precioPorNoche     Decimal  @map("precio_por_noche") @db.Decimal(10, 2)
   subtotal           Decimal  @db.Decimal(10, 2)

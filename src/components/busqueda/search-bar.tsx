@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Search, MapPin, Calendar, Users, Building2, TreePine, Navigation, X, ChevronLeft, ChevronRight, ChevronUp, ChevronDown } from 'lucide-react'
+import { Search, MapPin, Calendar, Users, Building2, TreePine, Navigation, X, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Trophy, Clock, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { SearchMode, TIPOS_CANCHA } from '@/lib/constants'
 
 interface LocationResult {
   id?: string
@@ -570,7 +571,7 @@ function MobileDatePicker({
   )
 }
 
-export function SearchBar() {
+export function SearchBar({ mode = 'estandar' }: { mode?: SearchMode }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [ubicacion, setUbicacion] = useState(searchParams.get('ubicacion') || '')
@@ -591,6 +592,10 @@ export function SearchBar() {
   const datesButtonRef = useRef<HTMLButtonElement>(null)
   const guestsButtonRef = useRef<HTMLButtonElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [deporte, setDeporte] = useState(searchParams.get('tipoCancha') || '')
+  const [fecha, setFecha] = useState(searchParams.get('fecha') || '')
+  const [horaInicio, setHoraInicio] = useState(searchParams.get('horaInicio') || '08:00')
+  const [duracion, setDuracion] = useState(searchParams.get('duracion') || '1')
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -683,6 +688,27 @@ export function SearchBar() {
     if (lat != null) params.set('lat', String(lat))
     if (lng != null) params.set('lng', String(lng))
     if (lat != null && lng != null) params.set('radio', '25')
+
+    if (mode === 'sports') {
+      if (deporte) params.set('tipoCancha', deporte)
+      if (fecha) params.set('fecha', fecha)
+      if (horaInicio) params.set('horaInicio', horaInicio)
+      if (duracion && duracion !== '1') params.set('duracion', duracion)
+      params.set('categoria', 'DEPORTE')
+      router.push(`/canchas?${params.toString()}`)
+      return
+    }
+
+    if (mode === 'express') {
+      params.set('esExpress', 'true')
+      const today = new Date().toISOString().split('T')[0]
+      params.set('entrada', today)
+      if (dateRange.from) params.set('entrada', formatDate(dateRange.from))
+      if (huespedes && huespedes !== '1') params.set('huespedes', huespedes)
+      router.push(`/propiedades?${params.toString()}`)
+      return
+    }
+
     if (dateRange.from) params.set('entrada', formatDate(dateRange.from))
     if (dateRange.to) params.set('salida', formatDate(dateRange.to))
     if (huespedes && huespedes !== '1') params.set('huespedes', huespedes)
@@ -747,49 +773,145 @@ export function SearchBar() {
 
         <div className="h-8 w-px bg-[#E8E4DF]" />
 
-        <button
-          ref={datesButtonRef}
-          type="button"
-          onClick={() => {
-            setDatePickerOpen(!datePickerOpen)
-            setOpen(false)
-            setGuestPickerOpen(false)
-          }}
-          className="flex-1 cursor-pointer items-center gap-2 rounded-full px-3 py-2 transition-colors hover:bg-[#F8F6F3] flex"
-        >
-          <Calendar className="h-4 w-4 shrink-0 text-[#1B4332]" />
-          <div className="flex flex-col">
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-[#6B6560]">Fechas</span>
-            <span className="text-sm text-[#1A1A1A]">
-              {dateRange.from && dateRange.to
-                ? `${dateRange.from.getDate()}/${dateRange.from.getMonth() + 1} - ${dateRange.to.getDate()}/${dateRange.to.getMonth() + 1}`
-                : dateRange.from
-                  ? `${dateRange.from.getDate()}/${dateRange.from.getMonth() + 1} - ...`
-                  : '¿Cuándo viajas?'}
-            </span>
-          </div>
-        </button>
+        {mode === 'sports' ? (
+          <>
+            <button
+              type="button"
+              className="flex items-center gap-2 rounded-full px-3 py-2 transition-colors hover:bg-[#F8F6F3]"
+            >
+              <Trophy className="h-4 w-4 shrink-0 text-[#1B4332]" />
+              <div className="flex flex-col">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-[#6B6560]">Deporte</span>
+                <select
+                  value={deporte}
+                  onChange={(e) => setDeporte(e.target.value)}
+                  className="border-none bg-transparent text-sm text-[#1A1A1A] outline-none"
+                >
+                  <option value="">Todos</option>
+                  {Object.entries(TIPOS_CANCHA).map(([k, v]) => (
+                    <option key={k} value={k}>{v}</option>
+                  ))}
+                </select>
+              </div>
+            </button>
 
-        <div className="h-8 w-px bg-[#E8E4DF]" />
+            <div className="h-8 w-px bg-[#E8E4DF]" />
 
-        <button
-          ref={guestsButtonRef}
-          type="button"
-          onClick={() => {
-            setGuestPickerOpen(!guestPickerOpen)
-            setOpen(false)
-            setDatePickerOpen(false)
-          }}
-          className="flex flex-1 items-center gap-2 rounded-full px-3 py-2 transition-colors hover:bg-[#F8F6F3]"
-        >
-          <Users className="h-4 w-4 shrink-0 text-[#1B4332]" />
-          <div className="flex flex-col">
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-[#6B6560]">Huéspedes</span>
-            <span className="text-sm text-[#1A1A1A]">
-              {huespedes === '1' ? '1 huésped' : `${huespedes} huéspedes`}
-            </span>
-          </div>
-        </button>
+            <button className="flex items-center gap-2 rounded-full px-3 py-2 transition-colors hover:bg-[#F8F6F3]">
+              <Calendar className="h-4 w-4 shrink-0 text-[#1B4332]" />
+              <div className="flex flex-col">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-[#6B6560]">Fecha</span>
+                <input
+                  type="date"
+                  value={fecha}
+                  onChange={(e) => setFecha(e.target.value)}
+                  className="border-none bg-transparent text-sm text-[#1A1A1A] outline-none"
+                />
+              </div>
+            </button>
+
+            <div className="h-8 w-px bg-[#E8E4DF]" />
+
+            <button className="flex items-center gap-2 rounded-full px-3 py-2 transition-colors hover:bg-[#F8F6F3]">
+              <Clock className="h-4 w-4 shrink-0 text-[#1B4332]" />
+              <div className="flex flex-col">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-[#6B6560]">Hora / Duración</span>
+                <div className="flex items-center gap-1 text-sm text-[#1A1A1A]">
+                  <input
+                    type="time"
+                    value={horaInicio}
+                    onChange={(e) => setHoraInicio(e.target.value)}
+                    className="border-none bg-transparent outline-none"
+                  />
+                  <span className="text-[#6B6560]">·</span>
+                  <select
+                    value={duracion}
+                    onChange={(e) => setDuracion(e.target.value)}
+                    className="border-none bg-transparent outline-none"
+                  >
+                    <option value="1">1h</option>
+                    <option value="2">2h</option>
+                    <option value="3">3h</option>
+                    <option value="4">4h</option>
+                  </select>
+                </div>
+              </div>
+            </button>
+          </>
+        ) : mode === 'express' ? (
+          <>
+            <div className="flex items-center gap-2 rounded-full px-3 py-2">
+              <Zap className="h-4 w-4 shrink-0 text-[#F59E0B]" />
+              <span className="text-sm font-medium text-[#F59E0B]">Disponible hoy</span>
+            </div>
+
+            <div className="h-8 w-px bg-[#E8E4DF]" />
+
+            <button
+              ref={guestsButtonRef}
+              type="button"
+              onClick={() => {
+                setGuestPickerOpen(!guestPickerOpen)
+                setOpen(false)
+              }}
+              className="flex flex-1 items-center gap-2 rounded-full px-3 py-2 transition-colors hover:bg-[#F8F6F3]"
+            >
+              <Users className="h-4 w-4 shrink-0 text-[#1B4332]" />
+              <div className="flex flex-col">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-[#6B6560]">Huéspedes</span>
+                <span className="text-sm text-[#1A1A1A]">
+                  {huespedes === '1' ? '1 huésped' : `${huespedes} huéspedes`}
+                </span>
+              </div>
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              ref={datesButtonRef}
+              type="button"
+              onClick={() => {
+                setDatePickerOpen(!datePickerOpen)
+                setOpen(false)
+                setGuestPickerOpen(false)
+              }}
+              className="flex-1 cursor-pointer items-center gap-2 rounded-full px-3 py-2 transition-colors hover:bg-[#F8F6F3] flex"
+            >
+              <Calendar className="h-4 w-4 shrink-0 text-[#1B4332]" />
+              <div className="flex flex-col">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-[#6B6560]">Fechas</span>
+                <span className="text-sm text-[#1A1A1A]">
+                  {dateRange.from && dateRange.to
+                    ? `${dateRange.from.getDate()}/${dateRange.from.getMonth() + 1} - ${dateRange.to.getDate()}/${dateRange.to.getMonth() + 1}`
+                    : dateRange.from
+                      ? `${dateRange.from.getDate()}/${dateRange.from.getMonth() + 1} - ...`
+                      : '¿Cuándo viajas?'}
+                </span>
+              </div>
+            </button>
+
+            <div className="h-8 w-px bg-[#E8E4DF]" />
+
+            <button
+              ref={guestsButtonRef}
+              type="button"
+              onClick={() => {
+                setGuestPickerOpen(!guestPickerOpen)
+                setOpen(false)
+                setDatePickerOpen(false)
+              }}
+              className="flex flex-1 items-center gap-2 rounded-full px-3 py-2 transition-colors hover:bg-[#F8F6F3]"
+            >
+              <Users className="h-4 w-4 shrink-0 text-[#1B4332]" />
+              <div className="flex flex-col">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-[#6B6560]">Huéspedes</span>
+                <span className="text-sm text-[#1A1A1A]">
+                  {huespedes === '1' ? '1 huésped' : `${huespedes} huéspedes`}
+                </span>
+              </div>
+            </button>
+          </>
+        )}
 
         <button
           type="button"

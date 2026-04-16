@@ -4,6 +4,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 const RUTAS_PUBLICAS = [
   '/',
   '/propiedades',
+  '/canchas',
   '/zonas',
   '/como-funciona',
   '/login',
@@ -19,6 +20,7 @@ function esRutaPublica(pathname: string): boolean {
   return RUTAS_PUBLICAS.some(ruta => {
     if (ruta === pathname) return true
     if (ruta === '/propiedades' && pathname.startsWith('/propiedades')) return true
+    if (ruta === '/canchas' && pathname.startsWith('/canchas')) return true
     if (ruta === '/zonas' && pathname.startsWith('/zonas')) return true
     return false
   })

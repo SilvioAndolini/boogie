@@ -62,6 +62,14 @@ export const propiedadSchema = z.object({
   estanciaMinima: z.coerce.number().min(1).default(1),
   estanciaMaxima: z.coerce.number().optional(),
   amenidades: z.array(z.string()).default([]),
+  categoria: z.enum(['ALOJAMIENTO', 'DEPORTE']).default('ALOJAMIENTO'),
+  tipoCancha: z.enum(['FUTBOL', 'BALONCESTO', 'TENIS', 'PADDLE', 'TENIS_DE_MESA', 'MULTIDEPORTE']).optional(),
+  precioPorHora: z.coerce.number().min(1).optional(),
+  horaApertura: z.string().optional(),
+  horaCierre: z.string().optional(),
+  duracionMinimaMin: z.coerce.number().min(15).optional(),
+  esExpress: z.boolean().default(false),
+  precioExpress: z.coerce.number().min(1).optional(),
 })
 
 // === Reservas ===

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { Heart, MapPin, BedDouble, Bath, DoorOpen } from 'lucide-react'
+import { Heart, MapPin, BedDouble, Bath, DoorOpen, Zap, Trophy } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { GoldStar, GoldStarSmall } from '@/components/ui/gold-star'
@@ -23,6 +23,10 @@ export interface PropiedadCard {
   camas: number
   banos: number
   propietario?: { reputacion: number | null; plan_suscripcion: string } | null
+  esExpress?: boolean
+  categoria?: string
+  tipoCancha?: string | null
+  precioPorHora?: number | null
 }
 
 const TIPO_LABELS: Record<TipoPropiedad, string> = {
@@ -64,11 +68,14 @@ export function PropertyCard({ propiedad }: { propiedad: PropiedadCard }) {
   } = propiedad
 
   const isUltra = propiedad.propietario?.plan_suscripcion === 'ULTRA'
+  const isCancha = propiedad.categoria === 'DEPORTE'
+  const isExpress = propiedad.esExpress
   const imagenUrl = imagenes?.[0]
+  const linkBase = isCancha ? '/canchas' : '/propiedades'
 
   return (
     <Link 
-      href={`/propiedades/${id}`} 
+      href={`${linkBase}/${id}`} 
       target="_blank"
       rel="noopener noreferrer"
       className="group block"
@@ -128,13 +135,25 @@ export function PropertyCard({ propiedad }: { propiedad: PropiedadCard }) {
             <Heart className="h-4 w-4" />
           </Button>
 
-          <div className="absolute bottom-3 left-3 z-10">
+          <div className="absolute bottom-3 left-3 z-10 flex gap-1.5">
             <Badge
               variant="secondary"
               className="border-0 bg-white/85 px-3 py-0.5 text-[11px] font-medium text-[#1A1A1A] shadow-sm backdrop-blur-md"
             >
               {TIPO_LABELS[tipoPropiedad] ?? tipoPropiedad}
             </Badge>
+            {isCancha && (
+              <Badge className="border-0 bg-[#1B4332] px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
+                <Trophy className="mr-0.5 h-2.5 w-2.5" />
+                Cancha
+              </Badge>
+            )}
+            {isExpress && !isCancha && (
+              <Badge className="border-0 bg-[#F4A261] px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
+                <Zap className="mr-0.5 h-2.5 w-2.5" />
+                Express
+              </Badge>
+            )}
           </div>
         </div>
 
@@ -165,9 +184,14 @@ export function PropertyCard({ propiedad }: { propiedad: PropiedadCard }) {
           <div className="mt-2.5 flex items-center gap-2">
             <div className="flex items-baseline gap-0.5">
               <span className="text-lg font-bold tracking-tight text-[#1B4332]">
-                {formatearPrecio(precioPorNoche, moneda)}
+                {isCancha && propiedad.precioPorHora != null
+                  ? formatearPrecio(propiedad.precioPorHora, moneda)
+                  : formatearPrecio(precioPorNoche, moneda)
+                }
               </span>
-              <span className="text-xs font-normal text-[#6B6560]">/ noche</span>
+              <span className="text-xs font-normal text-[#6B6560]">
+                {isCancha ? '/ hora' : '/ noche'}
+              </span>
             </div>
             {propiedad.propietario && (propiedad.propietario.reputacion ?? 0) > 0 && (
               <div className="ml-auto flex items-center gap-1.5 rounded-full bg-[#FDF8E8] px-2.5 py-1">

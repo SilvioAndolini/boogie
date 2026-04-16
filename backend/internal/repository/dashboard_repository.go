@@ -30,7 +30,8 @@ type GastoMantenimiento struct {
 type FechaBloqueada struct {
 	ID          string  `json:"id"`
 	PropiedadID string  `json:"propiedad_id"`
-	Fecha       string  `json:"fecha"`
+	FechaInicio string  `json:"fecha_inicio"`
+	FechaFin    string  `json:"fecha_fin"`
 	Motivo      *string `json:"motivo"`
 }
 
@@ -89,7 +90,7 @@ func (r *DashboardRepo) GetGastos(ctx context.Context, propiedadID string) ([]Ga
 
 func (r *DashboardRepo) GetFechasBloqueadas(ctx context.Context, propiedadID string) ([]FechaBloqueada, error) {
 	rows, err := r.pool.Query(ctx, `
-		SELECT id, propiedad_id, fecha, motivo
+		SELECT id, propiedad_id, fecha_inicio, fecha_fin, motivo
 		FROM fechas_bloqueadas
 		WHERE propiedad_id = $1
 	`, propiedadID)
@@ -101,7 +102,7 @@ func (r *DashboardRepo) GetFechasBloqueadas(ctx context.Context, propiedadID str
 	var results []FechaBloqueada
 	for rows.Next() {
 		var f FechaBloqueada
-		if err := rows.Scan(&f.ID, &f.PropiedadID, &f.Fecha, &f.Motivo); err != nil {
+		if err := rows.Scan(&f.ID, &f.PropiedadID, &f.FechaInicio, &f.FechaFin, &f.Motivo); err != nil {
 			return nil, fmt.Errorf("scan fecha_bloqueada: %w", err)
 		}
 		results = append(results, f)
