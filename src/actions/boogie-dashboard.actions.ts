@@ -34,6 +34,7 @@ export async function getBoogieDashboard(propiedadId: string) {
       ocupadas: (data.ocupadas as { fecha_entrada: string; fecha_salida: string; estado: string; huesped?: string }[]) || [],
     }
   } catch (err: any) {
+    console.error('[getBoogieDashboard] ERROR:', err?.message, err?.status, err?.code, err?.stack)
     return { error: err.message || 'Boogie no encontrado' }
   }
 }
