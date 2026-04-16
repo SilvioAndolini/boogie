@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { SlidersHorizontal } from 'lucide-react'
 import { PropertyGrid } from './property-grid'
 import { PropertyMap } from './property-map'
@@ -8,12 +9,12 @@ import { FilterModal } from './filter-modal'
 import type { PropiedadCard } from './property-card'
 import type { PropiedadMapa } from './property-map'
 
-const PAGE_SIZE = 18
-
 interface PropiedadesLayoutProps {
   propiedades: PropiedadCard[]
   propiedadesMapa: PropiedadMapa[]
   total: number
+  totalPaginas: number
+  paginaActual: number
   centerLat?: number
   centerLng?: number
   locationName?: string
@@ -23,14 +24,53 @@ export function PropiedadesLayout({
   propiedades,
   propiedadesMapa,
   total,
+  totalPaginas,
+  paginaActual,
   centerLat,
   centerLng,
-  locationName,
 }: PropiedadesLayoutProps) {
   const [filtersOpen, setFiltersOpen] = useState(false)
-  const [page, setPage] = useState(1)
-  const totalPages = Math.ceil(propiedades.length / PAGE_SIZE)
-  const paged = propiedades.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  const goToPage = (page: number) => {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('pagina', String(page))
+    router.push(`/propiedades?${params.toString()}`)
+  }
+
+  const PaginationBar = () => {
+    if (totalPaginas <= 1) return null
+    return (
+      <div className="flex items-center justify-center gap-2 border-t border-[#E8E4DF] bg-white py-3 shrink-0">
+        <button
+          onClick={() => goToPage(paginaActual - 1)}
+          disabled={paginaActual <= 1}
+          className="h-9 rounded-lg border border-[#E8E4DF] px-3 text-sm font-medium text-[#6B6560] transition-colors hover:bg-[#F8F6F3] disabled:opacity-30"
+        >
+          Anterior
+        </button>
+        {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((p) => (
+          <button
+            key={p}
+            onClick={() => goToPage(p)}
+            className={`h-9 w-9 rounded-lg text-sm font-medium transition-colors ${
+              p === paginaActual ? 'bg-[#1B4332] text-white' : 'border border-[#E8E4DF] text-[#6B6560] hover:bg-[#F8F6F3]'
+            }`}
+          >
+            {p}
+          </button>
+        ))}
+        <button
+          onClick={() => goToPage(paginaActual + 1)}
+          disabled={paginaActual >= totalPaginas}
+          className="h-9 rounded-lg border border-[#E8E4DF] px-3 text-sm font-medium text-[#6B6560] transition-colors hover:bg-[#F8F6F3] disabled:opacity-30"
+        >
+          Siguiente
+        </button>
+      </div>
+    )
+  }
 
   return (
     <>
@@ -46,51 +86,21 @@ export function PropiedadesLayout({
           </button>
           <h1 className="text-base font-bold text-[#1A1A1A]">Boogies disponibles</h1>
           <span className="ml-2 text-sm text-[#6B6560]">{total} Boogie{total !== 1 ? 's' : ''}</span>
-          {totalPages > 1 && (
-            <span className="ml-auto text-xs text-[#9E9892]">Página {page} de {totalPages}</span>
+          {totalPaginas > 1 && (
+            <span className="ml-auto text-xs text-[#9E9892]">Página {paginaActual} de {totalPaginas}</span>
           )}
         </div>
 
         <div className="flex flex-1 min-h-0">
-          {/* Cards column */}
           <div className="flex flex-col" style={{ width: '55%' }}>
             <div className="flex-1 overflow-y-auto bg-[#FEFCF9]">
               <div className="px-6 py-6">
-                <PropertyGrid propiedades={paged} />
+                <PropertyGrid propiedades={propiedades} />
               </div>
             </div>
-            {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2 border-t border-[#E8E4DF] bg-white py-3 shrink-0">
-                <button
-                  onClick={() => { setPage((p) => Math.max(1, p - 1)) }}
-                  disabled={page === 1}
-                  className="h-9 rounded-lg border border-[#E8E4DF] px-3 text-sm font-medium text-[#6B6560] transition-colors hover:bg-[#F8F6F3] disabled:opacity-30"
-                >
-                  Anterior
-                </button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => setPage(p)}
-                    className={`h-9 w-9 rounded-lg text-sm font-medium transition-colors ${
-                      p === page ? 'bg-[#1B4332] text-white' : 'border border-[#E8E4DF] text-[#6B6560] hover:bg-[#F8F6F3]'
-                    }`}
-                  >
-                    {p}
-                  </button>
-                ))}
-                <button
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages}
-                  className="h-9 rounded-lg border border-[#E8E4DF] px-3 text-sm font-medium text-[#6B6560] transition-colors hover:bg-[#F8F6F3] disabled:opacity-30"
-                >
-                  Siguiente
-                </button>
-              </div>
-            )}
+            <PaginationBar />
           </div>
 
-          {/* Map column */}
           {propiedadesMapa.length > 0 && (
             <div className="shrink-0 px-[35px] py-5" style={{ width: '45%' }}>
               <div className="h-full overflow-hidden rounded-2xl border border-[#E8E4DF]">
@@ -116,36 +126,8 @@ export function PropiedadesLayout({
         </div>
 
         <section className="px-4 py-6 sm:px-6">
-          <PropertyGrid propiedades={paged} />
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 pt-6 pb-2">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="h-9 rounded-lg border border-[#E8E4DF] px-3 text-sm font-medium text-[#6B6560] transition-colors hover:bg-[#F8F6F3] disabled:opacity-30"
-              >
-                Anterior
-              </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setPage(p)}
-                  className={`h-9 w-9 rounded-lg text-sm font-medium transition-colors ${
-                    p === page ? 'bg-[#1B4332] text-white' : 'border border-[#E8E4DF] text-[#6B6560] hover:bg-[#F8F6F3]'
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
-              <button
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="h-9 rounded-lg border border-[#E8E4DF] px-3 text-sm font-medium text-[#6B6560] transition-colors hover:bg-[#F8F6F3] disabled:opacity-30"
-              >
-                Siguiente
-              </button>
-            </div>
-          )}
+          <PropertyGrid propiedades={propiedades} />
+          <PaginationBar />
         </section>
       </div>
 

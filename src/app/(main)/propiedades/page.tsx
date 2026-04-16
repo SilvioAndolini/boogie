@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { SearchBar } from '@/components/busqueda/search-bar'
 import { PropiedadesLayout } from '@/components/propiedades/propiedades-layout'
 import { getPropiedadesPublicas } from '@/actions/propiedad.actions'
@@ -26,6 +27,7 @@ interface PropiedadesPageProps {
     banos?: string
     amenidades?: string
     ordenarPor?: string
+    pagina?: string
   }>
 }
 
@@ -49,6 +51,8 @@ export default async function PropiedadesPage({ searchParams }: PropiedadesPageP
     banos: params.banos ? Number(params.banos) : undefined,
     amenidades: params.amenidades ? params.amenidades.split(',') : undefined,
     ordenarPor: params.ordenarPor,
+    pagina: params.pagina ? Number(params.pagina) : 1,
+    porPagina: 18,
   })
 
   const propiedades: PropiedadCard[] = resultado.datos.map((p) => ({
@@ -97,14 +101,18 @@ export default async function PropiedadesPage({ searchParams }: PropiedadesPageP
         </div>
       </section>
 
-      <PropiedadesLayout
-        propiedades={propiedades}
-        propiedadesMapa={propiedadesMapa}
-        total={resultado.total}
-        centerLat={lat}
-        centerLng={lng}
-        locationName={params.ubicacion ?? ''}
-      />
+      <Suspense>
+        <PropiedadesLayout
+          propiedades={propiedades}
+          propiedadesMapa={propiedadesMapa}
+          total={resultado.total}
+          totalPaginas={resultado.totalPaginas}
+          paginaActual={resultado.pagina}
+          centerLat={lat}
+          centerLng={lng}
+          locationName={params.ubicacion ?? ''}
+        />
+      </Suspense>
     </div>
   )
 }

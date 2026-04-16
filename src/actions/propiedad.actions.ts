@@ -340,6 +340,7 @@ export async function getPropiedadesPublicas(filtros?: {
   amenidades?: string[]
   ordenarPor?: string
   pagina?: number
+  porPagina?: number
 }) {
   const params = new URLSearchParams()
 
@@ -356,6 +357,7 @@ export async function getPropiedadesPublicas(filtros?: {
   if (filtros?.amenidades && filtros.amenidades.length > 0) params.set('amenidades', filtros.amenidades.join(','))
   if (filtros?.ordenarPor) params.set('ordenarPor', filtros.ordenarPor)
   if (filtros?.pagina != null) params.set('pagina', String(filtros.pagina))
+  if (filtros?.porPagina != null) params.set('porPagina', String(filtros.porPagina))
 
   try {
     const raw = await goFetch<{
