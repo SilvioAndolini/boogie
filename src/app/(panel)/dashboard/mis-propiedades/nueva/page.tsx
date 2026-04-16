@@ -24,6 +24,7 @@ import { ESTADOS_VENEZUELA, TIPOS_PROPIEDAD, POLITICAS_CANCELACION, MAX_IMAGENES
 import { crearPropiedad } from '@/actions/propiedad.actions'
 import { optimizeImage } from '@/lib/image-optimize'
 import { LocationPickerMap, type AddressData } from '@/components/propiedades/location-picker'
+import { TimePickerField } from '@/components/busqueda/time-picker-field'
 
 const AMENIDADES_ALOJAMIENTO = [
   'Wi-Fi', 'Aire acondicionado', 'Piscina', 'Estacionamiento',
@@ -614,16 +615,24 @@ export default function NuevaPropiedadPage() {
                            </SelectContent>
                          </Select>
                        </div>
-                       <div className="grid grid-cols-2 gap-3">
-                         <div className="space-y-1.5">
-                           <label className="text-xs font-semibold text-[#6B6560]">{watch('categoria') === 'DEPORTE' ? 'Hora apertura' : 'Check-in'}</label>
-                           <Input type="time" {...register(watch('categoria') === 'DEPORTE' ? 'horaApertura' : 'horarioCheckIn')} className={ic} />
-                         </div>
-                         <div className="space-y-1.5">
-                           <label className="text-xs font-semibold text-[#6B6560]">{watch('categoria') === 'DEPORTE' ? 'Hora cierre' : 'Check-out'}</label>
-                           <Input type="time" {...register(watch('categoria') === 'DEPORTE' ? 'horaCierre' : 'horarioCheckOut')} className={ic} />
-                         </div>
-                       </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-[#6B6560]">{watch('categoria') === 'DEPORTE' ? 'Hora apertura' : 'Check-in'}</label>
+                            {watch('categoria') === 'DEPORTE' ? (
+                              <TimePickerField label="" value={watch('horaApertura') || '06:00'} onChange={(v) => setValue('horaApertura', v)} placeholder="06:00" />
+                            ) : (
+                              <Input type="time" {...register('horarioCheckIn')} className={ic} />
+                            )}
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-[#6B6560]">{watch('categoria') === 'DEPORTE' ? 'Hora cierre' : 'Check-out'}</label>
+                            {watch('categoria') === 'DEPORTE' ? (
+                              <TimePickerField label="" value={watch('horaCierre') || '23:00'} onChange={(v) => setValue('horaCierre', v)} placeholder="23:00" />
+                            ) : (
+                              <Input type="time" {...register('horarioCheckOut')} className={ic} />
+                            )}
+                          </div>
+                        </div>
                        {watch('categoria') === 'DEPORTE' && (
                          <div className="space-y-1.5">
                            <label className="text-xs font-semibold text-[#6B6560]">Duración mínima (minutos)</label>

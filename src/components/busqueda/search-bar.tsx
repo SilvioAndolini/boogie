@@ -123,6 +123,7 @@ const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', '
 const DIAS_SEMANA = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do']
 
 const HOURS = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:00`)
+const ANY_HOUR = '__any__'
 
 function usePopupPosition(buttonRef: React.RefObject<HTMLButtonElement | null> | undefined) {
   const [pos, setPos] = useState({ left: 0, top: 0 })
@@ -484,6 +485,16 @@ function TimePickerPopup({ buttonRef, horaInicio, horaFin, onHoraInicioChange, o
         <div className="flex-1 border-r border-[#E8E4DF]">
           <div className="px-3 pt-2 pb-1"><span className="text-[10px] font-semibold uppercase tracking-wide text-[#6B6560]">Entrada</span></div>
           <div ref={scrollRefInicio} className="max-h-48 overflow-y-auto px-1 pb-2 scrollbar-thin">
+            <button
+              onClick={() => { onHoraInicioChange(ANY_HOUR); onHoraFinChange(ANY_HOUR) }}
+              className={`flex w-full items-center justify-center rounded-lg px-3 py-2 text-sm transition-all ${
+                horaInicio === ANY_HOUR
+                  ? 'bg-[#1B4332] text-white font-semibold'
+                  : 'text-[#1B4332] hover:bg-[#D8F3DC] font-medium'
+              }`}
+            >
+              Cualquier hora
+            </button>
             {HOURS.map((h) => (
               <button
                 key={h}
@@ -503,6 +514,16 @@ function TimePickerPopup({ buttonRef, horaInicio, horaFin, onHoraInicioChange, o
         <div className="flex-1">
           <div className="px-3 pt-2 pb-1"><span className="text-[10px] font-semibold uppercase tracking-wide text-[#6B6560]">Salida</span></div>
           <div ref={scrollRefFin} className="max-h-48 overflow-y-auto px-1 pb-2 scrollbar-thin">
+            <button
+              onClick={() => { onHoraFinChange(ANY_HOUR) }}
+              className={`flex w-full items-center justify-center rounded-lg px-3 py-2 text-sm transition-all ${
+                horaFin === ANY_HOUR
+                  ? 'bg-[#1B4332] text-white font-semibold'
+                  : 'text-[#1B4332] hover:bg-[#D8F3DC] font-medium'
+              }`}
+            >
+              Cualquier hora
+            </button>
             {HOURS.map((h) => {
               const hNum = parseInt(h)
               const inicioNum = parseInt(horaInicio)
@@ -655,8 +676,8 @@ export function SearchBar({ mode = 'estandar', inlineModeToggle, onModeChange }:
     if (mode === 'sports') {
       if (deporte) params.set('tipoCancha', deporte)
       if (fecha) params.set('fecha', fecha)
-      if (horaInicio) params.set('horaInicio', horaInicio)
-      if (horaFin) params.set('horaFin', horaFin)
+      if (horaInicio && horaInicio !== ANY_HOUR) params.set('horaInicio', horaInicio)
+      if (horaFin && horaFin !== ANY_HOUR) params.set('horaFin', horaFin)
       params.set('categoria', 'DEPORTE')
       router.push(`/canchas?${params.toString()}`)
       return
@@ -736,7 +757,7 @@ export function SearchBar({ mode = 'estandar', inlineModeToggle, onModeChange }:
               <button ref={horaButtonRef} type="button" onClick={() => { setTimePickerOpen(!timePickerOpen); setDeporteDropdownOpen(false); setSportsDateOpen(false); setOpen(false); setDatePickerOpen(false); setGuestPickerOpen(false) }}
                 className="flex items-center gap-1.5 rounded-full px-2.5 py-1.5 transition-colors hover:bg-[#F8F6F3]">
                 <Clock className="h-3.5 w-3.5 shrink-0 text-[#1B4332]" />
-                <div className="flex flex-col"><span className="text-[9px] font-semibold uppercase tracking-wide text-[#6B6560]">Hora</span><span className="text-xs text-[#1A1A1A] leading-tight">{horaInicio} → {horaFin}</span></div>
+                <div className="flex flex-col"><span className="text-[9px] font-semibold uppercase tracking-wide text-[#6B6560]">Hora</span><span className="text-xs text-[#1A1A1A] leading-tight">{horaInicio === ANY_HOUR && horaFin === ANY_HOUR ? 'Cualquier hora' : `${horaInicio} → ${horaFin}`}</span></div>
               </button>
             </>
           ) : mode === 'express' ? (
