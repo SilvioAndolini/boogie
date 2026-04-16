@@ -28,6 +28,7 @@ interface PropiedadesPageProps {
     amenidades?: string
     ordenarPor?: string
     pagina?: string
+    esExpress?: string
   }>
 }
 
@@ -53,6 +54,7 @@ export default async function PropiedadesPage({ searchParams }: PropiedadesPageP
     ordenarPor: params.ordenarPor,
     pagina: params.pagina ? Number(params.pagina) : 1,
     porPagina: 18,
+    esExpress: params.esExpress === 'true' ? true : undefined,
   })
 
   const propiedades: PropiedadCard[] = resultado.datos.map((p) => ({
@@ -70,6 +72,7 @@ export default async function PropiedadesPage({ searchParams }: PropiedadesPageP
     camas: p.camas ?? 0,
     banos: p.banos ?? 0,
     propietario: (p as unknown as Record<string, unknown>).propietario as { reputacion: number | null; plan_suscripcion: string } | null,
+    esExpress: (p as unknown as Record<string, unknown>).esExpress as boolean | undefined,
   }))
 
   const propiedadesMapa: PropiedadMapa[] = resultado.datos

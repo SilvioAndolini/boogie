@@ -30,7 +30,7 @@ export function NavbarSearchSlot() {
   }
 
   return (
-    <div className="flex-1 max-w-3xl mx-4 hidden sm:block">
+    <div className="flex-1 max-w-4xl mx-4 hidden sm:block">
       <Suspense fallback={<div className="h-11 rounded-full bg-[#F8F6F3]" />}>
         <NavbarSearchContent mode={mode} onModeChange={handleModeChange} />
       </Suspense>
