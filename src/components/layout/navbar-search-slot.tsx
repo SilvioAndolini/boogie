@@ -1,18 +1,19 @@
 'use client'
 
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { Suspense } from 'react'
 import { SearchBar } from '@/components/busqueda/search-bar'
 import type { SearchMode } from '@/lib/constants'
 
-function NavbarSearchContent({ mode }: { mode: SearchMode }) {
+function NavbarSearchContent({ mode, onModeChange }: { mode: SearchMode; onModeChange: (mode: SearchMode) => void }) {
   return (
-    <SearchBar mode={mode} />
+    <SearchBar mode={mode} inlineModeToggle onModeChange={onModeChange} />
   )
 }
 
 export function NavbarSearchSlot() {
   const pathname = usePathname()
+  const router = useRouter()
   const isPropiedades = pathname.startsWith('/propiedades')
   const isCanchas = pathname.startsWith('/canchas')
 
@@ -20,10 +21,18 @@ export function NavbarSearchSlot() {
 
   const mode: SearchMode = isCanchas ? 'sports' : 'estandar'
 
+  const handleModeChange = (newMode: SearchMode) => {
+    if (newMode === 'sports') {
+      router.push('/canchas')
+    } else {
+      router.push('/propiedades')
+    }
+  }
+
   return (
-    <div className="flex-1 max-w-2xl mx-4 hidden sm:block">
+    <div className="flex-1 max-w-3xl mx-4 hidden sm:block">
       <Suspense fallback={<div className="h-11 rounded-full bg-[#F8F6F3]" />}>
-        <NavbarSearchContent mode={mode} />
+        <NavbarSearchContent mode={mode} onModeChange={handleModeChange} />
       </Suspense>
     </div>
   )

@@ -1,6 +1,5 @@
 'use server'
 
-import { createAdminClient } from '@/lib/supabase/admin'
 import { getUsuarioAutenticado } from '@/lib/auth'
 import { crearOfertaSchema, responderOfertaSchema } from '@/lib/oferta-validations'
 import { goGet, goPost } from '@/lib/go-api-client'
@@ -138,28 +137,11 @@ export async function getOfertaPorId(ofertaId: string) {
   const user = await getUsuarioAutenticado()
   if (!user) return { error: 'No autenticado' }
 
-  const supabase = createAdminClient()
-
-  const { data: oferta, error } = await supabase
-    .from('boogie_ofertas')
-    .select(`
-      *, 
-      propiedad:propiedades(id, titulo, precio_por_noche, moneda, propietario_id,
-        imagenes:imagenes_propiedad(url, es_principal)),
-      huesped:usuarios!huesped_id(id, nombre, apellido, email, avatar_url, verificado)
-    `)
-    .eq('id', ofertaId)
-    .single()
-
-  if (error || !oferta) return { error: 'Oferta no encontrada' }
-
-  const huespedId = (oferta as Record<string, unknown>).huesped_id as string
-  const propiedad = (oferta as Record<string, unknown>).propiedad as Record<string, unknown> | null
-  const propietarioId = propiedad?.propietario_id as string
-
-  if (huespedId !== user.id && propietarioId !== user.id) {
-    return { error: 'No tienes permiso para ver esta oferta' }
+  try {
+    const oferta = await goGet<Record<string, unknown>>(`/api/v1/ofertas/${ofertaId}`)
+    return { oferta }
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Error al cargar la oferta'
+    return { error: message }
   }
-
-  return { oferta }
 }

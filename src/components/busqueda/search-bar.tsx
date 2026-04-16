@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { SearchMode, TIPOS_CANCHA } from '@/lib/constants'
+import { SearchModeToggle } from './search-mode-toggle'
 
 interface LocationResult {
   id?: string
@@ -571,7 +572,112 @@ function MobileDatePicker({
   )
 }
 
-export function SearchBar({ mode = 'estandar' }: { mode?: SearchMode }) {
+function SportsCalendarPopup({
+  selectedDate,
+  onDateSelect,
+  onClose,
+}: {
+  selectedDate: string
+  onDateSelect: (date: string) => void
+  onClose: () => void
+}) {
+  const [viewMonth, setViewMonth] = useState(new Date())
+
+  const año = viewMonth.getFullYear()
+  const mes = viewMonth.getMonth()
+
+  const primerDia = new Date(año, mes, 1).getDay()
+  const ajustePrimerDia = primerDia === 0 ? 6 : primerDia - 1
+  const diasEnMes = new Date(año, mes + 1, 0).getDate()
+
+  const diasCompletos: (number | null)[] = []
+  for (let i = 0; i < ajustePrimerDia; i++) diasCompletos.push(null)
+  for (let i = 1; i <= diasEnMes; i++) diasCompletos.push(i)
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const handleDayClick = (dia: number) => {
+    const clicked = new Date(año, mes, dia)
+    if (clicked < today) return
+    const formatted = clicked.toISOString().split('T')[0]
+    onDateSelect(formatted)
+  }
+
+  const isSelected = (dia: number | null) => {
+    if (!dia || !selectedDate) return false
+    const d = `${año}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`
+    return d === selectedDate
+  }
+
+  const isDisabled = (dia: number | null) => {
+    if (!dia) return true
+    const date = new Date(año, mes, dia)
+    return date < today
+  }
+
+  const isToday = (dia: number | null) => {
+    if (!dia) return false
+    const date = new Date(año, mes, dia)
+    return date.getDate() === today.getDate() && date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear()
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+      className="absolute left-0 top-full z-[200] mt-3 w-auto rounded-2xl border border-[#E8E4DF] bg-white p-4 shadow-2xl"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="mb-3 flex items-center justify-between">
+        <button onClick={() => setViewMonth(new Date(año, mes - 1, 1))} className="flex h-7 w-7 items-center justify-center rounded-lg hover:bg-[#F8F6F3]">
+          <ChevronLeft className="h-4 w-4 text-[#6B6560]" />
+        </button>
+        <span className="text-sm font-semibold text-[#1A1A1A]">{MESES[mes]} {año}</span>
+        <button onClick={() => setViewMonth(new Date(año, mes + 1, 1))} className="flex h-7 w-7 items-center justify-center rounded-lg hover:bg-[#F8F6F3]">
+          <ChevronRight className="h-4 w-4 text-[#6B6560]" />
+        </button>
+      </div>
+      <div className="mb-2 grid grid-cols-7 gap-1 text-center">
+        {DIAS_SEMANA.map((d) => (
+          <span key={d} className="text-[10px] font-medium text-[#6B6560]">{d}</span>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-1">
+        {diasCompletos.map((dia, idx) => (
+          <button
+            key={idx}
+            disabled={dia === null || isDisabled(dia)}
+            onClick={() => dia && handleDayClick(dia)}
+            className={`flex h-8 w-8 items-center justify-center rounded-lg text-sm transition-colors
+              ${dia === null ? 'invisible' : ''}
+              ${isDisabled(dia) ? 'text-[#D0CBC4] cursor-not-allowed' : 'hover:bg-[#F8F6F3] cursor-pointer'}
+              ${isToday(dia) ? 'border border-[#1B4332]' : ''}
+              ${isSelected(dia) ? 'bg-[#1B4332] text-white hover:bg-[#1B4332]' : ''}
+            `}
+          >
+            {dia}
+          </button>
+        ))}
+      </div>
+      <div className="mt-3 flex items-center justify-between border-t border-[#E8E4DF] pt-3">
+        <span className="text-xs text-[#6B6560]">
+          {selectedDate || 'Sin fecha'}
+        </span>
+        <button
+          onClick={() => { onDateSelect('') }}
+          className="text-xs font-medium text-[#1B4332] hover:text-[#2D6A4F]"
+        >
+          Limpiar
+        </button>
+      </div>
+    </motion.div>
+  )
+}
+
+export function SearchBar({ mode = 'estandar', inlineModeToggle, onModeChange }: { mode?: SearchMode; inlineModeToggle?: boolean; onModeChange?: (mode: SearchMode) => void }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [ubicacion, setUbicacion] = useState(searchParams.get('ubicacion') || '')
@@ -595,15 +701,19 @@ export function SearchBar({ mode = 'estandar' }: { mode?: SearchMode }) {
   const [deporte, setDeporte] = useState(searchParams.get('tipoCancha') || '')
   const [fecha, setFecha] = useState(searchParams.get('fecha') || '')
   const [horaInicio, setHoraInicio] = useState(searchParams.get('horaInicio') || '08:00')
-  const [duracion, setDuracion] = useState(searchParams.get('duracion') || '1')
+  const [horaFin, setHoraFin] = useState(searchParams.get('horaFin') || '09:00')
+  const [deporteDropdownOpen, setDeporteDropdownOpen] = useState(false)
+  const [sportsDateOpen, setSportsDateOpen] = useState(false)
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false)
-        setDatePickerOpen(false)
-        setGuestPickerOpen(false)
-        setMobileExpanded(false)
+         setOpen(false)
+         setDatePickerOpen(false)
+         setGuestPickerOpen(false)
+         setDeporteDropdownOpen(false)
+         setSportsDateOpen(false)
+         setMobileExpanded(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -693,7 +803,7 @@ export function SearchBar({ mode = 'estandar' }: { mode?: SearchMode }) {
       if (deporte) params.set('tipoCancha', deporte)
       if (fecha) params.set('fecha', fecha)
       if (horaInicio) params.set('horaInicio', horaInicio)
-      if (duracion && duracion !== '1') params.set('duracion', duracion)
+      if (horaFin) params.set('horaFin', horaFin)
       params.set('categoria', 'DEPORTE')
       router.push(`/canchas?${params.toString()}`)
       return
@@ -738,9 +848,15 @@ export function SearchBar({ mode = 'estandar' }: { mode?: SearchMode }) {
   const showDropdown = open && (resultados.length > 0 || (loading && ubicacion.length >= 2) || (!loading && resultados.length === 0 && ubicacion.length >= 2))
 
   return (
-    <div ref={containerRef} className="relative mx-auto w-full max-w-3xl">
+    <div ref={containerRef} className="relative mx-auto w-full max-w-4xl">
       {/* Desktop pill */}
       <div className="hidden items-center gap-1 rounded-full border border-[#E8E4DF] bg-white px-2 py-1.5 shadow-md transition-shadow focus-within:shadow-lg sm:flex sm:gap-2 sm:px-3 sm:py-2">
+        {inlineModeToggle && onModeChange && (
+          <>
+            <SearchModeToggle mode={mode} onChange={onModeChange} inline />
+            <div className="h-8 w-px bg-[#E8E4DF]" />
+          </>
+        )}
         <div className="flex flex-1 items-center gap-2 rounded-full px-3 py-2 transition-colors hover:bg-[#F8F6F3] focus-within:bg-[#F8F6F3]">
           <MapPin className="h-4 w-4 shrink-0 text-[#1B4332]" />
           <div className="flex flex-col min-w-0">
@@ -777,66 +893,69 @@ export function SearchBar({ mode = 'estandar' }: { mode?: SearchMode }) {
           <>
             <button
               type="button"
+              onClick={() => {
+                setDeporteDropdownOpen(!deporteDropdownOpen)
+                setSportsDateOpen(false)
+                setOpen(false)
+                setDatePickerOpen(false)
+                setGuestPickerOpen(false)
+              }}
               className="flex items-center gap-2 rounded-full px-3 py-2 transition-colors hover:bg-[#F8F6F3]"
             >
               <Trophy className="h-4 w-4 shrink-0 text-[#1B4332]" />
               <div className="flex flex-col">
                 <span className="text-[10px] font-semibold uppercase tracking-wide text-[#6B6560]">Deporte</span>
-                <select
-                  value={deporte}
-                  onChange={(e) => setDeporte(e.target.value)}
-                  className="border-none bg-transparent text-sm text-[#1A1A1A] outline-none"
-                >
-                  <option value="">Todos</option>
-                  {Object.entries(TIPOS_CANCHA).map(([k, v]) => (
-                    <option key={k} value={k}>{v}</option>
-                  ))}
-                </select>
+                <span className="text-sm text-[#1A1A1A]">
+                  {deporte ? TIPOS_CANCHA[deporte as keyof typeof TIPOS_CANCHA] : 'Todos'}
+                </span>
               </div>
             </button>
 
             <div className="h-8 w-px bg-[#E8E4DF]" />
 
-            <button className="flex items-center gap-2 rounded-full px-3 py-2 transition-colors hover:bg-[#F8F6F3]">
+            <button
+              type="button"
+              onClick={() => {
+                setSportsDateOpen(!sportsDateOpen)
+                setDeporteDropdownOpen(false)
+                setOpen(false)
+                setDatePickerOpen(false)
+                setGuestPickerOpen(false)
+              }}
+              className="flex items-center gap-2 rounded-full px-3 py-2 transition-colors hover:bg-[#F8F6F3]"
+            >
               <Calendar className="h-4 w-4 shrink-0 text-[#1B4332]" />
               <div className="flex flex-col">
                 <span className="text-[10px] font-semibold uppercase tracking-wide text-[#6B6560]">Fecha</span>
-                <input
-                  type="date"
-                  value={fecha}
-                  onChange={(e) => setFecha(e.target.value)}
-                  className="border-none bg-transparent text-sm text-[#1A1A1A] outline-none"
-                />
+                <span className="text-sm text-[#1A1A1A]">
+                  {fecha || 'Selecciona'}
+                </span>
               </div>
             </button>
 
             <div className="h-8 w-px bg-[#E8E4DF]" />
 
-            <button className="flex items-center gap-2 rounded-full px-3 py-2 transition-colors hover:bg-[#F8F6F3]">
+            <div className="flex items-center gap-2 rounded-full px-3 py-2">
               <Clock className="h-4 w-4 shrink-0 text-[#1B4332]" />
               <div className="flex flex-col">
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-[#6B6560]">Hora / Duración</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-[#6B6560]">Hora</span>
                 <div className="flex items-center gap-1 text-sm text-[#1A1A1A]">
                   <input
                     type="time"
                     value={horaInicio}
                     onChange={(e) => setHoraInicio(e.target.value)}
-                    className="border-none bg-transparent outline-none"
+                    className="w-[70px] border-none bg-transparent outline-none"
                   />
-                  <span className="text-[#6B6560]">·</span>
-                  <select
-                    value={duracion}
-                    onChange={(e) => setDuracion(e.target.value)}
-                    className="border-none bg-transparent outline-none"
-                  >
-                    <option value="1">1h</option>
-                    <option value="2">2h</option>
-                    <option value="3">3h</option>
-                    <option value="4">4h</option>
-                  </select>
+                  <span className="text-[#6B6560]">→</span>
+                  <input
+                    type="time"
+                    value={horaFin}
+                    onChange={(e) => setHoraFin(e.target.value)}
+                    className="w-[70px] border-none bg-transparent outline-none"
+                  />
                 </div>
               </div>
-            </button>
+            </div>
           </>
         ) : mode === 'express' ? (
           <>
@@ -1256,6 +1375,48 @@ export function SearchBar({ mode = 'estandar' }: { mode?: SearchMode }) {
               guests={huespedes}
               onGuestsChange={setHuespedes}
               onClose={() => setGuestPickerOpen(false)}
+            />
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {deporteDropdownOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+              className="absolute left-0 top-full z-[200] mt-3 w-56 rounded-2xl border border-[#E8E4DF] bg-white py-1 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="border-b border-[#E8E4DF] px-4 py-2">
+                <span className="text-xs font-semibold text-[#1A1A1A]">Tipo de cancha</span>
+              </div>
+              <button
+                onClick={() => { setDeporte(''); setDeporteDropdownOpen(false) }}
+                className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors hover:bg-[#F8F6F3] ${!deporte ? 'text-[#1B4332] font-medium' : 'text-[#1A1A1A]'}`}
+              >
+                Todos los deportes
+              </button>
+              {Object.entries(TIPOS_CANCHA).map(([key, label]) => (
+                <button
+                  key={key}
+                  onClick={() => { setDeporte(key); setDeporteDropdownOpen(false) }}
+                  className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors hover:bg-[#F8F6F3] ${deporte === key ? 'text-[#1B4332] font-medium bg-[#D8F3DC]/30' : 'text-[#1A1A1A]'}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {sportsDateOpen && (
+            <SportsCalendarPopup
+              selectedDate={fecha}
+              onDateSelect={(d) => { setFecha(d); setSportsDateOpen(false) }}
+              onClose={() => setSportsDateOpen(false)}
             />
           )}
         </AnimatePresence>
