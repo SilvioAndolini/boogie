@@ -36,11 +36,12 @@ type FechaBloqueada struct {
 }
 
 type PrecioEspecial struct {
-	ID          string  `json:"id"`
-	PropiedadID string  `json:"propiedad_id"`
-	Fecha       string  `json:"fecha"`
-	Precio      float64 `json:"precio"`
-	Moneda      string  `json:"moneda"`
+	ID             string  `json:"id"`
+	PropiedadID    string  `json:"propiedad_id"`
+	Nombre         string  `json:"nombre"`
+	FechaInicio    string  `json:"fecha_inicio"`
+	FechaFin       string  `json:"fecha_fin"`
+	PrecioPorNoche float64 `json:"precio_por_noche"`
 }
 
 type ReservaDashboard struct {
@@ -115,7 +116,7 @@ func (r *DashboardRepo) GetFechasBloqueadas(ctx context.Context, propiedadID str
 
 func (r *DashboardRepo) GetPreciosEspeciales(ctx context.Context, propiedadID string) ([]PrecioEspecial, error) {
 	rows, err := r.pool.Query(ctx, `
-		SELECT id, propiedad_id, fecha, precio, moneda
+		SELECT id, propiedad_id, nombre, fecha_inicio, fecha_fin, precio_por_noche
 		FROM precios_especiales
 		WHERE propiedad_id = $1
 	`, propiedadID)
@@ -127,7 +128,7 @@ func (r *DashboardRepo) GetPreciosEspeciales(ctx context.Context, propiedadID st
 	var results []PrecioEspecial
 	for rows.Next() {
 		var p PrecioEspecial
-		if err := rows.Scan(&p.ID, &p.PropiedadID, &p.Fecha, &p.Precio, &p.Moneda); err != nil {
+		if err := rows.Scan(&p.ID, &p.PropiedadID, &p.Nombre, &p.FechaInicio, &p.FechaFin, &p.PrecioPorNoche); err != nil {
 			return nil, fmt.Errorf("scan precio_especial: %w", err)
 		}
 		results = append(results, p)
