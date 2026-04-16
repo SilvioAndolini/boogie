@@ -254,6 +254,10 @@ func (s *AdminService) GetCuponUsos(ctx context.Context, cuponID string) ([]repo
 	return s.repo.GetCuponUsos(ctx, cuponID)
 }
 
+func (s *AdminService) GetCuponesActivosUsuario(ctx context.Context, usuarioID string) ([]repository.CuponActivoUsuario, error) {
+	return s.repo.GetCuponesActivosUsuario(ctx, usuarioID)
+}
+
 func (s *AdminService) GetComisiones(ctx context.Context) (map[string]float64, error) {
 	return s.repo.GetComisiones(ctx)
 }
@@ -266,6 +270,12 @@ func (s *AdminService) UpdateComisiones(ctx context.Context, huesped, anfitrion 
 		return fmt.Errorf("comisión anfitrión inválida (0-50%%)")
 	}
 	return s.repo.UpdateComisiones(ctx, huesped, anfitrion, updatedBy)
+}
+
+func (s *AdminService) LogAction(ctx context.Context, adminID, accion, entidad string, entidadID *string, detalles interface{}, ip, userAgent *string) {
+	if err := s.repo.InsertAuditLog(ctx, adminID, accion, entidad, entidadID, detalles, ip, userAgent); err != nil {
+		slog.Error("[audit] failed to log action", "error", err, "adminID", adminID, "accion", accion)
+	}
 }
 
 func (s *AdminService) GetAuditLog(ctx context.Context, entidad, adminID, fechaInicio, fechaFin string, pagina int) (*PaginatedResult, error) {

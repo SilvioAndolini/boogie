@@ -2,23 +2,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getUsuarioAutenticado } from '@/lib/auth'
-import { headers } from 'next/headers'
 import { isCeoEmail } from '@/lib/admin-constants'
-
-export type EntidadAuditable =
-  | 'usuario'
-  | 'propiedad'
-  | 'reserva'
-  | 'pago'
-  | 'verificacion'
-  | 'wallet'
-  | 'resena'
-  | 'notificacion'
-  | 'configuracion'
-  | 'seccion_destacada'
-  | 'store_producto'
-  | 'store_servicio'
-  | 'cupon'
 
 export async function requireAdmin() {
   const user = await getUsuarioAutenticado()
@@ -37,38 +21,4 @@ export async function requireAdmin() {
   }
 
   return { userId: user.id, error: null, isCeo: isCeoEmail(usuario.email) } as const
-}
-
-export async function logAdminAction(params: {
-  accion: string
-  entidad: EntidadAuditable
-  entidadId?: string
-  detalles?: Record<string, unknown>
-}) {
-  const admin = createAdminClient()
-
-  let ip: string | undefined
-  let userAgent: string | undefined
-  try {
-    const hdrs = await headers()
-    ip = hdrs.get('x-forwarded-for') || hdrs.get('x-real-ip') || undefined
-    userAgent = hdrs.get('user-agent') || undefined
-  } catch {}
-
-  const user = await getUsuarioAutenticado()
-  if (!user) return
-
-  const { error } = await admin.from('admin_audit_log').insert({
-    admin_id: user.id,
-    accion: params.accion,
-    entidad: params.entidad,
-    entidad_id: params.entidadId || null,
-    detalles: params.detalles || {},
-    ip: ip || null,
-    user_agent: userAgent || null,
-  })
-
-  if (error) {
-    console.error('[logAdminAction] Error:', error.message)
-  }
 }

@@ -25,7 +25,7 @@ export default async function MisCanchasPage() {
             <p className="text-sm text-white/70">Administra y publica tus canchas deportivas</p>
           </div>
           <div className="hidden shrink-0 sm:block">
-            <Link href="/dashboard/mis-canchas/nueva">
+            <Link href="/dashboard/mis-propiedades/nueva?categoria=DEPORTE">
               <Button className="gap-2 bg-white text-[#1B4332] hover:bg-[#D8F3DC]">
                 <Plus className="h-4 w-4" />
                 Nueva cancha
@@ -36,7 +36,7 @@ export default async function MisCanchasPage() {
       </div>
 
       <div className="block sm:hidden">
-        <Link href="/dashboard/mis-canchas/nueva">
+        <Link href="/dashboard/mis-propiedades/nueva?categoria=DEPORTE">
           <Button className="w-full gap-2 bg-[#1B4332] text-white hover:bg-[#2D6A4F]">
             <Plus className="h-4 w-4" />
             Nueva cancha
@@ -56,7 +56,7 @@ export default async function MisCanchasPage() {
             <p className="mt-1 max-w-sm text-sm text-[#6B6560]">
               Publica tu primera cancha deportiva y comienza a recibir reservas por hora.
             </p>
-            <Link href="/dashboard/mis-canchas/nueva">
+            <Link href="/dashboard/mis-propiedades/nueva?categoria=DEPORTE">
               <Button className="mt-6 gap-2 bg-[#1B4332] text-white hover:bg-[#2D6A4F]">
                 <Plus className="h-4 w-4" />
                 Publica tu primera cancha

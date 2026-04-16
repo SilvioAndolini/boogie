@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Home, MapPin, Sparkles, Check, Upload, X, Loader2, DollarSign, Clock, Pencil, BedDouble, Bath, CookingPot, Sofa, TreePine, Waves, Mountain, HelpCircle, ChevronDown, AlertCircle, Zap, Trophy } from 'lucide-react'
+import { ArrowLeft, Home, MapPin, Sparkles, Check, Upload, X, Loader2, DollarSign, Clock, Pencil, BedDouble, Bath, CookingPot, Sofa, TreePine, Waves, Mountain, HelpCircle, ChevronDown, AlertCircle, Zap, Trophy, Users, ShowerHead, ParkingCircle, Armchair, Warehouse, Sun } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -25,14 +25,23 @@ import { actualizarPropiedad } from '@/actions/propiedad.actions'
 import { optimizeImage } from '@/lib/image-optimize'
 import { LocationPickerMap, type AddressData } from '@/components/propiedades/location-picker'
 
-const AMENIDADES = [
+const AMENIDADES_ALOJAMIENTO = [
   'Wi-Fi', 'Aire acondicionado', 'Piscina', 'Estacionamiento',
   'Cocina equipada', 'Lavadora', 'TV / Smart TV', 'Agua caliente',
   'Seguridad 24h', 'Jardín', 'Parrilla', 'Balcón',
   'Vista al mar', 'Acceso a playa', 'Pet friendly', 'Gimnasio',
 ]
 
-const CATEGORIAS_IMAGEN = [
+const AMENIDADES_DEPORTE = [
+  'Iluminación nocturna', 'Vestuarios', 'Baños', 'Duchas',
+  'Estacionamiento', 'Graderías', 'Cancha techada', 'Césped sintético',
+  'Césped natural', 'Piso de goma', 'Piso de madera', 'Piso de cemento',
+  'Marcador electrónico', 'Sistema de riego', 'Area de calentamiento',
+  'Tienda / Kiosco', 'Refrescos', 'Wifi', 'Cámaras de seguridad',
+  'Bodega / Almacenamiento', 'Área de descanso', 'Primeros auxilios',
+]
+
+const CATEGORIAS_IMAGEN_ALOJAMIENTO = [
   { value: 'habitaciones', label: 'Habitaciones', icon: BedDouble, color: 'bg-blue-50 text-blue-700 ring-blue-200' },
   { value: 'banos', label: 'Baños', icon: Bath, color: 'bg-cyan-50 text-cyan-700 ring-cyan-200' },
   { value: 'cocina', label: 'Cocina', icon: CookingPot, color: 'bg-amber-50 text-amber-700 ring-amber-200' },
@@ -42,13 +51,33 @@ const CATEGORIAS_IMAGEN = [
   { value: 'vistas', label: 'Vistas', icon: Mountain, color: 'bg-rose-50 text-rose-700 ring-rose-200' },
 ] as const
 
+const CATEGORIAS_IMAGEN_DEPORTE = [
+  { value: 'cancha_principal', label: 'Cancha', icon: Trophy, color: 'bg-emerald-50 text-emerald-700 ring-emerald-200' },
+  { value: 'gradas', label: 'Gradas', icon: Users, color: 'bg-blue-50 text-blue-700 ring-blue-200' },
+  { value: 'vestuarios', label: 'Vestuarios', icon: ShowerHead, color: 'bg-cyan-50 text-cyan-700 ring-cyan-200' },
+  { value: 'banos', label: 'Baños', icon: Bath, color: 'bg-sky-50 text-sky-700 ring-sky-200' },
+  { value: 'recepcion', label: 'Recepción', icon: Armchair, color: 'bg-amber-50 text-amber-700 ring-amber-200' },
+  { value: 'estacionamiento', label: 'Estacionamiento', icon: ParkingCircle, color: 'bg-gray-50 text-gray-700 ring-gray-200' },
+  { value: 'areas_comunes', label: 'Comunes', icon: Sofa, color: 'bg-purple-50 text-purple-700 ring-purple-200' },
+  { value: 'exterior', label: 'Exterior', icon: Sun, color: 'bg-orange-50 text-orange-700 ring-orange-200' },
+  { value: 'bodega', label: 'Bodega', icon: Warehouse, color: 'bg-stone-50 text-stone-700 ring-stone-200' },
+] as const
+
 const CUSTOM_COLOR = 'bg-orange-50 text-orange-700 ring-orange-200'
 
-function parseCategoria(raw: string): { key: string; label: string; icon: typeof BedDouble; color: string } {
+function getCategorias(isDeporte: boolean) {
+  return isDeporte ? CATEGORIAS_IMAGEN_DEPORTE : CATEGORIAS_IMAGEN_ALOJAMIENTO
+}
+
+function getAmenidades(isDeporte: boolean) {
+  return isDeporte ? AMENIDADES_DEPORTE : AMENIDADES_ALOJAMIENTO
+}
+
+function parseCategoria(raw: string, isDeporte: boolean): { key: string; label: string; icon: typeof BedDouble; color: string } {
   if (raw.startsWith('personalizada:')) {
     return { key: raw, label: raw.slice(14), icon: HelpCircle, color: CUSTOM_COLOR }
   }
-  const found = CATEGORIAS_IMAGEN.find((c) => c.value === raw)
+  const found = getCategorias(isDeporte).find((c) => c.value === raw)
   if (found) return { key: found.value, label: found.label, icon: found.icon, color: found.color }
   return { key: 'otro', label: 'Otro', icon: HelpCircle, color: 'bg-gray-50 text-gray-600 ring-gray-200' }
 }
@@ -222,12 +251,14 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
     setCategoriaImagen(index, `personalizada:${trimmed}`)
   }
 
+  const isDeporte = watch('categoria') === 'DEPORTE'
+
   const groupedImages = useMemo(() => {
     const map = new Map<string, { parsed: ReturnType<typeof parseCategoria>; indices: number[] }>()
     previews.forEach((_, i) => {
       const cat = imagenCategorias[i] || 'otro'
       if (!map.has(cat)) {
-        map.set(cat, { parsed: parseCategoria(cat), indices: [] })
+        map.set(cat, { parsed: parseCategoria(cat, isDeporte), indices: [] })
       }
       map.get(cat)!.indices.push(i)
     })
@@ -644,7 +675,7 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
 
                     {sec.id === 'amenidades' && (<>
                       <div className="flex flex-wrap gap-2">
-                        {AMENIDADES.map((a) => (
+                         {getAmenidades(isDeporte).map((a) => (
                           <button
                             key={a}
                             type="button"
@@ -675,7 +706,7 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
             const map = new Map<string, { parsed: ReturnType<typeof parseCategoria>; indices: number[] }>()
             imagenesExistentes.forEach((_, i) => {
               const cat = existentesCategorias[i] || 'otro'
-              if (!map.has(cat)) map.set(cat, { parsed: parseCategoria(cat), indices: [] })
+              if (!map.has(cat)) map.set(cat, { parsed: parseCategoria(cat, isDeporte), indices: [] })
               map.get(cat)!.indices.push(i)
             })
             const entries = Array.from(map.entries())
@@ -769,7 +800,7 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
                                       </div>
                                       <div className="flex flex-1 flex-col justify-center gap-1.5">
                                         <div className="flex flex-wrap gap-1">
-                                          {CATEGORIAS_IMAGEN.map((c) => {
+                                          {getCategorias(isDeporte).map((c) => {
                                             const isActive = (existentesCategorias[imgIdx] || 'otro') === c.value
                                             return (
                                               <button
@@ -948,7 +979,7 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
                                     </div>
                                     <div className="flex flex-1 flex-col justify-center gap-1.5">
                                       <div className="flex flex-wrap gap-1">
-                                        {CATEGORIAS_IMAGEN.map((c) => {
+                                        {getCategorias(isDeporte).map((c) => {
                                           const isActive = (imagenCategorias[imgIdx] || 'otro') === c.value
                                           return (
                                             <button

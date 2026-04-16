@@ -283,6 +283,24 @@ type Notificacion struct {
 	Usuario       *AdminUserShort `json:"usuario"`
 }
 
+func (r *AdminRepo) InsertAuditLog(ctx context.Context, adminID, accion, entidad string, entidadID *string, detalles interface{}, ip, userAgent *string) error {
+	var detallesJSON interface{}
+	if detalles != nil {
+		b, err := json.Marshal(detalles)
+		if err != nil {
+			detallesJSON = nil
+		} else {
+			s := string(b)
+			detallesJSON = s
+		}
+	}
+	_, err := r.pool.Exec(ctx, `
+		INSERT INTO admin_audit_log (admin_id, accion, entidad, entidad_id, detalles, ip, user_agent)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+	`, adminID, accion, entidad, entidadID, detallesJSON, ip, userAgent)
+	return err
+}
+
 func (r *AdminRepo) GetReservasAdmin(ctx context.Context, estado, busqueda string, pagina, limite int) ([]AdminReservaListItem, int, error) {
 	offset := (pagina - 1) * limite
 
@@ -890,6 +908,61 @@ func (r *AdminRepo) GetCuponUsos(ctx context.Context, cuponID string) ([]CuponUs
 		usos = []CuponUso{}
 	}
 	return usos, nil
+}
+
+type CuponActivoUsuario struct {
+	Cupon
+	VecesUsado int `json:"veces_usado"`
+}
+
+func (r *AdminRepo) GetCuponesActivosUsuario(ctx context.Context, usuarioID string) ([]CuponActivoUsuario, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT id, codigo, nombre, descripcion, tipo_descuento, valor_descuento,
+		       moneda, max_descuento, tipo_aplicacion, valor_aplicacion,
+		       min_compra, min_noches, max_usos, max_usos_por_usuario, usos_actuales,
+		       fecha_inicio, fecha_fin, activo, creado_por, fecha_creacion
+		FROM cupones
+		WHERE activo = true AND fecha_inicio <= NOW() AND fecha_fin >= NOW()
+		ORDER BY fecha_creacion DESC`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []CuponActivoUsuario
+	for rows.Next() {
+		var c CuponActivoUsuario
+		if err := rows.Scan(
+			&c.ID, &c.Codigo, &c.Nombre, &c.Descripcion, &c.TipoDescuento, &c.ValorDescuento,
+			&c.Moneda, &c.MaxDescuento, &c.TipoAplicacion, &c.ValorAplicacion,
+			&c.MinCompra, &c.MinNoches, &c.MaxUsos, &c.MaxUsosPorUsuario, &c.UsosActuales,
+			&c.FechaInicio, &c.FechaFin, &c.Activo, &c.CreadoPor, &c.FechaCreacion,
+		); err != nil {
+			return nil, err
+		}
+
+		if c.MaxUsos != nil && c.UsosActuales >= *c.MaxUsos {
+			continue
+		}
+
+		var vecesUsado int
+		_ = r.pool.QueryRow(ctx,
+			`SELECT COUNT(*) FROM cupon_usos WHERE cupon_id = $1 AND usuario_id = $2`,
+			c.ID, usuarioID,
+		).Scan(&vecesUsado)
+
+		if c.MaxUsosPorUsuario > 0 && vecesUsado >= c.MaxUsosPorUsuario {
+			continue
+		}
+
+		c.VecesUsado = vecesUsado
+		result = append(result, c)
+	}
+
+	if result == nil {
+		result = []CuponActivoUsuario{}
+	}
+	return result, nil
 }
 
 func (r *AdminRepo) GetComisiones(ctx context.Context) (map[string]float64, error) {

@@ -1,7 +1,6 @@
 'use server'
 
-import { goGet, goPost, goPut, goPatch, goDelete, GoAPIError } from '@/lib/go-api-client'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { goGet, goPost, goPut, goPatch, goDelete, goApi, GoAPIError } from '@/lib/go-api-client'
 import { revalidatePath } from 'next/cache'
 
 export async function getCupones() {
@@ -96,36 +95,10 @@ export async function actualizarComisiones(formData: FormData) {
   }
 }
 
-export async function getCuponesActivosUsuario(usuarioId: string) {
-  const admin = createAdminClient()
-  const now = new Date().toISOString()
-
-  const { data, error } = await admin
-    .from('cupones')
-    .select('*')
-    .eq('activo', true)
-    .lte('fecha_inicio', now)
-    .gte('fecha_fin', now)
-    .order('fecha_creacion', { ascending: false })
-
-  if (error) return []
-
-  const cupones = data || []
-  const result = []
-
-  for (const cupon of cupones) {
-    const { data: usos } = await admin
-      .from('cupon_usos')
-      .select('id')
-      .eq('cupon_id', cupon.id)
-      .eq('usuario_id', usuarioId)
-
-    const vecesUsado = usos?.length || 0
-    if (cupon.max_usos_por_usuario && vecesUsado >= cupon.max_usos_por_usuario) continue
-    if (cupon.max_usos && cupon.usos_actuales >= cupon.max_usos) continue
-
-    result.push({ ...cupon, vecesUsado })
+export async function getCuponesActivosUsuario(_usuarioId: string) {
+  try {
+    return await goApi<Array<Record<string, unknown>>>('/api/v1/cupones/activos')
+  } catch {
+    return []
   }
-
-  return result
 }

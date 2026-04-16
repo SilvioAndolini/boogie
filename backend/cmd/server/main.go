@@ -85,6 +85,7 @@ func main() {
 	var propiedadesHandlers *router.PropiedadesHandlers
 	var canchasHandlers *router.CanchasHandlers
 	var reservaHandlers *router.ReservaHandlers
+	var cuponHandlers *router.CuponHandlers
 
 	authClient := auth.NewSupabaseAuthClient(cfg.SupabaseURL, cfg.SupabaseSecretKey)
 
@@ -265,6 +266,10 @@ func main() {
 			SubirImagenStore:        adminH.SubirImagenStore,
 		}
 
+		cuponHandlers = &router.CuponHandlers{
+			GetActivosUsuario: adminH.GetCuponesActivosUsuario,
+		}
+
 		propiedadesRepo := repository.NewPropiedadesRepo(db)
 		propiedadesSvc := service.NewPropiedadesService(propiedadesRepo, 2)
 		propiedadesH := handler.NewPropiedadesHandler(propiedadesSvc)
@@ -362,6 +367,7 @@ func main() {
 			DashboardHandlers:    dashboardHandlers,
 			SeccionesHandlers:    seccionesHandlers,
 			ReservaHandlers:      reservaHandlers,
+			CuponHandlers:        cuponHandlers,
 			AuthVerifier:         verifier,
 			AppURL:               cfg.AppURL,
 			ExchangeLimiter:      router.NewExchangeLimiter(),

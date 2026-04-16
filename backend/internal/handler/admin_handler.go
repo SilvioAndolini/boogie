@@ -50,6 +50,30 @@ func requireAdmin(w http.ResponseWriter, r *http.Request) (bool, string, string)
 	return true, userID, role
 }
 
+func (h *AdminHandler) auditLog(r *http.Request, adminID, accion, entidad string, entidadID *string, detalles interface{}) {
+	if adminID == "" {
+		adminID = auth.GetUserID(r.Context())
+	}
+	ip := r.Header.Get("X-Forwarded-For")
+	if ip == "" {
+		ip = r.Header.Get("X-Real-Ip")
+	}
+	var ipPtr *string
+	if ip != "" {
+		ipPtr = &ip
+	}
+	ua := r.Header.Get("User-Agent")
+	var uaPtr *string
+	if ua != "" {
+		uaPtr = &ua
+	}
+	h.svc.LogAction(r.Context(), adminID, accion, entidad, entidadID, detalles, ipPtr, uaPtr)
+}
+
+func auditID(r *http.Request) string {
+	return auth.GetUserID(r.Context())
+}
+
 func intQueryParam(r *http.Request, key string, defaultVal int) int {
 	v := r.URL.Query().Get(key)
 	if v == "" {
@@ -129,6 +153,7 @@ func (h *AdminHandler) AccionReserva(w http.ResponseWriter, r *http.Request) {
 		ErrorJSON(w, http.StatusBadRequest, "ACCION_ERROR", err.Error())
 		return
 	}
+	h.auditLog(r, adminID, "accion_reserva", "reserva", &req.ReservaID, nil)
 	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
 }
 
@@ -186,6 +211,7 @@ func (h *AdminHandler) VerificarPago(w http.ResponseWriter, r *http.Request) {
 		ErrorJSON(w, http.StatusBadRequest, "VERIFY_ERROR", err.Error())
 		return
 	}
+	h.auditLog(r, auditID(r), "verificar_pago", "pago", &req.PagoID, nil)
 	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
 }
 
@@ -238,6 +264,7 @@ func (h *AdminHandler) UpdatePropiedad(w http.ResponseWriter, r *http.Request) {
 		ErrorJSON(w, http.StatusBadRequest, "UPDATE_ERROR", err.Error())
 		return
 	}
+	h.auditLog(r, "", "update_propiedad", "propiedad", &req.PropiedadID, map[string]interface{}{"estado": estado, "destacada": req.Destacada})
 	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
 }
 
@@ -255,6 +282,7 @@ func (h *AdminHandler) DeletePropiedad(w http.ResponseWriter, r *http.Request) {
 		ErrorJSON(w, http.StatusInternalServerError, "DELETE_ERROR", "Error al eliminar propiedad")
 		return
 	}
+	h.auditLog(r, "", "delete_propiedad", "propiedad", &id, nil)
 	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
 }
 
@@ -307,6 +335,7 @@ func (h *AdminHandler) ModerarResena(w http.ResponseWriter, r *http.Request) {
 		ErrorJSON(w, http.StatusBadRequest, "MODERATE_ERROR", err.Error())
 		return
 	}
+	h.auditLog(r, "", "moderar_resena", "resena", &req.ResenaID, map[string]interface{}{"accion": req.Accion, "motivo": req.Motivo})
 	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
 }
 
@@ -423,6 +452,7 @@ func (h *AdminHandler) CrearCupon(w http.ResponseWriter, r *http.Request) {
 		ErrorJSON(w, http.StatusBadRequest, "CREATE_ERROR", err.Error())
 		return
 	}
+	h.auditLog(r, userID, "crear_cupon", "cupon", nil, map[string]interface{}{"codigo": req.Codigo, "nombre": req.Nombre})
 	JSON(w, http.StatusCreated, map[string]interface{}{"ok": true, "mensaje": "Cupón creado"})
 }
 
@@ -525,6 +555,7 @@ func (h *AdminHandler) EditarCupon(w http.ResponseWriter, r *http.Request) {
 		ErrorJSON(w, http.StatusBadRequest, "UPDATE_ERROR", err.Error())
 		return
 	}
+	h.auditLog(r, "", "editar_cupon", "cupon", &req.ID, fields)
 	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
 }
 
@@ -546,6 +577,7 @@ func (h *AdminHandler) ToggleCuponActivo(w http.ResponseWriter, r *http.Request)
 		ErrorJSON(w, http.StatusBadRequest, "TOGGLE_ERROR", err.Error())
 		return
 	}
+	h.auditLog(r, "", "toggle_cupon", "cupon", &id, map[string]interface{}{"activo": req.Activo})
 	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
 }
 
@@ -558,6 +590,7 @@ func (h *AdminHandler) DeleteCupon(w http.ResponseWriter, r *http.Request) {
 		ErrorJSON(w, http.StatusBadRequest, "DELETE_ERROR", err.Error())
 		return
 	}
+	h.auditLog(r, "", "delete_cupon", "cupon", &id, nil)
 	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
 }
 
@@ -607,6 +640,7 @@ func (h *AdminHandler) UpdateComisiones(w http.ResponseWriter, r *http.Request) 
 		ErrorJSON(w, http.StatusBadRequest, "UPDATE_ERROR", err.Error())
 		return
 	}
+	h.auditLog(r, userID, "update_comisiones", "comisiones", nil, map[string]interface{}{"comisionHuesped": req.ComisionHuesped, "comisionAnfitrion": req.ComisionAnfitrion})
 	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
 }
 
@@ -673,6 +707,7 @@ func (h *AdminHandler) EnviarNotificacion(w http.ResponseWriter, r *http.Request
 		ErrorJSON(w, http.StatusBadRequest, "SEND_ERROR", err.Error())
 		return
 	}
+	h.auditLog(r, "", "enviar_notificacion", "notificacion", nil, map[string]interface{}{"titulo": req.Titulo, "usuarioId": usuarioID})
 	JSON(w, http.StatusCreated, map[string]interface{}{"ok": true})
 }
 
@@ -710,6 +745,7 @@ func (h *AdminHandler) CrearProductoStore(w http.ResponseWriter, r *http.Request
 		ErrorJSON(w, http.StatusBadRequest, "CREATE_ERROR", err.Error())
 		return
 	}
+	h.auditLog(r, "", "crear_producto_store", "producto", nil, map[string]interface{}{"nombre": req.Nombre, "precio": req.Precio})
 	JSON(w, http.StatusCreated, map[string]interface{}{"ok": true})
 }
 
@@ -737,6 +773,7 @@ func (h *AdminHandler) ActualizarProductoStore(w http.ResponseWriter, r *http.Re
 		ErrorJSON(w, http.StatusBadRequest, "UPDATE_ERROR", err.Error())
 		return
 	}
+	h.auditLog(r, "", "actualizar_producto_store", "producto", &id, nil)
 	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
 }
 
@@ -750,6 +787,7 @@ func (h *AdminHandler) EliminarProductoStore(w http.ResponseWriter, r *http.Requ
 		ErrorJSON(w, http.StatusBadRequest, "DELETE_ERROR", err.Error())
 		return
 	}
+	h.auditLog(r, "", "eliminar_producto_store", "producto", &id, nil)
 	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
 }
 
@@ -792,6 +830,7 @@ func (h *AdminHandler) CrearServicioStore(w http.ResponseWriter, r *http.Request
 		ErrorJSON(w, http.StatusBadRequest, "CREATE_ERROR", err.Error())
 		return
 	}
+	h.auditLog(r, "", "crear_servicio_store", "servicio", nil, map[string]interface{}{"nombre": req.Nombre, "precio": req.Precio})
 	JSON(w, http.StatusCreated, map[string]interface{}{"ok": true})
 }
 
@@ -820,6 +859,7 @@ func (h *AdminHandler) ActualizarServicioStore(w http.ResponseWriter, r *http.Re
 		ErrorJSON(w, http.StatusBadRequest, "UPDATE_ERROR", err.Error())
 		return
 	}
+	h.auditLog(r, "", "actualizar_servicio_store", "servicio", &id, nil)
 	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
 }
 
@@ -833,6 +873,7 @@ func (h *AdminHandler) EliminarServicioStore(w http.ResponseWriter, r *http.Requ
 		ErrorJSON(w, http.StatusBadRequest, "DELETE_ERROR", err.Error())
 		return
 	}
+	h.auditLog(r, "", "eliminar_servicio_store", "servicio", &id, nil)
 	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
 }
 
@@ -881,6 +922,7 @@ func (h *AdminHandler) CrearUsuario(w http.ResponseWriter, r *http.Request) {
 		ErrorJSON(w, http.StatusBadRequest, "CREATE_ERROR", err.Error())
 		return
 	}
+	h.auditLog(r, adminID, "crear_usuario", "usuario", nil, map[string]interface{}{"email": req.Email, "rol": req.Rol})
 	JSON(w, http.StatusCreated, result)
 }
 
@@ -910,6 +952,7 @@ func (h *AdminHandler) UpdateUsuario(w http.ResponseWriter, r *http.Request) {
 		ErrorJSON(w, http.StatusBadRequest, "UPDATE_ERROR", err.Error())
 		return
 	}
+	h.auditLog(r, "", "update_usuario", "usuario", &id, map[string]interface{}{"rol": req.Rol, "activo": req.Activo})
 	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
 }
 
@@ -923,6 +966,7 @@ func (h *AdminHandler) DeleteUsuario(w http.ResponseWriter, r *http.Request) {
 		ErrorJSON(w, http.StatusBadRequest, "DELETE_ERROR", err.Error())
 		return
 	}
+	h.auditLog(r, "", "delete_usuario", "usuario", &id, nil)
 	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
 }
 
@@ -1024,5 +1068,23 @@ func (h *AdminHandler) SubirImagenStore(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	h.auditLog(r, "", "subir_imagen_store", "store_imagen", nil, map[string]interface{}{"path": storagePath})
 	JSON(w, http.StatusOK, map[string]interface{}{"ok": true, "url": publicURL})
+}
+
+func (h *AdminHandler) GetCuponesActivosUsuario(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetUserID(r.Context())
+	if userID == "" {
+		ErrorJSON(w, http.StatusUnauthorized, "AUTH_REQUIRED", "No autenticado")
+		return
+	}
+
+	cupones, err := h.svc.GetCuponesActivosUsuario(r.Context(), userID)
+	if err != nil {
+		slog.Error("[cupones/activos] error", "error", err)
+		ErrorJSON(w, http.StatusInternalServerError, "QUERY_ERROR", "Error al obtener cupones")
+		return
+	}
+
+	JSON(w, http.StatusOK, cupones)
 }
