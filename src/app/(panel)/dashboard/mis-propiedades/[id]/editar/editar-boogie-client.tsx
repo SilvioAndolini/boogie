@@ -76,7 +76,9 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
   const [intentadoEnviar, setIntentadoEnviar] = useState(false)
   const [erroresValidacion, setErroresValidacion] = useState<Record<string, string>>({})
   const [amenidadesSeleccionadas, setAmenidadesSeleccionadas] = useState<string[]>(
-    (boogie.amenidades as string[]) || []
+    Array.isArray(boogie.amenidades)
+      ? boogie.amenidades.map((a: unknown) => typeof a === 'string' ? a : (a as Record<string, unknown>)?.nombre as string || '').filter(Boolean)
+      : []
   )
   const [imagenes, setImagenes] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
@@ -126,7 +128,7 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
       zona: (boogie.zona as string) || '',
       latitud: (boogie.latitud as number) ?? undefined,
       longitud: (boogie.longitud as number) ?? undefined,
-      amenidades: (boogie.amenidades as string[]) || [],
+      amenidades: [] as string[],
       reglas: (boogie.reglas as string) || '',
       politicaCancelacion: ((boogie.politica_cancelacion as string) || 'MODERADA') as 'FLEXIBLE' | 'MODERADA' | 'ESTRICTA',
       horarioCheckIn: (boogie.horario_checkin as string) || '14:00',
