@@ -8,7 +8,7 @@ import { FilterModal } from './filter-modal'
 import type { PropiedadCard } from './property-card'
 import type { PropiedadMapa } from './property-map'
 
-const PAGE_SIZE = 6
+const PAGE_SIZE = 18
 
 interface PropiedadesLayoutProps {
   propiedades: PropiedadCard[]
@@ -91,7 +91,7 @@ export function PropiedadesLayout({
         </div>
 
         <div className="flex min-h-0 flex-1 overflow-hidden">
-          <div className="min-w-0 overflow-y-auto bg-[#FEFCF9]" style={{ width: '45%' }}>
+          <div className="min-w-0 overflow-y-auto bg-[#FEFCF9]" style={{ width: '55%' }}>
             <section className="px-6 py-6">
               <PropertyGrid propiedades={paged} />
               <PaginationControls />
@@ -99,7 +99,7 @@ export function PropiedadesLayout({
           </div>
 
           {propiedadesMapa.length > 0 && (
-            <div className="sticky top-0 shrink-0 py-5 ml-auto" style={{ width: '55%', height: 'calc(100vh - 105px - 45px)' }}>
+            <div className="sticky top-0 shrink-0 px-[35px] py-5 ml-auto" style={{ width: '40%', height: 'calc(100vh - 105px - 45px)' }}>
               <div className="h-full overflow-hidden rounded-2xl border border-[#E8E4DF]">
                 <PropertyMap propiedades={propiedadesMapa} centerLat={centerLat} centerLng={centerLng} />
               </div>
