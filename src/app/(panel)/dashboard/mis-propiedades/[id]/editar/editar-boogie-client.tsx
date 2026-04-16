@@ -249,7 +249,8 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
     setIntentadoEnviar(true)
     setErroresValidacion({})
     const data = getValues()
-    const result = propiedadSchema.safeParse(data)
+    const { amenidades: _amenidades, ...dataSinAmenidades } = data
+    const result = propiedadSchema.safeParse({ ...dataSinAmenidades, amenidades: amenidadesSeleccionadas })
 
     if (!result.success) {
       const fieldErrors = result.error.flatten().fieldErrors
