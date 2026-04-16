@@ -113,6 +113,8 @@ export default async function CanchasPage({ searchParams }: CanchasPageProps) {
           centerLat={lat}
           centerLng={lng}
           locationName={params.ubicacion ?? ''}
+          basePath="/canchas"
+          titleLabel="Canchas disponibles"
         />
       </Suspense>
     </div>

@@ -18,6 +18,8 @@ interface PropiedadesLayoutProps {
   centerLat?: number
   centerLng?: number
   locationName?: string
+  basePath?: string
+  titleLabel?: string
 }
 
 export function PropiedadesLayout({
@@ -28,6 +30,8 @@ export function PropiedadesLayout({
   paginaActual,
   centerLat,
   centerLng,
+  basePath = '/propiedades',
+  titleLabel = 'Boogies disponibles',
 }: PropiedadesLayoutProps) {
   const [filtersOpen, setFiltersOpen] = useState(false)
   const router = useRouter()
@@ -36,7 +40,7 @@ export function PropiedadesLayout({
   const goToPage = (page: number) => {
     const params = new URLSearchParams(searchParams.toString())
     params.set('pagina', String(page))
-    router.push(`/propiedades?${params.toString()}`)
+    router.push(`${basePath}?${params.toString()}`)
   }
 
   const PaginationBar = () => {
@@ -84,8 +88,8 @@ export function PropiedadesLayout({
             <SlidersHorizontal className="h-3.5 w-3.5" />
             Filtros
           </button>
-          <h1 className="text-base font-bold text-[#1A1A1A]">Boogies disponibles</h1>
-          <span className="ml-2 text-sm text-[#6B6560]">{total} Boogie{total !== 1 ? 's' : ''}</span>
+          <h1 className="text-base font-bold text-[#1A1A1A]">{titleLabel}</h1>
+          <span className="ml-2 text-sm text-[#6B6560]">{total} resultado{total !== 1 ? 's' : ''}</span>
           {totalPaginas > 1 && (
             <span className="ml-auto text-xs text-[#9E9892]">Página {paginaActual} de {totalPaginas}</span>
           )}
@@ -121,8 +125,8 @@ export function PropiedadesLayout({
             <SlidersHorizontal className="h-3.5 w-3.5" />
             Filtros
           </button>
-          <h1 className="text-base font-bold text-[#1A1A1A]">Boogies disponibles</h1>
-          <span className="ml-2 text-sm text-[#6B6560]">{total} Boogie{total !== 1 ? 's' : ''}</span>
+          <h1 className="text-base font-bold text-[#1A1A1A]">{titleLabel}</h1>
+          <span className="ml-2 text-sm text-[#6B6560]">{total} resultado{total !== 1 ? 's' : ''}</span>
         </div>
 
         <section className="px-4 py-6 sm:px-6">
