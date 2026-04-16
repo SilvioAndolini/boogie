@@ -10,6 +10,7 @@ import (
 	"github.com/boogie/backend/internal/domain/enums"
 	bizerrors "github.com/boogie/backend/internal/domain/errors"
 	"github.com/boogie/backend/internal/domain/models"
+	"github.com/boogie/backend/internal/domain/util"
 	"github.com/boogie/backend/internal/repository"
 )
 
@@ -27,6 +28,7 @@ type CrearReservaInput struct {
 	FechaSalida       time.Time
 	CantidadHuespedes int
 	NotasHuesped      *string
+	CuponCodigo       string
 }
 
 type CrearReservaResult struct {
@@ -42,6 +44,7 @@ type CancelarInput struct {
 type ReservaService struct {
 	repo      *repository.ReservaRepo
 	disponSvc *ReservaDisponibilidad
+	cuponSvc  *CuponService
 	comisionH float64
 	comisionA float64
 }
@@ -53,6 +56,11 @@ func NewReservaService(repo *repository.ReservaRepo, disponSvc *ReservaDisponibi
 		comisionH: comisionH,
 		comisionA: comisionA,
 	}
+}
+
+func (s *ReservaService) WithCuponService(svc *CuponService) *ReservaService {
+	s.cuponSvc = svc
+	return s
 }
 
 type CrearConPagoInput struct {
@@ -70,6 +78,7 @@ type CrearConPagoInput struct {
 	BancoEmisor       *string
 	TelefonoEmisor    *string
 	StoreItems        []repository.StoreItemInput
+	CuponCodigo       string
 }
 
 func (s *ReservaService) CrearConPago(ctx context.Context, input *CrearConPagoInput) (*CrearReservaResult, error) {
@@ -80,6 +89,7 @@ func (s *ReservaService) CrearConPago(ctx context.Context, input *CrearConPagoIn
 		FechaSalida:       input.FechaSalida,
 		CantidadHuespedes: input.CantidadHuespedes,
 		NotasHuesped:      input.NotasHuesped,
+		CuponCodigo:       input.CuponCodigo,
 	})
 	if err != nil {
 		return nil, err
@@ -166,6 +176,34 @@ func (s *ReservaService) Crear(ctx context.Context, input *CrearReservaInput) (*
 	reserva, err := s.repo.Crear(ctx, prop, input.HuespedID, input.FechaEntrada, input.FechaSalida, input.CantidadHuespedes, input.NotasHuesped, s.comisionH, s.comisionA)
 	if err != nil {
 		return nil, fmt.Errorf("error al crear reserva: %w", err)
+	}
+
+	if input.CuponCodigo != "" && s.cuponSvc != nil {
+		validado, cuponErr := s.cuponSvc.ValidarCupon(ctx, input.CuponCodigo, input.HuespedID, input.PropiedadID, reserva.Subtotal, reserva.Noches)
+		if cuponErr != nil {
+			slog.Warn("[reserva-service] cupón inválido, reserva creada sin descuento", "codigo", input.CuponCodigo, "error", cuponErr)
+		} else {
+			nuevoSubtotal := reserva.Subtotal - validado.Descuento
+			if nuevoSubtotal < 0 {
+				nuevoSubtotal = 0
+			}
+			nuevaComisionH := util.Round2(nuevoSubtotal * s.comisionH)
+			nuevoTotal := util.Round2(nuevoSubtotal + nuevaComisionH)
+
+			if updateErr := s.repo.UpdateCuponDescuento(ctx, reserva.ID, validado.ID, validado.Descuento, nuevoSubtotal, nuevaComisionH, nuevoTotal); updateErr != nil {
+				slog.Error("[reserva-service] error al aplicar cupón", "error", updateErr)
+			} else {
+				reserva.Subtotal = nuevoSubtotal
+				reserva.ComisionPlataforma = nuevaComisionH
+				reserva.Total = nuevoTotal
+				reserva.CuponID = &validado.ID
+				reserva.Descuento = validado.Descuento
+
+				if usoErr := s.cuponSvc.RegistrarUso(ctx, validado.ID, input.HuespedID, reserva.ID, validado.Descuento); usoErr != nil {
+					slog.Error("[reserva-service] error al registrar uso de cupón", "error", usoErr)
+				}
+			}
+		}
 	}
 
 	if err := s.repo.InsertNotificacion(ctx,

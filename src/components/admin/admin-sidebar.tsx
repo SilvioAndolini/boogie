@@ -21,6 +21,7 @@ import {
   LayoutGrid,
   ShoppingBag,
   Trophy,
+  Tag,
 } from 'lucide-react'
 import { getAdminCounts } from '@/actions/verificacion.actions'
 import { AdminBadgeCount } from './admin-badge-count'
@@ -43,6 +44,7 @@ const ADMIN_LINKS: AdminLink[] = [
   { href: '/admin/secciones', label: 'Secciones', icon: LayoutGrid },
   { href: '/admin/resenas', label: 'Reseñas', icon: Star },
   { href: '/admin/boogie-store', label: 'Boogie Store', icon: ShoppingBag },
+  { href: '/admin/cupones', label: 'Cupones', icon: Tag },
   { href: '/admin/wallets', label: 'Wallets', icon: Wallet },
   { href: '/admin/auditoria', label: 'Auditoría', icon: ScrollText },
   { href: '/admin/configuracion', label: 'Configuración', icon: Settings },

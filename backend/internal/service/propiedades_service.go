@@ -174,7 +174,7 @@ func validarCrearInput(input *repository.CrearPropiedadInput) error {
 	if !validTipoPropiedad[input.TipoPropiedad] {
 		return fmt.Errorf("tipo_propiedad invalido: %s", input.TipoPropiedad)
 	}
-	if input.PrecioPorNoche <= 0 {
+	if input.Categoria != "DEPORTE" && input.PrecioPorNoche <= 0 {
 		return fmt.Errorf("precio_por_noche debe ser mayor a 0")
 	}
 	if !validMoneda[input.Moneda] {

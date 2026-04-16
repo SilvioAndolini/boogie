@@ -595,8 +595,8 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
                            ) : (
                              <Input type="number" step="0.01" min={1} placeholder="0.00" {...register('precioPorNoche', { valueAsNumber: true })} className={ic('precioPorNoche')} />
                            )}
-                           {erroresValidacion.precioPorNoche && <p className="text-xs text-[#C1121F]">{erroresValidacion.precioPorNoche}</p>}
-                           {erroresValidacion.precioPorHora && <p className="text-xs text-[#C1121F]">{erroresValidacion.precioPorHora}</p>}
+                            {watch('categoria') !== 'DEPORTE' && erroresValidacion.precioPorNoche && <p className="text-xs text-[#C1121F]">{erroresValidacion.precioPorNoche}</p>}
+                            {watch('categoria') === 'DEPORTE' && erroresValidacion.precioPorHora && <p className="text-xs text-[#C1121F]">{erroresValidacion.precioPorHora}</p>}
                          </div>
                           <div className="space-y-1.5">
                             <Label className="text-xs font-semibold text-[#6B6560]">Moneda</Label>

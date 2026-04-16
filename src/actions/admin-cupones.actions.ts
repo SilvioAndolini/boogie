@@ -102,3 +102,17 @@ export async function getCuponesActivosUsuario(_usuarioId: string) {
     return []
   }
 }
+
+export async function validarCupon(codigo: string, propiedadId: string, montoTotal: number, noches: number) {
+  try {
+    return await goPost<Record<string, unknown>>('/api/v1/cupones/validar', {
+      codigo,
+      propiedadId,
+      montoTotal,
+      noches,
+    })
+  } catch (err) {
+    if (err instanceof GoAPIError) return { error: err.message }
+    return { error: 'Error al validar cupón' }
+  }
+}

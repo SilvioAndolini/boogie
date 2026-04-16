@@ -18,6 +18,8 @@ func NewAdminRepo(pool *pgxpool.Pool) *AdminRepo {
 	return &AdminRepo{pool: pool}
 }
 
+func (r *AdminRepo) Pool() *pgxpool.Pool { return r.pool }
+
 type AdminUser struct {
 	ID               string    `json:"id"`
 	Email            string    `json:"email"`
@@ -810,6 +812,21 @@ func (r *AdminRepo) ExistsCuponCodigo(ctx context.Context, codigo string) (bool,
 		return false, err
 	}
 	return true, nil
+}
+
+func (r *AdminRepo) GetCuponByCodigo(ctx context.Context, codigo string) (*Cupon, error) {
+	var c Cupon
+	err := r.pool.QueryRow(ctx, `SELECT id, codigo, nombre, descripcion, tipo_descuento, valor_descuento,
+		moneda, max_descuento, tipo_aplicacion, valor_aplicacion, min_compra, min_noches,
+		max_usos, max_usos_por_usuario, usos_actuales, fecha_inicio, fecha_fin, activo, creado_por, fecha_creacion
+		FROM cupones WHERE codigo = $1`, codigo).Scan(
+		&c.ID, &c.Codigo, &c.Nombre, &c.Descripcion, &c.TipoDescuento, &c.ValorDescuento,
+		&c.Moneda, &c.MaxDescuento, &c.TipoAplicacion, &c.ValorAplicacion, &c.MinCompra, &c.MinNoches,
+		&c.MaxUsos, &c.MaxUsosPorUsuario, &c.UsosActuales, &c.FechaInicio, &c.FechaFin, &c.Activo, &c.CreadoPor, &c.FechaCreacion)
+	if err != nil {
+		return nil, err
+	}
+	return &c, nil
 }
 
 func (r *AdminRepo) CrearCupon(ctx context.Context, c *Cupon) error {

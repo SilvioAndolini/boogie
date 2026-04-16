@@ -43,7 +43,7 @@ export const propiedadSchema = z.object({
     'APARTAMENTO', 'CASA', 'VILLA', 'CABANA', 'ESTUDIO',
     'HABITACION', 'LOFT', 'PENTHOUSE', 'FINCA', 'OTRO'
   ]),
-  precioPorNoche: z.coerce.number().min(1, 'El precio debe ser mayor a 0'),
+  precioPorNoche: z.coerce.number().optional(),
   moneda: z.enum(['USD', 'VES']).default('USD'),
   capacidadMaxima: z.coerce.number().min(1, 'Debe alojar al menos 1 persona').max(20),
   habitaciones: z.coerce.number().min(0).default(1),
@@ -64,12 +64,30 @@ export const propiedadSchema = z.object({
   amenidades: z.array(z.string()).default([]),
   categoria: z.enum(['ALOJAMIENTO', 'DEPORTE']).default('ALOJAMIENTO'),
   tipoCancha: z.enum(['FUTBOL', 'BALONCESTO', 'TENIS', 'PADDLE', 'TENIS_DE_MESA', 'MULTIDEPORTE']).optional(),
-  precioPorHora: z.coerce.number().min(1).optional(),
+  precioPorHora: z.coerce.number().optional(),
   horaApertura: z.string().optional(),
   horaCierre: z.string().optional(),
   duracionMinimaMin: z.coerce.number().min(15).optional(),
   esExpress: z.boolean().default(false),
   precioExpress: z.coerce.number().min(1).optional(),
+}).superRefine((data, ctx) => {
+  if (data.categoria === 'DEPORTE') {
+    if (!data.precioPorHora || data.precioPorHora < 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'El precio debe ser mayor a 0',
+        path: ['precioPorHora'],
+      })
+    }
+  } else {
+    if (!data.precioPorNoche || data.precioPorNoche < 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'El precio debe ser mayor a 0',
+        path: ['precioPorNoche'],
+      })
+    }
+  }
 })
 
 // === Reservas ===

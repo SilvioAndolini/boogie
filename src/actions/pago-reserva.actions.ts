@@ -78,6 +78,7 @@ export async function crearReservaConPago(datos: {
     id: string
   }>
   noches?: number
+  cuponCodigo?: string
 }) {
   const user = await getUsuarioAutenticado()
   if (!user) return { error: 'No autenticado' }
@@ -124,6 +125,7 @@ export async function crearReservaConPago(datos: {
       telefonoEmisor: datos.telefonoEmisor || null,
       comprobanteUrl: comprobanteUrl,
       storeItems,
+      cuponCodigo: datos.cuponCodigo || '',
     })
     revalidatePath('/dashboard/mis-reservas')
     revalidatePath('/dashboard/reservas-recibidas')

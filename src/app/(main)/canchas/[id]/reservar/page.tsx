@@ -6,11 +6,12 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, Shield, Loader2,
   MapPin, Receipt, Check, ArrowRight, Clock, DollarSign,
-  Sparkles, Trophy, CalendarDays,
+  Sparkles, Trophy, CalendarDays, Tag,
 } from 'lucide-react'
 import { PaymentMethodSelector } from '@/components/pagos/payment-method-selector'
 import { PaymentForm } from '@/components/pagos/payment-form'
 import { BoogieStore } from '@/components/reservas/boogie-store'
+import { CuponInput } from '@/components/reservas/cupon-input'
 import { COMISION_PLATAFORMA_HUESPED } from '@/lib/constants'
 import { crearReserva } from '@/actions/reserva.actions'
 import { crearReservaConPago } from '@/actions/pago-reserva.actions'
@@ -64,6 +65,8 @@ function ReservarContent() {
   const [reservaCreadaId, setReservaCreadaId] = useState<string | null>(null)
   const [storeCart, setStoreCart] = useState<CartItem[]>([])
   const [tasaCambio, setTasaCambio] = useState(78.39)
+  const [cuponCodigo, setCuponCodigo] = useState<string | null>(null)
+  const [descuentoCupon, setDescuentoCupon] = useState(0)
 
   const propiedadId = params.id as string
   const fecha = searchParams.get('fecha') || ''
@@ -115,14 +118,15 @@ function ReservarContent() {
 
   const precioPorHora = propiedad?.precioPorHora || 0
   const subtotal = horas * precioPorHora
-  const comision = Math.round(subtotal * COMISION_PLATAFORMA_HUESPED * 100) / 100
+  const subtotalConDescuento = Math.max(0, subtotal - descuentoCupon)
+  const comision = Math.round(subtotalConDescuento * COMISION_PLATAFORMA_HUESPED * 100) / 100
 
   const storeTotal = storeCart.reduce((sum, item) => {
     const esPorNoche = item.tipo === 'servicio' && item.tipoPrecio === 'POR_NOCHE'
     return sum + (esPorNoche ? item.precio * horas : item.precio) * item.cantidad
   }, 0)
 
-  const total = subtotal + comision + storeTotal
+  const total = subtotalConDescuento + comision + storeTotal
 
   const handlePaymentSubmit = async (paymentFormData: FormData) => {
     if (!propiedad || !metodoPago) return
@@ -161,6 +165,7 @@ function ReservarContent() {
         comprobanteExt,
         storeItems: storeCart,
         noches: horas,
+        cuponCodigo: cuponCodigo || undefined,
       })
 
       if (result.error) {
@@ -306,6 +311,14 @@ function ReservarContent() {
                   <span className="flex-1 border-b border-dotted border-[#E8E4DF] min-w-[12px]" />
                   <span className="font-medium text-[#1A1A1A]">{formatUSD(subtotal)}</span>
                 </div>
+                {descuentoCupon > 0 && (
+                  <div className="flex items-center gap-2.5 text-sm">
+                    <Tag className="h-3.5 w-3.5 text-[#52B788] shrink-0" />
+                    <span className="text-[#52B788]">Cupón {cuponCodigo}</span>
+                    <span className="flex-1 border-b border-dotted border-[#52B788]/30 min-w-[12px]" />
+                    <span className="font-medium text-[#52B788]">-{formatUSD(descuentoCupon)}</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-2.5 text-sm">
                   <Shield className="h-3.5 w-3.5 text-[#9E9892] shrink-0" />
                   <span className="text-[#9E9892]">Comisión ({(COMISION_PLATAFORMA_HUESPED * 100).toFixed(0)}%)</span>
@@ -316,9 +329,22 @@ function ReservarContent() {
                   <DollarSign className="h-3.5 w-3.5 text-[#1B4332] shrink-0" />
                   <span className="font-bold text-[#1A1A1A]">Total</span>
                   <span className="flex-1 border-b border-dotted border-[#1B4332]/30 min-w-[12px]" />
-                  <span className="text-lg font-bold text-[#1B4332]">{formatUSD(subtotal + comision)}</span>
+                  <span className="text-lg font-bold text-[#1B4332]">{formatUSD(subtotalConDescuento + comision)}</span>
                 </div>
               </div>
+            </motion.div>
+
+            {/* Coupon input */}
+            <motion.div variants={fadeUp}>
+              <CuponInput
+                propiedadId={propiedadId}
+                subtotal={subtotal}
+                noches={horas}
+                appliedCupon={cuponCodigo}
+                descuento={descuentoCupon}
+                onApply={(desc, cod) => { setDescuentoCupon(desc); setCuponCodigo(cod) }}
+                onRemove={() => { setDescuentoCupon(0); setCuponCodigo(null) }}
+              />
             </motion.div>
 
             <motion.div variants={fadeUp}>

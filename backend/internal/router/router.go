@@ -206,6 +206,7 @@ type AuthHandlers struct {
 
 type CuponHandlers struct {
 	GetActivosUsuario http.HandlerFunc
+	Validar           http.HandlerFunc
 }
 
 type RouterOpts struct {
@@ -286,6 +287,7 @@ func New(opts *RouterOpts) http.Handler {
 				r.Group(func(r chi.Router) {
 					r.Use(opts.AuthVerifier.Middleware)
 					r.Get("/activos", opts.CuponHandlers.GetActivosUsuario)
+					r.Post("/validar", opts.CuponHandlers.Validar)
 				})
 			})
 		}

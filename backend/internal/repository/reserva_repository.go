@@ -311,6 +311,15 @@ func (r *ReservaRepo) Crear(ctx context.Context, prop *PropiedadInfo, huespedID 
 	}, nil
 }
 
+func (r *ReservaRepo) UpdateCuponDescuento(ctx context.Context, reservaID, cuponID string, descuento, nuevoSubtotal, nuevaComision, nuevoTotal float64) error {
+	_, err := r.pool.Exec(ctx, `
+		UPDATE reservas SET cupon_id = $1, descuento = $2,
+			subtotal = $3, comision_plataforma = $4, total = $5
+		WHERE id = $6`,
+		cuponID, descuento, nuevoSubtotal, nuevaComision, nuevoTotal, reservaID)
+	return err
+}
+
 type PropiedadInfo struct {
 	ID             string
 	Titulo         string

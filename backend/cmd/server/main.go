@@ -274,11 +274,17 @@ func main() {
 			GetActivosUsuario: adminH.GetCuponesActivosUsuario,
 		}
 
+		cuponSvc := service.NewCuponService(adminRepo)
+		cuponH := handler.NewCuponHandler(cuponSvc)
+
+		cuponHandlers.Validar = cuponH.Validar
+
 		propiedadesRepo := repository.NewPropiedadesRepo(db)
 		propiedadesSvc := service.NewPropiedadesService(propiedadesRepo, 2)
 
 		reservaDisponSvc := service.NewReservaDisponibilidad(db)
 		reservaSvc := service.NewReservaService(reservaRepo, reservaDisponSvc, cfg.ComisionPlataformaHuesped, cfg.ComisionPlataformaAnfitrion)
+		reservaSvc.WithCuponService(cuponSvc)
 
 		propiedadesH := handler.NewPropiedadesHandler(propiedadesSvc, reservaSvc)
 

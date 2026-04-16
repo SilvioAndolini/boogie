@@ -113,6 +113,8 @@ type Reserva struct {
 	CantidadHuespedes  int                 `json:"cantidad_huespedes"`
 	Estado             enums.EstadoReserva `json:"estado"`
 	NotasHuesped       *string             `json:"notas_huesped"`
+	CuponID            *string             `json:"cupon_id"`
+	Descuento          float64             `json:"descuento"`
 	CanceladaEn        *time.Time          `json:"cancelada_en"`
 	MotivoCancelacion  *string             `json:"motivo_cancelacion"`
 	FechaConfirmacion  *time.Time          `json:"fecha_confirmacion"`

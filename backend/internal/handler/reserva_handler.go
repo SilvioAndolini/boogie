@@ -114,6 +114,7 @@ type crearReservaConPagoRequest struct {
 	ComprobanteURL    *string `json:"comprobanteUrl"`
 	BancoEmisor       *string `json:"bancoEmisor"`
 	TelefonoEmisor    *string `json:"telefonoEmisor"`
+	CuponCodigo       string  `json:"cuponCodigo"`
 	StoreItems        []struct {
 		TipoItem       string  `json:"tipo_item"`
 		Nombre         string  `json:"nombre"`
@@ -201,6 +202,7 @@ func (h *ReservaHandler) CrearConPago(w http.ResponseWriter, r *http.Request) {
 		BancoEmisor:       req.BancoEmisor,
 		TelefonoEmisor:    req.TelefonoEmisor,
 		StoreItems:        storeItems,
+		CuponCodigo:       req.CuponCodigo,
 	})
 	if err != nil {
 		handleBusinessError(w, err, "[reservas/crear-con-pago]", userID, req.PropiedadID)
@@ -222,6 +224,8 @@ func (h *ReservaHandler) CrearConPago(w http.ResponseWriter, r *http.Request) {
 		"moneda":             result.Reserva.Moneda,
 		"cantidadHuespedes":  result.Reserva.CantidadHuespedes,
 		"estado":             result.Reserva.Estado,
+		"cuponId":            result.Reserva.CuponID,
+		"descuento":          result.Reserva.Descuento,
 	})
 }
 

@@ -564,8 +564,8 @@ export default function NuevaPropiedadPage() {
                            ) : (
                              <Input type="number" step="0.01" min={1} placeholder="0.00" {...register('precioPorNoche', { valueAsNumber: true })} className={ic} />
                            )}
-                           {errors.precioPorNoche && <p className="text-xs text-[#C1121F]">{errors.precioPorNoche.message as string}</p>}
-                           {errors.precioPorHora && <p className="text-xs text-[#C1121F]">{errors.precioPorHora.message as string}</p>}
+                            {watch('categoria') !== 'DEPORTE' && errors.precioPorNoche && <p className="text-xs text-[#C1121F]">{errors.precioPorNoche.message as string}</p>}
+                            {watch('categoria') === 'DEPORTE' && errors.precioPorHora && <p className="text-xs text-[#C1121F]">{errors.precioPorHora.message as string}</p>}
                          </div>
                           <div className="space-y-1.5">
                             <Label className="text-xs font-semibold text-[#6B6560]">Moneda</Label>
