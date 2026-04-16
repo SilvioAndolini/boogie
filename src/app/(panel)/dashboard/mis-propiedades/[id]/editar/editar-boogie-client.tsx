@@ -270,7 +270,16 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
       if (errorFields.length > 0) {
         setSeccionExpandida(seccionMap[errorFields[0]] || 'info')
       }
-      toast.error(`${errorFields.length} campo${errorFields.length !== 1 ? 's' : ''} requiere atención`)
+      const nombreCampo: Record<string, string> = {
+        titulo: 'Título', descripcion: 'Descripción', tipoPropiedad: 'Tipo',
+        precioPorNoche: 'Precio por noche', moneda: 'Moneda',
+        capacidadMaxima: 'Capacidad máxima', habitaciones: 'Habitaciones', banos: 'Baños', camas: 'Camas',
+        direccion: 'Dirección', ciudad: 'Ciudad', estado: 'Estado', zona: 'Zona',
+        reglas: 'Reglas', politicaCancelacion: 'Política de cancelación',
+        horarioCheckIn: 'Check-in', horarioCheckOut: 'Check-out', estanciaMinima: 'Estancia mínima',
+      }
+      const detalles = errorFields.map((f) => `${nombreCampo[f] || f}: ${errores[f]}`).join('\n')
+      toast.error(`${errorFields.length} campo${errorFields.length !== 1 ? 's' : ''} requiere atención:\n${detalles}`, { duration: 8000 })
       return
     }
 
