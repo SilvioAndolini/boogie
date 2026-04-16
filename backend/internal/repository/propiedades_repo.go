@@ -429,6 +429,9 @@ func (r *PropiedadesRepo) Delete(ctx context.Context, id string) error {
 func (r *PropiedadesRepo) DeleteWithOwner(ctx context.Context, id, propietarioID string) error {
 	tag, err := r.pool.Exec(ctx, `DELETE FROM propiedades WHERE id = $1 AND propietario_id = $2`, id, propietarioID)
 	if err != nil {
+		if isFKViolation(err) {
+			return fmt.Errorf("La propiedad no puede ser eliminada porque tiene reservas pendientes por concretar")
+		}
 		return err
 	}
 	if tag.RowsAffected() == 0 {
@@ -437,6 +440,13 @@ func (r *PropiedadesRepo) DeleteWithOwner(ctx context.Context, id, propietarioID
 	_, _ = r.pool.Exec(ctx, `DELETE FROM propiedad_amenidades WHERE propiedad_id = $1`, id)
 	_, _ = r.pool.Exec(ctx, `DELETE FROM imagenes_propiedad WHERE propiedad_id = $1`, id)
 	return nil
+}
+
+func isFKViolation(err error) bool {
+	if err == nil {
+		return false
+	}
+	return strings.Contains(err.Error(), "violates foreign key constraint") || strings.Contains(err.Error(), "SQLSTATE 23503")
 }
 
 func (r *PropiedadesRepo) getPropietario(ctx context.Context, userID string) (*PropietarioInfo, error) {
