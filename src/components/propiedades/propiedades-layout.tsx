@@ -32,41 +32,6 @@ export function PropiedadesLayout({
   const totalPages = Math.ceil(propiedades.length / PAGE_SIZE)
   const paged = propiedades.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
-  const PaginationControls = () => {
-    if (totalPages <= 1) return null
-    return (
-      <div className="flex items-center justify-center gap-2 border-t border-[#E8E4DF] bg-white py-3 shrink-0">
-        <button
-          onClick={() => setPage((p) => Math.max(1, p - 1))}
-          disabled={page === 1}
-          className="h-9 rounded-lg border border-[#E8E4DF] px-3 text-sm font-medium text-[#6B6560] transition-colors hover:bg-[#F8F6F3] disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          Anterior
-        </button>
-        {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-          <button
-            key={p}
-            onClick={() => setPage(p)}
-            className={`h-9 w-9 rounded-lg text-sm font-medium transition-colors ${
-              p === page
-                ? 'bg-[#1B4332] text-white'
-                : 'border border-[#E8E4DF] text-[#6B6560] hover:bg-[#F8F6F3]'
-            }`}
-          >
-            {p}
-          </button>
-        ))}
-        <button
-          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-          disabled={page === totalPages}
-          className="h-9 rounded-lg border border-[#E8E4DF] px-3 text-sm font-medium text-[#6B6560] transition-colors hover:bg-[#F8F6F3] disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          Siguiente
-        </button>
-      </div>
-    )
-  }
-
   return (
     <>
       {/* Desktop */}
@@ -79,29 +44,55 @@ export function PropiedadesLayout({
             <SlidersHorizontal className="h-3.5 w-3.5" />
             Filtros
           </button>
-          <h1 className="text-base font-bold text-[#1A1A1A]">
-            Boogies disponibles
-          </h1>
-          <span className="ml-2 text-sm text-[#6B6560]">
-            {total} Boogie{total !== 1 ? 's' : ''}
-          </span>
-          <span className="ml-auto text-xs text-[#9E9892]">
-            Página {page} de {totalPages || 1}
-          </span>
+          <h1 className="text-base font-bold text-[#1A1A1A]">Boogies disponibles</h1>
+          <span className="ml-2 text-sm text-[#6B6560]">{total} Boogie{total !== 1 ? 's' : ''}</span>
+          {totalPages > 1 && (
+            <span className="ml-auto text-xs text-[#9E9892]">Página {page} de {totalPages}</span>
+          )}
         </div>
 
-        <div className="flex min-h-0 flex-1 overflow-hidden">
-          <div className="min-w-0 flex flex-col" style={{ width: '55%' }}>
+        <div className="flex flex-1 min-h-0">
+          {/* Cards column */}
+          <div className="flex flex-col" style={{ width: '55%' }}>
             <div className="flex-1 overflow-y-auto bg-[#FEFCF9]">
-              <section className="px-6 py-6">
+              <div className="px-6 py-6">
                 <PropertyGrid propiedades={paged} />
-              </section>
+              </div>
             </div>
-            <PaginationControls />
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 border-t border-[#E8E4DF] bg-white py-3 shrink-0">
+                <button
+                  onClick={() => { setPage((p) => Math.max(1, p - 1)) }}
+                  disabled={page === 1}
+                  className="h-9 rounded-lg border border-[#E8E4DF] px-3 text-sm font-medium text-[#6B6560] transition-colors hover:bg-[#F8F6F3] disabled:opacity-30"
+                >
+                  Anterior
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className={`h-9 w-9 rounded-lg text-sm font-medium transition-colors ${
+                      p === page ? 'bg-[#1B4332] text-white' : 'border border-[#E8E4DF] text-[#6B6560] hover:bg-[#F8F6F3]'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="h-9 rounded-lg border border-[#E8E4DF] px-3 text-sm font-medium text-[#6B6560] transition-colors hover:bg-[#F8F6F3] disabled:opacity-30"
+                >
+                  Siguiente
+                </button>
+              </div>
+            )}
           </div>
 
+          {/* Map column */}
           {propiedadesMapa.length > 0 && (
-            <div className="sticky top-0 shrink-0 px-[35px] py-5 ml-auto" style={{ width: '40%', height: 'calc(100vh - 105px - 45px)' }}>
+            <div className="shrink-0 px-[35px] py-5" style={{ width: '45%' }}>
               <div className="h-full overflow-hidden rounded-2xl border border-[#E8E4DF]">
                 <PropertyMap propiedades={propiedadesMapa} centerLat={centerLat} centerLng={centerLng} />
               </div>
@@ -120,21 +111,44 @@ export function PropiedadesLayout({
             <SlidersHorizontal className="h-3.5 w-3.5" />
             Filtros
           </button>
-          <h1 className="text-base font-bold text-[#1A1A1A]">
-            Boogies disponibles
-          </h1>
-          <span className="ml-2 text-sm text-[#6B6560]">
-            {total} Boogie{total !== 1 ? 's' : ''}
-          </span>
+          <h1 className="text-base font-bold text-[#1A1A1A]">Boogies disponibles</h1>
+          <span className="ml-2 text-sm text-[#6B6560]">{total} Boogie{total !== 1 ? 's' : ''}</span>
         </div>
 
         <section className="px-4 py-6 sm:px-6">
           <PropertyGrid propiedades={paged} />
-          <PaginationControls />
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 pt-6 pb-2">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="h-9 rounded-lg border border-[#E8E4DF] px-3 text-sm font-medium text-[#6B6560] transition-colors hover:bg-[#F8F6F3] disabled:opacity-30"
+              >
+                Anterior
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPage(p)}
+                  className={`h-9 w-9 rounded-lg text-sm font-medium transition-colors ${
+                    p === page ? 'bg-[#1B4332] text-white' : 'border border-[#E8E4DF] text-[#6B6560] hover:bg-[#F8F6F3]'
+                  }`}
+                >
+                  {p}
+                </button>
+              ))}
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="h-9 rounded-lg border border-[#E8E4DF] px-3 text-sm font-medium text-[#6B6560] transition-colors hover:bg-[#F8F6F3] disabled:opacity-30"
+              >
+                Siguiente
+              </button>
+            </div>
+          )}
         </section>
       </div>
 
-      {/* Modal de filtros */}
       <FilterModal open={filtersOpen} onClose={() => setFiltersOpen(false)} />
     </>
   )
