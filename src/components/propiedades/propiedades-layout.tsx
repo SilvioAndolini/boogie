@@ -35,7 +35,7 @@ export function PropiedadesLayout({
   const PaginationControls = () => {
     if (totalPages <= 1) return null
     return (
-      <div className="flex items-center justify-center gap-2 pb-6 pt-4">
+      <div className="flex items-center justify-center gap-2 border-t border-[#E8E4DF] bg-white py-3 shrink-0">
         <button
           onClick={() => setPage((p) => Math.max(1, p - 1))}
           disabled={page === 1}
@@ -91,11 +91,13 @@ export function PropiedadesLayout({
         </div>
 
         <div className="flex min-h-0 flex-1 overflow-hidden">
-          <div className="min-w-0 overflow-y-auto bg-[#FEFCF9]" style={{ width: '55%' }}>
-            <section className="px-6 py-6">
-              <PropertyGrid propiedades={paged} />
-              <PaginationControls />
-            </section>
+          <div className="min-w-0 flex flex-col" style={{ width: '55%' }}>
+            <div className="flex-1 overflow-y-auto bg-[#FEFCF9]">
+              <section className="px-6 py-6">
+                <PropertyGrid propiedades={paged} />
+              </section>
+            </div>
+            <PaginationControls />
           </div>
 
           {propiedadesMapa.length > 0 && (
