@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const crearCuponSchema = z.object({
+const crearCuponBase = z.object({
   codigo: z.string().min(3).max(30).regex(/^[A-Z0-9_-]+$/, 'Solo mayúsculas, números, guiones y guiones bajos'),
   nombre: z.string().min(3).max(100),
   descripcion: z.string().max(500).optional(),
@@ -21,7 +21,9 @@ export const crearCuponSchema = z.object({
   maxUsosPorUsuario: z.coerce.number().int().positive().default(1),
   fechaInicio: z.string().min(1, 'Fecha de inicio requerida'),
   fechaFin: z.string().min(1, 'Fecha de fin requerida'),
-}).refine((data) => {
+})
+
+export const crearCuponSchema = crearCuponBase.refine((data) => {
   if (data.tipoDescuento === 'PORCENTAJE' && data.valorDescuento > 100) return false
   return true
 }, { message: 'El porcentaje no puede superar 100%', path: ['valorDescuento'] })
@@ -30,7 +32,7 @@ export const crearCuponSchema = z.object({
     path: ['fechaFin'],
   })
 
-export const editarCuponSchema = crearCuponSchema.partial().extend({
+export const editarCuponSchema = crearCuponBase.partial().extend({
   id: z.string().min(1),
   activo: z.boolean().optional(),
 })

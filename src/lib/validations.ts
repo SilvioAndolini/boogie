@@ -72,6 +72,13 @@ export const propiedadSchema = z.object({
   precioExpress: z.coerce.number().min(1).optional(),
 }).superRefine((data, ctx) => {
   if (data.categoria === 'DEPORTE') {
+    if (!data.tipoCancha) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Selecciona el tipo de cancha',
+        path: ['tipoCancha'],
+      })
+    }
     if (!data.precioPorHora || data.precioPorHora < 1) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

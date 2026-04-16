@@ -448,18 +448,19 @@ export default function NuevaPropiedadPage() {
                              </SelectContent>
                            </Select>
                          </div>
-                         {watch('categoria') === 'DEPORTE' ? (
-                           <div className="space-y-1.5">
-                             <Label className="text-xs font-semibold text-[#6B6560]">Tipo de cancha</Label>
-                             <Select onValueChange={(v) => setValue('tipoCancha', v as any)}>
-                               <SelectTrigger className="h-11 border-[#E8E4DF] bg-[#FDFCFA] text-sm focus:ring-[#1B4332]/20">
-                                 <SelectValue placeholder="Selecciona..." />
-                               </SelectTrigger>
-                               <SelectContent>
-                                 {Object.entries(TIPOS_CANCHA).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
-                               </SelectContent>
-                             </Select>
-                           </div>
+                          {watch('categoria') === 'DEPORTE' ? (
+                            <div className="space-y-1.5">
+                              <Label className="text-xs font-semibold text-[#6B6560]">Tipo de cancha</Label>
+                              <Select onValueChange={(v) => setValue('tipoCancha', v as any)} value={watch('tipoCancha') || undefined}>
+                                <SelectTrigger className={`h-11 border-[#E8E4DF] bg-[#FDFCFA] text-sm focus:ring-[#1B4332]/20 ${errors.tipoCancha ? 'border-[#C1121F]' : ''}`}>
+                                  <SelectValue placeholder="Selecciona..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {Object.entries(TIPOS_CANCHA).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                              {errors.tipoCancha && <p className="text-xs text-[#C1121F]">{errors.tipoCancha.message as string}</p>}
+                            </div>
                          ) : (
                            <div className="space-y-1.5">
                              <Label className="text-xs font-semibold text-[#6B6560]">Tipo de boogie</Label>
