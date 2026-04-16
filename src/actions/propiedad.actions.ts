@@ -607,7 +607,8 @@ export async function getPropiedadesPublicas(filtros?: {
       porPagina: meta.perPage,
       totalPaginas: meta.total > 0 ? Math.ceil(meta.total / meta.perPage) : 0,
     }
-  } catch {
+  } catch (err) {
+    console.error('[getPropiedadesPublicas] ERROR:', err)
     return { datos: [], total: 0, pagina: 1, porPagina: 20, totalPaginas: 0 }
   }
 }
