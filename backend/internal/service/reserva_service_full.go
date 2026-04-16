@@ -415,3 +415,16 @@ func (s *ReservaService) RegistrarPago(ctx context.Context, pago *repository.Nue
 
 	return s.repo.InsertPagoManual(ctx, pago)
 }
+
+func (s *ReservaService) ListByPropiedad(ctx context.Context, propiedadID string, page, perPage int) ([]repository.ReservaConHuesped, int, error) {
+	offset := (page - 1) * perPage
+	return s.repo.ListByPropiedadID(ctx, propiedadID, perPage, offset)
+}
+
+func (s *ReservaService) ListPropiedadesModoReserva(ctx context.Context, propietarioID string) ([]repository.PropiedadModoReserva, error) {
+	return s.repo.ListPropiedadesModoReserva(ctx, propietarioID)
+}
+
+func (s *ReservaService) UpdateModoReserva(ctx context.Context, propiedadID, propietarioID, modo string) error {
+	return s.repo.UpdateModoReserva(ctx, propiedadID, propietarioID, modo)
+}

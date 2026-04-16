@@ -11,11 +11,12 @@ import (
 )
 
 type PagoService struct {
-	pagoRepo *repository.PagoRepo
+	pagoRepo    *repository.PagoRepo
+	reservaRepo *repository.ReservaRepo
 }
 
-func NewPagoService(pagoRepo *repository.PagoRepo) *PagoService {
-	return &PagoService{pagoRepo: pagoRepo}
+func NewPagoService(pagoRepo *repository.PagoRepo, reservaRepo *repository.ReservaRepo) *PagoService {
+	return &PagoService{pagoRepo: pagoRepo, reservaRepo: reservaRepo}
 }
 
 func (s *PagoService) GetMisPagos(ctx context.Context, userID string) ([]repository.PagoConReserva, error) {
@@ -54,8 +55,20 @@ func (s *PagoService) Verificar(ctx context.Context, pagoID, userID string, apro
 	}
 
 	if aprobado && (estadoReserva == "PENDIENTE" || estadoReserva == "PENDIENTE_PAGO") {
-		if err := s.pagoRepo.SetReservaPendienteConfirm(ctx, reservaID); err != nil {
-			return fmt.Errorf("pago verificado pero error al actualizar reserva: %w", err)
+		modoReserva := "MANUAL"
+		if s.reservaRepo != nil {
+			if m, err := s.reservaRepo.GetModoReservaByReservaID(ctx, reservaID); err == nil {
+				modoReserva = m
+			}
+		}
+		if modoReserva == "AUTOMATICO" {
+			if err := s.pagoRepo.ConfirmarReserva(ctx, reservaID); err != nil {
+				return fmt.Errorf("pago verificado pero error al confirmar reserva automaticamente: %w", err)
+			}
+		} else {
+			if err := s.pagoRepo.SetReservaPendienteConfirm(ctx, reservaID); err != nil {
+				return fmt.Errorf("pago verificado pero error al actualizar reserva: %w", err)
+			}
 		}
 	}
 

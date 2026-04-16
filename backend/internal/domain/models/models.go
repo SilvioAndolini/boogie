@@ -75,6 +75,7 @@ type Propiedad struct {
 	DuracionMinimaMin   *int                      `json:"duracion_minima_min"`
 	EsExpress           bool                      `json:"es_express"`
 	PrecioExpress       *float64                  `json:"precio_express"`
+	ModoReserva         enums.ModoReserva         `json:"modo_reserva"`
 }
 
 type ImagenPropiedad struct {

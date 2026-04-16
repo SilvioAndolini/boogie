@@ -112,3 +112,10 @@ const (
 	TipoCanchaTenisDeMesa  TipoCancha = "TENIS_DE_MESA"
 	TipoCanchaMultideporte TipoCancha = "MULTIDEPORTE"
 )
+
+type ModoReserva string
+
+const (
+	ModoReservaManual     ModoReserva = "MANUAL"
+	ModoReservaAutomatico ModoReserva = "AUTOMATICO"
+)

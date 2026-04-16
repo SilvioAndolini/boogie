@@ -18,7 +18,7 @@ func newTestPagoHandler() *PagoHandler {
 }
 
 func TestMisPagos_Unauthorized(t *testing.T) {
-	svc := service.NewPagoService(nil)
+	svc := service.NewPagoService(nil, nil)
 	h := NewPagoHandler(svc, nil, "", "", nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/pagos/mis-pagos", nil)

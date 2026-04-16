@@ -321,6 +321,7 @@ type PropiedadInfo struct {
 	Capacidad      int
 	EstanciaMinima int
 	EstanciaMaxima int
+	ModoReserva    string
 }
 
 func (r *ReservaRepo) GetPropiedadForReserva(ctx context.Context, propiedadID string) (*PropiedadInfo, error) {
@@ -330,11 +331,12 @@ func (r *ReservaRepo) GetPropiedadForReserva(ctx context.Context, propiedadID st
 	err := r.pool.QueryRow(ctx, `
 		SELECT id, titulo, precio_por_noche, moneda, propietario_id, estado_publicacion,
 		       COALESCE(capacidad_maxima, 1),
-		       COALESCE(estancia_minima, 1), COALESCE(estancia_maxima, 365)
+		       COALESCE(estancia_minima, 1), COALESCE(estancia_maxima, 365),
+		       COALESCE(modo_reserva, 'MANUAL')
 		FROM propiedades WHERE id = $1
 	`, propiedadID).Scan(
 		&p.ID, &p.Titulo, &p.PrecioPorNoche, &p.Moneda, &p.PropietarioID, &p.Estado,
-		&p.Capacidad, &estanciaMin, &estanciaMax,
+		&p.Capacidad, &estanciaMin, &estanciaMax, &p.ModoReserva,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("get propiedad for reserva: %w", err)
@@ -550,6 +552,59 @@ func (r *ReservaRepo) InsertPagoManual(ctx context.Context, pago *NuevoPago) (st
 	return id, nil
 }
 
+func (r *ReservaRepo) ListByPropiedadID(ctx context.Context, propiedadID string, limit, offset int) ([]ReservaConHuesped, int, error) {
+	var total int
+	err := r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM reservas WHERE propiedad_id = $1`, propiedadID).Scan(&total)
+	if err != nil {
+		return nil, 0, fmt.Errorf("count reservas propiedad: %w", err)
+	}
+
+	rows, err := r.pool.Query(ctx, `
+		SELECT r.id, r.codigo, r.propiedad_id, r.huesped_id,
+		       r.fecha_entrada, r.fecha_salida, r.noches,
+		       r.precio_por_noche, r.subtotal, r.comision_plataforma, r.comision_anfitrion,
+		       r.total, r.moneda, r.cantidad_huespedes, r.estado,
+		       r.notas_huesped, r.fecha_creacion,
+		       p.titulo, p.slug,
+		       u.nombre, u.apellido, u.email, u.avatar_url,
+		       (SELECT ip.url FROM imagenes_propiedad ip WHERE ip.propiedad_id = p.id AND ip.es_principal = true LIMIT 1),
+		       COALESCE((SELECT pg.estado FROM pagos pg WHERE pg.reserva_id = r.id ORDER BY pg.fecha_creacion DESC LIMIT 1), '')
+		FROM reservas r
+		JOIN propiedades p ON p.id = r.propiedad_id
+		JOIN usuarios u ON u.id = r.huesped_id
+		WHERE r.propiedad_id = $1
+		ORDER BY r.fecha_creacion DESC
+		LIMIT $2 OFFSET $3
+	`, propiedadID, limit, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("list reservas propiedad: %w", err)
+	}
+	defer rows.Close()
+
+	var results []ReservaConHuesped
+	for rows.Next() {
+		var item ReservaConHuesped
+		var notasHuesped *string
+		err := rows.Scan(
+			&item.ID, &item.Codigo, &item.PropiedadID, &item.HuespedID,
+			&item.FechaEntrada, &item.FechaSalida, &item.Noches,
+			&item.PrecioPorNoche, &item.Subtotal, &item.ComisionPlataforma, &item.ComisionAnfitrion,
+			&item.Total, &item.Moneda, &item.CantidadHuespedes, &item.Estado,
+			&notasHuesped, &item.CreatedAt,
+			&item.PropiedadTitulo, &item.PropiedadSlug,
+			&item.HuespedNombre, &item.HuespedApellido, &item.HuespedEmail, &item.HuespedAvatarURL,
+			&item.PropiedadImagenPrincipal,
+			&item.EstadoPago,
+		)
+		if err != nil {
+			return nil, 0, fmt.Errorf("scan reserva propiedad: %w", err)
+		}
+		item.NotasHuesped = notasHuesped
+		results = append(results, item)
+	}
+	return results, total, nil
+}
+
 type NuevoPago struct {
 	ReservaID      string
 	UsuarioID      string
@@ -561,4 +616,63 @@ type NuevoPago struct {
 	BancoEmisor    *string
 	TelefonoEmisor *string
 	Notas          *string
+}
+
+func (r *ReservaRepo) GetModoReservaByReservaID(ctx context.Context, reservaID string) (string, error) {
+	var modo string
+	err := r.pool.QueryRow(ctx, `
+		SELECT COALESCE(p.modo_reserva, 'MANUAL')
+		FROM reservas r
+		JOIN propiedades p ON p.id = r.propiedad_id
+		WHERE r.id = $1
+	`, reservaID).Scan(&modo)
+	if err != nil {
+		return "MANUAL", fmt.Errorf("get modo reserva: %w", err)
+	}
+	return modo, nil
+}
+
+type PropiedadModoReserva struct {
+	ID          string  `json:"id"`
+	Titulo      string  `json:"titulo"`
+	ModoReserva string  `json:"modo_reserva"`
+	ImagenURL   *string `json:"imagen_url"`
+}
+
+func (r *ReservaRepo) ListPropiedadesModoReserva(ctx context.Context, propietarioID string) ([]PropiedadModoReserva, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT p.id, p.titulo, COALESCE(p.modo_reserva, 'MANUAL'),
+		       (SELECT ip.url FROM imagenes_propiedad ip WHERE ip.propiedad_id = p.id AND ip.es_principal = true LIMIT 1)
+		FROM propiedades p
+		WHERE p.propietario_id = $1 AND p.estado_publicacion = 'PUBLICADA'
+		ORDER BY p.titulo
+	`, propietarioID)
+	if err != nil {
+		return nil, fmt.Errorf("list propiedades modo reserva: %w", err)
+	}
+	defer rows.Close()
+
+	var results []PropiedadModoReserva
+	for rows.Next() {
+		var item PropiedadModoReserva
+		if err := rows.Scan(&item.ID, &item.Titulo, &item.ModoReserva, &item.ImagenURL); err != nil {
+			return nil, fmt.Errorf("scan propiedad modo reserva: %w", err)
+		}
+		results = append(results, item)
+	}
+	return results, nil
+}
+
+func (r *ReservaRepo) UpdateModoReserva(ctx context.Context, propiedadID, propietarioID, modo string) error {
+	tag, err := r.pool.Exec(ctx, `
+		UPDATE propiedades SET modo_reserva = $1::text
+		WHERE id = $2 AND propietario_id = $3
+	`, modo, propiedadID, propietarioID)
+	if err != nil {
+		return fmt.Errorf("update modo reserva: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("propiedad no encontrada o no pertenece al usuario")
+	}
+	return nil
 }

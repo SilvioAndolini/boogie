@@ -11,7 +11,7 @@ func TestCalcularPrecioReserva(t *testing.T) {
 	entrada := time.Date(2025, 3, 10, 14, 0, 0, 0, time.UTC)
 	salida := time.Date(2025, 3, 13, 11, 0, 0, 0, time.UTC)
 
-	result := CalcularPrecioReserva(100.0, entrada, salida, enums.MonedaUSD)
+	result := CalcularPrecioReserva(100.0, entrada, salida, enums.MonedaUSD, 0.0975, 0.0525)
 
 	if result.Noches != 3 {
 		t.Errorf("expected 3 noches, got %d", result.Noches)
@@ -19,14 +19,14 @@ func TestCalcularPrecioReserva(t *testing.T) {
 	if result.Subtotal != 300.0 {
 		t.Errorf("expected subtotal 300, got %f", result.Subtotal)
 	}
-	if result.Total != 318.0 {
-		t.Errorf("expected total 318 (300 + 18), got %f", result.Total)
+	if result.Total != 329.25 {
+		t.Errorf("expected total 329.25 (300 + 29.25), got %f", result.Total)
 	}
-	if result.ComisionHuesped != 18.0 {
-		t.Errorf("expected comision huesped 18, got %f", result.ComisionHuesped)
+	if result.ComisionHuesped != 29.25 {
+		t.Errorf("expected comision huesped 29.25, got %f", result.ComisionHuesped)
 	}
-	if result.ComisionAnfitrion != 9.0 {
-		t.Errorf("expected comision anfitrion 9, got %f", result.ComisionAnfitrion)
+	if result.ComisionAnfitrion != 15.75 {
+		t.Errorf("expected comision anfitrion 15.75, got %f", result.ComisionAnfitrion)
 	}
 }
 
@@ -34,7 +34,7 @@ func TestCalcularPrecioReserva_OneNight(t *testing.T) {
 	entrada := time.Date(2025, 3, 10, 14, 0, 0, 0, time.UTC)
 	salida := time.Date(2025, 3, 11, 11, 0, 0, 0, time.UTC)
 
-	result := CalcularPrecioReserva(50.0, entrada, salida, enums.MonedaUSD)
+	result := CalcularPrecioReserva(50.0, entrada, salida, enums.MonedaUSD, 0.0975, 0.0525)
 
 	if result.Noches != 1 {
 		t.Errorf("expected 1 noche, got %d", result.Noches)

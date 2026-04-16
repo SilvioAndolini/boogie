@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import { useFormStatus } from 'react-dom'
 import Link from 'next/link'
 import {
@@ -13,12 +13,15 @@ import {
   Clock,
   CheckCircle2,
   XCircle,
+  Zap,
+  Settings2,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { confirmarReservaAction, rechazarReservaAction } from '@/actions/reserva.actions'
+import { confirmarReservaAction, rechazarReservaAction, updateModoReserva } from '@/actions/reserva.actions'
 import type { ReservaConPropiedad } from '@/types/reserva'
+import type { PropiedadModoReserva } from '@/actions/reserva.actions'
 import { ESTADO_RESERVA_LABELS, ESTADO_RESERVA_COLORS } from '@/types/reserva'
 import { formatFechaCorta, formatPrecio } from '@/lib/format'
 
@@ -136,8 +139,51 @@ function ReservaRecibidaCard({ reserva }: { reserva: ReservaConPropiedad }) {
   )
 }
 
-export function ReservasRecibidasClient({ reservas }: { reservas: ReservaConPropiedad[] }) {
+function ModoReservaToggle({ propiedad }: { propiedad: PropiedadModoReserva }) {
+  const [modo, setModo] = useState<'MANUAL' | 'AUTOMATICO'>(propiedad.modoReserva)
+  const [pending, startTransition] = useTransition()
+
+  const toggle = () => {
+    const nuevo = modo === 'MANUAL' ? 'AUTOMATICO' : 'MANUAL'
+    setModo(nuevo)
+    startTransition(async () => {
+      const result = await updateModoReserva(propiedad.id, nuevo)
+      if (!result.exito) {
+        setModo(modo)
+      }
+    })
+  }
+
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-[#E8E4DF] bg-white p-3">
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium text-[#1A1A1A]">{propiedad.titulo}</p>
+        <p className="text-[10px] text-[#9E9892]">
+          {modo === 'AUTOMATICO'
+            ? 'Se confirman automaticamente al verificar el pago'
+            : 'Tu decides si confirmar o rechazar cada reserva'}
+        </p>
+      </div>
+      <button
+        onClick={toggle}
+        disabled={pending}
+        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors disabled:opacity-50 ${
+          modo === 'AUTOMATICO' ? 'bg-[#1B4332]' : 'bg-[#D1D5DB]'
+        }`}
+      >
+        <span
+          className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+            modo === 'AUTOMATICO' ? 'translate-x-6' : 'translate-x-1'
+          }`}
+        />
+      </button>
+    </div>
+  )
+}
+
+export function ReservasRecibidasClient({ reservas, propiedades }: { reservas: ReservaConPropiedad[]; propiedades: PropiedadModoReserva[] }) {
   const [activa, setActiva] = useState<Pestana>('pendientes')
+  const [mostrarModos, setMostrarModos] = useState(false)
 
   const pendientes = reservas.filter(r => ['PENDIENTE', 'PENDIENTE_PAGO', 'PENDIENTE_CONFIRMACION'].includes(r.estado))
   const confirmadas = reservas.filter(r => r.estado === 'CONFIRMADA' || r.estado === 'EN_CURSO')
@@ -165,6 +211,42 @@ export function ReservasRecibidasClient({ reservas }: { reservas: ReservaConProp
         </div>
       </div>
 
+      {propiedades.length > 0 && (
+        <Card className="border-[#E8E4DF]">
+          <button
+            onClick={() => setMostrarModos(!mostrarModos)}
+            className="flex w-full items-center justify-between p-4 text-left"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#D8F3DC]">
+                <Zap className="h-4 w-4 text-[#1B4332]" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-[#1A1A1A]">Modo de reserva</h3>
+                <p className="text-[10px] text-[#9E9892]">Configura como se confirman las reservas por propiedad</p>
+              </div>
+            </div>
+            <Settings2 className={`h-4 w-4 text-[#6B6560] transition-transform ${mostrarModos ? 'rotate-90' : ''}`} />
+          </button>
+          {mostrarModos && (
+            <div className="border-t border-[#E8E4DF] px-4 pb-4 pt-3">
+              <div className="mb-3 flex items-center gap-2 rounded-md bg-[#F8F6F3] p-2">
+                <Zap className="h-3.5 w-3.5 text-[#1B4332]" />
+                <p className="text-[10px] text-[#6B6560]">
+                  <span className="font-semibold text-[#1B4332]">Automatico:</span> Las reservas se confirman al verificar el pago.
+                  <span className="font-semibold text-[#1A1A1A]"> Manual:</span> Tu decides confirmar o rechazar.
+                </p>
+              </div>
+              <div className="space-y-2">
+                {propiedades.map((prop) => (
+                  <ModoReservaToggle key={prop.id} propiedad={prop} />
+                ))}
+              </div>
+            </div>
+          )}
+        </Card>
+      )}
+
       {reservas.length === 0 ? (
         <Card className="border-[#E8E4DF]">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
@@ -173,13 +255,15 @@ export function ReservasRecibidasClient({ reservas }: { reservas: ReservaConProp
             </div>
             <h3 className="text-lg font-semibold text-[#1A1A1A]">No tienes reservas recibidas</h3>
             <p className="mt-1 max-w-sm text-sm text-[#6B6560]">
-              Cuando tus Boogies reciban solicitudes de reserva, aparecerán aquí para que puedas confirmarlas o rechazarlas.
+              Cuando tus Boogies reciban solicitudes de reserva, apareceran aqui para que puedas confirmarlas o rechazarlas.
             </p>
-            <Link href="/dashboard/mis-propiedades/nueva">
-              <Button className="mt-6 gap-2 bg-[#1B4332] text-white hover:bg-[#2D6A4F]">
-                Publicar boogie
-              </Button>
-            </Link>
+            {propiedades.length === 0 && (
+              <Link href="/dashboard/mis-propiedades/nueva">
+                <Button className="mt-6 gap-2 bg-[#1B4332] text-white hover:bg-[#2D6A4F]">
+                  Publicar boogie
+                </Button>
+              </Link>
+            )}
           </CardContent>
         </Card>
       ) : (

@@ -9,31 +9,31 @@ import (
 
 // Config holds all application configuration loaded from environment variables.
 type Config struct {
-	Port                      string
-	AppURL                    string
-	SupabaseURL               string
-	SupabaseSecretKey         string
-	DatabaseURL               string
-	CryptapiWalletAddress     string
-	CryptapiCallbackSecret    string
-	MetamapWebhookSecret      string
-	ComisionPlataformaHuesped float64
+	Port                        string
+	AppURL                      string
+	SupabaseURL                 string
+	SupabaseSecretKey           string
+	DatabaseURL                 string
+	CryptapiWalletAddress       string
+	CryptapiCallbackSecret      string
+	MetamapWebhookSecret        string
+	ComisionPlataformaHuesped   float64
 	ComisionPlataformaAnfitrion float64
 }
 
 // Load reads configuration from environment variables and validates required fields.
 func Load() (*Config, error) {
 	c := &Config{
-		Port:                      getEnv("PORT", "8080"),
-		AppURL:                    getEnv("APP_URL", "http://localhost:3000"),
-		SupabaseURL:               os.Getenv("SUPABASE_URL"),
-		SupabaseSecretKey:         os.Getenv("SUPABASE_SECRET_KEY"),
-		DatabaseURL:               os.Getenv("DATABASE_URL"),
-		CryptapiWalletAddress:     os.Getenv("CRYPTAPI_WALLET_ADDRESS"),
-		CryptapiCallbackSecret:    os.Getenv("CRYPTAPI_CALLBACK_SECRET"),
-		MetamapWebhookSecret:      os.Getenv("METAMAP_WEBHOOK_SECRET"),
-		ComisionPlataformaHuesped: getEnvFloat("COMISION_PLATAFORMA_HUESPED", 0.06),
-		ComisionPlataformaAnfitrion: getEnvFloat("COMISION_PLATAFORMA_ANFITRION", 0.03),
+		Port:                        getEnv("PORT", "8080"),
+		AppURL:                      getEnv("APP_URL", "http://localhost:3000"),
+		SupabaseURL:                 os.Getenv("SUPABASE_URL"),
+		SupabaseSecretKey:           os.Getenv("SUPABASE_SECRET_KEY"),
+		DatabaseURL:                 os.Getenv("DATABASE_URL"),
+		CryptapiWalletAddress:       os.Getenv("CRYPTAPI_WALLET_ADDRESS"),
+		CryptapiCallbackSecret:      os.Getenv("CRYPTAPI_CALLBACK_SECRET"),
+		MetamapWebhookSecret:        os.Getenv("METAMAP_WEBHOOK_SECRET"),
+		ComisionPlataformaHuesped:   getEnvFloat("COMISION_PLATAFORMA_HUESPED", 0.0975),
+		ComisionPlataformaAnfitrion: getEnvFloat("COMISION_PLATAFORMA_ANFITRION", 0.0525),
 	}
 
 	if c.SupabaseURL == "" {

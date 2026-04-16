@@ -124,7 +124,7 @@ func (s *CryptoService) VerifyCallbackSecret(secret string) bool {
 	return secret == s.Config.CallbackSecret
 }
 
-func CalcularPrecioReserva(precioPorNoche float64, fechaEntrada, fechaSalida time.Time, moneda enums.Moneda) PrecioReserva {
+func CalcularPrecioReserva(precioPorNoche float64, fechaEntrada, fechaSalida time.Time, moneda enums.Moneda, comisionH, comisionA float64) PrecioReserva {
 	dEntrada := time.Date(fechaEntrada.Year(), fechaEntrada.Month(), fechaEntrada.Day(), 0, 0, 0, 0, time.UTC)
 	dSalida := time.Date(fechaSalida.Year(), fechaSalida.Month(), fechaSalida.Day(), 0, 0, 0, 0, time.UTC)
 	noches := int(dSalida.Sub(dEntrada).Hours() / 24)
@@ -133,16 +133,16 @@ func CalcularPrecioReserva(precioPorNoche float64, fechaEntrada, fechaSalida tim
 	}
 
 	subtotal := util.Round2(precioPorNoche * float64(noches))
-	comisionH := util.Round2(subtotal * 0.06)
-	comisionA := util.Round2(subtotal * 0.03)
-	total := util.Round2(subtotal + comisionH)
+	cH := util.Round2(subtotal * comisionH)
+	cA := util.Round2(subtotal * comisionA)
+	total := util.Round2(subtotal + cH)
 
 	return PrecioReserva{
 		Noches:            noches,
 		PrecioPorNoche:    precioPorNoche,
 		Subtotal:          subtotal,
-		ComisionHuesped:   comisionH,
-		ComisionAnfitrion: comisionA,
+		ComisionHuesped:   cH,
+		ComisionAnfitrion: cA,
 		Total:             total,
 		Moneda:            moneda,
 	}

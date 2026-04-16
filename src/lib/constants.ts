@@ -27,8 +27,8 @@ export function isDevPhone(phone: string): boolean {
 }
 
 // Comisiones de la plataforma
-export const COMISION_PLATAFORMA_HUESPED = Number(process.env.COMISION_PLATAFORMA_HUESPED) || 0.06
-export const COMISION_PLATAFORMA_ANFITRION = Number(process.env.COMISION_PLATAFORMA_ANFITRION) || 0.03
+export const COMISION_PLATAFORMA_HUESPED = Number(process.env.COMISION_PLATAFORMA_HUESPED) || 0.0975
+export const COMISION_PLATAFORMA_ANFITRION = Number(process.env.COMISION_PLATAFORMA_ANFITRION) || 0.0525
 
 export const PLANES_SUSCRIPCION = {
   FREE: {

@@ -114,9 +114,13 @@ func main() {
 	}
 
 	if db != nil {
+		storageSvc := service.NewStorageService(cfg.SupabaseURL, cfg.SupabaseSecretKey)
+
+		reservaRepo := repository.NewReservaRepo(db)
+
 		pagoRepo := repository.NewPagoRepo(db)
 
-		pagoSvc := service.NewPagoService(pagoRepo)
+		pagoSvc := service.NewPagoService(pagoRepo, reservaRepo)
 		walletSvc := service.NewWalletService(pagoRepo)
 		paymentDataSvc := service.NewPaymentDataService()
 		storeItemRepo := repository.NewStoreItemRepo(db)
@@ -165,7 +169,7 @@ func main() {
 		verifRepo := repository.NewVerificacionRepo(db)
 		verifSvc := service.NewVerificacionService(verifRepo)
 		verifH := handler.NewVerificacionHandler(verifSvc)
-		verifH.WithStorage(authClient, cfg.SupabaseURL, cfg.SupabaseSecretKey)
+		verifH.WithStorage(storageSvc, cfg.SupabaseURL, cfg.SupabaseSecretKey)
 
 		verifHandlers = &router.VerificacionHandlers{
 			GetByUser:      verifH.GetByUser,
@@ -185,7 +189,7 @@ func main() {
 		tiendaSvc := service.NewTiendaService(tiendaRepo)
 
 		chatH := handler.NewChatHandler(chatSvc)
-		chatH.WithStorage(authClient, cfg.SupabaseURL, cfg.SupabaseSecretKey)
+		chatH.WithStorage(storageSvc, cfg.SupabaseURL, cfg.SupabaseSecretKey)
 		ofertaH := handler.NewOfertaHandler(ofertaSvc)
 		tiendaH := handler.NewTiendaHandler(tiendaSvc)
 
@@ -220,9 +224,9 @@ func main() {
 		}
 
 		adminRepo := repository.NewAdminRepo(db)
-		adminSvc := service.NewAdminService(adminRepo)
+		adminSvc := service.NewAdminService(adminRepo, reservaRepo)
 		adminH := handler.NewAdminHandler(adminSvc, tiendaSvc)
-		adminH.WithStorage(authClient, cfg.SupabaseURL, cfg.SupabaseSecretKey)
+		adminH.WithStorage(storageSvc, cfg.SupabaseURL, cfg.SupabaseSecretKey)
 
 		adminHandlers = &router.AdminHandlers{
 			GetDashboard:            adminH.GetDashboard,
@@ -272,7 +276,11 @@ func main() {
 
 		propiedadesRepo := repository.NewPropiedadesRepo(db)
 		propiedadesSvc := service.NewPropiedadesService(propiedadesRepo, 2)
-		propiedadesH := handler.NewPropiedadesHandler(propiedadesSvc)
+
+		reservaDisponSvc := service.NewReservaDisponibilidad(db)
+		reservaSvc := service.NewReservaService(reservaRepo, reservaDisponSvc, cfg.ComisionPlataformaHuesped, cfg.ComisionPlataformaAnfitrion)
+
+		propiedadesH := handler.NewPropiedadesHandler(propiedadesSvc, reservaSvc)
 
 		propiedadesHandlers = &router.PropiedadesHandlers{
 			Search:             propiedadesH.Search,
@@ -284,6 +292,8 @@ func main() {
 			Actualizar:         propiedadesH.Actualizar,
 			AgregarImagenes:    propiedadesH.AgregarImagenes,
 			ActualizarImagenes: propiedadesH.ActualizarImagenes,
+			GetAmenidades:      propiedadesH.GetAmenidades,
+			GetReservas:        propiedadesH.GetReservas,
 		}
 
 		canchasH := handler.NewCanchasHandler(propiedadesRepo, propiedadesSvc)
@@ -316,9 +326,6 @@ func main() {
 			PreviewPropiedades:  seccionesH.PreviewPropiedades,
 		}
 
-		reservaRepo := repository.NewReservaRepo(db)
-		reservaDisponSvc := service.NewReservaDisponibilidad(db)
-		reservaSvc := service.NewReservaService(reservaRepo, reservaDisponSvc, cfg.ComisionPlataformaHuesped, cfg.ComisionPlataformaAnfitrion)
 		reservaH := handler.NewReservaHandler(reservaSvc, reservaDisponSvc)
 
 		reservaHandlers = &router.ReservaHandlers{
@@ -333,6 +340,8 @@ func main() {
 			FechasOcupadas:         reservaH.FechasOcupadas,
 			CalcularReembolso:      reservaH.CalcularReembolso,
 			AutoConfirmarExpiradas: reservaH.AutoConfirmarExpiradas,
+			GetModosReserva:        reservaH.GetModosReserva,
+			UpdateModoReserva:      reservaH.UpdateModoReserva,
 		}
 	}
 

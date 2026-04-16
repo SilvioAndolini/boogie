@@ -12,11 +12,12 @@ import (
 )
 
 type PropiedadesHandler struct {
-	svc *service.PropiedadesService
+	svc        *service.PropiedadesService
+	reservaSvc *service.ReservaService
 }
 
-func NewPropiedadesHandler(svc *service.PropiedadesService) *PropiedadesHandler {
-	return &PropiedadesHandler{svc: svc}
+func NewPropiedadesHandler(svc *service.PropiedadesService, reservaSvc *service.ReservaService) *PropiedadesHandler {
+	return &PropiedadesHandler{svc: svc, reservaSvc: reservaSvc}
 }
 
 func (h *PropiedadesHandler) Search(w http.ResponseWriter, r *http.Request) {
@@ -446,4 +447,57 @@ func (h *PropiedadesHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+}
+
+func (h *PropiedadesHandler) GetAmenidades(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	if id == "" {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_ID", "ID requerido")
+		return
+	}
+
+	amenidades, err := h.svc.GetAmenidades(r.Context(), id)
+	if err != nil {
+		slog.Error("[propiedades/amenidades] error", "error", err, "id", id)
+		ErrorJSON(w, http.StatusInternalServerError, "FETCH_ERROR", "Error al obtener amenidades")
+		return
+	}
+
+	if amenidades == nil {
+		amenidades = []repository.AmenidadInfo{}
+	}
+
+	JSON(w, http.StatusOK, amenidades)
+}
+
+func (h *PropiedadesHandler) GetReservas(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	if id == "" {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_ID", "ID requerido")
+		return
+	}
+
+	if h.reservaSvc == nil {
+		ErrorJSON(w, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE", "Servicio no disponible")
+		return
+	}
+
+	page, perPage := getPagination(r)
+
+	reservas, total, err := h.reservaSvc.ListByPropiedad(r.Context(), id, page, perPage)
+	if err != nil {
+		slog.Error("[propiedades/reservas] error", "error", err, "id", id)
+		ErrorJSON(w, http.StatusInternalServerError, "FETCH_ERROR", "Error al obtener reservas")
+		return
+	}
+
+	if reservas == nil {
+		reservas = []repository.ReservaConHuesped{}
+	}
+
+	JSONWithMeta(w, http.StatusOK, reservas, Meta{
+		Page:    page,
+		PerPage: perPage,
+		Total:   total,
+	})
 }

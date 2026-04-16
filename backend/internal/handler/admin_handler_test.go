@@ -15,7 +15,7 @@ import (
 )
 
 func newAdminHandler() *AdminHandler {
-	svc := service.NewAdminService(nil)
+	svc := service.NewAdminService(nil, nil)
 	return NewAdminHandler(svc, nil)
 }
 

@@ -577,3 +577,64 @@ func (h *ReservaHandler) AutoConfirmarExpiradas(w http.ResponseWriter, r *http.R
 		"confirmadas": confirmadas,
 	})
 }
+
+func (h *ReservaHandler) GetModosReserva(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetUserID(r.Context())
+	if userID == "" {
+		ErrorJSON(w, http.StatusUnauthorized, "AUTH_REQUIRED", "No autenticado")
+		return
+	}
+
+	props, err := h.svc.ListPropiedadesModoReserva(r.Context(), userID)
+	if err != nil {
+		slog.Error("[reservas/modos-reserva] error", "error", err)
+		ErrorJSON(w, http.StatusInternalServerError, "LIST_ERROR", "Error al obtener modos de reserva")
+		return
+	}
+
+	if props == nil {
+		props = []repository.PropiedadModoReserva{}
+	}
+
+	JSON(w, http.StatusOK, props)
+}
+
+type updateModoReservaRequest struct {
+	PropiedadID string `json:"propiedadId"`
+	Modo        string `json:"modo"`
+}
+
+func (h *ReservaHandler) UpdateModoReserva(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetUserID(r.Context())
+	if userID == "" {
+		ErrorJSON(w, http.StatusUnauthorized, "AUTH_REQUIRED", "No autenticado")
+		return
+	}
+
+	var req updateModoReservaRequest
+	if err := DecodeJSON(r, &req); err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "JSON invalido")
+		return
+	}
+
+	if req.PropiedadID == "" {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_PROP_ID", "propiedadId es requerido")
+		return
+	}
+
+	if req.Modo != "MANUAL" && req.Modo != "AUTOMATICO" {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_MODO", "modo debe ser 'MANUAL' o 'AUTOMATICO'")
+		return
+	}
+
+	if err := h.svc.UpdateModoReserva(r.Context(), req.PropiedadID, userID, req.Modo); err != nil {
+		slog.Error("[reservas/update-modo-reserva] error", "error", err)
+		ErrorJSON(w, http.StatusBadRequest, "UPDATE_ERROR", err.Error())
+		return
+	}
+
+	JSON(w, http.StatusOK, map[string]interface{}{
+		"ok":      true,
+		"mensaje": fmt.Sprintf("Modo de reserva actualizado a %s", req.Modo),
+	})
+}

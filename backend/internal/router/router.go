@@ -99,6 +99,8 @@ type PropiedadesHandlers struct {
 	Actualizar         http.HandlerFunc
 	AgregarImagenes    http.HandlerFunc
 	ActualizarImagenes http.HandlerFunc
+	GetAmenidades      http.HandlerFunc
+	GetReservas        http.HandlerFunc
 }
 
 type CanchasHandlers struct {
@@ -139,6 +141,8 @@ type ReservaHandlers struct {
 	FechasOcupadas         http.HandlerFunc
 	CalcularReembolso      http.HandlerFunc
 	AutoConfirmarExpiradas http.HandlerFunc
+	GetModosReserva        http.HandlerFunc
+	UpdateModoReserva      http.HandlerFunc
 }
 
 type AdminHandlers struct {
@@ -388,12 +392,8 @@ func New(opts *RouterOpts) http.Handler {
 							r.Post("/gastos", opts.DashboardHandlers.CrearGasto)
 							r.Delete("/gastos/{gastoId}", opts.DashboardHandlers.EliminarGasto)
 						}
-						r.Get("/reservas", func(w http.ResponseWriter, r *http.Request) {
-							w.WriteHeader(http.StatusNotImplemented)
-						})
-						r.Get("/amenidades", func(w http.ResponseWriter, r *http.Request) {
-							w.WriteHeader(http.StatusNotImplemented)
-						})
+						r.Get("/reservas", opts.PropiedadesHandlers.GetReservas)
+						r.Get("/amenidades", opts.PropiedadesHandlers.GetAmenidades)
 					})
 				})
 			})
@@ -420,6 +420,8 @@ func New(opts *RouterOpts) http.Handler {
 					r.Get("/mias", opts.ReservaHandlers.MisReservas)
 					r.Get("/recibidas", opts.ReservaHandlers.ReservasRecibidas)
 					r.Post("/cron/auto-confirmar", opts.ReservaHandlers.AutoConfirmarExpiradas)
+					r.Get("/modos-reserva", opts.ReservaHandlers.GetModosReserva)
+					r.Put("/modos-reserva", opts.ReservaHandlers.UpdateModoReserva)
 					r.Get("/{id}", opts.ReservaHandlers.GetByID)
 					r.Post("/{id}/cancelar", opts.ReservaHandlers.Cancelar)
 					r.Post("/{id}/confirmar", opts.ReservaHandlers.ConfirmarORechazar)

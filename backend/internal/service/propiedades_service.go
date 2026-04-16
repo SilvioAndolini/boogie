@@ -297,6 +297,10 @@ func (s *PropiedadesService) Actualizar(ctx context.Context, userID, propiedadID
 	return detalle, nil
 }
 
+func (s *PropiedadesService) GetAmenidades(ctx context.Context, propiedadID string) ([]repository.AmenidadInfo, error) {
+	return s.repo.GetAmenidades(ctx, propiedadID)
+}
+
 func (s *PropiedadesService) AgregarImagenes(ctx context.Context, userID, propiedadID string, imagenes []repository.ImagenInput) error {
 	ownerID, err := s.repo.GetPropiedadOwner(ctx, propiedadID)
 	if err != nil {

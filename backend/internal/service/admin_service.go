@@ -10,11 +10,12 @@ import (
 )
 
 type AdminService struct {
-	repo *repository.AdminRepo
+	repo        *repository.AdminRepo
+	reservaRepo *repository.ReservaRepo
 }
 
-func NewAdminService(repo *repository.AdminRepo) *AdminService {
-	return &AdminService{repo: repo}
+func NewAdminService(repo *repository.AdminRepo, reservaRepo *repository.ReservaRepo) *AdminService {
+	return &AdminService{repo: repo, reservaRepo: reservaRepo}
 }
 
 type PaginatedResult struct {
@@ -163,8 +164,20 @@ func (s *AdminService) VerificarPago(ctx context.Context, pagoID, nuevoEstado st
 		if reservaID != nil {
 			res, err := s.repo.GetReservaByID(ctx, *reservaID)
 			if err == nil && (res.Estado == "PENDIENTE" || res.Estado == "PENDIENTE_PAGO") {
-				if err := s.repo.UpdateReservaEstado(ctx, *reservaID, "PENDIENTE_CONFIRMACION", nil, nil); err != nil {
-					slog.Error("[admin/verificar-pago] error setting PENDIENTE_CONFIRMACION", "error", err, "reservaId", *reservaID)
+				modoReserva := "MANUAL"
+				if s.reservaRepo != nil {
+					if m, err := s.reservaRepo.GetModoReservaByReservaID(ctx, *reservaID); err == nil {
+						modoReserva = m
+					}
+				}
+				if modoReserva == "AUTOMATICO" {
+					if err := s.repo.UpdateReservaEstado(ctx, *reservaID, "CONFIRMADA", &now, nil); err != nil {
+						slog.Error("[admin/verificar-pago] error setting CONFIRMADA (auto)", "error", err, "reservaId", *reservaID)
+					}
+				} else {
+					if err := s.repo.UpdateReservaEstado(ctx, *reservaID, "PENDIENTE_CONFIRMACION", nil, nil); err != nil {
+						slog.Error("[admin/verificar-pago] error setting PENDIENTE_CONFIRMACION", "error", err, "reservaId", *reservaID)
+					}
 				}
 			}
 		}

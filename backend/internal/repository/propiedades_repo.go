@@ -331,7 +331,7 @@ func (r *PropiedadesRepo) GetByID(ctx context.Context, id string) (*PropiedadDet
 	if err != nil {
 		return nil, fmt.Errorf("get propietario: %w", err)
 	}
-	amenidades, err := r.getAmenidades(ctx, p.ID)
+	amenidades, err := r.GetAmenidades(ctx, p.ID)
 	if err != nil {
 		return nil, fmt.Errorf("get amenidades: %w", err)
 	}
@@ -467,7 +467,7 @@ func (r *PropiedadesRepo) getPropietario(ctx context.Context, userID string) (*P
 	return &p, nil
 }
 
-func (r *PropiedadesRepo) getAmenidades(ctx context.Context, propiedadID string) ([]AmenidadInfo, error) {
+func (r *PropiedadesRepo) GetAmenidades(ctx context.Context, propiedadID string) ([]AmenidadInfo, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT a.id, a.nombre, a.icono, a.categoria
 		FROM amenidades a
