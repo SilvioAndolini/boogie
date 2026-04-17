@@ -583,7 +583,7 @@ const barVariants = {
 }
 const barTransition = { duration: 0.35, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }
 
-export function SearchBar({ mode = 'estandar', inlineModeToggle, onModeChange }: { mode?: SearchMode; inlineModeToggle?: boolean; onModeChange?: (mode: SearchMode) => void }) {
+export function SearchBar({ mode = 'estandar', inlineModeToggle, onModeChange, excludeModes }: { mode?: SearchMode; inlineModeToggle?: boolean; onModeChange?: (mode: SearchMode) => void; excludeModes?: SearchMode[] }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [ubicacion, setUbicacion] = useState(searchParams.get('ubicacion') || '')
@@ -722,7 +722,7 @@ export function SearchBar({ mode = 'estandar', inlineModeToggle, onModeChange }:
         >
           {inlineModeToggle && onModeChange && (
             <>
-              <SearchModeToggle mode={mode} onChange={onModeChange} inline />
+              <SearchModeToggle mode={mode} onChange={onModeChange} inline exclude={excludeModes} />
               <div className="h-6 w-px bg-[#E8E4DF]" />
             </>
           )}

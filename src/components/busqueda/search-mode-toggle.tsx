@@ -1,23 +1,28 @@
 'use client'
 
 import { SearchMode } from '@/lib/constants'
-import { Home, Trophy } from 'lucide-react'
+import { Home, Zap, Trophy } from 'lucide-react'
 import { motion } from 'framer-motion'
 
-const modes: { key: SearchMode; label: string; icon: typeof Home }[] = [
+const allModes: { key: SearchMode; label: string; icon: typeof Home }[] = [
   { key: 'estandar', label: 'Estándar', icon: Home },
   { key: 'sports', label: 'Sports', icon: Trophy },
+  { key: 'express', label: 'Express', icon: Zap },
 ]
 
 export function SearchModeToggle({
   mode,
   onChange,
   inline = false,
+  exclude = [],
 }: {
   mode: SearchMode
   onChange: (mode: SearchMode) => void
   inline?: boolean
+  exclude?: SearchMode[]
 }) {
+  const modes = allModes.filter((m) => !exclude.includes(m.key))
+
   if (inline) {
     return (
       <div className="flex items-center">

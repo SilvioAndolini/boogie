@@ -7,7 +7,7 @@ import type { SearchMode } from '@/lib/constants'
 
 function NavbarSearchContent({ mode, onModeChange }: { mode: SearchMode; onModeChange: (mode: SearchMode) => void }) {
   return (
-    <SearchBar mode={mode} onModeChange={onModeChange} />
+    <SearchBar mode={mode} inlineModeToggle excludeModes={['express']} onModeChange={onModeChange} />
   )
 }
 
