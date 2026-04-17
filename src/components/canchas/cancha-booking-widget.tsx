@@ -337,7 +337,8 @@ export function CanchaBookingWidget({
           setBloques([])
           return
         }
-        const data = await res.json()
+        const raw = await res.json()
+        const data = (raw?.data ?? raw) as BloqueHorario[] | null
         setBloques(Array.isArray(data) ? data : [])
       } catch {
         setBloques([])
