@@ -136,16 +136,17 @@ export function PropertyCard({ propiedad }: { propiedad: PropiedadCard }) {
           </Button>
 
           <div className="absolute bottom-3 left-3 z-10 flex gap-1.5">
-            <Badge
-              variant="secondary"
-              className="border-0 bg-white/85 px-3 py-0.5 text-[11px] font-medium text-[#1A1A1A] shadow-sm backdrop-blur-md"
-            >
-              {TIPO_LABELS[tipoPropiedad] ?? tipoPropiedad}
-            </Badge>
-            {isCancha && (
-              <Badge className="border-0 bg-[#1B4332] px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
+            {isCancha ? (
+              <Badge className="border-0 bg-[#2563EB] px-2.5 py-0.5 text-[11px] font-bold text-white shadow-sm backdrop-blur-md">
                 <Trophy className="mr-0.5 h-2.5 w-2.5" />
                 Cancha
+              </Badge>
+            ) : (
+              <Badge
+                variant="secondary"
+                className="border-0 bg-white/85 px-3 py-0.5 text-[11px] font-medium text-[#1A1A1A] shadow-sm backdrop-blur-md"
+              >
+                {TIPO_LABELS[tipoPropiedad] ?? tipoPropiedad}
               </Badge>
             )}
           </div>
@@ -170,20 +171,22 @@ export function PropertyCard({ propiedad }: { propiedad: PropiedadCard }) {
               {ciudad}, {estado}
             </span>
           </div>
-          <div className="mt-2 flex items-center gap-3 text-[#6B6560]">
-            <div className="flex items-center gap-1">
-              <DoorOpen className="h-3.5 w-3.5 text-[#9E9892]" />
-              <span className="text-xs">{habitaciones} hab.</span>
+          {!isCancha && (
+            <div className="mt-2 flex items-center gap-3 text-[#6B6560]">
+              <div className="flex items-center gap-1">
+                <DoorOpen className="h-3.5 w-3.5 text-[#9E9892]" />
+                <span className="text-xs">{habitaciones} hab.</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <BedDouble className="h-3.5 w-3.5 text-[#9E9892]" />
+                <span className="text-xs">{camas} cama{camas !== 1 ? 's' : ''}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Bath className="h-3.5 w-3.5 text-[#9E9892]" />
+                <span className="text-xs">{banos} baño{banos !== 1 ? 's' : ''}</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1">
-              <BedDouble className="h-3.5 w-3.5 text-[#9E9892]" />
-              <span className="text-xs">{camas} cama{camas !== 1 ? 's' : ''}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Bath className="h-3.5 w-3.5 text-[#9E9892]" />
-              <span className="text-xs">{banos} baño{banos !== 1 ? 's' : ''}</span>
-            </div>
-          </div>
+          )}
           <div className="mt-2.5 flex items-center gap-2">
             <div className="flex items-baseline gap-0.5">
               <span className="text-lg font-bold tracking-tight text-[#1B4332]">
