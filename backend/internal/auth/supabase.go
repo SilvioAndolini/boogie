@@ -57,8 +57,10 @@ func NewSupabaseVerifier(supabaseURL string) *SupabaseVerifier {
 		supabaseURL: strings.TrimRight(supabaseURL, "/"),
 		keys:        make(map[string]*ecdsa.PublicKey),
 	}
-	if err := v.fetchKeysWithRetry(); err != nil {
-		slog.Error("[auth] JWKS fetch failed after retries — server cannot verify tokens", "error", err)
+	if v.supabaseURL != "" && strings.HasPrefix(v.supabaseURL, "http") {
+		if err := v.fetchKeysWithRetry(); err != nil {
+			slog.Error("[auth] JWKS fetch failed after retries — server cannot verify tokens", "error", err)
+		}
 	}
 	return v
 }
