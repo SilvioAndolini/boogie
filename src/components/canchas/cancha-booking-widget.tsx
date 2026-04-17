@@ -9,7 +9,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { formatPrecio, formatFechaCorta } from '@/lib/format'
 import { COMISION_PLATAFORMA_HUESPED } from '@/lib/constants'
-import { goGet } from '@/lib/go-api-client'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 
@@ -333,10 +332,13 @@ export function CanchaBookingWidget({
     const fetchDisponibilidad = async () => {
       setCargando(true)
       try {
-        const data = await goGet<BloqueHorario[]>(
-          `/api/v1/canchas/${propiedadId}/disponibilidad?fecha=${fechaStr}`,
-        )
-        setBloques(data || [])
+        const res = await fetch(`/api/canchas/${propiedadId}/disponibilidad?fecha=${fechaStr}`)
+        if (!res.ok) {
+          setBloques([])
+          return
+        }
+        const data = await res.json()
+        setBloques(Array.isArray(data) ? data : [])
       } catch {
         setBloques([])
       } finally {
