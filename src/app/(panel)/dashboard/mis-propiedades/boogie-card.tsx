@@ -26,9 +26,11 @@ import {
 import { eliminarPropiedad, actualizarEstadoPropiedad } from '@/actions/propiedad.actions'
 
 const ESTADO_PUBLICACION_CONFIG: Record<string, { etiqueta: string; className: string }> = {
+  PENDIENTE_REVISION: { etiqueta: 'Pendiente', className: 'bg-[#DBEAFE] text-[#1E40AF]' },
   BORRADOR: { etiqueta: 'Borrador', className: 'bg-[#F8F6F3] text-[#6B6560]' },
   PUBLICADA: { etiqueta: 'Publicada', className: 'bg-[#D8F3DC] text-[#1B4332]' },
   PAUSADA: { etiqueta: 'Pausada', className: 'bg-[#FEF3C7] text-[#92400E]' },
+  DESPUBLICADA: { etiqueta: 'Despublicada', className: 'bg-[#FEE2E2] text-[#991B1B]' },
 }
 
 function formatearPrecio(precio: number, moneda: 'USD' | 'VES'): string {
@@ -53,13 +55,13 @@ export default function BoogieCard({ boogie }: { boogie: Record<string, unknown>
   const handlePausar = async () => {
     setPausando(true)
     try {
-      const nuevoEstado = estadoPublicacion === 'PAUSADA' ? 'BORRADOR' : 'PAUSADA'
+      const nuevoEstado = estadoPublicacion === 'PAUSADA' ? 'PUBLICADA' : 'PAUSADA'
       const result = await actualizarEstadoPropiedad(id, nuevoEstado)
       if (result?.error) {
         toast.error(result.error)
         return
       }
-      toast.success(nuevoEstado === 'PAUSADA' ? 'Boogie pausado' : 'Boogie reanudado')
+      toast.success(nuevoEstado === 'PAUSADA' ? 'Boogie pausado' : 'Boogie publicado')
       router.refresh()
     } catch {
       toast.error('Error al cambiar el estado')
@@ -122,7 +124,7 @@ export default function BoogieCard({ boogie }: { boogie: Record<string, unknown>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handlePausar} disabled={pausando}>
                     <Pause className="h-4 w-4" />
-                    {estadoPublicacion === 'PAUSADA' ? 'Reanudar boogie' : 'Pausar boogie'}
+                    {estadoPublicacion === 'PAUSADA' ? 'Publicar boogie' : 'Pausar boogie'}
                   </DropdownMenuItem>
                   <DropdownMenuItem variant="destructive" onClick={() => setDialogOpen(true)}>
                     <Trash2 className="h-4 w-4" />

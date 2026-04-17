@@ -89,6 +89,11 @@ interface GoPropiedadItem {
   total_resenas: number
   imagen_principal: string | null
   plan_suscripcion: string | null
+  categoria?: string
+  tipo_cancha?: string | null
+  precio_por_hora?: number | null
+  es_express?: boolean
+  precio_express?: number | null
 }
 
 interface GoPropiedadDetail {
@@ -175,6 +180,11 @@ function mapPropiedadItem(item: GoPropiedadItem): PropiedadPublica {
     totalResenas: item.total_resenas,
     imagenes: item.imagen_principal ? [{ url: item.imagen_principal, es_principal: true }] : [],
     propietario: item.plan_suscripcion ? { reputacion: null, plan_suscripcion: item.plan_suscripcion } : null,
+    categoria: item.categoria || 'ALOJAMIENTO',
+    tipoCancha: item.tipo_cancha ?? null,
+    precioPorHora: item.precio_por_hora ?? null,
+    esExpress: item.es_express ?? false,
+    precioExpress: item.precio_express ?? null,
   }
 }
 

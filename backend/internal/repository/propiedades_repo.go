@@ -24,28 +24,29 @@ func NewPropiedadesRepo(pool *pgxpool.Pool) *PropiedadesRepo {
 }
 
 type PropiedadListado struct {
-	ID              string   `json:"id"`
-	Titulo          string   `json:"titulo"`
-	Slug            string   `json:"slug"`
-	TipoPropiedad   string   `json:"tipo_propiedad"`
-	PrecioPorNoche  float64  `json:"precio_por_noche"`
-	Moneda          string   `json:"moneda"`
-	Capacidad       int      `json:"capacidad"`
-	Dormitorios     int      `json:"dormitorios"`
-	Banos           int      `json:"banos"`
-	Ciudad          string   `json:"ciudad"`
-	Estado          string   `json:"estado"`
-	Latitud         *float64 `json:"latitud"`
-	Longitud        *float64 `json:"longitud"`
-	Calificacion    float64  `json:"calificacion"`
-	TotalResenas    int      `json:"total_resenas"`
-	ImagenPrincipal *string  `json:"imagen_principal"`
-	PlanSuscripcion *string  `json:"plan_suscripcion"`
-	Categoria       string   `json:"categoria"`
-	TipoCancha      *string  `json:"tipo_cancha"`
-	PrecioPorHora   *float64 `json:"precio_por_hora"`
-	EsExpress       bool     `json:"es_express"`
-	PrecioExpress   *float64 `json:"precio_express"`
+	ID                string   `json:"id"`
+	Titulo            string   `json:"titulo"`
+	Slug              string   `json:"slug"`
+	TipoPropiedad     string   `json:"tipo_propiedad"`
+	PrecioPorNoche    float64  `json:"precio_por_noche"`
+	Moneda            string   `json:"moneda"`
+	Capacidad         int      `json:"capacidad"`
+	Dormitorios       int      `json:"dormitorios"`
+	Banos             int      `json:"banos"`
+	Ciudad            string   `json:"ciudad"`
+	Estado            string   `json:"estado"`
+	Latitud           *float64 `json:"latitud"`
+	Longitud          *float64 `json:"longitud"`
+	Calificacion      float64  `json:"calificacion"`
+	TotalResenas      int      `json:"total_resenas"`
+	ImagenPrincipal   *string  `json:"imagen_principal"`
+	PlanSuscripcion   *string  `json:"plan_suscripcion"`
+	Categoria         string   `json:"categoria"`
+	TipoCancha        *string  `json:"tipo_cancha"`
+	PrecioPorHora     *float64 `json:"precio_por_hora"`
+	EsExpress         bool     `json:"es_express"`
+	PrecioExpress     *float64 `json:"precio_express"`
+	EstadoPublicacion string   `json:"estado_publicacion"`
 }
 
 type PropiedadDetalleFull struct {
@@ -364,7 +365,10 @@ func (r *PropiedadesRepo) ListByPropietario(ctx context.Context, propietarioID s
 		       COALESCE(p.capacidad_maxima, 1), COALESCE(p.habitaciones, 0), p.banos, p.ciudad, p.estado,
 		       p.latitud, p.longitud, COALESCE(p.rating_promedio, 0), COALESCE(p.total_resenas, 0),
 		       (SELECT url FROM imagenes_propiedad WHERE propiedad_id = p.id ORDER BY orden LIMIT 1),
-		       NULL::text
+		       NULL::text,
+		       COALESCE(p.categoria, 'ALOJAMIENTO'), p.tipo_cancha, p.precio_por_hora,
+		       COALESCE(p.es_express, false), p.precio_express,
+		       COALESCE(p.estado_publicacion, 'BORRADOR')
 		FROM propiedades p
 		WHERE p.propietario_id = $1
 		ORDER BY p.fecha_actualizacion DESC
@@ -383,6 +387,9 @@ func (r *PropiedadesRepo) ListByPropietario(ctx context.Context, propietarioID s
 			&item.Dormitorios, &item.Banos, &item.Ciudad, &item.Estado,
 			&item.Latitud, &item.Longitud, &item.Calificacion, &item.TotalResenas,
 			&item.ImagenPrincipal, &item.PlanSuscripcion,
+			&item.Categoria, &item.TipoCancha, &item.PrecioPorHora,
+			&item.EsExpress, &item.PrecioExpress,
+			&item.EstadoPublicacion,
 		); err != nil {
 			return nil, fmt.Errorf("scan: %w", err)
 		}
