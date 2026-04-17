@@ -1,13 +1,12 @@
 'use client'
 
 import { SearchMode } from '@/lib/constants'
-import { Home, Zap, Trophy } from 'lucide-react'
+import { Home, Trophy } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 const modes: { key: SearchMode; label: string; icon: typeof Home }[] = [
   { key: 'estandar', label: 'Estándar', icon: Home },
   { key: 'sports', label: 'Sports', icon: Trophy },
-  { key: 'express', label: 'Express', icon: Zap },
 ]
 
 export function SearchModeToggle({
