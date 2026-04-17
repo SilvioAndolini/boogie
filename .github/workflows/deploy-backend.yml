@@ -1,0 +1,52 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'backend/**'
+
+jobs:
+  deploy:
+    name: Deploy to Linode
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.LINODE_HOST }}
+          username: ${{ secrets.LINODE_USER }}
+          key: ${{ secrets.LINODE_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+
+            echo "==> Pulling latest code..."
+            cd /opt/boogie-repo
+            git pull origin master
+
+            echo "==> Building Docker image..."
+            docker build -t boogie-backend:latest ./backend
+
+            echo "==> Restarting container..."
+            docker stop boogie-backend || true
+            docker rm boogie-backend || true
+            docker run -d \
+              --name boogie-backend \
+              --restart unless-stopped \
+              --env-file /opt/boogie-backend/.env \
+              -p 8080:8080 \
+              boogie-backend:latest
+
+            echo "==> Waiting for health check..."
+            sleep 5
+
+            if curl -sf http://localhost:8080/healthz; then
+              echo ""
+              echo "==> Deploy successful!"
+            else
+              echo "==> Health check FAILED"
+              docker logs --tail 50 boogie-backend
+              exit 1
+            fi
