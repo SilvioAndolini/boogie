@@ -594,12 +594,13 @@ export default function NuevaPropiedadPage() {
                              </label>
                            </div>
                            <p className="text-[10px] text-[#6B6560]">Activa Express para permitir reservas el mismo día (máx 14h). Se aplica una comisión adicional del 10%.</p>
-                           {watch('esExpress') && (
-                             <div className="space-y-1.5">
-                               <label className="text-xs font-semibold text-[#6B6560]">Precio Express</label>
-                               <Input type="number" step="0.01" min={1} placeholder="Precio especial Express" {...register('precioExpress', { valueAsNumber: true })} className={ic} />
-                             </div>
-                           )}
+                            {watch('esExpress') && (
+                              <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-[#6B6560]">Precio Express</label>
+                                <Input type="number" step="0.01" min={1} placeholder="Precio especial Express" {...register('precioExpress', { valueAsNumber: true })} className={ic} />
+                                {errors.precioExpress && <p className="text-xs text-[#C1121F]">{errors.precioExpress.message}</p>}
+                              </div>
+                            )}
                          </div>
                        )}
                      </>)}

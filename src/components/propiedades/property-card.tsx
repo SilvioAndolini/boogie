@@ -148,13 +148,16 @@ export function PropertyCard({ propiedad }: { propiedad: PropiedadCard }) {
                 Cancha
               </Badge>
             )}
-            {isExpress && !isCancha && (
-              <Badge className="border-0 bg-[#F4A261] px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
-                <Zap className="mr-0.5 h-2.5 w-2.5" />
-                Express
-              </Badge>
-            )}
           </div>
+
+          {isExpress && !isCancha && (
+            <div className="absolute bottom-3 right-3 z-10">
+              <span className="flex items-center gap-1 rounded-full bg-[#F4A261] px-2.5 py-1 text-[10px] font-bold text-white shadow-md backdrop-blur-sm">
+                <Zap className="h-3 w-3" />
+                Express
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="pt-3 pb-1">

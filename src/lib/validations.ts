@@ -95,6 +95,15 @@ export const propiedadSchema = z.object({
       })
     }
   }
+  if (data.esExpress) {
+    if (!data.precioExpress || data.precioExpress < 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Ingresa el precio Express (mayor a 0)',
+        path: ['precioExpress'],
+      })
+    }
+  }
 })
 
 // === Reservas ===

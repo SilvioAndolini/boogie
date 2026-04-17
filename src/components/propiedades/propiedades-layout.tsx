@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { SlidersHorizontal } from 'lucide-react'
+import { SlidersHorizontal, Zap } from 'lucide-react'
 import { PropertyGrid } from './property-grid'
 import { PropertyMap } from './property-map'
 import { FilterModal } from './filter-modal'
@@ -36,6 +36,19 @@ export function PropiedadesLayout({
   const [filtersOpen, setFiltersOpen] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
+  const isExpressActive = searchParams.get('esExpress') === 'true'
+  const showExpressToggle = basePath === '/propiedades'
+
+  const toggleExpress = () => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (isExpressActive) {
+      params.delete('esExpress')
+    } else {
+      params.set('esExpress', 'true')
+    }
+    params.delete('pagina')
+    router.push(`${basePath}?${params.toString()}`)
+  }
 
   const goToPage = (page: number) => {
     const params = new URLSearchParams(searchParams.toString())
@@ -88,6 +101,19 @@ export function PropiedadesLayout({
             <SlidersHorizontal className="h-3.5 w-3.5" />
             Filtros
           </button>
+          {showExpressToggle && (
+            <button
+              onClick={toggleExpress}
+              className={`mr-3 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold transition-colors ${
+                isExpressActive
+                  ? 'bg-[#F4A261] text-white shadow-sm'
+                  : 'border border-[#E8E4DF] text-[#6B6560] hover:border-[#F4A261] hover:text-[#F4A261]'
+              }`}
+            >
+              <Zap className="h-3.5 w-3.5" />
+              Express
+            </button>
+          )}
           <h1 className="text-base font-bold text-[#1A1A1A]">{titleLabel}</h1>
           <span className="ml-2 text-sm text-[#6B6560]">{total} resultado{total !== 1 ? 's' : ''}</span>
           {totalPaginas > 1 && (
@@ -125,6 +151,19 @@ export function PropiedadesLayout({
             <SlidersHorizontal className="h-3.5 w-3.5" />
             Filtros
           </button>
+          {showExpressToggle && (
+            <button
+              onClick={toggleExpress}
+              className={`mr-3 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold transition-colors ${
+                isExpressActive
+                  ? 'bg-[#F4A261] text-white shadow-sm'
+                  : 'border border-[#E8E4DF] text-[#6B6560] hover:border-[#F4A261] hover:text-[#F4A261]'
+              }`}
+            >
+              <Zap className="h-3.5 w-3.5" />
+              Express
+            </button>
+          )}
           <h1 className="text-base font-bold text-[#1A1A1A]">{titleLabel}</h1>
           <span className="ml-2 text-sm text-[#6B6560]">{total} resultado{total !== 1 ? 's' : ''}</span>
         </div>

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { MapPin, MoreVertical, Pencil, Pause, Trash2, Loader2 } from 'lucide-react'
+import { MapPin, MoreVertical, Pencil, Pause, Trash2, Loader2, Zap } from 'lucide-react'
 import { toast } from 'sonner'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -102,6 +102,14 @@ export default function BoogieCard({ boogie }: { boogie: Record<string, unknown>
             <div className="absolute left-3 top-3">
               <Badge className={config.className}>{config.etiqueta}</Badge>
             </div>
+            {boogie.es_express as boolean && (
+              <div className="absolute bottom-3 right-3 z-10">
+                <span className="flex items-center gap-1 rounded-full bg-[#F4A261] px-2.5 py-1 text-[10px] font-bold text-white shadow-md backdrop-blur-sm">
+                  <Zap className="h-3 w-3" />
+                  Express
+                </span>
+              </div>
+            )}
             <div className="absolute right-3 top-3" onClick={(e) => e.stopPropagation()}>
               <DropdownMenu>
                 <DropdownMenuTrigger className="flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-[#6B6560] backdrop-blur-sm transition-colors hover:bg-white">

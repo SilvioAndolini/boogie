@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { MapPin, MoreVertical, Pencil, Pause, Trash2, Loader2, BedDouble, Bath, Users } from 'lucide-react'
+import { MapPin, MoreVertical, Pencil, Pause, Trash2, Loader2, BedDouble, Bath, Users, Zap } from 'lucide-react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -110,6 +110,12 @@ export default function BoogieListItem({ boogie }: { boogie: Record<string, unkn
               {boogie.titulo as string}
             </h3>
             <Badge className={`shrink-0 text-[10px] ${config.className}`}>{config.etiqueta}</Badge>
+            {boogie.es_express as boolean && (
+              <span className="flex shrink-0 items-center gap-1 rounded-full bg-[#F4A261] px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
+                <Zap className="h-2.5 w-2.5" />
+                Express
+              </span>
+            )}
           </div>
           <div className="mt-0.5 flex items-center gap-1 text-xs text-[#6B6560]">
             <MapPin className="h-3 w-3 shrink-0" />

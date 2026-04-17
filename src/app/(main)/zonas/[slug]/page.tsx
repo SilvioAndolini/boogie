@@ -50,6 +50,7 @@ export default async function ZonaDetallePage({ params }: ZonaPageProps) {
     camas: p.camas ?? 0,
     banos: p.banos ?? 0,
     propietario: (p as unknown as Record<string, unknown>).propietario as { reputacion: number | null; plan_suscripcion: string } | null,
+    esExpress: (p as unknown as Record<string, unknown>).esExpress as boolean | undefined,
   }))
 
   return (
