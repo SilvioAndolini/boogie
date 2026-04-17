@@ -6,7 +6,8 @@ import { getMisPropiedades } from '@/actions/propiedad.actions'
 import { BoogieListClient } from './boogie-list-client'
 
 export default async function MisPropiedadesPage() {
-  const propiedades = await getMisPropiedades()
+  const todas = await getMisPropiedades()
+  const propiedades = todas.filter((p) => (p as unknown as Record<string, unknown>).categoria !== 'DEPORTE')
   const hayPropiedades = propiedades.length > 0
 
   return (

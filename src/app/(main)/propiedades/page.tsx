@@ -55,6 +55,7 @@ export default async function PropiedadesPage({ searchParams }: PropiedadesPageP
     pagina: params.pagina ? Number(params.pagina) : 1,
     porPagina: 18,
     esExpress: params.esExpress === 'true' ? true : undefined,
+    categoria: 'ALOJAMIENTO',
   })
 
   const propiedades: PropiedadCard[] = resultado.datos.map((p) => ({

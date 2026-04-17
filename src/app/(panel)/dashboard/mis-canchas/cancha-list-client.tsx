@@ -18,13 +18,13 @@ const cardVariants = {
 
 function CanchaCard({ cancha }: { cancha: Record<string, unknown> }) {
   const [menuOpen, setMenuOpen] = useState(false)
-  const imagen = (cancha.imagenes as { url: string }[] | undefined)?.[0]?.url
-  const tipoCancha = (cancha.tipoCancha as string) || 'MULTIDEPORTE'
-  const precioHora = cancha.precioPorHora as number | null
+  const imagen = (cancha.imagen_principal as string) || (cancha.imagenes as { url: string }[] | undefined)?.[0]?.url || null
+  const tipoCancha = (cancha.tipo_cancha as string) || (cancha.tipoCancha as string) || 'MULTIDEPORTE'
+  const precioHora = (cancha.precio_por_hora as number | null) ?? (cancha.precioPorHora as number | null) ?? null
   const moneda = (cancha.moneda as string) || 'USD'
-  const estado = (cancha.estadoPublicacion as string) || 'BORRADOR'
-  const rating = cancha.ratingPromedio as number || 0
-  const totalResenas = cancha.totalResenas as number || 0
+  const estado = (cancha.estado_publicacion as string) || (cancha.estadoPublicacion as string) || 'BORRADOR'
+  const rating = (cancha.calificacion as number) || (cancha.ratingPromedio as number) || 0
+  const totalResenas = (cancha.total_resenas as number) || (cancha.totalResenas as number) || 0
 
   const estadoColors: Record<string, string> = {
     PUBLICADA: 'bg-[#D8F3DC] text-[#1B4332]',
