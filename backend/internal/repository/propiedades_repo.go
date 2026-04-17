@@ -295,7 +295,11 @@ func (r *PropiedadesRepo) GetByID(ctx context.Context, id string) (*PropiedadDet
 		       estado_publicacion, destacada,
 		       fecha_publicacion, fecha_actualizacion,
 		       COALESCE(vistas_totales, 0), COALESCE(rating_promedio, 0), COALESCE(total_resenas, 0),
-		       NOW(), NOW()
+		       NOW(), NOW(),
+		       COALESCE(categoria, 'ALOJAMIENTO'), tipo_cancha, precio_por_hora,
+		       hora_apertura, hora_cierre, duracion_minima_min,
+		       COALESCE(es_express, false), precio_express,
+		       COALESCE(modo_reserva, 'MANUAL')
 		FROM propiedades WHERE id = $1
 	`, id).Scan(
 		&p.ID, &p.PropietarioID, &p.Titulo, &p.Slug, &p.Descripcion, &p.TipoPropiedad,
@@ -309,6 +313,10 @@ func (r *PropiedadesRepo) GetByID(ctx context.Context, id string) (*PropiedadDet
 		&fechaPub, &p.FechaActualizacion,
 		&vistas, &p.Calificacion, &p.CantidadResenas,
 		&p.CreatedAt, &p.UpdatedAt,
+		&p.Categoria, &p.TipoCancha, &p.PrecioPorHora,
+		&p.HoraApertura, &p.HoraCierre, &p.DuracionMinimaMin,
+		&p.EsExpress, &p.PrecioExpress,
+		&p.ModoReserva,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("get propiedad: %w", err)
