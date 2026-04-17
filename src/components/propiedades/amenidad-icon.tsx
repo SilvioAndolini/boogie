@@ -8,6 +8,8 @@ import {
   Sun, Trees, MountainSnow,
   Camera, Lock, Shield,
   Key, PawPrint, Baby, PartyPopper,
+  Users, Monitor, Grid3x3, Square, Grip, Target, Table,
+  ShoppingBag, Package, Lightbulb, Warehouse, Beer, Leaf,
   HelpCircle,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -44,6 +46,19 @@ const ICON_MAP: Record<string, LucideIcon> = {
   'paw-print': PawPrint,
   baby: Baby,
   'party-popper': PartyPopper,
+  users: Users,
+  monitor: Monitor,
+  'grid-3x3': Grid3x3,
+  square: Square,
+  grip: Grip,
+  target: Target,
+  table: Table,
+  'shopping-bag': ShoppingBag,
+  package: Package,
+  lightbulb: Lightbulb,
+  warehouse: Warehouse,
+  beer: Beer,
+  leaf: Leaf,
 }
 
 export function AmenidadIcon({ icono, className }: { icono: string | null; className?: string }) {

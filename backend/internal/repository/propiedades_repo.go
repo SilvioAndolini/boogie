@@ -553,8 +553,28 @@ func HaversineDistance(lat1, lon1, lat2, lon2 float64) float64 {
 }
 
 type BloqueHorario struct {
-	Hora       string `json:"hora"`
-	Disponible bool   `json:"disponible"`
+	Hora   string `json:"hora"`
+	Estado string `json:"estado"`
+}
+
+func estadoHoraPrioridad(estado string) int {
+	switch estado {
+	case "CONFIRMADA", "EN_CURSO":
+		return 3
+	case "PENDIENTE_CONFIRMACION", "PENDIENTE_PAGO", "PENDIENTE":
+		return 2
+	default:
+		return 1
+	}
+}
+
+func clasificarEstadoHora(estado string) string {
+	switch estado {
+	case "PENDIENTE_CONFIRMACION", "PENDIENTE_PAGO", "PENDIENTE":
+		return "pendiente"
+	default:
+		return "ocupada"
+	}
 }
 
 func (r *PropiedadesRepo) GetDisponibilidadHoraria(ctx context.Context, propiedadID, fecha string) ([]BloqueHorario, error) {
@@ -574,7 +594,7 @@ func (r *PropiedadesRepo) GetDisponibilidadHoraria(ctx context.Context, propieda
 	}
 
 	rows, err := r.pool.Query(ctx, `
-		SELECT hora_inicio, hora_fin FROM reservas
+		SELECT hora_inicio, hora_fin, estado FROM reservas
 		WHERE propiedad_id = $1
 		  AND fecha_entrada::date = $2::date
 		  AND estado NOT IN ('CANCELADA_HUESPED', 'CANCELADA_ANFITRION', 'RECHAZADA', 'ANULADA')
@@ -584,17 +604,21 @@ func (r *PropiedadesRepo) GetDisponibilidadHoraria(ctx context.Context, propieda
 	}
 	defer rows.Close()
 
-	ocupadas := map[int]bool{}
+	estadosPorHora := map[int]string{}
 	for rows.Next() {
 		var hi, hf *string
-		if err := rows.Scan(&hi, &hf); err != nil {
+		var est string
+		if err := rows.Scan(&hi, &hf, &est); err != nil {
 			continue
 		}
 		if hi != nil && hf != nil {
 			start, _ := strconv.Atoi(strings.Split(*hi, ":")[0])
 			end, _ := strconv.Atoi(strings.Split(*hf, ":")[0])
 			for h := start; h < end; h++ {
-				ocupadas[h] = true
+				existing, exists := estadosPorHora[h]
+				if !exists || estadoHoraPrioridad(est) > estadoHoraPrioridad(existing) {
+					estadosPorHora[h] = est
+				}
 			}
 		}
 	}
@@ -602,10 +626,12 @@ func (r *PropiedadesRepo) GetDisponibilidadHoraria(ctx context.Context, propieda
 	var bloques []BloqueHorario
 	for h := aperturaH; h < cierreH; h++ {
 		horaStr := fmt.Sprintf("%02d:00", h)
-		bloques = append(bloques, BloqueHorario{
-			Hora:       horaStr,
-			Disponible: !ocupadas[h],
-		})
+		est, ok := estadosPorHora[h]
+		if !ok {
+			bloques = append(bloques, BloqueHorario{Hora: horaStr, Estado: "disponible"})
+		} else {
+			bloques = append(bloques, BloqueHorario{Hora: horaStr, Estado: clasificarEstadoHora(est)})
+		}
 	}
 	return bloques, nil
 }

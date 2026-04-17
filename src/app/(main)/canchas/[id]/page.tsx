@@ -19,6 +19,7 @@ import { AmenidadIcon } from '@/components/propiedades/amenidad-icon'
 import { LocationViewMap } from '@/components/propiedades/location-view'
 import { TIPOS_CANCHA } from '@/lib/constants'
 import { getCotizacionEuro } from '@/lib/services/exchange-rate'
+import { obtenerFechasOcupadas } from '@/lib/reservas/disponibilidad'
 import type { Metadata } from 'next'
 
 type Props = { params: Promise<{ id: string }> }
@@ -40,6 +41,13 @@ export default async function CanchaDetallePage({ params }: Props) {
   if (!propiedad) notFound()
 
   const cotizacion = await getCotizacionEuro()
+
+  const fechasOcupadasRaw = await obtenerFechasOcupadas(id)
+  const fechasOcupadas = fechasOcupadasRaw.map((r) => ({
+    inicio: r.inicio.toISOString(),
+    fin: r.fin.toISOString(),
+    estado: r.estado,
+  }))
 
   const tipoCanchaKey = propiedad.tipoCancha
   const tipoCanchaLabel = tipoCanchaKey ? TIPOS_CANCHA[tipoCanchaKey as keyof typeof TIPOS_CANCHA] ?? tipoCanchaKey : null
@@ -274,12 +282,12 @@ export default async function CanchaDetallePage({ params }: Props) {
                 titulo={propiedad.titulo}
                 ciudad={propiedad.ciudad}
                 estado={propiedad.estado}
-                imagenes={propiedad.imagenes}
                 precioPorHora={precioPorHora ?? Number(propiedad.precioPorNoche)}
                 moneda={propiedad.moneda as 'USD' | 'VES'}
                 horaApertura={horaApertura ?? '08:00'}
                 horaCierre={horaCierre ?? '22:00'}
                 tasaEuro={cotizacion.tasa}
+                fechasOcupadas={fechasOcupadas}
               />
 
               {propiedad.propietario && (
