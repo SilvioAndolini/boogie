@@ -17,9 +17,7 @@ services:
       - boogie
 
   api:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: boogie-backend:latest
     container_name: boogie-backend
     restart: unless-stopped
     env_file:
