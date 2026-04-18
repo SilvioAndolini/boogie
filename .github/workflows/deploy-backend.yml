@@ -11,6 +11,7 @@ jobs:
     name: Build & Deploy
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/master'
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,7 +24,8 @@ jobs:
       - name: Cross-compile
         run: |
           cd backend
-          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o server ./cmd/server
+          SHA=$(git rev-parse --short HEAD)
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w -X main.commitSHA=$SHA" -o server ./cmd/server
 
       - name: Upload binary to Linode
         uses: appleboy/scp-action@v0.1.7
@@ -44,24 +46,46 @@ jobs:
           script: |
             set -euo pipefail
 
-            echo "==> Pulling latest code..."
             cd /opt/boogie-repo
             git pull origin master
             chmod +x backend/server
 
+            echo "==> Tagging current image as rollback target..."
+            docker tag boogie-backend:latest boogie-backend:rollback 2>/dev/null || true
+
             echo "==> Building Docker image (prebuilt)..."
             docker build -f backend/Dockerfile.prebuilt -t boogie-backend:latest ./backend
 
-            echo "==> Restarting stack..."
+            echo "==> Restarting API..."
             docker compose up -d --force-recreate api
 
             echo "==> Waiting for health check..."
-            sleep 5
+            sleep 8
 
             if docker exec boogie-backend wget -qO- http://localhost:8080/healthz 2>/dev/null | grep -q ok; then
               echo "==> Deploy successful!"
             else
-              echo "==> Health check FAILED"
+              echo "==> Health check FAILED — rolling back..."
               docker logs --tail 50 boogie-backend
+              docker tag boogie-backend:rollback boogie-backend:latest
+              docker compose up -d --force-recreate api
+              sleep 5
+              echo "==> Rollback complete"
               exit 1
             fi
+
+      - name: Notify Telegram on success
+        if: success()
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d parse_mode="HTML" \
+            -d text="✅ <b>Boogie Backend</b> deployed successfully%0ACommit: <code>${{ github.sha }}</code>%0ABy: ${{ github.actor }}"
+
+      - name: Notify Telegram on failure
+        if: failure()
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d parse_mode="HTML" \
+            -d text="❌ <b>Boogie Backend</b> deploy FAILED (rolled back)%0ACommit: <code>${{ github.sha }}</code>%0ABy: ${{ github.actor }}%0A<a href=\"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\">View logs</a>"

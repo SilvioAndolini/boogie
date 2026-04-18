@@ -21,7 +21,7 @@ jobs:
       - run: npm test
 
   backend:
-    name: Backend Test
+    name: Backend Test & Lint
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -33,4 +33,9 @@ jobs:
           go-version-file: backend/go.mod
       - run: go mod download
       - run: go vet ./...
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v7
+        with:
+          version: v2.1
+          working-directory: backend
       - run: go test -race -coverprofile=coverage.out ./...
