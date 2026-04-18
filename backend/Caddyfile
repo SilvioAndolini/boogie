@@ -26,6 +26,10 @@ api.boogierent.com {
 }
 
 grafana.boogierent.com {
+	basicauth {
+		admin {$MONITORING_PASSWORD_HASH}
+	}
+
 	reverse_proxy grafana:3000
 
 	encode gzip

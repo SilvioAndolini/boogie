@@ -194,14 +194,16 @@ func (h *CryptoHandler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *CryptoHandler) Callback(w http.ResponseWriter, r *http.Request) {
-	q := r.URL.Query()
-
-	secret := q.Get("secret")
+	secret := r.Header.Get("X-Callback-Secret")
+	if secret == "" {
+		secret = r.URL.Query().Get("secret")
+	}
 	if !h.cryptoSvc.VerifyCallbackSecret(secret) {
 		ErrorJSON(w, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized")
 		return
 	}
 
+	q := r.URL.Query()
 	txHash := q.Get("tx_hash")
 	if txHash == "" {
 		txHash = q.Get("tx_in")

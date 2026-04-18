@@ -1,6 +1,7 @@
 package router
 
 import (
+	"crypto/subtle"
 	"net/http"
 	"time"
 
@@ -230,9 +231,13 @@ type RouterOpts struct {
 	CuponHandlers        *CuponHandlers
 	AuthVerifier         *auth.SupabaseVerifier
 	AppURL               string
+	CronSecret           string
 	ExchangeLimiter      *handlermw.IPRateLimiter
 	UbicacionesLimiter   *handlermw.IPRateLimiter
 	AuthLimiter          *handlermw.IPRateLimiter
+	WebhookLimiter       *handlermw.IPRateLimiter
+	SearchLimiter        *handlermw.IPRateLimiter
+	DisponibilidadLimiter *handlermw.IPRateLimiter
 }
 
 func New(opts *RouterOpts) http.Handler {
@@ -268,9 +273,9 @@ func New(opts *RouterOpts) http.Handler {
 			r.Post("/crypto/cancelar-fallida", opts.Handlers.CryptoCancelarFallida)
 		})
 
-		r.Get("/crypto/callback", opts.Handlers.CryptoCallback)
-		r.Post("/crypto/callback", opts.Handlers.CryptoCallbackPost)
-		r.Post("/crypto/cron/expirar-abandonados", opts.Handlers.CryptoExpirarAbandonados)
+		r.With(rateLimitMiddleware(opts.WebhookLimiter)).Get("/crypto/callback", opts.Handlers.CryptoCallback)
+		r.With(rateLimitMiddleware(opts.WebhookLimiter)).Post("/crypto/callback", opts.Handlers.CryptoCallbackPost)
+		r.With(cronSecretMiddleware(opts.CronSecret)).Post("/crypto/cron/expirar-abandonados", opts.Handlers.CryptoExpirarAbandonados)
 		r.Post("/metamap/webhook", opts.Handlers.MetamapWebhook)
 
 		if opts.PagoHandlers != nil {
@@ -375,8 +380,8 @@ func New(opts *RouterOpts) http.Handler {
 
 		if opts.PropiedadesHandlers != nil {
 			r.Route("/propiedades", func(r chi.Router) {
-				r.Get("/publicas", opts.PropiedadesHandlers.Search)
-				r.Get("/buscar", opts.PropiedadesHandlers.Search)
+			r.With(rateLimitMiddleware(opts.SearchLimiter)).Get("/publicas", opts.PropiedadesHandlers.Search)
+			r.With(rateLimitMiddleware(opts.SearchLimiter)).Get("/buscar", opts.PropiedadesHandlers.Search)
 
 				r.Group(func(r chi.Router) {
 					r.Use(opts.AuthVerifier.Middleware)
@@ -411,13 +416,13 @@ func New(opts *RouterOpts) http.Handler {
 		}
 
 		if opts.CanchasHandlers != nil {
-			r.Get("/canchas/{id}/disponibilidad", opts.CanchasHandlers.GetDisponibilidad)
+			r.With(rateLimitMiddleware(opts.DisponibilidadLimiter)).Get("/canchas/{id}/disponibilidad", opts.CanchasHandlers.GetDisponibilidad)
 		}
 
 		if opts.ReservaHandlers != nil {
 			r.Route("/reservas", func(r chi.Router) {
-				r.Get("/fechas-ocupadas", opts.ReservaHandlers.FechasOcupadas)
-				r.Get("/disponibilidad", opts.ReservaHandlers.Disponibilidad)
+			r.With(rateLimitMiddleware(opts.DisponibilidadLimiter)).Get("/fechas-ocupadas", opts.ReservaHandlers.FechasOcupadas)
+			r.With(rateLimitMiddleware(opts.DisponibilidadLimiter)).Get("/disponibilidad", opts.ReservaHandlers.Disponibilidad)
 				r.Get("/calcular-reembolso", opts.ReservaHandlers.CalcularReembolso)
 
 				r.Group(func(r chi.Router) {
@@ -558,4 +563,33 @@ func NewUbicacionesLimiter() *handlermw.IPRateLimiter {
 
 func NewAuthLimiter() *handlermw.IPRateLimiter {
 	return handlermw.NewIPRateLimiter(rate.Every(12*time.Second), 5)
+}
+
+func NewWebhookLimiter() *handlermw.IPRateLimiter {
+	return handlermw.NewIPRateLimiter(rate.Every(6*time.Second), 10)
+}
+
+func NewSearchLimiter() *handlermw.IPRateLimiter {
+	return handlermw.NewIPRateLimiter(rate.Every(2*time.Second), 30)
+}
+
+func NewDisponibilidadLimiter() *handlermw.IPRateLimiter {
+	return handlermw.NewIPRateLimiter(rate.Every(2*time.Second), 30)
+}
+
+func cronSecretMiddleware(secret string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if secret == "" {
+				handlermw.ErrorJSON(w, http.StatusInternalServerError, "MISCONFIGURED", "CRON_SECRET not set")
+				return
+			}
+			headerSecret := r.Header.Get("X-Cron-Secret")
+			if subtle.ConstantTimeCompare([]byte(headerSecret), []byte(secret)) != 1 {
+				handlermw.ErrorJSON(w, http.StatusUnauthorized, "UNAUTHORIZED", "Unauthorized")
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
 }

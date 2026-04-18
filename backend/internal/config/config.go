@@ -19,6 +19,7 @@ type Config struct {
 	RedisPassword               string
 	CryptapiWalletAddress       string
 	CryptapiCallbackSecret      string
+	CronSecret                  string
 	MetamapWebhookSecret        string
 	ComisionPlataformaHuesped   float64
 	ComisionPlataformaAnfitrion float64
@@ -37,6 +38,7 @@ func Load() (*Config, error) {
 		RedisPassword:               os.Getenv("REDIS_PASSWORD"),
 		CryptapiWalletAddress:       os.Getenv("CRYPTAPI_WALLET_ADDRESS"),
 		CryptapiCallbackSecret:      os.Getenv("CRYPTAPI_CALLBACK_SECRET"),
+		CronSecret:                  os.Getenv("CRON_SECRET"),
 		MetamapWebhookSecret:        os.Getenv("METAMAP_WEBHOOK_SECRET"),
 		ComisionPlataformaHuesped:   getEnvFloat("COMISION_PLATAFORMA_HUESPED", 0.0975),
 		ComisionPlataformaAnfitrion: getEnvFloat("COMISION_PLATAFORMA_ANFITRION", 0.0525),
