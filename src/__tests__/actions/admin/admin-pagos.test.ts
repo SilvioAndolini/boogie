@@ -9,7 +9,7 @@ vi.mock('@/lib/auth', () => ({
 }))
 
 vi.mock('next/cache', () => ({
-  unstable_cache: (fn: any) => fn,
+  unstable_cache: (fn: (...args: unknown[]) => unknown) => fn,
   revalidateTag: vi.fn(),
   revalidatePath: vi.fn(),
 }))
