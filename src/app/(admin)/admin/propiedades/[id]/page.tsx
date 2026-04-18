@@ -536,8 +536,7 @@ export default function AdminPropiedadDetallePage() {
                           <YAxis tick={{ fontSize: 11, fill: '#9E9892' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${v}`} />
                           <Tooltip
                             contentStyle={{ borderRadius: 12, border: '1px solid #E8E4DF', fontSize: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            formatter={(value: any, name: any) => [formatMoney(Number(value)), name === 'ingresos' ? 'Ingresos' : 'Comisiones']}
+                            formatter={(value: string | number | Array<string | number> | undefined, name: string) => [formatMoney(Number(value ?? 0)), name === 'ingresos' ? 'Ingresos' : 'Comisiones']}
                           />
                           <Area type="monotone" dataKey="ingresos" stroke="#1B4332" strokeWidth={2.5} fill="url(#gradRendIngresos)" />
                           <Area type="monotone" dataKey="comisiones" stroke="#F4A261" strokeWidth={2} fill="url(#gradRendComisiones)" />
