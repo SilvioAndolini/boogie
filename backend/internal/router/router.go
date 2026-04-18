@@ -251,7 +251,6 @@ func New(opts *RouterOpts) http.Handler {
 	}).Handler)
 
 	r.Get("/healthz", opts.Handlers.Healthz)
-	r.Get("/healthz/sentry-test", handlermw.SentryTest)
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.With(rateLimitMiddleware(opts.ExchangeLimiter)).Get("/exchange-rate", opts.Handlers.Exchange)
