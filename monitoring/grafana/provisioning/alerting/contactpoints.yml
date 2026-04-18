@@ -12,5 +12,5 @@ contactPoints:
         type: telegram
         settings:
           bot_token: 8626940353:AAFpMY7-7ikTtOHXg2psilXQ6MFixrs_3oA
-          chatid: 6085825911
+          chatid: "6085825911"
         disableResolveMessage: false
