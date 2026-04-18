@@ -12,6 +12,7 @@ import (
 
 	"github.com/boogie/backend/internal/domain/enums"
 	"github.com/boogie/backend/internal/domain/models"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -339,11 +340,19 @@ func (r *PropiedadesRepo) GetByID(ctx context.Context, id string) (*PropiedadDet
 	if err != nil {
 		return nil, fmt.Errorf("get propietario: %w", err)
 	}
-	amenidades, err := r.GetAmenidades(ctx, p.ID)
+
+	var batch pgx.Batch
+	batch.Queue(`SELECT id, nombre, apellido, avatar_url, icono, categoria FROM amenidades a JOIN propiedad_amenidades pa ON pa.amenidad_id = a.id WHERE pa.propiedad_id = $1`, p.ID)
+	batch.Queue(`SELECT id, propiedad_id, url, thumbnail_url, alt, categoria, orden FROM imagenes_propiedad WHERE propiedad_id = $1 ORDER BY orden`, p.ID)
+
+	br := r.pool.SendBatch(ctx, &batch)
+	defer br.Close()
+
+	amenidades, err := r.scanAmenidades(ctx, br)
 	if err != nil {
 		return nil, fmt.Errorf("get amenidades: %w", err)
 	}
-	imagenes, err := r.getImagenes(ctx, p.ID)
+	imagenes, err := r.scanImagenes(ctx, br)
 	if err != nil {
 		return nil, fmt.Errorf("get imagenes: %w", err)
 	}
@@ -509,6 +518,42 @@ func (r *PropiedadesRepo) getImagenes(ctx context.Context, propiedadID string) (
 		SELECT id, propiedad_id, url, thumbnail_url, alt, categoria, orden
 		FROM imagenes_propiedad WHERE propiedad_id = $1 ORDER BY orden
 	`, propiedadID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []models.ImagenPropiedad
+	for rows.Next() {
+		var img models.ImagenPropiedad
+		if err := rows.Scan(&img.ID, &img.PropiedadID, &img.URL, &img.ThumbnailURL, &img.Alt, &img.Categoria, &img.Orden); err != nil {
+			return nil, err
+		}
+		results = append(results, img)
+	}
+	return results, nil
+}
+
+func (r *PropiedadesRepo) scanAmenidades(_ context.Context, br pgx.BatchResults) ([]AmenidadInfo, error) {
+	rows, err := br.Query()
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []AmenidadInfo
+	for rows.Next() {
+		var a AmenidadInfo
+		if err := rows.Scan(&a.ID, &a.Nombre, &a.Icono, &a.Categoria); err != nil {
+			return nil, err
+		}
+		results = append(results, a)
+	}
+	return results, nil
+}
+
+func (r *PropiedadesRepo) scanImagenes(_ context.Context, br pgx.BatchResults) ([]models.ImagenPropiedad, error) {
+	rows, err := br.Query()
 	if err != nil {
 		return nil, err
 	}

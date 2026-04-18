@@ -117,7 +117,7 @@ func (s *PropiedadesService) UpdateEstado(ctx context.Context, id, estado, propi
 	if err := s.repo.UpdateEstadoWithOwner(ctx, id, estado, propietarioID); err != nil {
 		return err
 	}
-	s.invalidatePropiedad(ctx, id)
+	s.invalidatePropiedadAndSearch(ctx, id)
 	return nil
 }
 
@@ -125,13 +125,17 @@ func (s *PropiedadesService) Delete(ctx context.Context, id, propietarioID strin
 	if err := s.repo.DeleteWithOwner(ctx, id, propietarioID); err != nil {
 		return err
 	}
-	s.invalidatePropiedad(ctx, id)
+	s.invalidatePropiedadAndSearch(ctx, id)
 	return nil
 }
 
 func (s *PropiedadesService) invalidatePropiedad(ctx context.Context, id string) {
 	s.cache.Delete(ctx, "propiedades:detail:"+id)
 	s.cache.Delete(ctx, "propiedades:lookup:"+id)
+}
+
+func (s *PropiedadesService) invalidatePropiedadAndSearch(ctx context.Context, id string) {
+	s.invalidatePropiedad(ctx, id)
 	s.cache.DeleteByPrefix(ctx, "propiedades:search:")
 	s.cache.DeleteByPrefix(ctx, "propiedades:slug:")
 }
@@ -334,7 +338,7 @@ func (s *PropiedadesService) Actualizar(ctx context.Context, userID, propiedadID
 		return nil, fmt.Errorf("error al actualizar propiedad: %w", err)
 	}
 
-	s.invalidatePropiedad(ctx, propiedadID)
+	s.invalidatePropiedadAndSearch(ctx, propiedadID)
 
 	detalle, err := s.repo.GetByID(ctx, propiedadID)
 	if err != nil {
