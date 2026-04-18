@@ -508,7 +508,7 @@ export default function BoogieDashboardClient({ data }: { data: DashboardData })
                           <CartesianGrid strokeDasharray="3 3" stroke="#F4F1EC" />
                           <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#9E9892' }} axisLine={{ stroke: '#E8E4DF' }} tickLine={false} />
                           <YAxis tick={{ fontSize: 11, fill: '#9E9892' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${v}`} />
-                          <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #E8E4DF', fontSize: 12 }} formatter={(value: string | number | Array<string | number> | undefined, name: string) => [formatMoney(Number(value ?? 0)), name === 'ingresos' ? 'Ingresos' : 'Gastos']} />
+                          <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #E8E4DF', fontSize: 12 }} formatter={((value: ValueType, name: NameType) => [formatMoney(Number(value ?? 0)), name === 'ingresos' ? 'Ingresos' : 'Gastos']) as Formatter<ValueType, NameType>} />
                           <Bar dataKey="ingresos" fill="#10B981" radius={[4, 4, 0, 0]} name="ingresos" />
                           <Bar dataKey="gastos" fill="#EF4444" radius={[4, 4, 0, 0]} name="gastos" />
                         </BarChart>
