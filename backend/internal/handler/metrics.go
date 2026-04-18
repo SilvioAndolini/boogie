@@ -2,10 +2,16 @@ package handler
 
 import (
 	"net/http"
+	"regexp"
 	"strconv"
 	"time"
 
 	"github.com/boogie/backend/internal/metrics"
+)
+
+var (
+	reUUID  = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
+	reNumID = regexp.MustCompile(`/\d+`)
 )
 
 type statusRecorder struct {
@@ -39,8 +45,10 @@ func MetricsMiddleware(next http.Handler) http.Handler {
 }
 
 func normalizePath(path string) string {
-	if len(path) > 32 {
-		return path[:32]
+	path = reUUID.ReplaceAllString(path, ":id")
+	path = reNumID.ReplaceAllString(path, "/:id")
+	if len(path) > 64 {
+		return path[:64]
 	}
 	return path
 }

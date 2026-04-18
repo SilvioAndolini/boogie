@@ -22,6 +22,8 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+var commitSHA = "dev"
+
 func main() {
 	slog.Info("starting boogie-backend")
 
@@ -31,7 +33,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	boogiesentry.Init(cfg.SentryDSN, "production")
+	boogiesentry.Init(cfg.SentryDSN, "production", commitSHA)
 	defer boogiesentry.Flush()
 
 	verifier := auth.NewSupabaseVerifier(cfg.SupabaseURL)

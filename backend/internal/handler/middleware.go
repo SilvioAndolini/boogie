@@ -6,6 +6,7 @@ import (
 	"runtime/debug"
 	"time"
 
+	"github.com/go-chi/chi/v5/middleware"
 	boogiesentry "github.com/boogie/backend/internal/sentry"
 	sentrysdk "github.com/getsentry/sentry-go"
 )
@@ -41,6 +42,7 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(ww, r)
 
 		slog.Info("request",
+			"request_id", middleware.GetReqID(r.Context()),
 			"method", r.Method,
 			"path", r.URL.Path,
 			"status", ww.statusCode,

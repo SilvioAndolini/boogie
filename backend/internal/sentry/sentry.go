@@ -7,7 +7,7 @@ import (
 	sentrysdk "github.com/getsentry/sentry-go"
 )
 
-func Init(dsn, env string) {
+func Init(dsn, env, release string) {
 	if dsn == "" {
 		slog.Info("[sentry] DSN not set, skipping initialization")
 		return
@@ -16,7 +16,7 @@ func Init(dsn, env string) {
 	err := sentrysdk.Init(sentrysdk.ClientOptions{
 		Dsn:              dsn,
 		Environment:      env,
-		Release:          "boogie-backend@" + time.Now().Format("2006-01-02"),
+		Release:          "boogie-backend@" + release,
 		TracesSampleRate: 0.1,
 		AttachStacktrace: true,
 	})
