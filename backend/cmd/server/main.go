@@ -424,12 +424,14 @@ func main() {
 		}
 	}()
 
-	go startExpiryWorker(db)
+	workerCtx, workerCancel := context.WithCancel(context.Background())
+	go startExpiryWorker(workerCtx, db)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
+	workerCancel()
 	slog.Info("shutting down server...")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -467,24 +469,29 @@ func safeHandlerMetamap(h *handler.MetamapHandler) http.HandlerFunc {
 	return h.Webhook
 }
 
-func startExpiryWorker(pool *pgxpool.Pool) {
+func startExpiryWorker(ctx context.Context, pool *pgxpool.Pool) {
 	if pool == nil {
 		return
 	}
 	ticker := time.NewTicker(1 * time.Minute)
 	defer ticker.Stop()
-	for range ticker.C {
-		tag, err := pool.Exec(context.Background(), `
-			UPDATE reservas SET estado = 'ANULADA'
-			WHERE estado = 'PENDIENTE_PAGO'
-			  AND fecha_creacion < NOW() - INTERVAL '30 minutes'
-		`)
-		if err != nil {
-			slog.Error("[expiry-worker] error", "error", err)
-			continue
-		}
-		if tag.RowsAffected() > 0 {
-			slog.Info("[expiry-worker] reservas anuladas", "count", tag.RowsAffected())
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			tag, err := pool.Exec(ctx, `
+				UPDATE reservas SET estado = 'ANULADA'
+				WHERE estado = 'PENDIENTE_PAGO'
+				  AND fecha_creacion < NOW() - INTERVAL '30 minutes'
+			`)
+			if err != nil {
+				slog.Error("[expiry-worker] error", "error", err)
+				continue
+			}
+			if tag.RowsAffected() > 0 {
+				slog.Info("[expiry-worker] reservas anuladas", "count", tag.RowsAffected())
+			}
 		}
 	}
 }

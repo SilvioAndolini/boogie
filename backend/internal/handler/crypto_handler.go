@@ -286,13 +286,7 @@ func (h *CryptoHandler) Verificar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var estado, txHash string
-	var confirmations int
-	err := h.cryptoRepo.Pool().QueryRow(r.Context(), `
-		SELECT estado, COALESCE(crypto_tx_hash,''), COALESCE(crypto_confirmations,0)
-		FROM pagos WHERE reserva_id = $1 AND metodo_pago = 'CRIPTO'
-		ORDER BY fecha_creacion DESC LIMIT 1
-	`, reservaID).Scan(&estado, &txHash, &confirmations)
+	estado, txHash, _, err := h.cryptoRepo.GetCryptoPagoStatus(r.Context(), reservaID)
 	if err != nil {
 		ErrorJSON(w, http.StatusNotFound, "PAGO_NOT_FOUND", "Pago no encontrado")
 		return
@@ -320,10 +314,7 @@ func (h *CryptoHandler) SolicitarVerificacionManual(w http.ResponseWriter, r *ht
 		return
 	}
 
-	_, err := h.cryptoRepo.Pool().Exec(r.Context(), `
-		UPDATE pagos SET estado = 'VERIFICACION_MANUAL', referencia = 'Verificacion manual solicitada'
-		WHERE reserva_id = $1 AND metodo_pago = 'CRIPTO'
-	`, req.ReservaID)
+	err := h.cryptoRepo.SolicitarVerificacionManual(r.Context(), req.ReservaID)
 	if err != nil {
 		slog.Error("[crypto/manual] update error", "error", err)
 		ErrorJSON(w, http.StatusInternalServerError, "DB_ERROR", "Error al solicitar verificacion")

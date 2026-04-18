@@ -542,32 +542,6 @@ func handleBusinessError(w http.ResponseWriter, err error, logPrefix, userID, pr
 	ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Error al procesar reserva")
 }
 
-// isBusinessError provides backward-compatible error classification for
-// errors that haven't been migrated to typed BusinessError yet.
-func isBusinessError(err error) bool {
-	if err == nil {
-		return false
-	}
-	var bizErr *bizerrors.BusinessError
-	if errors.As(err, &bizErr) {
-		return true
-	}
-	msg := strings.ToLower(err.Error())
-	businessSubstrings := []string{
-		"no encontrada", "no publicada", "tu propia propiedad",
-		"capacidad maxima", "estancia minima", "estancia maxima",
-		"pasado", "posterior", "entre 1 y 365",
-		"disponib", "bloqueada", "permisos", "no se puede",
-		"no esta en estado", "solo el huesped",
-	}
-	for _, sub := range businessSubstrings {
-		if strings.Contains(msg, sub) {
-			return true
-		}
-	}
-	return false
-}
-
 func (h *ReservaHandler) AutoConfirmarExpiradas(w http.ResponseWriter, r *http.Request) {
 	confirmadas, err := h.svc.AutoConfirmarExpiradas(r.Context())
 	if err != nil {

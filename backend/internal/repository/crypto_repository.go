@@ -163,6 +163,23 @@ func (r *CryptoRepo) ExpirarCryptoAbandonados(ctx context.Context) (int, error) 
 	return n, nil
 }
 
+func (r *CryptoRepo) GetCryptoPagoStatus(ctx context.Context, reservaID string) (estado, txHash string, confirmations int, err error) {
+	err = r.pool.QueryRow(ctx, `
+		SELECT estado, COALESCE(crypto_tx_hash,''), COALESCE(crypto_confirmations,0)
+		FROM pagos WHERE reserva_id = $1 AND metodo_pago = 'CRIPTO'
+		ORDER BY fecha_creacion DESC LIMIT 1
+	`, reservaID).Scan(&estado, &txHash, &confirmations)
+	return
+}
+
+func (r *CryptoRepo) SolicitarVerificacionManual(ctx context.Context, reservaID string) error {
+	_, err := r.pool.Exec(ctx, `
+		UPDATE pagos SET estado = 'VERIFICACION_MANUAL', referencia = 'Verificacion manual solicitada'
+		WHERE reserva_id = $1 AND metodo_pago = 'CRIPTO'
+	`, reservaID)
+	return err
+}
+
 func (r *CryptoRepo) CancelarCryptoFallidaWithDB(ctx context.Context, db DBTX, reservaID, userID string) error {
 	_, err := db.Exec(ctx, `
 		UPDATE pagos SET estado = 'ANULADA', referencia = 'Crypto - verificacion fallida, cancelada por usuario'

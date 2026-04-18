@@ -99,32 +99,3 @@ func TestDisponibilidad_MissingParams(t *testing.T) {
 		t.Errorf("expected 400, got %d", resp.StatusCode)
 	}
 }
-
-func TestIsBusinessError(t *testing.T) {
-	tests := []struct {
-		input string
-		want  bool
-	}{
-		{"la propiedad no encontrada", true},
-		{"no puedes reservar tu propia propiedad", true},
-		{"las fechas seleccionadas ya no estan disponibles", true},
-		{"database connection error", false},
-		{"no tienes permisos", true},
-		{"internal server error", false},
-	}
-
-	for _, tt := range tests {
-		got := isBusinessError(&testError{msg: tt.input})
-		if got != tt.want {
-			t.Errorf("isBusinessError(%q) = %v, want %v", tt.input, got, tt.want)
-		}
-	}
-}
-
-type testError struct {
-	msg string
-}
-
-func (e *testError) Error() string {
-	return e.msg
-}
