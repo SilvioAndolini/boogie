@@ -26,6 +26,7 @@ describe('getUsuarioAutenticado', () => {
     const mockUser = { id: 'user-1', email: 'test@test.com' }
     vi.mocked(createClient).mockResolvedValue({
       auth: { getUser: vi.fn().mockResolvedValue({ data: { user: mockUser } }) },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any)
 
     const user = await getUsuarioAutenticado()
@@ -35,6 +36,7 @@ describe('getUsuarioAutenticado', () => {
   it('retorna null cuando no esta autenticado', async () => {
     vi.mocked(createClient).mockResolvedValue({
       auth: { getUser: vi.fn().mockResolvedValue({ data: { user: null } }) },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any)
 
     const user = await getUsuarioAutenticado()

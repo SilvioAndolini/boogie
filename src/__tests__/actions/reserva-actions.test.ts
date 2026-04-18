@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: vi.fn(),
@@ -9,7 +9,7 @@ vi.mock('@/lib/auth', () => ({
 }))
 
 vi.mock('next/cache', () => ({
-  unstable_cache: (fn: any) => fn,
+  unstable_cache: (fn: (...args: unknown[]) => unknown) => fn,
   revalidateTag: vi.fn(),
   revalidatePath: vi.fn(),
 }))
@@ -17,8 +17,9 @@ vi.mock('next/cache', () => ({
 import { getUsuarioAutenticado } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-function mockSupabaseChain(overrides: Record<string, any> = {}) {
-  const chain: any = {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function mockSupabaseChain(overrides: Record<string, (...args: unknown[]) => unknown> = {}) {
+  const chain: Record<string, (...args: unknown[]) => unknown> = {
     eq: vi.fn(() => chain),
     neq: vi.fn(() => chain),
     in: vi.fn(() => chain),

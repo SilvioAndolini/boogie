@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: vi.fn() }))
 vi.mock('@/lib/auth', () => ({ getUsuarioAutenticado: vi.fn() }))
-vi.mock('next/cache', () => ({ unstable_cache: (fn: any) => fn, revalidateTag: vi.fn(), revalidatePath: vi.fn() }))
+vi.mock('next/cache', () => ({ unstable_cache: (fn: (...args: unknown[]) => unknown) => fn, revalidateTag: vi.fn(), revalidatePath: vi.fn() }))
 
 describe('admin-reservas.actions - estado machine admin', () => {
   const acciones: Record<string, { from: string[]; to: string }> = {

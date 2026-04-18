@@ -33,8 +33,8 @@ export async function getBoogieDashboard(propiedadId: string) {
       gastosByMonth: (data.gastosByMonth as Record<string, number>) || {},
       ocupadas: (data.ocupadas as { fecha_entrada: string; fecha_salida: string; estado: string; huesped?: string }[]) || [],
     }
-  } catch (err: any) {
-    return { error: err.message || 'Boogie no encontrado' }
+  } catch (err: unknown) {
+    return { error: err instanceof Error ? err.message : 'Boogie no encontrado' }
   }
 }
 
@@ -59,8 +59,8 @@ export async function crearGastoMantenimiento(formData: FormData) {
     })
     revalidatePath(`/dashboard/mis-propiedades/${propiedadId}`)
     return { exito: true }
-  } catch (err: any) {
-    return { error: err.message || 'Error al crear el gasto' }
+  } catch (err: unknown) {
+    return { error: err instanceof Error ? err.message : 'Error al crear el gasto' }
   }
 }
 
@@ -72,7 +72,7 @@ export async function eliminarGastoMantenimiento(gastoId: string, propiedadId: s
     await goDelete(`/api/v1/propiedades/${propiedadId}/gastos/${gastoId}`)
     revalidatePath(`/dashboard/mis-propiedades/${propiedadId}`)
     return { exito: true }
-  } catch (err: any) {
-    return { error: err.message || 'Error al eliminar el gasto' }
+  } catch (err: unknown) {
+    return { error: err instanceof Error ? err.message : 'Error al eliminar el gasto' }
   }
 }

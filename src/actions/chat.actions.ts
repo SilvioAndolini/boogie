@@ -43,8 +43,8 @@ export async function getConversacionInfo(
         ? { id: info.propiedad_id, titulo: info.propiedad_titulo ?? '' }
         : null,
     }
-  } catch (err: any) {
-    return { exito: false, error: err.message || 'Conversacion no encontrada' }
+  } catch (err: unknown) {
+    return { exito: false, error: err instanceof Error ? err.message : 'Conversacion no encontrada' }
   }
 }
 
@@ -171,8 +171,8 @@ export async function subirImagenChat(formData: FormData): Promise<{ exito: bool
   try {
     const result = await goPost<{ ok: boolean; url: string }>('/api/v1/chat/imagen', formData)
     return { exito: true, url: result.url }
-  } catch (err: any) {
-    return { exito: false, error: err.message || 'Error al subir imagen' }
+  } catch (err: unknown) {
+    return { exito: false, error: err instanceof Error ? err.message : 'Error al subir imagen' }
   }
 }
 
@@ -195,8 +195,8 @@ export async function getMensajesRapidos(): Promise<{ exito: boolean; datos?: Me
   try {
     const datos = await goGet<MensajeRapido[]>('/api/v1/chat/mensajes-rapidos')
     return { exito: true, datos: datos ?? [] }
-  } catch (err: any) {
-    return { exito: false, error: err.message || 'Error al obtener mensajes rapidos' }
+  } catch (err: unknown) {
+    return { exito: false, error: err instanceof Error ? err.message : 'Error al obtener mensajes rapidos' }
   }
 }
 
@@ -220,8 +220,8 @@ export async function actualizarMensajeRapido(
     await goPut(`/api/v1/chat/mensajes-rapidos/${id}`, { contenido })
     revalidatePath('/dashboard/mensajes')
     return { exito: true }
-  } catch (err: any) {
-    return { exito: false, error: err.message || 'Error al actualizar' }
+  } catch (err: unknown) {
+    return { exito: false, error: err instanceof Error ? err.message : 'Error al actualizar' }
   }
 }
 
@@ -235,8 +235,8 @@ export async function crearMensajeRapido(
   try {
     const datos = await goPost<MensajeRapido>('/api/v1/chat/mensajes-rapidos', { contenido, tipo })
     return { exito: true, datos }
-  } catch (err: any) {
-    return { exito: false, error: err.message || 'Error al crear' }
+  } catch (err: unknown) {
+    return { exito: false, error: err instanceof Error ? err.message : 'Error al crear' }
   }
 }
 
@@ -248,7 +248,7 @@ export async function eliminarMensajeRapido(id: string): Promise<{ exito: boolea
     await goDelete(`/api/v1/chat/mensajes-rapidos/${id}`)
     revalidatePath('/dashboard/mensajes')
     return { exito: true }
-  } catch (err: any) {
-    return { exito: false, error: err.message || 'Error al eliminar' }
+  } catch (err: unknown) {
+    return { exito: false, error: err instanceof Error ? err.message : 'Error al eliminar' }
   }
 }
