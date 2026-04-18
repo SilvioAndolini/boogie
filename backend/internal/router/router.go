@@ -238,6 +238,7 @@ func New(opts *RouterOpts) http.Handler {
 
 	r.Use(chimw.RequestID)
 	r.Use(chimw.RealIP)
+	r.Use(handlermw.SentryMiddleware)
 	r.Use(handlermw.LoggingMiddleware)
 	r.Use(handlermw.RecoveryMiddleware)
 	r.Use(cors.New(cors.Options{
@@ -250,6 +251,7 @@ func New(opts *RouterOpts) http.Handler {
 	}).Handler)
 
 	r.Get("/healthz", opts.Handlers.Healthz)
+	r.Get("/healthz/sentry-test", handlermw.SentryTest)
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.With(rateLimitMiddleware(opts.ExchangeLimiter)).Get("/exchange-rate", opts.Handlers.Exchange)

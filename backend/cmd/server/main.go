@@ -15,6 +15,7 @@ import (
 	"github.com/boogie/backend/internal/handler"
 	"github.com/boogie/backend/internal/repository"
 	"github.com/boogie/backend/internal/router"
+	boogiesentry "github.com/boogie/backend/internal/sentry"
 	"github.com/boogie/backend/internal/service"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -27,6 +28,9 @@ func main() {
 		slog.Error("config error", "error", err)
 		os.Exit(1)
 	}
+
+	boogiesentry.Init(cfg.SentryDSN, "production")
+	defer boogiesentry.Flush()
 
 	verifier := auth.NewSupabaseVerifier(cfg.SupabaseURL)
 

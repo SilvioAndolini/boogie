@@ -1,16 +1,23 @@
 'use client'
 
+import * as Sentry from '@sentry/nextjs'
 import { motion } from 'framer-motion'
 import { AlertTriangle, RotateCcw, Home } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
+import { useEffect } from 'react'
 
 export default function Error({
+  error,
   reset,
 }: {
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  useEffect(() => {
+    Sentry.captureException(error)
+  }, [error])
+
   return (
     <div className="relative flex min-h-[60vh] flex-col items-center justify-center gap-6 overflow-hidden px-4 text-center">
       {/* Gradient background glow */}

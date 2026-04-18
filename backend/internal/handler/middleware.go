@@ -5,6 +5,9 @@ import (
 	"net/http"
 	"runtime/debug"
 	"time"
+
+	boogiesentry "github.com/boogie/backend/internal/sentry"
+	sentrysdk "github.com/getsentry/sentry-go"
 )
 
 func RecoveryMiddleware(next http.Handler) http.Handler {
@@ -17,6 +20,12 @@ func RecoveryMiddleware(next http.Handler) http.Handler {
 					"method", r.Method,
 					"stack", string(debug.Stack()),
 				)
+			sentrysdk.ConfigureScope(func(scope *sentrysdk.Scope) {
+				scope.SetTag("request_path", r.URL.Path)
+				scope.SetTag("request_method", r.Method)
+			})
+				boogiesentry.Recover()
+				boogiesentry.Flush()
 				ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Internal server error")
 			}
 		}()
