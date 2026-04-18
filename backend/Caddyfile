@@ -16,3 +16,16 @@ api.boogierent.com {
 		format json
 	}
 }
+
+grafana.boogierent.com {
+	reverse_proxy grafana:3000
+
+	encode gzip
+
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		-Server
+	}
+}

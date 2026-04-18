@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/cors"
 	"golang.org/x/time/rate"
 
@@ -240,6 +241,7 @@ func New(opts *RouterOpts) http.Handler {
 	r.Use(chimw.RequestID)
 	r.Use(chimw.RealIP)
 	r.Use(handlermw.SentryMiddleware)
+	r.Use(handlermw.MetricsMiddleware)
 	r.Use(handlermw.LoggingMiddleware)
 	r.Use(handlermw.RecoveryMiddleware)
 	r.Use(cors.New(cors.Options{
@@ -252,6 +254,7 @@ func New(opts *RouterOpts) http.Handler {
 	}).Handler)
 
 	r.Get("/healthz", opts.Handlers.Healthz)
+	r.Handle("/metrics", promhttp.Handler())
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.With(rateLimitMiddleware(opts.ExchangeLimiter)).Get("/exchange-rate", opts.Handlers.Exchange)

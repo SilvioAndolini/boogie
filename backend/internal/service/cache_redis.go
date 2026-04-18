@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/boogie/backend/internal/metrics"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -26,12 +27,14 @@ func NewRedisCache(rdb *redis.Client) *RedisCache {
 func (c *RedisCache) GetOrFetch(ctx context.Context, key string, ttl time.Duration, fetch func() (interface{}, error)) (interface{}, error) {
 	raw, err := c.rdb.Get(ctx, key).Result()
 	if err == nil {
+		metrics.CacheHits.Inc()
 		return raw, nil
 	}
 	if err != redis.Nil {
 		slog.Warn("[redis-cache] get error", "key", key, "error", err)
 	}
 
+	metrics.CacheMisses.Inc()
 	val, err := fetch()
 	if err != nil {
 		return nil, err
