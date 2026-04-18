@@ -1,15 +1,64 @@
 services:
-  backend:
+  caddy:
+    image: caddy:2-alpine
+    container_name: boogie-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./backend/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - boogie
+
+  api:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    ports:
-      - "8080:8080"
+    container_name: boogie-backend
+    restart: unless-stopped
     env_file:
       - ./backend/.env
+    expose:
+      - "8080"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/healthz"]
       interval: 30s
       timeout: 3s
       retries: 3
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - boogie
+
+  redis:
+    image: redis:7-alpine
+    container_name: boogie-redis
     restart: unless-stopped
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru --appendonly yes --appendfsync everysec
+    volumes:
+      - redis_data:/data
+    expose:
+      - "6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+    networks:
+      - boogie
+
+volumes:
+  caddy_data:
+  caddy_config:
+  redis_data:
+
+networks:
+  boogie:
+    driver: bridge

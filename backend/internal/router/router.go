@@ -231,6 +231,7 @@ type RouterOpts struct {
 	AppURL               string
 	ExchangeLimiter      *handlermw.IPRateLimiter
 	UbicacionesLimiter   *handlermw.IPRateLimiter
+	AuthLimiter          *handlermw.IPRateLimiter
 }
 
 func New(opts *RouterOpts) http.Handler {
@@ -505,13 +506,23 @@ func New(opts *RouterOpts) http.Handler {
 		}
 
 		if opts.AuthHandlers != nil {
-			r.Post("/auth/login", opts.AuthHandlers.Login)
-			r.Post("/auth/login-admin", opts.AuthHandlers.LoginAdmin)
-			r.Post("/auth/otp/email", opts.AuthHandlers.SendOtpEmail)
-			r.Post("/auth/otp/sms", opts.AuthHandlers.SendOtpSms)
-			r.Post("/auth/otp/verify", opts.AuthHandlers.VerifyOtp)
-			r.Post("/auth/register", opts.AuthHandlers.Register)
-			r.Post("/auth/reset-password", opts.AuthHandlers.ResetPassword)
+			if opts.AuthLimiter != nil {
+				r.With(rateLimitMiddleware(opts.AuthLimiter)).Post("/auth/login", opts.AuthHandlers.Login)
+				r.With(rateLimitMiddleware(opts.AuthLimiter)).Post("/auth/login-admin", opts.AuthHandlers.LoginAdmin)
+				r.With(rateLimitMiddleware(opts.AuthLimiter)).Post("/auth/otp/email", opts.AuthHandlers.SendOtpEmail)
+				r.With(rateLimitMiddleware(opts.AuthLimiter)).Post("/auth/otp/sms", opts.AuthHandlers.SendOtpSms)
+				r.With(rateLimitMiddleware(opts.AuthLimiter)).Post("/auth/otp/verify", opts.AuthHandlers.VerifyOtp)
+				r.With(rateLimitMiddleware(opts.AuthLimiter)).Post("/auth/register", opts.AuthHandlers.Register)
+				r.Post("/auth/reset-password", opts.AuthHandlers.ResetPassword)
+			} else {
+				r.Post("/auth/login", opts.AuthHandlers.Login)
+				r.Post("/auth/login-admin", opts.AuthHandlers.LoginAdmin)
+				r.Post("/auth/otp/email", opts.AuthHandlers.SendOtpEmail)
+				r.Post("/auth/otp/sms", opts.AuthHandlers.SendOtpSms)
+				r.Post("/auth/otp/verify", opts.AuthHandlers.VerifyOtp)
+				r.Post("/auth/register", opts.AuthHandlers.Register)
+				r.Post("/auth/reset-password", opts.AuthHandlers.ResetPassword)
+			}
 			r.Get("/auth/google", opts.AuthHandlers.GoogleOAuthURL)
 			r.Get("/auth/google/callback", opts.AuthHandlers.GoogleCallback)
 
@@ -539,4 +550,8 @@ func NewExchangeLimiter() *handlermw.IPRateLimiter {
 
 func NewUbicacionesLimiter() *handlermw.IPRateLimiter {
 	return handlermw.NewIPRateLimiter(rate.Every(2*time.Second), 30)
+}
+
+func NewAuthLimiter() *handlermw.IPRateLimiter {
+	return handlermw.NewIPRateLimiter(rate.Every(12*time.Second), 5)
 }

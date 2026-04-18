@@ -14,10 +14,12 @@ import (
 	"github.com/boogie/backend/internal/config"
 	"github.com/boogie/backend/internal/handler"
 	"github.com/boogie/backend/internal/repository"
+	appredis "github.com/boogie/backend/internal/redis"
 	"github.com/boogie/backend/internal/router"
 	boogiesentry "github.com/boogie/backend/internal/sentry"
 	"github.com/boogie/backend/internal/service"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 )
 
 func main() {
@@ -33,6 +35,17 @@ func main() {
 	defer boogiesentry.Flush()
 
 	verifier := auth.NewSupabaseVerifier(cfg.SupabaseURL)
+
+	var rdb *redis.Client
+	if cfg.RedisAddr != "" {
+		rdb, err = appredis.NewClient(context.Background(), appredis.Config{
+			Addr:     cfg.RedisAddr,
+			Password: cfg.RedisPassword,
+		})
+		if err != nil {
+			slog.Warn("[redis] connection failed, caching disabled", "error", err)
+		}
+	}
 
 	db, err := repository.NewPool(context.Background(), cfg.DatabaseURL)
 	if err != nil {
@@ -391,6 +404,7 @@ func main() {
 			AppURL:               cfg.AppURL,
 			ExchangeLimiter:      router.NewExchangeLimiter(),
 			UbicacionesLimiter:   router.NewUbicacionesLimiter(),
+			AuthLimiter:          router.NewAuthLimiter(),
 		}),
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
@@ -421,6 +435,10 @@ func main() {
 
 	if db != nil {
 		db.Close()
+	}
+
+	if rdb != nil {
+		rdb.Close()
 	}
 
 	slog.Info("server exited")

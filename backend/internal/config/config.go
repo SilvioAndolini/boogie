@@ -15,6 +15,8 @@ type Config struct {
 	SupabaseSecretKey           string
 	DatabaseURL                 string
 	SentryDSN                   string
+	RedisAddr                   string
+	RedisPassword               string
 	CryptapiWalletAddress       string
 	CryptapiCallbackSecret      string
 	MetamapWebhookSecret        string
@@ -31,6 +33,8 @@ func Load() (*Config, error) {
 		SupabaseSecretKey:           os.Getenv("SUPABASE_SECRET_KEY"),
 		DatabaseURL:                 os.Getenv("DATABASE_URL"),
 		SentryDSN:                   os.Getenv("SENTRY_DSN"),
+		RedisAddr:                   getEnv("REDIS_ADDR", ""),
+		RedisPassword:               os.Getenv("REDIS_PASSWORD"),
 		CryptapiWalletAddress:       os.Getenv("CRYPTAPI_WALLET_ADDRESS"),
 		CryptapiCallbackSecret:      os.Getenv("CRYPTAPI_CALLBACK_SECRET"),
 		MetamapWebhookSecret:        os.Getenv("METAMAP_WEBHOOK_SECRET"),

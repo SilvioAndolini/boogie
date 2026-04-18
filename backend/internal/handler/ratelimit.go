@@ -4,22 +4,31 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"golang.org/x/time/rate"
 )
 
 type IPRateLimiter struct {
-	ips     map[string]*rate.Limiter
-	mu      sync.RWMutex
-	rate    rate.Limit
-	burst   int
+	ips   map[string]*rate.Limiter
+	mu    sync.RWMutex
+	rate  rate.Limit
+	burst int
 }
 
 func NewIPRateLimiter(r rate.Limit, burst int) *IPRateLimiter {
-	return &IPRateLimiter{
+	l := &IPRateLimiter{
 		ips:   make(map[string]*rate.Limiter),
 		rate:  r,
 		burst: burst,
+	}
+	go l.cleanupLoop()
+	return l
+}
+
+func (l *IPRateLimiter) cleanupLoop() {
+	for range time.NewTicker(10 * time.Minute).C {
+		l.Cleanup()
 	}
 }
 

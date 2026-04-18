@@ -1,7 +1,18 @@
-api.boogie.com.ve {
-    reverse_proxy localhost:8080
-}
+api.boogierent.com {
+	reverse_proxy api:8080
 
-www.boogie.com.ve {
-    redir https://boogie.com.ve{uri}
+	encode gzip
+
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		-Server
+	}
+
+	log {
+		output stdout
+		format json
+	}
 }
