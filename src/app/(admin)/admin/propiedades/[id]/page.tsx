@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, Suspense, lazy, startTransition } from 'react'
+import type { ValueType, NameType, Formatter } from 'recharts/types/component/DefaultTooltipContent'
 import { useParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -536,7 +537,7 @@ export default function AdminPropiedadDetallePage() {
                           <YAxis tick={{ fontSize: 11, fill: '#9E9892' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${v}`} />
                           <Tooltip
                             contentStyle={{ borderRadius: 12, border: '1px solid #E8E4DF', fontSize: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
-                            formatter={(value: string | number | Array<string | number> | undefined, name: string) => [formatMoney(Number(value ?? 0)), name === 'ingresos' ? 'Ingresos' : 'Comisiones']}
+                            formatter={((value: ValueType, name: NameType) => [formatMoney(Number(value ?? 0)), name === 'ingresos' ? 'Ingresos' : 'Comisiones']) as Formatter<ValueType, NameType>}
                           />
                           <Area type="monotone" dataKey="ingresos" stroke="#1B4332" strokeWidth={2.5} fill="url(#gradRendIngresos)" />
                           <Area type="monotone" dataKey="comisiones" stroke="#F4A261" strokeWidth={2} fill="url(#gradRendComisiones)" />

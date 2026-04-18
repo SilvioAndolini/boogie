@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, startTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import {
@@ -12,6 +12,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
 import { toast } from 'sonner'
+import type { ValueType, NameType, Formatter } from 'recharts/types/component/DefaultTooltipContent'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -305,7 +306,7 @@ export default function BoogieDashboardClient({ data }: { data: DashboardData })
                         <YAxis tick={{ fontSize: 11, fill: '#9E9892' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${v}`} />
                         <Tooltip
                           contentStyle={{ borderRadius: 12, border: '1px solid #E8E4DF', fontSize: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
-                          formatter={(value: string | number | Array<string | number> | undefined, name: string) => [formatMoney(Number(value ?? 0)), name === 'ingresos' ? 'Ingresos' : 'Gastos']}
+                          formatter={((value: ValueType, name: NameType) => [formatMoney(Number(value ?? 0)), name === 'ingresos' ? 'Ingresos' : 'Gastos']) as Formatter<ValueType, NameType>}
                         />
                         <Area type="monotone" dataKey="ingresos" stroke="#10B981" strokeWidth={2.5} fill="url(#gradIngresos)" />
                         <Area type="monotone" dataKey="gastos" stroke="#EF4444" strokeWidth={2.5} fill="url(#gradGastos)" />
@@ -329,7 +330,7 @@ export default function BoogieDashboardClient({ data }: { data: DashboardData })
                         <YAxis tick={{ fontSize: 11, fill: '#9E9892' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${v}`} />
                         <Tooltip
                           contentStyle={{ borderRadius: 12, border: '1px solid #E8E4DF', fontSize: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
-                          formatter={(value: string | number | Array<string | number> | undefined) => [formatMoney(Number(value ?? 0)), 'Balance']}
+                          formatter={((value: ValueType) => [formatMoney(Number(value ?? 0)), 'Balance']) as Formatter<ValueType, NameType>}
                         />
                         <Bar dataKey="balance" radius={[6, 6, 0, 0]} fill="#1B4332" />
                       </BarChart>
