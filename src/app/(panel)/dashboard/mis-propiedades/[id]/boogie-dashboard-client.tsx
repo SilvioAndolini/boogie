@@ -305,8 +305,7 @@ export default function BoogieDashboardClient({ data }: { data: DashboardData })
                         <YAxis tick={{ fontSize: 11, fill: '#9E9892' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${v}`} />
                         <Tooltip
                           contentStyle={{ borderRadius: 12, border: '1px solid #E8E4DF', fontSize: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-formatter={(value: string | number | Array<string | number>, name: string) => [formatMoney(Number(value)), name === 'ingresos' ? 'Ingresos' : 'Gastos']}
+                          formatter={(value: string | number | Array<string | number>, name: string) => [formatMoney(Number(value)), name === 'ingresos' ? 'Ingresos' : 'Gastos']}
                         />
                         <Area type="monotone" dataKey="ingresos" stroke="#10B981" strokeWidth={2.5} fill="url(#gradIngresos)" />
                         <Area type="monotone" dataKey="gastos" stroke="#EF4444" strokeWidth={2.5} fill="url(#gradGastos)" />
@@ -330,7 +329,7 @@ formatter={(value: string | number | Array<string | number>, name: string) => [f
                         <YAxis tick={{ fontSize: 11, fill: '#9E9892' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${v}`} />
                         <Tooltip
                           contentStyle={{ borderRadius: 12, border: '1px solid #E8E4DF', fontSize: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
-                          formatter={(value: any) => [formatMoney(Number(value)), 'Balance']}
+                          formatter={(value: string | number | Array<string | number>) => [formatMoney(Number(value)), 'Balance']}
                         />
                         <Bar dataKey="balance" radius={[6, 6, 0, 0]} fill="#1B4332" />
                       </BarChart>
@@ -508,7 +507,7 @@ formatter={(value: string | number | Array<string | number>, name: string) => [f
                           <CartesianGrid strokeDasharray="3 3" stroke="#F4F1EC" />
                           <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#9E9892' }} axisLine={{ stroke: '#E8E4DF' }} tickLine={false} />
                           <YAxis tick={{ fontSize: 11, fill: '#9E9892' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${v}`} />
-                          <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #E8E4DF', fontSize: 12 }} formatter={(value: any, name: any) => [formatMoney(Number(value)), name === 'ingresos' ? 'Ingresos' : 'Gastos']} />
+                          <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #E8E4DF', fontSize: 12 }} formatter={(value: string | number | Array<string | number>, name: string) => [formatMoney(Number(value)), name === 'ingresos' ? 'Ingresos' : 'Gastos']} />
                           <Bar dataKey="ingresos" fill="#10B981" radius={[4, 4, 0, 0]} name="ingresos" />
                           <Bar dataKey="gastos" fill="#EF4444" radius={[4, 4, 0, 0]} name="gastos" />
                         </BarChart>

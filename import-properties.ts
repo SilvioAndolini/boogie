@@ -195,7 +195,7 @@ interface ScrapedProp {
   amenidades: string[]; imagenes: ScrapedImg[]
 }
 
-async function sbFetch(table: string, method: string, body?: any, query?: string): Promise<any> {
+async function sbFetch(table: string, method: string, body?: Record<string, unknown>, query?: string): Promise<Record<string, unknown>[]> {
   const url = `${SUPABASE_URL}/rest/v1/${table}${query ? '?' + query : ''}`
   const res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined })
   if (!res.ok) {
@@ -218,7 +218,7 @@ async function main() {
   console.log('✅ Usuario actualizado a ULTRA/ANFITRION\n')
 
   const existing = await sbFetch('propiedades', 'GET', undefined, 'select=titulo,direccion&propietario_id=eq.' + OWNER_ID)
-  const existingSet = new Set(existing.map((r: any) => `${r.titulo}|||${r.direccion}`))
+  const existingSet = new Set(existing.map((r: Record<string, unknown>) => `${r.titulo}|||${r.direccion}`))
   console.log(`📦 Propiedades existentes del usuario: ${existingSet.size}\n`)
 
   const folders = fs.readdirSync(PROPERTIES_DIR).filter(f =>
@@ -293,7 +293,7 @@ async function main() {
       existingSet.add(`${data.titulo}|||${data.direccion}`)
       created++
       console.log(`✅ [${created}] ${data.titulo} — $${precio} — ${ciudad}, ${estado} — ${imgs.length} imgs — ${links.length} amen`)
-    } catch (err: any) {
+    } catch (err: unknown) {
       errors++
       console.error(`❌ ${folder}: ${err.message.slice(0, 120)}`)
     }
