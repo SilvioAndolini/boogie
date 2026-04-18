@@ -55,26 +55,15 @@ func (s *DashboardService) GetDashboard(ctx context.Context, propiedadID, userID
 		return nil, fmt.Errorf("no eres propietario de esta propiedad")
 	}
 
-	gastos, err := s.repo.GetGastos(ctx, propiedadID)
+	batch, err := s.repo.GetDashboardBatched(ctx, propiedadID)
 	if err != nil {
-		return nil, fmt.Errorf("error al obtener gastos: %w", err)
+		return nil, err
 	}
-	fechasBloqueadas, err := s.repo.GetFechasBloqueadas(ctx, propiedadID)
-	if err != nil {
-		return nil, fmt.Errorf("error al obtener fechas bloqueadas: %w", err)
-	}
-	preciosEspeciales, err := s.repo.GetPreciosEspeciales(ctx, propiedadID)
-	if err != nil {
-		return nil, fmt.Errorf("error al obtener precios especiales: %w", err)
-	}
-	reservas, err := s.repo.GetReservasDashboard(ctx, propiedadID)
-	if err != nil {
-		return nil, fmt.Errorf("error al obtener reservas: %w", err)
-	}
-	amenidades, err := s.repo.GetAmenidades(ctx, propiedadID)
-	if err != nil {
-		return nil, fmt.Errorf("error al obtener amenidades: %w", err)
-	}
+	gastos := batch.Gastos
+	fechasBloqueadas := batch.FechasBloqueadas
+	preciosEspeciales := batch.PreciosEspeciales
+	reservas := batch.Reservas
+	amenidades := batch.Amenidades
 
 	var totalIngresos, totalGastos, totalGastosVes float64
 	var totalNoches int

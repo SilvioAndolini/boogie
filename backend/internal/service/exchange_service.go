@@ -28,7 +28,8 @@ func (s *ExchangeService) GetCotizacion() (*models.CotizacionEuro, error) {
 	const key = "exchange:eur_ves"
 	const ttl = 15 * time.Minute
 
-	val, err := s.cache.GetOrFetch(key, ttl, func() (interface{}, error) {
+	var cot models.CotizacionEuro
+	err := s.cache.GetOrFetchInto(key, ttl, &cot, func() (interface{}, error) {
 		return s.fetchCotizacion()
 	})
 	if err != nil {
@@ -39,7 +40,7 @@ func (s *ExchangeService) GetCotizacion() (*models.CotizacionEuro, error) {
 			UltimaActualizacion: time.Now(),
 		}, nil
 	}
-	return val.(*models.CotizacionEuro), nil
+	return &cot, nil
 }
 
 func (s *ExchangeService) fetchCotizacion() (*models.CotizacionEuro, error) {

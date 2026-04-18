@@ -767,13 +767,12 @@ func (r *PropiedadesRepo) CrearPropiedad(ctx context.Context, propietarioID stri
 	}
 
 	if len(amenidadIDs) > 0 {
-		for _, aID := range amenidadIDs {
-			_, err = r.pool.Exec(ctx, `
-				INSERT INTO propiedad_amenidades (propiedad_id, amenidad_id) VALUES ($1, $2)
-			`, id, aID)
-			if err != nil {
-				return nil, fmt.Errorf("insert amenidad join: %w", err)
-			}
+		_, err = r.pool.Exec(ctx, `
+			INSERT INTO propiedad_amenidades (propiedad_id, amenidad_id)
+			SELECT $1, unnest($2::text[])
+		`, id, amenidadIDs)
+		if err != nil {
+			return nil, fmt.Errorf("insert amenidades: %w", err)
 		}
 	}
 
@@ -822,10 +821,13 @@ func (r *PropiedadesRepo) ActualizarPropiedad(ctx context.Context, propiedadID, 
 		return fmt.Errorf("delete amenidades: %w", err)
 	}
 
-	for _, aID := range amenidadIDs {
-		_, err = r.pool.Exec(ctx, `INSERT INTO propiedad_amenidades (propiedad_id, amenidad_id) VALUES ($1, $2)`, propiedadID, aID)
+	if len(amenidadIDs) > 0 {
+		_, err = r.pool.Exec(ctx, `
+			INSERT INTO propiedad_amenidades (propiedad_id, amenidad_id)
+			SELECT $1, unnest($2::text[])
+		`, propiedadID, amenidadIDs)
 		if err != nil {
-			return fmt.Errorf("insert amenidad: %w", err)
+			return fmt.Errorf("insert amenidades: %w", err)
 		}
 	}
 
@@ -862,29 +864,49 @@ type ImagenInput struct {
 }
 
 func (r *PropiedadesRepo) AgregarImagenes(ctx context.Context, propiedadID string, imagenes []ImagenInput) error {
-	for _, img := range imagenes {
-		id := generatePropiedadID()
-		_, err := r.pool.Exec(ctx, `
-			INSERT INTO imagenes_propiedad (id, propiedad_id, url, categoria, orden, es_principal)
-			VALUES ($1, $2, $3, $4, $5, false)
-		`, id, propiedadID, img.URL, img.Categoria, img.Orden)
-		if err != nil {
-			return fmt.Errorf("insert imagen: %w", err)
-		}
+	if len(imagenes) == 0 {
+		return nil
+	}
+	ids := make([]string, len(imagenes))
+	urls := make([]string, len(imagenes))
+	cats := make([]string, len(imagenes))
+	ords := make([]int, len(imagenes))
+	for i, img := range imagenes {
+		ids[i] = generatePropiedadID()
+		urls[i] = img.URL
+		cats[i] = img.Categoria
+		ords[i] = img.Orden
+	}
+	_, err := r.pool.Exec(ctx, `
+		INSERT INTO imagenes_propiedad (id, propiedad_id, url, categoria, orden, es_principal)
+		SELECT unnest($1::text[]), $2, unnest($3::text[]), unnest($4::text[]), unnest($5::int[]), false
+	`, ids, propiedadID, urls, cats, ords)
+	if err != nil {
+		return fmt.Errorf("insert imagenes: %w", err)
 	}
 	return nil
 }
 
 func (r *PropiedadesRepo) AgregarImagenesWithDB(ctx context.Context, db DBTX, propiedadID string, imagenes []ImagenInput) error {
-	for _, img := range imagenes {
-		id := generatePropiedadID()
-		_, err := db.Exec(ctx, `
-			INSERT INTO imagenes_propiedad (id, propiedad_id, url, categoria, orden, es_principal)
-			VALUES ($1, $2, $3, $4, $5, false)
-		`, id, propiedadID, img.URL, img.Categoria, img.Orden)
-		if err != nil {
-			return fmt.Errorf("insert imagen: %w", err)
-		}
+	if len(imagenes) == 0 {
+		return nil
+	}
+	ids := make([]string, len(imagenes))
+	urls := make([]string, len(imagenes))
+	cats := make([]string, len(imagenes))
+	ords := make([]int, len(imagenes))
+	for i, img := range imagenes {
+		ids[i] = generatePropiedadID()
+		urls[i] = img.URL
+		cats[i] = img.Categoria
+		ords[i] = img.Orden
+	}
+	_, err := db.Exec(ctx, `
+		INSERT INTO imagenes_propiedad (id, propiedad_id, url, categoria, orden, es_principal)
+		SELECT unnest($1::text[]), $2, unnest($3::text[]), unnest($4::text[]), unnest($5::int[]), false
+	`, ids, propiedadID, urls, cats, ords)
+	if err != nil {
+		return fmt.Errorf("insert imagenes: %w", err)
 	}
 	return nil
 }
@@ -977,13 +999,12 @@ func (r *PropiedadesRepo) CrearPropiedadWithDB(ctx context.Context, db DBTX, pro
 	}
 
 	if len(amenidadIDs) > 0 {
-		for _, aID := range amenidadIDs {
-			_, err = db.Exec(ctx, `
-				INSERT INTO propiedad_amenidades (propiedad_id, amenidad_id) VALUES ($1, $2)
-			`, id, aID)
-			if err != nil {
-				return nil, fmt.Errorf("insert amenidad join: %w", err)
-			}
+		_, err = db.Exec(ctx, `
+			INSERT INTO propiedad_amenidades (propiedad_id, amenidad_id)
+			SELECT $1, unnest($2::text[])
+		`, id, amenidadIDs)
+		if err != nil {
+			return nil, fmt.Errorf("insert amenidades: %w", err)
 		}
 	}
 
@@ -1032,10 +1053,13 @@ func (r *PropiedadesRepo) ActualizarPropiedadWithDB(ctx context.Context, db DBTX
 		return fmt.Errorf("delete amenidades: %w", err)
 	}
 
-	for _, aID := range amenidadIDs {
-		_, err = db.Exec(ctx, `INSERT INTO propiedad_amenidades (propiedad_id, amenidad_id) VALUES ($1, $2)`, propiedadID, aID)
+	if len(amenidadIDs) > 0 {
+		_, err = db.Exec(ctx, `
+			INSERT INTO propiedad_amenidades (propiedad_id, amenidad_id)
+			SELECT $1, unnest($2::text[])
+		`, propiedadID, amenidadIDs)
 		if err != nil {
-			return fmt.Errorf("insert amenidad: %w", err)
+			return fmt.Errorf("insert amenidades: %w", err)
 		}
 	}
 

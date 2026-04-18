@@ -107,7 +107,8 @@ func (s *ResenaService) ListByPropiedad(ctx context.Context, propiedadID string,
 	key := fmt.Sprintf("resenas:%s:page=%d:pp=%d", propiedadID, page, perPage)
 	ttl := 5 * time.Minute
 
-	val, err := s.cache.GetOrFetch(key, ttl, func() (interface{}, error) {
+	var result resenasListResult
+	err := s.cache.GetOrFetchInto(key, ttl, &result, func() (interface{}, error) {
 		resenas, total, e := s.repo.GetByPropiedad(ctx, propiedadID, page, perPage)
 		if e != nil {
 			return nil, e
@@ -120,8 +121,7 @@ func (s *ResenaService) ListByPropiedad(ctx context.Context, propiedadID string,
 	if err != nil {
 		return nil, 0, err
 	}
-	r := val.(resenasListResult)
-	return r.Items, r.Total, nil
+	return result.Items, result.Total, nil
 }
 
 type resenasListResult struct {

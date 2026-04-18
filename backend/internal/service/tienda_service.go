@@ -20,40 +20,42 @@ func (s *TiendaService) GetProductos(ctx context.Context) ([]repository.StorePro
 	const key = "tienda:productos"
 	const ttl = 30 * time.Minute
 
-	val, err := s.cache.GetOrFetch(key, ttl, func() (interface{}, error) {
-		prods, e := s.repo.GetProductosActivos(ctx)
+	var prods []repository.StoreProducto
+	err := s.cache.GetOrFetchInto(key, ttl, &prods, func() (interface{}, error) {
+		p, e := s.repo.GetProductosActivos(ctx)
 		if e != nil {
 			return nil, e
 		}
-		if prods == nil {
-			prods = []repository.StoreProducto{}
+		if p == nil {
+			p = []repository.StoreProducto{}
 		}
-		return prods, nil
+		return p, nil
 	})
 	if err != nil {
 		return nil, err
 	}
-	return val.([]repository.StoreProducto), nil
+	return prods, nil
 }
 
 func (s *TiendaService) GetServicios(ctx context.Context) ([]repository.StoreServicio, error) {
 	const key = "tienda:servicios"
 	const ttl = 30 * time.Minute
 
-	val, err := s.cache.GetOrFetch(key, ttl, func() (interface{}, error) {
-		servs, e := s.repo.GetServiciosActivos(ctx)
+	var servs []repository.StoreServicio
+	err := s.cache.GetOrFetchInto(key, ttl, &servs, func() (interface{}, error) {
+		s, e := s.repo.GetServiciosActivos(ctx)
 		if e != nil {
 			return nil, e
 		}
-		if servs == nil {
-			servs = []repository.StoreServicio{}
+		if s == nil {
+			s = []repository.StoreServicio{}
 		}
-		return servs, nil
+		return s, nil
 	})
 	if err != nil {
 		return nil, err
 	}
-	return val.([]repository.StoreServicio), nil
+	return servs, nil
 }
 
 func (s *TiendaService) GetAllProductos(ctx context.Context) ([]repository.StoreProducto, error) {

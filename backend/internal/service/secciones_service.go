@@ -21,13 +21,14 @@ func (s *SeccionesService) GetPublicas(ctx context.Context) ([]repository.Seccio
 	const key = "secciones:publicas"
 	const ttl = 5 * time.Minute
 
-	val, err := s.cache.GetOrFetch(key, ttl, func() (interface{}, error) {
+	var secciones []repository.SeccionConPropiedades
+	err := s.cache.GetOrFetchInto(key, ttl, &secciones, func() (interface{}, error) {
 		return s.fetchPublicas(ctx)
 	})
 	if err != nil {
 		return nil, err
 	}
-	return val.([]repository.SeccionConPropiedades), nil
+	return secciones, nil
 }
 
 func (s *SeccionesService) fetchPublicas(ctx context.Context) ([]repository.SeccionConPropiedades, error) {

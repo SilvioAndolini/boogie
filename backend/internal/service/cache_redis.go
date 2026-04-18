@@ -11,7 +11,6 @@ import (
 )
 
 type Cache interface {
-	GetOrFetch(ctx context.Context, key string, ttl time.Duration, fetch func() (interface{}, error)) (interface{}, error)
 	GetOrFetchInto(ctx context.Context, key string, ttl time.Duration, target interface{}, fetch func() (interface{}, error)) error
 	DeleteByPrefix(ctx context.Context, prefix string)
 	Delete(ctx context.Context, key string)
@@ -23,32 +22,6 @@ type RedisCache struct {
 
 func NewRedisCache(rdb *redis.Client) *RedisCache {
 	return &RedisCache{rdb: rdb}
-}
-
-func (c *RedisCache) GetOrFetch(ctx context.Context, key string, ttl time.Duration, fetch func() (interface{}, error)) (interface{}, error) {
-	val, err := c.rdb.Get(ctx, key).Result()
-	if err == nil {
-		metrics.CacheHits.Inc()
-		return val, nil
-	}
-	if err != redis.Nil {
-		slog.Warn("[redis-cache] get error", "key", key, "error", err)
-	}
-
-	metrics.CacheMisses.Inc()
-	result, err := fetch()
-	if err != nil {
-		return nil, err
-	}
-
-	data, marshalErr := json.Marshal(result)
-	if marshalErr == nil {
-		if setErr := c.rdb.Set(ctx, key, string(data), ttl).Err(); setErr != nil {
-			slog.Warn("[redis-cache] set error", "key", key, "error", setErr)
-		}
-	}
-
-	return result, nil
 }
 
 func (c *RedisCache) GetOrFetchInto(ctx context.Context, key string, ttl time.Duration, target interface{}, fetch func() (interface{}, error)) error {
@@ -106,10 +79,6 @@ type InMemoryCache struct {
 
 func NewInMemoryCache() *InMemoryCache {
 	return &InMemoryCache{inner: GetCache()}
-}
-
-func (c *InMemoryCache) GetOrFetch(_ context.Context, key string, ttl time.Duration, fetch func() (interface{}, error)) (interface{}, error) {
-	return c.inner.GetOrFetch(key, ttl, fetch)
 }
 
 func (c *InMemoryCache) GetOrFetchInto(_ context.Context, key string, ttl time.Duration, target interface{}, fetch func() (interface{}, error)) error {

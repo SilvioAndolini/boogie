@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"log/slog"
 	"sync"
 	"time"
@@ -87,6 +88,18 @@ func (c *CacheService) GetOrFetch(key string, ttl time.Duration, fetch func() (i
 
 	c.Set(key, fresh, ttl)
 	return fresh, nil
+}
+
+func (c *CacheService) GetOrFetchInto(key string, ttl time.Duration, target interface{}, fetch func() (interface{}, error)) error {
+	val, err := c.GetOrFetch(key, ttl, fetch)
+	if err != nil {
+		return err
+	}
+	data, mErr := json.Marshal(val)
+	if mErr != nil {
+		return mErr
+	}
+	return json.Unmarshal(data, target)
 }
 
 func (c *CacheService) backgroundRefresh(key string, ttl time.Duration, fetch func() (interface{}, error)) {

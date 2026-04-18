@@ -88,13 +88,14 @@ func (s *UbicacionesService) Search(q string) ([]models.LocationSuggestion, erro
 	key := "ubicaciones:" + q
 	ttl := 1 * time.Hour
 
-	val, err := s.cache.GetOrFetch(key, ttl, func() (interface{}, error) {
+	var results []models.LocationSuggestion
+	err := s.cache.GetOrFetchInto(key, ttl, &results, func() (interface{}, error) {
 		return s.searchAll(q)
 	})
 	if err != nil {
 		return nil, err
 	}
-	return val.([]models.LocationSuggestion), nil
+	return results, nil
 }
 
 func (s *UbicacionesService) searchAll(q string) ([]models.LocationSuggestion, error) {
