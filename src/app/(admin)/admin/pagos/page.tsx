@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, startTransition } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   CreditCard, Search, Loader2, CheckCircle2, XCircle,

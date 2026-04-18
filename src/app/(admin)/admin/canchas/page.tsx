@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, startTransition } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Trophy, MapPin, Star, Eye, Loader2, Search } from 'lucide-react'

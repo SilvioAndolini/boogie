@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, startTransition } from 'react'
 import { motion } from 'framer-motion'
 import {
   ScrollText, Loader2, Shield, Search,
