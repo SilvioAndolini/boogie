@@ -1141,27 +1141,14 @@ func (r *AdminRepo) EnviarNotificacion(ctx context.Context, usuarioID, titulo, m
 }
 
 func (r *AdminRepo) EnviarNotificacionBroadcast(ctx context.Context, titulo, mensaje string, urlAccion *string) (int, error) {
-	rows, err := r.pool.Query(ctx, `SELECT id FROM usuarios WHERE activo = true`)
+	tag, err := r.pool.Exec(ctx, `
+		INSERT INTO notificaciones (tipo, titulo, mensaje, url_accion, usuario_id)
+		SELECT 'SISTEMA', $1, $2, $3, id FROM usuarios WHERE activo = true
+	`, titulo, mensaje, urlAccion)
 	if err != nil {
 		return 0, err
 	}
-	defer rows.Close()
-
-	var ids []string
-	for rows.Next() {
-		var id string
-		if err := rows.Scan(&id); err != nil {
-			continue
-		}
-		ids = append(ids, id)
-	}
-
-	for _, id := range ids {
-		if err := r.EnviarNotificacion(ctx, id, titulo, mensaje, urlAccion); err != nil {
-			return 0, err
-		}
-	}
-	return len(ids), nil
+	return int(tag.RowsAffected()), nil
 }
 
 func (r *AdminRepo) GetDashboardStats(ctx context.Context) (map[string]interface{}, error) {

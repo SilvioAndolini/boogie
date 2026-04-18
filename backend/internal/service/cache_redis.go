@@ -12,6 +12,7 @@ import (
 
 type Cache interface {
 	GetOrFetch(ctx context.Context, key string, ttl time.Duration, fetch func() (interface{}, error)) (interface{}, error)
+	GetOrFetchInto(ctx context.Context, key string, ttl time.Duration, target interface{}, fetch func() (interface{}, error)) error
 	DeleteByPrefix(ctx context.Context, prefix string)
 	Delete(ctx context.Context, key string)
 }
@@ -25,10 +26,39 @@ func NewRedisCache(rdb *redis.Client) *RedisCache {
 }
 
 func (c *RedisCache) GetOrFetch(ctx context.Context, key string, ttl time.Duration, fetch func() (interface{}, error)) (interface{}, error) {
+	val, err := c.rdb.Get(ctx, key).Result()
+	if err == nil {
+		metrics.CacheHits.Inc()
+		return val, nil
+	}
+	if err != redis.Nil {
+		slog.Warn("[redis-cache] get error", "key", key, "error", err)
+	}
+
+	metrics.CacheMisses.Inc()
+	result, err := fetch()
+	if err != nil {
+		return nil, err
+	}
+
+	data, marshalErr := json.Marshal(result)
+	if marshalErr == nil {
+		if setErr := c.rdb.Set(ctx, key, string(data), ttl).Err(); setErr != nil {
+			slog.Warn("[redis-cache] set error", "key", key, "error", setErr)
+		}
+	}
+
+	return result, nil
+}
+
+func (c *RedisCache) GetOrFetchInto(ctx context.Context, key string, ttl time.Duration, target interface{}, fetch func() (interface{}, error)) error {
 	raw, err := c.rdb.Get(ctx, key).Result()
 	if err == nil {
 		metrics.CacheHits.Inc()
-		return raw, nil
+		if unmarshalErr := json.Unmarshal([]byte(raw), target); unmarshalErr == nil {
+			return nil
+		}
+		slog.Warn("[redis-cache] unmarshal error, refetching", "key", key, "error", err)
 	}
 	if err != redis.Nil {
 		slog.Warn("[redis-cache] get error", "key", key, "error", err)
@@ -37,7 +67,7 @@ func (c *RedisCache) GetOrFetch(ctx context.Context, key string, ttl time.Durati
 	metrics.CacheMisses.Inc()
 	val, err := fetch()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	data, marshalErr := json.Marshal(val)
@@ -45,9 +75,10 @@ func (c *RedisCache) GetOrFetch(ctx context.Context, key string, ttl time.Durati
 		if setErr := c.rdb.Set(ctx, key, string(data), ttl).Err(); setErr != nil {
 			slog.Warn("[redis-cache] set error", "key", key, "error", setErr)
 		}
+		json.Unmarshal(data, target)
 	}
 
-	return val, nil
+	return nil
 }
 
 func (c *RedisCache) DeleteByPrefix(ctx context.Context, prefix string) {
@@ -79,6 +110,18 @@ func NewInMemoryCache() *InMemoryCache {
 
 func (c *InMemoryCache) GetOrFetch(_ context.Context, key string, ttl time.Duration, fetch func() (interface{}, error)) (interface{}, error) {
 	return c.inner.GetOrFetch(key, ttl, fetch)
+}
+
+func (c *InMemoryCache) GetOrFetchInto(_ context.Context, key string, ttl time.Duration, target interface{}, fetch func() (interface{}, error)) error {
+	val, err := c.inner.GetOrFetch(key, ttl, fetch)
+	if err != nil {
+		return err
+	}
+	data, mErr := json.Marshal(val)
+	if mErr != nil {
+		return mErr
+	}
+	return json.Unmarshal(data, target)
 }
 
 func (c *InMemoryCache) DeleteByPrefix(_ context.Context, prefix string) {
