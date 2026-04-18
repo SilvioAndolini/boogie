@@ -64,7 +64,7 @@ export async function cambiarContrasena(formData: FormData) {
     await goPost('/api/v1/auth/password', { passwordNueva })
     return { exito: true }
   } catch (err: unknown) {
-    return { error: err.message || 'Error al cambiar la contraseña' }
+    return { error: err instanceof Error ? err.message : 'Error al cambiar la contraseña' }
   }
 }
 
