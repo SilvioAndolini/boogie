@@ -5,10 +5,7 @@ export function createAdminClient() {
   const supabaseKey = process.env.SUPABASE_SECRET_KEY
   
   if (!supabaseUrl || !supabaseKey) {
-    throw new Error(
-      'SUPABASE_SECRET_KEY is required for admin operations. ' +
-      'Check your Supabase project\'s API settings: https://supabase.com/dashboard/project/_/settings/api'
-    )
+    throw new Error('Missing admin configuration. Check environment variables.')
   }
 
   return createServerClient(

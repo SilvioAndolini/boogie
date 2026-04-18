@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"log/slog"
 	"net/http"
 
 	"github.com/boogie/backend/internal/auth"
@@ -56,8 +55,7 @@ func (h *CuponHandler) Validar(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.svc.ValidarCupon(r.Context(), req.Codigo, userID, req.PropiedadID, req.MontoTotal, req.Noches)
 	if err != nil {
-		slog.Error("[cupones/validar] error", "error", err)
-		ErrorJSON(w, http.StatusBadRequest, "INVALID_CUPON", err.Error())
+		mapError(w, err, "[cupones/validar] error")
 		return
 	}
 

@@ -67,8 +67,7 @@ func (h *SeccionesHandler) Upsert(w http.ResponseWriter, r *http.Request) {
 		Orden:        req.Orden,
 		Activa:       req.Activa,
 	}); err != nil {
-		slog.Error("[secciones/upsert] error", "error", err)
-		ErrorJSON(w, http.StatusBadRequest, "UPSERT_ERROR", err.Error())
+		mapError(w, err, "[secciones/upsert] error")
 		return
 	}
 
@@ -83,8 +82,7 @@ func (h *SeccionesHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.svc.Delete(r.Context(), id); err != nil {
-		slog.Error("[secciones/delete] error", "error", err)
-		ErrorJSON(w, http.StatusBadRequest, "DELETE_ERROR", err.Error())
+		mapError(w, err, "[secciones/delete] error")
 		return
 	}
 

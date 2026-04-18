@@ -1,4 +1,12 @@
 api.boogierent.com {
+	@metrics path /metrics*
+	handle @metrics {
+		basicauth {
+			admin {$MONITORING_PASSWORD_HASH}
+		}
+		reverse_proxy api:8080
+	}
+
 	reverse_proxy api:8080
 
 	encode gzip

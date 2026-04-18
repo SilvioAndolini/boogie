@@ -289,7 +289,7 @@ func TestOfertaGetByID_Forbidden(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	h.GetByID(w, req)
-	assert.Equal(t, http.StatusNotFound, w.Code)
+	assert.Equal(t, http.StatusForbidden, w.Code)
 	repo.AssertExpectations(t)
 }
 

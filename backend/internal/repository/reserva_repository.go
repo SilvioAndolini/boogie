@@ -672,6 +672,87 @@ func (r *ReservaRepo) ListPropiedadesModoReserva(ctx context.Context, propietari
 	return results, nil
 }
 
+func (r *ReservaRepo) CrearWithDB(ctx context.Context, db DBTX, prop *PropiedadInfo, huespedID string, fechaEntrada, fechaSalida time.Time, cantidadHuespedes int, notasHuesped *string, comisionH, comisionA float64) (*models.Reserva, error) {
+	noches := int(fechaSalida.Sub(fechaEntrada).Hours() / 24)
+	if noches < 1 {
+		noches = 1
+	}
+
+	subtotal := util.Round2(prop.PrecioPorNoche * float64(noches))
+	comisionHuesped := util.Round2(subtotal * comisionH)
+	comisionAnfitrion := util.Round2(subtotal * comisionA)
+	total := util.Round2(subtotal + comisionHuesped)
+	codigo := idgen.CodigoReserva()
+	id := idgen.New()
+
+	var notaVal *string
+	if notasHuesped != nil && *notasHuesped != "" {
+		notaVal = notasHuesped
+	}
+
+	_, err := db.Exec(ctx, `
+		INSERT INTO reservas (id, codigo, propiedad_id, huesped_id, fecha_entrada, fecha_salida,
+			noches, precio_por_noche, subtotal, comision_plataforma, comision_anfitrion, total,
+			moneda, cantidad_huespedes, estado, notas_huesped, fecha_creacion)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'PENDIENTE_PAGO', $15, NOW())
+	`, id, codigo, prop.ID, huespedID, fechaEntrada, fechaSalida,
+		noches, prop.PrecioPorNoche, subtotal, comisionHuesped, comisionAnfitrion,
+		total, string(prop.Moneda), cantidadHuespedes, notaVal)
+	if err != nil {
+		return nil, fmt.Errorf("insert reserva: %w", err)
+	}
+
+	return &models.Reserva{
+		ID:                 id,
+		Codigo:             codigo,
+		PropiedadID:        prop.ID,
+		HuespedID:          huespedID,
+		FechaEntrada:       fechaEntrada,
+		FechaSalida:        fechaSalida,
+		Noches:             noches,
+		PrecioPorNoche:     prop.PrecioPorNoche,
+		Subtotal:           subtotal,
+		ComisionPlataforma: comisionHuesped,
+		ComisionAnfitrion:  comisionAnfitrion,
+		Total:              total,
+		Moneda:             prop.Moneda,
+		CantidadHuespedes:  cantidadHuespedes,
+		Estado:             enums.EstadoReservaPendientePago,
+		NotasHuesped:       notaVal,
+	}, nil
+}
+
+func (r *ReservaRepo) InsertPagoManualWithDB(ctx context.Context, db DBTX, pago *NuevoPago) (string, error) {
+	id := idgen.New()
+	_, err := db.Exec(ctx, `
+		INSERT INTO pagos (id, reserva_id, usuario_id, monto, moneda, metodo_pago, estado,
+		                   referencia, comprobante, banco_emisor, telefono_emisor, fecha_creacion)
+		VALUES ($1, $2, $3, $4, $5, $6, 'PENDIENTE', $7, $8, $9, $10, NOW())
+	`, id, pago.ReservaID, pago.UsuarioID, pago.Monto, string(pago.Moneda), string(pago.MetodoPago),
+		pago.Referencia, pago.ComprobanteURL, pago.BancoEmisor, pago.TelefonoEmisor)
+	if err != nil {
+		return "", fmt.Errorf("insert pago manual: %w", err)
+	}
+	return id, nil
+}
+
+func (r *ReservaRepo) UpdateCuponDescuentoWithDB(ctx context.Context, db DBTX, reservaID, cuponID string, descuento, nuevoSubtotal, nuevaComision, nuevoTotal float64) error {
+	_, err := db.Exec(ctx, `
+		UPDATE reservas SET cupon_id = $1, descuento = $2,
+			subtotal = $3, comision_plataforma = $4, total = $5
+		WHERE id = $6`,
+		cuponID, descuento, nuevoSubtotal, nuevaComision, nuevoTotal, reservaID)
+	return err
+}
+
+func (r *ReservaRepo) InsertNotificacionWithDB(ctx context.Context, db DBTX, tipo, titulo, mensaje, usuarioID, urlAccion string) error {
+	_, err := db.Exec(ctx, `
+		INSERT INTO notificaciones (tipo, titulo, mensaje, usuario_id, url_accion, created_at)
+		VALUES ($1, $2, $3, $4, $5, NOW())
+	`, tipo, titulo, mensaje, usuarioID, urlAccion)
+	return err
+}
+
 func (r *ReservaRepo) UpdateModoReserva(ctx context.Context, propiedadID, propietarioID, modo string) error {
 	tag, err := r.pool.Exec(ctx, `
 		UPDATE propiedades SET modo_reserva = $1::text

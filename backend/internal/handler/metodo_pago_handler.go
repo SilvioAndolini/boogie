@@ -74,8 +74,7 @@ func (h *MetodoPagoHandler) Crear(w http.ResponseWriter, r *http.Request) {
 		DireccionUSDT: req.DireccionUSDT,
 	})
 	if err != nil {
-		slog.Error("[metodos-pago/crear] error", "error", err, "userId", userID)
-		ErrorJSON(w, http.StatusBadRequest, "CREAR_ERROR", err.Error())
+		mapError(w, err, "[metodos-pago/crear] error", "userId", userID)
 		return
 	}
 
@@ -96,8 +95,7 @@ func (h *MetodoPagoHandler) Eliminar(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.svc.Eliminar(r.Context(), id, userID); err != nil {
-		slog.Error("[metodos-pago/eliminar] error", "error", err, "id", id, "userId", userID)
-		ErrorJSON(w, http.StatusBadRequest, "DELETE_ERROR", err.Error())
+		mapError(w, err, "[metodos-pago/eliminar] error", "id", id, "userId", userID)
 		return
 	}
 

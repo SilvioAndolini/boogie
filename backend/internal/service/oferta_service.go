@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	bizerrors "github.com/boogie/backend/internal/domain/errors"
 	"github.com/boogie/backend/internal/repository"
 )
 
@@ -105,15 +106,15 @@ func (s *OfertaService) Crear(ctx context.Context, input *CrearOfertaInput) (str
 func (s *OfertaService) Responder(ctx context.Context, ofertaID, userID, accion string, motivoRechazo *string) error {
 	oferta, err := s.repo.GetByID(ctx, ofertaID)
 	if err != nil {
-		return fmt.Errorf("oferta no encontrada")
+		return bizerrors.New(bizerrors.CodeNotFound, "oferta no encontrada")
 	}
 	if oferta.Estado != "PENDIENTE" {
-		return fmt.Errorf("esta oferta ya fue respondida")
+		return bizerrors.New(bizerrors.CodeStateConflict, "esta oferta ya fue respondida")
 	}
 
 	propietarioID, err := s.repo.GetPropietarioID(ctx, oferta.PropiedadID)
 	if err != nil || propietarioID != userID {
-		return fmt.Errorf("solo el anfitrión puede responder")
+		return bizerrors.New(bizerrors.CodeForbidden, "solo el anfitrión puede responder")
 	}
 
 	if accion != "ACEPTADA" && accion != "RECHAZADA" {
@@ -148,11 +149,11 @@ func (s *OfertaService) GetEnviadas(ctx context.Context, userID string) ([]repos
 func (s *OfertaService) GetByID(ctx context.Context, ofertaID, userID string) (*repository.Oferta, error) {
 	oferta, err := s.repo.GetByID(ctx, ofertaID)
 	if err != nil {
-		return nil, fmt.Errorf("oferta no encontrada")
+		return nil, bizerrors.New(bizerrors.CodeNotFound, "oferta no encontrada")
 	}
 	propietarioID, _ := s.repo.GetPropietarioID(ctx, oferta.PropiedadID)
 	if oferta.HuespedID != userID && propietarioID != userID {
-		return nil, fmt.Errorf("no tienes permiso para ver esta oferta")
+		return nil, bizerrors.New(bizerrors.CodeForbidden, "no tienes permiso para ver esta oferta")
 	}
 	return oferta, nil
 }
@@ -160,10 +161,10 @@ func (s *OfertaService) GetByID(ctx context.Context, ofertaID, userID string) (*
 func (s *OfertaService) GetDetalleByID(ctx context.Context, ofertaID, userID string) (*repository.OfertaDetalle, error) {
 	detalle, err := s.repo.GetDetalleByID(ctx, ofertaID)
 	if err != nil {
-		return nil, fmt.Errorf("oferta no encontrada")
+		return nil, bizerrors.New(bizerrors.CodeNotFound, "oferta no encontrada")
 	}
 	if detalle.HuespedID != userID && detalle.PropietarioID != userID {
-		return nil, fmt.Errorf("no tienes permiso para ver esta oferta")
+		return nil, bizerrors.New(bizerrors.CodeForbidden, "no tienes permiso para ver esta oferta")
 	}
 	return detalle, nil
 }

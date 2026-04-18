@@ -80,8 +80,7 @@ func (h *ChatHandler) GetOrCreateConversacion(w http.ResponseWriter, r *http.Req
 
 	conv, err := h.svc.GetOrCreateConversacion(r.Context(), userID, req.OtroUsuarioID, req.PropiedadID)
 	if err != nil {
-		slog.Error("[chat/conversacion/create] error", "error", err)
-		ErrorJSON(w, http.StatusBadRequest, "CONV_ERROR", err.Error())
+		mapError(w, err, "[chat/conversacion/create]")
 		return
 	}
 
@@ -112,7 +111,7 @@ func (h *ChatHandler) GetMensajes(w http.ResponseWriter, r *http.Request) {
 
 	msgs, err := h.svc.GetMensajes(r.Context(), convID, userID, limit, offset)
 	if err != nil {
-		ErrorJSON(w, http.StatusBadRequest, "MSG_ERROR", err.Error())
+		mapError(w, err, "[chat/mensajes]")
 		return
 	}
 
@@ -151,8 +150,7 @@ func (h *ChatHandler) EnviarMensaje(w http.ResponseWriter, r *http.Request) {
 
 	msg, err := h.svc.EnviarMensaje(r.Context(), req.ConversacionID, userID, req.Contenido, tipo, req.ImagenURL)
 	if err != nil {
-		slog.Error("[chat/enviar] error", "error", err)
-		ErrorJSON(w, http.StatusBadRequest, "SEND_ERROR", err.Error())
+		mapError(w, err, "[chat/enviar]")
 		return
 	}
 
@@ -185,7 +183,7 @@ func (h *ChatHandler) GetConversacionInfo(w http.ResponseWriter, r *http.Request
 
 	info, err := h.svc.GetConversacionInfo(r.Context(), convID, userID)
 	if err != nil {
-		ErrorJSON(w, http.StatusBadRequest, "CONV_ERROR", err.Error())
+		mapError(w, err, "[chat/conversacion/info]")
 		return
 	}
 
@@ -234,8 +232,7 @@ func (h *ChatHandler) CrearMensajeRapido(w http.ResponseWriter, r *http.Request)
 
 	msg, err := h.svc.CrearMensajeRapido(r.Context(), userID, req.Contenido, tipo)
 	if err != nil {
-		slog.Error("[chat/mensajes-rapidos] crear error", "error", err)
-		ErrorJSON(w, http.StatusBadRequest, "CREAR_ERROR", err.Error())
+		mapError(w, err, "[chat/mensajes-rapidos/crear]")
 		return
 	}
 
@@ -266,8 +263,7 @@ func (h *ChatHandler) ActualizarMensajeRapido(w http.ResponseWriter, r *http.Req
 	}
 
 	if err := h.svc.ActualizarMensajeRapido(r.Context(), id, userID, req.Contenido); err != nil {
-		slog.Error("[chat/mensajes-rapidos] actualizar error", "error", err)
-		ErrorJSON(w, http.StatusBadRequest, "UPDATE_ERROR", err.Error())
+		mapError(w, err, "[chat/mensajes-rapidos/actualizar]")
 		return
 	}
 
@@ -288,8 +284,7 @@ func (h *ChatHandler) EliminarMensajeRapido(w http.ResponseWriter, r *http.Reque
 	}
 
 	if err := h.svc.EliminarMensajeRapido(r.Context(), id, userID); err != nil {
-		slog.Error("[chat/mensajes-rapidos] eliminar error", "error", err)
-		ErrorJSON(w, http.StatusBadRequest, "DELETE_ERROR", err.Error())
+		mapError(w, err, "[chat/mensajes-rapidos/eliminar]")
 		return
 	}
 
@@ -319,8 +314,7 @@ func (h *ChatHandler) SeedMensajesRapidos(w http.ResponseWriter, r *http.Request
 	}
 
 	if err := h.svc.SeedMensajesRapidos(r.Context(), userID, rol); err != nil {
-		slog.Error("[chat/mensajes-rapidos] seed error", "error", err)
-		ErrorJSON(w, http.StatusBadRequest, "SEED_ERROR", err.Error())
+		mapError(w, err, "[chat/mensajes-rapidos/seed]")
 		return
 	}
 
@@ -435,8 +429,7 @@ func (h *OfertaHandler) Crear(w http.ResponseWriter, r *http.Request) {
 		Mensaje:           req.Mensaje,
 	})
 	if err != nil {
-		slog.Error("[ofertas/crear] error", "error", err)
-		ErrorJSON(w, http.StatusBadRequest, "OFERTA_ERROR", err.Error())
+		mapError(w, err, "[ofertas/crear]")
 		return
 	}
 
@@ -468,8 +461,7 @@ func (h *OfertaHandler) Responder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.svc.Responder(r.Context(), ofertaID, userID, req.Accion, req.MotivoRechazo); err != nil {
-		slog.Error("[ofertas/responder] error", "error", err)
-		ErrorJSON(w, http.StatusBadRequest, "RESPONDER_ERROR", err.Error())
+		mapError(w, err, "[ofertas/responder]")
 		return
 	}
 
@@ -508,8 +500,7 @@ func (h *OfertaHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 	detalle, err := h.svc.GetDetalleByID(r.Context(), ofertaID, userID)
 	if err != nil {
-		slog.Error("[ofertas/detalle] error", "error", err, "ofertaID", ofertaID)
-		ErrorJSON(w, http.StatusNotFound, "NOT_FOUND", err.Error())
+		mapError(w, err, "[ofertas/detalle]", "ofertaID", ofertaID)
 		return
 	}
 

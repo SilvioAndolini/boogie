@@ -4,7 +4,7 @@ export interface CotizacionEuro {
   ultimaActualizacion: string
 }
 
-const GO_URL = process.env.GO_BACKEND_URL || process.env.NEXT_PUBLIC_GO_BACKEND_URL || 'http://localhost:8080'
+const GO_URL = process.env.GO_BACKEND_URL || 'http://localhost:8080'
 
 let cached: { data: CotizacionEuro; ts: number } | null = null
 const TTL = 15 * 60 * 1000

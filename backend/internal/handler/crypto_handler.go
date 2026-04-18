@@ -12,6 +12,7 @@ import (
 	"github.com/boogie/backend/internal/domain/enums"
 	"github.com/boogie/backend/internal/repository"
 	"github.com/boogie/backend/internal/service"
+	"github.com/jackc/pgx/v5"
 )
 
 type CryptoHandler struct {
@@ -114,8 +115,7 @@ func (h *CryptoHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 		cryptoResult, err := h.cryptoSvc.CreateAddress(callbackURL)
 		if err != nil {
-			slog.Error("[crypto/create] cryptapi error", "error", err)
-			ErrorJSON(w, http.StatusInternalServerError, "CRYPTAPI_ERROR", err.Error())
+			mapError(w, err, "[crypto/create]")
 			return
 		}
 
@@ -173,8 +173,7 @@ func (h *CryptoHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	cryptoResult, err := h.cryptoSvc.CreateAddress(callbackURL)
 	if err != nil {
-		slog.Error("[crypto/create] cryptapi error", "error", err)
-		ErrorJSON(w, http.StatusInternalServerError, "CRYPTAPI_ERROR", err.Error())
+		mapError(w, err, "[crypto/create]")
 		return
 	}
 
@@ -357,7 +356,10 @@ func (h *CryptoHandler) CancelarFallida(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if err := h.cryptoRepo.CancelarCryptoFallida(r.Context(), req.ReservaID, userID); err != nil {
+	err := repository.WithTx(r.Context(), h.cryptoRepo.Pool(), func(tx pgx.Tx) error {
+		return h.cryptoRepo.CancelarCryptoFallidaWithDB(r.Context(), tx, req.ReservaID, userID)
+	})
+	if err != nil {
 		slog.Error("[crypto/cancel-fallida] error", "error", err)
 		ErrorJSON(w, http.StatusInternalServerError, "DB_ERROR", "Error al cancelar")
 		return
@@ -367,7 +369,12 @@ func (h *CryptoHandler) CancelarFallida(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *CryptoHandler) ExpirarAbandonados(w http.ResponseWriter, r *http.Request) {
-	n, err := h.cryptoRepo.ExpirarCryptoAbandonados(r.Context())
+	var n int
+	err := repository.WithTx(r.Context(), h.cryptoRepo.Pool(), func(tx pgx.Tx) error {
+		var txErr error
+		n, txErr = h.cryptoRepo.ExpirarCryptoAbandonadosWithDB(r.Context(), tx)
+		return txErr
+	})
 	if err != nil {
 		slog.Error("[crypto/expirar] error", "error", err)
 		ErrorJSON(w, http.StatusInternalServerError, "DB_ERROR", "Error al expirar")

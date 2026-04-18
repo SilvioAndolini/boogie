@@ -245,3 +245,17 @@ func (r *PagoRepo) InsertWalletTransaccion(ctx context.Context, walletID, tipo, 
 	}
 	return id, nil
 }
+
+func (r *PagoRepo) InsertPagoManualWithDB(ctx context.Context, db DBTX, pago *NuevoPago) (string, error) {
+	id := idgen.New()
+	_, err := db.Exec(ctx, `
+		INSERT INTO pagos (id, reserva_id, usuario_id, monto, moneda, metodo_pago, estado,
+		                   referencia, comprobante, banco_emisor, telefono_emisor, fecha_creacion)
+		VALUES ($1, $2, $3, $4, $5, $6, 'PENDIENTE', $7, $8, $9, $10, NOW())
+	`, id, pago.ReservaID, pago.UsuarioID, pago.Monto, string(pago.Moneda), string(pago.MetodoPago),
+		pago.Referencia, pago.ComprobanteURL, pago.BancoEmisor, pago.TelefonoEmisor)
+	if err != nil {
+		return "", fmt.Errorf("insert pago manual: %w", err)
+	}
+	return id, nil
+}

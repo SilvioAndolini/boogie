@@ -244,8 +244,7 @@ func (h *ReservaHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 	detalle, err := h.svc.GetByID(r.Context(), reservaID, userID)
 	if err != nil {
-		status, code := mapBizErrorToHTTP(err)
-		ErrorJSON(w, status, code, err.Error())
+		mapError(w, err, "[reservas/get-by-id]", "reservaId", reservaID)
 		return
 	}
 
@@ -632,8 +631,7 @@ func (h *ReservaHandler) UpdateModoReserva(w http.ResponseWriter, r *http.Reques
 	}
 
 	if err := h.svc.UpdateModoReserva(r.Context(), req.PropiedadID, userID, req.Modo); err != nil {
-		slog.Error("[reservas/update-modo-reserva] error", "error", err)
-		ErrorJSON(w, http.StatusBadRequest, "UPDATE_ERROR", err.Error())
+		mapError(w, err, "[reservas/update-modo-reserva]")
 		return
 	}
 

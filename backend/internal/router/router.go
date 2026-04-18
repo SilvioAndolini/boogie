@@ -516,7 +516,7 @@ func New(opts *RouterOpts) http.Handler {
 				r.With(rateLimitMiddleware(opts.AuthLimiter)).Post("/auth/otp/sms", opts.AuthHandlers.SendOtpSms)
 				r.With(rateLimitMiddleware(opts.AuthLimiter)).Post("/auth/otp/verify", opts.AuthHandlers.VerifyOtp)
 				r.With(rateLimitMiddleware(opts.AuthLimiter)).Post("/auth/register", opts.AuthHandlers.Register)
-				r.Post("/auth/reset-password", opts.AuthHandlers.ResetPassword)
+				r.With(rateLimitMiddleware(opts.AuthLimiter)).Post("/auth/reset-password", opts.AuthHandlers.ResetPassword)
 			} else {
 				r.Post("/auth/login", opts.AuthHandlers.Login)
 				r.Post("/auth/login-admin", opts.AuthHandlers.LoginAdmin)
@@ -524,6 +524,7 @@ func New(opts *RouterOpts) http.Handler {
 				r.Post("/auth/otp/sms", opts.AuthHandlers.SendOtpSms)
 				r.Post("/auth/otp/verify", opts.AuthHandlers.VerifyOtp)
 				r.Post("/auth/register", opts.AuthHandlers.Register)
+				r.Post("/auth/reset-password", opts.AuthHandlers.ResetPassword)
 				r.Post("/auth/reset-password", opts.AuthHandlers.ResetPassword)
 			}
 			r.Get("/auth/google", opts.AuthHandlers.GoogleOAuthURL)

@@ -77,8 +77,7 @@ func (h *PagoHandler) RegistrarSimple(w http.ResponseWriter, r *http.Request) {
 
 	pagoID, err := h.svc.RegistrarPagoSimple(r.Context(), req.ReservaID, userID, req.Monto, moneda, enums.MetodoPagoEnum(req.MetodoPago), req.Referencia)
 	if err != nil {
-		slog.Error("[pagos/registrar] error", "error", err)
-		ErrorJSON(w, http.StatusBadRequest, "PAGO_ERROR", err.Error())
+		mapError(w, err, "[pagos/registrar] error")
 		return
 	}
 
@@ -132,8 +131,7 @@ func (h *PagoHandler) RegistrarConComprobante(w http.ResponseWriter, r *http.Req
 
 	pagoID, err := h.svc.RegistrarPagoConComprobante(r.Context(), req.ReservaID, userID, req.Monto, moneda, enums.MetodoPagoEnum(req.MetodoPago), req.Referencia, req.ComprobanteURL, req.BancoEmisor, req.TelefonoEmisor)
 	if err != nil {
-		slog.Error("[pagos/registrar-comprobante] error", "error", err)
-		ErrorJSON(w, http.StatusBadRequest, "PAGO_ERROR", err.Error())
+		mapError(w, err, "[pagos/registrar-comprobante] error")
 		return
 	}
 
@@ -168,8 +166,7 @@ func (h *PagoHandler) Verificar(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.svc.Verificar(r.Context(), pagoID, userID, req.Aprobado, req.Notas); err != nil {
-		slog.Error("[pagos/verificar] error", "error", err, "pagoId", pagoID)
-		ErrorJSON(w, http.StatusBadRequest, "VERIFY_ERROR", err.Error())
+		mapError(w, err, "[pagos/verificar] error", "pagoId", pagoID)
 		return
 	}
 

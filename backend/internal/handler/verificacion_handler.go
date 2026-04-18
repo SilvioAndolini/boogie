@@ -66,8 +66,7 @@ func (h *VerificacionHandler) IniciarMetaMap(w http.ResponseWriter, r *http.Requ
 
 	id, err := h.svc.IniciarMetaMap(r.Context(), userID)
 	if err != nil {
-		slog.Error("[verificacion/iniciar-metamap] error", "error", err, "userId", userID)
-		ErrorJSON(w, http.StatusBadRequest, "VERIF_ERROR", err.Error())
+		mapError(w, err, "[verificacion/iniciar-metamap] error", "userId", userID)
 		return
 	}
 
@@ -131,29 +130,25 @@ func (h *VerificacionHandler) SubirDocumento(w http.ResponseWriter, r *http.Requ
 
 	fotoFrontalURL, err := uploadOne("fotoFrontal", "frontal")
 	if err != nil {
-		slog.Error("[verificacion/subir-documento] frontal upload error", "error", err, "userId", userID)
-		ErrorJSON(w, http.StatusBadRequest, "UPLOAD_FRONTAL", err.Error())
+		mapError(w, err, "[verificacion/subir-documento] frontal upload error", "userId", userID)
 		return
 	}
 
 	fotoTraseraURL, err := uploadOne("fotoTrasera", "trasera")
 	if err != nil {
-		slog.Error("[verificacion/subir-documento] trasera upload error", "error", err, "userId", userID)
-		ErrorJSON(w, http.StatusBadRequest, "UPLOAD_TRASERA", err.Error())
+		mapError(w, err, "[verificacion/subir-documento] trasera upload error", "userId", userID)
 		return
 	}
 
 	fotoSelfieURL, err := uploadOne("fotoSelfie", "selfie")
 	if err != nil {
-		slog.Error("[verificacion/subir-documento] selfie upload error", "error", err, "userId", userID)
-		ErrorJSON(w, http.StatusBadRequest, "UPLOAD_SELFIE", err.Error())
+		mapError(w, err, "[verificacion/subir-documento] selfie upload error", "userId", userID)
 		return
 	}
 
 	id, err := h.svc.SubirDocumento(r.Context(), userID, fotoFrontalURL, fotoTraseraURL, fotoSelfieURL)
 	if err != nil {
-		slog.Error("[verificacion/subir-documento] error", "error", err, "userId", userID)
-		ErrorJSON(w, http.StatusBadRequest, "VERIF_ERROR", err.Error())
+		mapError(w, err, "[verificacion/subir-documento] error", "userId", userID)
 		return
 	}
 
@@ -213,8 +208,7 @@ func (h *VerificacionHandler) Revisar(w http.ResponseWriter, r *http.Request) {
 		Accion:         req.Accion,
 		MotivoRechazo:  req.MotivoRechazo,
 	}); err != nil {
-		slog.Error("[admin/verificaciones/revisar] error", "error", err, "verifId", verifID)
-		ErrorJSON(w, http.StatusBadRequest, "REVISAR_ERROR", err.Error())
+		mapError(w, err, "[admin/verificaciones/revisar] error", "verifId", verifID)
 		return
 	}
 

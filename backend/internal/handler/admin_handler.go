@@ -109,8 +109,7 @@ func (h *AdminHandler) GetReservas(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.svc.GetReservas(r.Context(), estado, busqueda, pagina)
 	if err != nil {
-		slog.Error("[admin/reservas] error", "error", err)
-		ErrorJSON(w, http.StatusInternalServerError, "LIST_ERROR", err.Error())
+		mapError(w, err, "[admin/reservas]")
 		return
 	}
 	JSON(w, http.StatusOK, result)
@@ -149,8 +148,7 @@ func (h *AdminHandler) AccionReserva(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.svc.AccionReserva(r.Context(), req.ReservaID, req.Accion, adminID); err != nil {
-		slog.Error("[admin/reservas/accion] error", "error", err)
-		ErrorJSON(w, http.StatusBadRequest, "ACCION_ERROR", err.Error())
+		mapError(w, err, "[admin/reservas/accion]")
 		return
 	}
 	h.auditLog(r, adminID, "accion_reserva", "reserva", &req.ReservaID, nil)
@@ -168,8 +166,7 @@ func (h *AdminHandler) GetPagos(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.svc.GetPagos(r.Context(), estado, metodoPago, busqueda, pagina)
 	if err != nil {
-		slog.Error("[admin/pagos] error", "error", err)
-		ErrorJSON(w, http.StatusInternalServerError, "LIST_ERROR", err.Error())
+		mapError(w, err, "[admin/pagos]")
 		return
 	}
 	JSON(w, http.StatusOK, result)
@@ -207,8 +204,7 @@ func (h *AdminHandler) VerificarPago(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.svc.VerificarPago(r.Context(), req.PagoID, req.Accion, req.Notas); err != nil {
-		slog.Error("[admin/pagos/verificar] error", "error", err)
-		ErrorJSON(w, http.StatusBadRequest, "VERIFY_ERROR", err.Error())
+		mapError(w, err, "[admin/pagos/verificar]")
 		return
 	}
 	h.auditLog(r, auditID(r), "verificar_pago", "pago", &req.PagoID, nil)
@@ -227,8 +223,7 @@ func (h *AdminHandler) GetPropiedades(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.svc.GetPropiedades(r.Context(), estado, ciudad, busqueda, categoria, pagina)
 	if err != nil {
-		slog.Error("[admin/propiedades] error", "error", err)
-		ErrorJSON(w, http.StatusInternalServerError, "LIST_ERROR", err.Error())
+		mapError(w, err, "[admin/propiedades]")
 		return
 	}
 	JSON(w, http.StatusOK, result)
@@ -260,8 +255,7 @@ func (h *AdminHandler) UpdatePropiedad(w http.ResponseWriter, r *http.Request) {
 		estado = *req.EstadoPublicacion
 	}
 	if err := h.svc.UpdatePropiedad(r.Context(), req.PropiedadID, estado, req.Destacada); err != nil {
-		slog.Error("[admin/propiedades/update] error", "error", err)
-		ErrorJSON(w, http.StatusBadRequest, "UPDATE_ERROR", err.Error())
+		mapError(w, err, "[admin/propiedades/update]")
 		return
 	}
 	h.auditLog(r, "", "update_propiedad", "propiedad", &req.PropiedadID, map[string]interface{}{"estado": estado, "destacada": req.Destacada})
@@ -296,8 +290,7 @@ func (h *AdminHandler) GetResenas(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.svc.GetResenas(r.Context(), calificacionMin, busqueda, pagina)
 	if err != nil {
-		slog.Error("[admin/resenas] error", "error", err)
-		ErrorJSON(w, http.StatusInternalServerError, "LIST_ERROR", err.Error())
+		mapError(w, err, "[admin/resenas]")
 		return
 	}
 
@@ -331,8 +324,7 @@ func (h *AdminHandler) ModerarResena(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.svc.ModerarResena(r.Context(), req.ResenaID, req.Accion); err != nil {
-		slog.Error("[admin/resenas/moderar] error", "error", err)
-		ErrorJSON(w, http.StatusBadRequest, "MODERATE_ERROR", err.Error())
+		mapError(w, err, "[admin/resenas/moderar]")
 		return
 	}
 	h.auditLog(r, "", "moderar_resena", "resena", &req.ResenaID, map[string]interface{}{"accion": req.Accion, "motivo": req.Motivo})
@@ -448,8 +440,7 @@ func (h *AdminHandler) CrearCupon(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.svc.CrearCupon(r.Context(), cupon); err != nil {
-		slog.Error("[admin/cupones/crear] error", "error", err)
-		ErrorJSON(w, http.StatusBadRequest, "CREATE_ERROR", err.Error())
+		mapError(w, err, "[admin/cupones/crear]")
 		return
 	}
 	h.auditLog(r, userID, "crear_cupon", "cupon", nil, map[string]interface{}{"codigo": req.Codigo, "nombre": req.Nombre})
@@ -551,8 +542,7 @@ func (h *AdminHandler) EditarCupon(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.svc.UpdateCupon(r.Context(), req.ID, fields); err != nil {
-		slog.Error("[admin/cupones/editar] error", "error", err)
-		ErrorJSON(w, http.StatusBadRequest, "UPDATE_ERROR", err.Error())
+		mapError(w, err, "[admin/cupones/editar]")
 		return
 	}
 	h.auditLog(r, "", "editar_cupon", "cupon", &req.ID, fields)
@@ -574,7 +564,7 @@ func (h *AdminHandler) ToggleCuponActivo(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	if err := h.svc.ToggleCuponActivo(r.Context(), id, req.Activo); err != nil {
-		ErrorJSON(w, http.StatusBadRequest, "TOGGLE_ERROR", err.Error())
+		mapError(w, err, "[admin/cupones/toggle]")
 		return
 	}
 	h.auditLog(r, "", "toggle_cupon", "cupon", &id, map[string]interface{}{"activo": req.Activo})
@@ -587,7 +577,7 @@ func (h *AdminHandler) DeleteCupon(w http.ResponseWriter, r *http.Request) {
 	}
 	id := chi.URLParam(r, "id")
 	if err := h.svc.DeleteCupon(r.Context(), id); err != nil {
-		ErrorJSON(w, http.StatusBadRequest, "DELETE_ERROR", err.Error())
+		mapError(w, err, "[admin/cupones/delete]")
 		return
 	}
 	h.auditLog(r, "", "delete_cupon", "cupon", &id, nil)
@@ -636,8 +626,7 @@ func (h *AdminHandler) UpdateComisiones(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if err := h.svc.UpdateComisiones(r.Context(), req.ComisionHuesped, req.ComisionAnfitrion, userID); err != nil {
-		slog.Error("[admin/comisiones] error", "error", err)
-		ErrorJSON(w, http.StatusBadRequest, "UPDATE_ERROR", err.Error())
+		mapError(w, err, "[admin/comisiones]")
 		return
 	}
 	h.auditLog(r, userID, "update_comisiones", "comisiones", nil, map[string]interface{}{"comisionHuesped": req.ComisionHuesped, "comisionAnfitrion": req.ComisionAnfitrion})
@@ -656,8 +645,7 @@ func (h *AdminHandler) GetAuditLog(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.svc.GetAuditLog(r.Context(), entidad, adminID, fechaInicio, fechaFin, pagina)
 	if err != nil {
-		slog.Error("[admin/auditoria] error", "error", err)
-		ErrorJSON(w, http.StatusInternalServerError, "LIST_ERROR", err.Error())
+		mapError(w, err, "[admin/auditoria]")
 		return
 	}
 	JSON(w, http.StatusOK, result)
@@ -670,8 +658,7 @@ func (h *AdminHandler) GetNotificaciones(w http.ResponseWriter, r *http.Request)
 	pagina := intQueryParam(r, "pagina", 1)
 	result, err := h.svc.GetNotificaciones(r.Context(), pagina)
 	if err != nil {
-		slog.Error("[admin/notificaciones] error", "error", err)
-		ErrorJSON(w, http.StatusInternalServerError, "LIST_ERROR", err.Error())
+		mapError(w, err, "[admin/notificaciones]")
 		return
 	}
 	JSON(w, http.StatusOK, result)
@@ -703,8 +690,7 @@ func (h *AdminHandler) EnviarNotificacion(w http.ResponseWriter, r *http.Request
 		usuarioID = *req.UsuarioID
 	}
 	if err := h.svc.EnviarNotificacion(r.Context(), usuarioID, req.Titulo, req.Mensaje, req.URLAccion); err != nil {
-		slog.Error("[admin/notificaciones/enviar] error", "error", err)
-		ErrorJSON(w, http.StatusBadRequest, "SEND_ERROR", err.Error())
+		mapError(w, err, "[admin/notificaciones/enviar]")
 		return
 	}
 	h.auditLog(r, "", "enviar_notificacion", "notificacion", nil, map[string]interface{}{"titulo": req.Titulo, "usuarioId": usuarioID})
@@ -741,8 +727,7 @@ func (h *AdminHandler) CrearProductoStore(w http.ResponseWriter, r *http.Request
 		moneda = "USD"
 	}
 	if err := h.tiendaSvc.CrearProducto(r.Context(), req.Nombre, req.Descripcion, req.Precio, moneda, req.ImagenURL, req.Categoria, orden); err != nil {
-		slog.Error("[admin/store/productos/crear] error", "error", err)
-		ErrorJSON(w, http.StatusBadRequest, "CREATE_ERROR", err.Error())
+		mapError(w, err, "[admin/store/productos/crear]")
 		return
 	}
 	h.auditLog(r, "", "crear_producto_store", "producto", nil, map[string]interface{}{"nombre": req.Nombre, "precio": req.Precio})
@@ -769,8 +754,7 @@ func (h *AdminHandler) ActualizarProductoStore(w http.ResponseWriter, r *http.Re
 		return
 	}
 	if err := h.tiendaSvc.ActualizarProducto(r.Context(), id, req.Nombre, req.Descripcion, req.Precio, req.Moneda, req.ImagenURL, req.Categoria, req.Activo, req.Orden); err != nil {
-		slog.Error("[admin/store/productos/actualizar] error", "error", err)
-		ErrorJSON(w, http.StatusBadRequest, "UPDATE_ERROR", err.Error())
+		mapError(w, err, "[admin/store/productos/actualizar]")
 		return
 	}
 	h.auditLog(r, "", "actualizar_producto_store", "producto", &id, nil)
@@ -783,8 +767,7 @@ func (h *AdminHandler) EliminarProductoStore(w http.ResponseWriter, r *http.Requ
 	}
 	id := chi.URLParam(r, "id")
 	if err := h.tiendaSvc.EliminarProducto(r.Context(), id); err != nil {
-		slog.Error("[admin/store/productos/eliminar] error", "error", err)
-		ErrorJSON(w, http.StatusBadRequest, "DELETE_ERROR", err.Error())
+		mapError(w, err, "[admin/store/productos/eliminar]")
 		return
 	}
 	h.auditLog(r, "", "eliminar_producto_store", "producto", &id, nil)
@@ -826,8 +809,7 @@ func (h *AdminHandler) CrearServicioStore(w http.ResponseWriter, r *http.Request
 		tipoPrecio = "FIJO"
 	}
 	if err := h.tiendaSvc.CrearServicio(r.Context(), req.Nombre, req.Descripcion, req.Precio, moneda, tipoPrecio, req.Categoria, req.ImagenURL, orden); err != nil {
-		slog.Error("[admin/store/servicios/crear] error", "error", err)
-		ErrorJSON(w, http.StatusBadRequest, "CREATE_ERROR", err.Error())
+		mapError(w, err, "[admin/store/servicios/crear]")
 		return
 	}
 	h.auditLog(r, "", "crear_servicio_store", "servicio", nil, map[string]interface{}{"nombre": req.Nombre, "precio": req.Precio})
@@ -855,8 +837,7 @@ func (h *AdminHandler) ActualizarServicioStore(w http.ResponseWriter, r *http.Re
 		return
 	}
 	if err := h.tiendaSvc.ActualizarServicio(r.Context(), id, req.Nombre, req.Descripcion, req.Precio, req.Moneda, req.TipoPrecio, req.ImagenURL, req.Categoria, req.Activo, req.Orden); err != nil {
-		slog.Error("[admin/store/servicios/actualizar] error", "error", err)
-		ErrorJSON(w, http.StatusBadRequest, "UPDATE_ERROR", err.Error())
+		mapError(w, err, "[admin/store/servicios/actualizar]")
 		return
 	}
 	h.auditLog(r, "", "actualizar_servicio_store", "servicio", &id, nil)
@@ -869,8 +850,7 @@ func (h *AdminHandler) EliminarServicioStore(w http.ResponseWriter, r *http.Requ
 	}
 	id := chi.URLParam(r, "id")
 	if err := h.tiendaSvc.EliminarServicio(r.Context(), id); err != nil {
-		slog.Error("[admin/store/servicios/eliminar] error", "error", err)
-		ErrorJSON(w, http.StatusBadRequest, "DELETE_ERROR", err.Error())
+		mapError(w, err, "[admin/store/servicios/eliminar]")
 		return
 	}
 	h.auditLog(r, "", "eliminar_servicio_store", "servicio", &id, nil)
@@ -888,8 +868,7 @@ func (h *AdminHandler) GetUsuarios(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.svc.GetUsuarios(r.Context(), busqueda, rol, pagina, limite)
 	if err != nil {
-		slog.Error("[admin/usuarios] error", "error", err)
-		ErrorJSON(w, http.StatusInternalServerError, "LIST_ERROR", err.Error())
+		mapError(w, err, "[admin/usuarios]")
 		return
 	}
 	JSON(w, http.StatusOK, result)
@@ -918,8 +897,7 @@ func (h *AdminHandler) CrearUsuario(w http.ResponseWriter, r *http.Request) {
 	}
 	result, err := h.svc.CrearUsuario(r.Context(), req.Email, req.Password, req.Nombre, req.Apellido, req.Telefono, req.Rol, adminID)
 	if err != nil {
-		slog.Error("[admin/usuarios/crear] error", "error", err)
-		ErrorJSON(w, http.StatusBadRequest, "CREATE_ERROR", err.Error())
+		mapError(w, err, "[admin/usuarios/crear]")
 		return
 	}
 	h.auditLog(r, adminID, "crear_usuario", "usuario", nil, map[string]interface{}{"email": req.Email, "rol": req.Rol})
@@ -948,8 +926,7 @@ func (h *AdminHandler) UpdateUsuario(w http.ResponseWriter, r *http.Request) {
 		plan = req.Plan
 	}
 	if err := h.svc.UpdateUsuario(r.Context(), id, req.Rol, plan, req.Reputacion, req.Activo); err != nil {
-		slog.Error("[admin/usuarios/update] error", "error", err)
-		ErrorJSON(w, http.StatusBadRequest, "UPDATE_ERROR", err.Error())
+		mapError(w, err, "[admin/usuarios/update]")
 		return
 	}
 	h.auditLog(r, "", "update_usuario", "usuario", &id, map[string]interface{}{"rol": req.Rol, "activo": req.Activo})
@@ -962,8 +939,7 @@ func (h *AdminHandler) DeleteUsuario(w http.ResponseWriter, r *http.Request) {
 	}
 	id := chi.URLParam(r, "id")
 	if err := h.svc.DeleteUsuario(r.Context(), id); err != nil {
-		slog.Error("[admin/usuarios/delete] error", "error", err)
-		ErrorJSON(w, http.StatusBadRequest, "DELETE_ERROR", err.Error())
+		mapError(w, err, "[admin/usuarios/delete]")
 		return
 	}
 	h.auditLog(r, "", "delete_usuario", "usuario", &id, nil)
@@ -1003,8 +979,7 @@ func (h *AdminHandler) GetPropiedadIngresos(w http.ResponseWriter, r *http.Reque
 	id := chi.URLParam(r, "id")
 	result, err := h.svc.GetPropiedadIngresos(r.Context(), id)
 	if err != nil {
-		slog.Error("[admin/propiedades/ingresos] error", "error", err)
-		ErrorJSON(w, http.StatusInternalServerError, "INGRESOS_ERROR", err.Error())
+		mapError(w, err, "[admin/propiedades/ingresos]")
 		return
 	}
 	JSON(w, http.StatusOK, result)

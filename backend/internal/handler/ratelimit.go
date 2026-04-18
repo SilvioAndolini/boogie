@@ -9,8 +9,13 @@ import (
 	"golang.org/x/time/rate"
 )
 
+type ipEntry struct {
+	limiter  *rate.Limiter
+	lastSeen time.Time
+}
+
 type IPRateLimiter struct {
-	ips   map[string]*rate.Limiter
+	ips   map[string]*ipEntry
 	mu    sync.RWMutex
 	rate  rate.Limit
 	burst int
@@ -18,7 +23,7 @@ type IPRateLimiter struct {
 
 func NewIPRateLimiter(r rate.Limit, burst int) *IPRateLimiter {
 	l := &IPRateLimiter{
-		ips:   make(map[string]*rate.Limiter),
+		ips:   make(map[string]*ipEntry),
 		rate:  r,
 		burst: burst,
 	}
@@ -36,18 +41,28 @@ func (l *IPRateLimiter) GetLimiter(ip string) *rate.Limiter {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	limiter, exists := l.ips[ip]
+	entry, exists := l.ips[ip]
 	if !exists {
-		limiter = rate.NewLimiter(l.rate, l.burst)
-		l.ips[ip] = limiter
+		entry = &ipEntry{
+			limiter:  rate.NewLimiter(l.rate, l.burst),
+			lastSeen: time.Now(),
+		}
+		l.ips[ip] = entry
+	} else {
+		entry.lastSeen = time.Now()
 	}
-	return limiter
+	return entry.limiter
 }
 
 func (l *IPRateLimiter) Cleanup() {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	l.ips = make(map[string]*rate.Limiter)
+	now := time.Now()
+	for ip, entry := range l.ips {
+		if now.Sub(entry.lastSeen) > 30*time.Minute {
+			delete(l.ips, ip)
+		}
+	}
 }
 
 func RateLimitMiddleware(limiter *IPRateLimiter) func(http.Handler) http.Handler {

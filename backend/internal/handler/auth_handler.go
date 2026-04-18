@@ -207,6 +207,10 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		ErrorJSON(w, http.StatusBadRequest, "MISSING_PARAMS", "email, password y otp son requeridos")
 		return
 	}
+	if len(req.Password) < 8 {
+		ErrorJSON(w, http.StatusBadRequest, "PASSWORD_TOO_SHORT", "La contrasena debe tener al menos 8 caracteres")
+		return
+	}
 	if req.Password != req.ConfirmPassword {
 		ErrorJSON(w, http.StatusBadRequest, "PASSWORD_MISMATCH", "Las contrasenas no coinciden")
 		return
@@ -456,8 +460,7 @@ func (h *AuthHandler) CambiarContrasena(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if err := h.authClient.UpdateUserPassword(r.Context(), h.serviceKey, userID, req.PasswordNueva); err != nil {
-		slog.Error("[auth/password] error", "error", err, "userID", userID)
-		ErrorJSON(w, http.StatusBadRequest, "PASSWORD_ERROR", err.Error())
+		mapError(w, err, "[auth/password] error", "userID", userID)
 		return
 	}
 

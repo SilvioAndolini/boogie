@@ -109,7 +109,7 @@ func TestAuthRegister_MissingParams(t *testing.T) {
 
 func TestAuthRegister_PasswordMismatch(t *testing.T) {
 	h := newAuthHandler()
-	body := `{"email":"test@test.com","password":"pass123","confirmPassword":"pass456","otp":"123456"}`
+	body := `{"email":"test@test.com","password":"password123","confirmPassword":"password456","otp":"123456"}`
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/register", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -122,9 +122,24 @@ func TestAuthRegister_PasswordMismatch(t *testing.T) {
 	assert.Equal(t, "PASSWORD_MISMATCH", errBody["code"])
 }
 
+func TestAuthRegister_PasswordTooShort(t *testing.T) {
+	h := newAuthHandler()
+	body := `{"email":"test@test.com","password":"short","confirmPassword":"short","otp":"123456"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/register", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	h.Register(w, req)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+
+	var resp map[string]interface{}
+	json.NewDecoder(w.Body).Decode(&resp)
+	errBody := resp["error"].(map[string]interface{})
+	assert.Equal(t, "PASSWORD_TOO_SHORT", errBody["code"])
+}
+
 func TestAuthRegister_MissingName(t *testing.T) {
 	h := newAuthHandler()
-	body := `{"email":"test@test.com","password":"pass123","confirmPassword":"pass123","otp":"123456"}`
+	body := `{"email":"test@test.com","password":"password123","confirmPassword":"password123","otp":"123456"}`
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/register", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()

@@ -9,6 +9,7 @@ import (
 
 	"github.com/boogie/backend/internal/domain/enums"
 	"github.com/boogie/backend/internal/repository"
+	"github.com/jackc/pgx/v5"
 )
 
 type PropiedadesService struct {
@@ -280,9 +281,18 @@ func (s *PropiedadesService) Crear(ctx context.Context, userID string, input *re
 		}
 	}
 
-	result, err := s.repo.CrearPropiedad(ctx, userID, *input, amenidadIDs)
+	var result *repository.CrearPropiedadResult
+
+	err = repository.WithTx(ctx, s.repo.Pool(), func(tx pgx.Tx) error {
+		var txErr error
+		result, txErr = s.repo.CrearPropiedadWithDB(ctx, tx, userID, *input, amenidadIDs)
+		if txErr != nil {
+			return fmt.Errorf("error al crear propiedad: %w", txErr)
+		}
+		return nil
+	})
 	if err != nil {
-		return nil, fmt.Errorf("error al crear propiedad: %w", err)
+		return nil, err
 	}
 
 	s.cache.DeleteByPrefix(ctx, "propiedades:search:")
@@ -311,7 +321,13 @@ func (s *PropiedadesService) Actualizar(ctx context.Context, userID, propiedadID
 		}
 	}
 
-	if err := s.repo.ActualizarPropiedad(ctx, propiedadID, userID, *input, amenidadIDs); err != nil {
+	err = repository.WithTx(ctx, s.repo.Pool(), func(tx pgx.Tx) error {
+		if txErr := s.repo.ActualizarPropiedadWithDB(ctx, tx, propiedadID, userID, *input, amenidadIDs); txErr != nil {
+			return fmt.Errorf("error al actualizar propiedad: %w", txErr)
+		}
+		return nil
+	})
+	if err != nil {
 		return nil, fmt.Errorf("error al actualizar propiedad: %w", err)
 	}
 
@@ -347,7 +363,9 @@ func (s *PropiedadesService) AgregarImagenes(ctx context.Context, userID, propie
 		}
 	}
 
-	return s.repo.AgregarImagenes(ctx, propiedadID, imagenes)
+	return repository.WithTx(ctx, s.repo.Pool(), func(tx pgx.Tx) error {
+		return s.repo.AgregarImagenesWithDB(ctx, tx, propiedadID, imagenes)
+	})
 }
 
 func (s *PropiedadesService) ActualizarImagenes(ctx context.Context, userID, propiedadID string, updates []repository.ImagenUpdate) error {

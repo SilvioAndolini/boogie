@@ -1,6 +1,7 @@
 package service
 
 import (
+	"crypto/subtle"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -121,7 +122,7 @@ func (s *CryptoService) BuildCallbackURL(params map[string]string) string {
 }
 
 func (s *CryptoService) VerifyCallbackSecret(secret string) bool {
-	return secret == s.Config.CallbackSecret
+	return subtle.ConstantTimeCompare([]byte(secret), []byte(s.Config.CallbackSecret)) == 1
 }
 
 func CalcularPrecioReserva(precioPorNoche float64, fechaEntrada, fechaSalida time.Time, moneda enums.Moneda, comisionH, comisionA float64) PrecioReserva {

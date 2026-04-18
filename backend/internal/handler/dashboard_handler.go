@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -34,8 +33,7 @@ func (h *DashboardHandler) GetDashboard(w http.ResponseWriter, r *http.Request) 
 
 	dashboardData, err := h.svc.GetDashboard(r.Context(), propiedadID, userID)
 	if err != nil {
-		slog.Error("[dashboard] error", "error", err, "propiedadID", propiedadID)
-		ErrorJSON(w, http.StatusForbidden, "DASHBOARD_ERROR", err.Error())
+		mapError(w, err, "[dashboard] error", "propiedadID", propiedadID)
 		return
 	}
 
@@ -88,8 +86,7 @@ func (h *DashboardHandler) CrearGasto(w http.ResponseWriter, r *http.Request) {
 
 	gasto, err := h.svc.CrearGasto(r.Context(), propiedadID, userID, req.Descripcion, req.Monto, req.Moneda, req.Categoria, req.Fecha)
 	if err != nil {
-		slog.Error("[dashboard/gastos] crear error", "error", err)
-		ErrorJSON(w, http.StatusBadRequest, "CREAR_ERROR", err.Error())
+		mapError(w, err, "[dashboard/gastos] crear error")
 		return
 	}
 
@@ -111,8 +108,7 @@ func (h *DashboardHandler) EliminarGasto(w http.ResponseWriter, r *http.Request)
 	}
 
 	if err := h.svc.EliminarGasto(r.Context(), gastoID, propiedadID, userID); err != nil {
-		slog.Error("[dashboard/gastos] eliminar error", "error", err)
-		ErrorJSON(w, http.StatusBadRequest, "DELETE_ERROR", err.Error())
+		mapError(w, err, "[dashboard/gastos] eliminar error")
 		return
 	}
 

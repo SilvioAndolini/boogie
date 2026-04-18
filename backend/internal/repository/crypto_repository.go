@@ -162,3 +162,44 @@ func (r *CryptoRepo) ExpirarCryptoAbandonados(ctx context.Context) (int, error) 
 	}
 	return n, nil
 }
+
+func (r *CryptoRepo) CancelarCryptoFallidaWithDB(ctx context.Context, db DBTX, reservaID, userID string) error {
+	_, err := db.Exec(ctx, `
+		UPDATE pagos SET estado = 'ANULADA', referencia = 'Crypto - verificacion fallida, cancelada por usuario'
+		WHERE reserva_id = $1 AND metodo_pago = 'CRIPTO' AND estado = 'PENDIENTE'
+	`, reservaID)
+	if err != nil {
+		return fmt.Errorf("cancel crypto pago: %w", err)
+	}
+	_, err = db.Exec(ctx, `
+		UPDATE reservas SET estado = 'ANULADA'
+		WHERE id = $1 AND huesped_id = $2 AND estado IN ('PENDIENTE_PAGO', 'PENDIENTE')
+	`, reservaID, userID)
+	if err != nil {
+		return fmt.Errorf("cancel crypto reserva: %w", err)
+	}
+	return nil
+}
+
+func (r *CryptoRepo) ExpirarCryptoAbandonadosWithDB(ctx context.Context, db DBTX) (int, error) {
+	tag, err := db.Exec(ctx, `
+		UPDATE reservas SET estado = 'ANULADA'
+		WHERE estado IN ('PENDIENTE_PAGO')
+		  AND fecha_creacion < NOW() - INTERVAL '2 hours'
+		  AND id IN (SELECT reserva_id FROM pagos WHERE metodo_pago = 'CRIPTO' AND estado = 'PENDIENTE')
+	`)
+	if err != nil {
+		return 0, fmt.Errorf("expirar reservas crypto: %w", err)
+	}
+	n := int(tag.RowsAffected())
+
+	_, err = db.Exec(ctx, `
+		UPDATE pagos SET estado = 'ANULADA', referencia = 'Crypto - expirada automaticamente (sin TX en 2h)'
+		WHERE metodo_pago = 'CRIPTO' AND estado = 'PENDIENTE'
+		  AND fecha_creacion < NOW() - INTERVAL '2 hours'
+	`)
+	if err != nil {
+		return n, fmt.Errorf("expirar pagos crypto: %w", err)
+	}
+	return n, nil
+}

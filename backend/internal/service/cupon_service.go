@@ -105,6 +105,25 @@ func (s *CuponService) ValidarCupon(ctx context.Context, codigo, usuarioID, prop
 	}, nil
 }
 
+func (s *CuponService) RegistrarUsoWithDB(ctx context.Context, db repository.DBTX, cuponID, usuarioID, reservaID string, descuento float64) error {
+	_, err := db.Exec(ctx,
+		`INSERT INTO cupon_usos (cupon_id, usuario_id, reserva_id, descuento_aplicado, fecha_uso)
+		 VALUES ($1, $2, $3, $4, NOW())`,
+		cuponID, usuarioID, reservaID, descuento)
+	if err != nil {
+		return fmt.Errorf("error al registrar uso de cupón: %w", err)
+	}
+
+	_, err = db.Exec(ctx,
+		`UPDATE cupones SET usos_actuales = usos_actuales + 1 WHERE id = $1`,
+		cuponID)
+	if err != nil {
+		return fmt.Errorf("error al incrementar usos del cupón: %w", err)
+	}
+
+	return nil
+}
+
 func (s *CuponService) RegistrarUso(ctx context.Context, cuponID, usuarioID, reservaID string, descuento float64) error {
 	_, err := s.repo.Pool().Exec(ctx,
 		`INSERT INTO cupon_usos (cupon_id, usuario_id, reserva_id, descuento_aplicado, fecha_uso)

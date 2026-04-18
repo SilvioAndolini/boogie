@@ -304,6 +304,7 @@ func main() {
 		reservaDisponSvc := service.NewReservaDisponibilidad(db)
 		reservaSvc := service.NewReservaService(reservaRepo, reservaDisponSvc, cfg.ComisionPlataformaHuesped, cfg.ComisionPlataformaAnfitrion)
 		reservaSvc.WithCuponService(cuponSvc)
+		reservaSvc.WithStoreItemRepo(storeItemRepo)
 
 		propiedadesH := handler.NewPropiedadesHandler(propiedadesSvc, reservaSvc)
 

@@ -220,8 +220,7 @@ func (h *PropiedadesHandler) Crear(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.svc.Crear(r.Context(), userID, input, req.Amenidades)
 	if err != nil {
-		slog.Error("[propiedades/crear] error", "error", err, "userID", userID)
-		ErrorJSON(w, http.StatusBadRequest, "CREATE_ERROR", err.Error())
+		mapError(w, err, "[propiedades/crear]", "userID", userID)
 		return
 	}
 
@@ -312,8 +311,7 @@ func (h *PropiedadesHandler) Actualizar(w http.ResponseWriter, r *http.Request) 
 
 	result, err := h.svc.Actualizar(r.Context(), userID, id, input, req.Amenidades)
 	if err != nil {
-		slog.Error("[propiedades/actualizar] error", "error", err, "id", id, "userID", userID)
-		ErrorJSON(w, http.StatusBadRequest, "UPDATE_ERROR", err.Error())
+		mapError(w, err, "[propiedades/actualizar]", "id", id, "userID", userID)
 		return
 	}
 
@@ -351,8 +349,7 @@ func (h *PropiedadesHandler) AgregarImagenes(w http.ResponseWriter, r *http.Requ
 	}
 
 	if err := h.svc.AgregarImagenes(r.Context(), userID, id, req.Imagenes); err != nil {
-		slog.Error("[propiedades/agregar-imagenes] error", "error", err, "id", id)
-		ErrorJSON(w, http.StatusBadRequest, "IMAGE_ERROR", err.Error())
+		mapError(w, err, "[propiedades/agregar-imagenes]", "id", id)
 		return
 	}
 
@@ -381,8 +378,7 @@ func (h *PropiedadesHandler) ActualizarImagenes(w http.ResponseWriter, r *http.R
 	}
 
 	if err := h.svc.ActualizarImagenes(r.Context(), userID, id, req.Updates); err != nil {
-		slog.Error("[propiedades/actualizar-imagenes] error", "error", err, "id", id)
-		ErrorJSON(w, http.StatusBadRequest, "IMAGE_ERROR", err.Error())
+		mapError(w, err, "[propiedades/actualizar-imagenes]", "id", id)
 		return
 	}
 

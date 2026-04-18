@@ -23,6 +23,8 @@ func NewPropiedadesRepo(pool *pgxpool.Pool) *PropiedadesRepo {
 	return &PropiedadesRepo{pool: pool}
 }
 
+func (r *PropiedadesRepo) Pool() *pgxpool.Pool { return r.pool }
+
 type PropiedadListado struct {
 	ID                string   `json:"id"`
 	Titulo            string   `json:"titulo"`
@@ -828,6 +830,20 @@ func (r *PropiedadesRepo) AgregarImagenes(ctx context.Context, propiedadID strin
 	return nil
 }
 
+func (r *PropiedadesRepo) AgregarImagenesWithDB(ctx context.Context, db DBTX, propiedadID string, imagenes []ImagenInput) error {
+	for _, img := range imagenes {
+		id := generatePropiedadID()
+		_, err := db.Exec(ctx, `
+			INSERT INTO imagenes_propiedad (id, propiedad_id, url, categoria, orden, es_principal)
+			VALUES ($1, $2, $3, $4, $5, false)
+		`, id, propiedadID, img.URL, img.Categoria, img.Orden)
+		if err != nil {
+			return fmt.Errorf("insert imagen: %w", err)
+		}
+	}
+	return nil
+}
+
 type ImagenUpdate struct {
 	ID        string  `json:"id"`
 	Categoria *string `json:"categoria,omitempty"`
@@ -876,4 +892,107 @@ func generatePropiedadID() string {
 	b := make([]byte, 12)
 	_, _ = rand.Read(b)
 	return hex.EncodeToString(b)
+}
+
+func (r *PropiedadesRepo) CrearPropiedadWithDB(ctx context.Context, db DBTX, propietarioID string, input CrearPropiedadInput, amenidadIDs []string) (*CrearPropiedadResult, error) {
+	id := generatePropiedadID()
+	slug := GenerateSlug(input.Titulo)
+
+	_, err := db.Exec(ctx, `
+		INSERT INTO propiedades (
+			id, propietario_id, titulo, slug, descripcion, tipo_propiedad,
+			precio_por_noche, moneda, capacidad_maxima, habitaciones, banos, camas,
+			direccion, ciudad, estado, zona, latitud, longitud,
+			reglas, politica_cancelacion, horario_checkin, horario_checkout,
+			estancia_minima, estancia_maxima,
+			estado_publicacion, categoria, tipo_cancha, precio_por_hora,
+			hora_apertura, hora_cierre, duracion_minima_min,
+			es_express, precio_express, fecha_actualizacion
+		) VALUES (
+			$1, $2, $3, $4, $5, $6,
+			$7, $8, $9, $10, $11, $12,
+			$13, $14, $15, $16, $17, $18,
+			$19, $20, $21, $22,
+			$23, $24,
+			'PENDIENTE_REVISION', $25, $26, $27,
+			$28, $29, $30,
+			$31, $32, NOW()
+		)`,
+		id, propietarioID, input.Titulo, slug, input.Descripcion, input.TipoPropiedad,
+		input.PrecioPorNoche, input.Moneda, input.CapacidadMaxima, input.Habitaciones, input.Banos, input.Camas,
+		input.Direccion, input.Ciudad, input.Estado, input.Zona, input.Latitud, input.Longitud,
+		input.Reglas, input.PoliticaCancelacion, input.HorarioCheckIn, input.HorarioCheckOut,
+		input.EstanciaMinima, input.EstanciaMaxima,
+		input.Categoria, input.TipoCancha, input.PrecioPorHora,
+		input.HoraApertura, input.HoraCierre, input.DuracionMinimaMin,
+		input.EsExpress, input.PrecioExpress,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("insert propiedad: %w", err)
+	}
+
+	if len(amenidadIDs) > 0 {
+		for _, aID := range amenidadIDs {
+			_, err = db.Exec(ctx, `
+				INSERT INTO propiedad_amenidades (propiedad_id, amenidad_id) VALUES ($1, $2)
+			`, id, aID)
+			if err != nil {
+				return nil, fmt.Errorf("insert amenidad join: %w", err)
+			}
+		}
+	}
+
+	return &CrearPropiedadResult{ID: id, Slug: slug, Estado: "PENDIENTE_REVISION"}, nil
+}
+
+func (r *PropiedadesRepo) ActualizarPropiedadWithDB(ctx context.Context, db DBTX, propiedadID, propietarioID string, input CrearPropiedadInput, amenidadIDs []string) error {
+	tag, err := db.Exec(ctx, `
+		UPDATE propiedades SET
+			titulo = $1, descripcion = $2, tipo_propiedad = $3,
+			precio_por_noche = $4, moneda = $5, capacidad_maxima = $6,
+			habitaciones = $7, banos = $8, camas = $9,
+			direccion = $10, ciudad = $11, estado = $12, zona = $13,
+			latitud = $14, longitud = $15,
+			reglas = $16, politica_cancelacion = $17,
+			horario_checkin = $18, horario_checkout = $19,
+			estancia_minima = $20, estancia_maxima = $21,
+			categoria = $22, tipo_cancha = $23, precio_por_hora = $24,
+			hora_apertura = $25, hora_cierre = $26, duracion_minima_min = $27,
+			es_express = $28, precio_express = $29,
+			estado_publicacion = 'PENDIENTE_REVISION',
+			fecha_actualizacion = NOW()
+		WHERE id = $30 AND propietario_id = $31`,
+		input.Titulo, input.Descripcion, input.TipoPropiedad,
+		input.PrecioPorNoche, input.Moneda, input.CapacidadMaxima,
+		input.Habitaciones, input.Banos, input.Camas,
+		input.Direccion, input.Ciudad, input.Estado, input.Zona,
+		input.Latitud, input.Longitud,
+		input.Reglas, input.PoliticaCancelacion,
+		input.HorarioCheckIn, input.HorarioCheckOut,
+		input.EstanciaMinima, input.EstanciaMaxima,
+		input.Categoria, input.TipoCancha, input.PrecioPorHora,
+		input.HoraApertura, input.HoraCierre, input.DuracionMinimaMin,
+		input.EsExpress, input.PrecioExpress,
+		propiedadID, propietarioID,
+	)
+	if err != nil {
+		return fmt.Errorf("update propiedad: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("propiedad no encontrada o no eres el propietario")
+	}
+
+	_, err = db.Exec(ctx, `DELETE FROM propiedad_amenidades WHERE propiedad_id = $1`, propiedadID)
+	if err != nil {
+		return fmt.Errorf("delete amenidades: %w", err)
+	}
+
+	for _, aID := range amenidadIDs {
+		_, err = db.Exec(ctx, `INSERT INTO propiedad_amenidades (propiedad_id, amenidad_id) VALUES ($1, $2)`, propiedadID, aID)
+		if err != nil {
+			return fmt.Errorf("insert amenidad: %w", err)
+		}
+	}
+
+	return nil
 }

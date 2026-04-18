@@ -12,6 +12,7 @@ import (
 	"github.com/boogie/backend/internal/domain/models"
 	"github.com/boogie/backend/internal/domain/util"
 	"github.com/boogie/backend/internal/repository"
+	"github.com/jackc/pgx/v5"
 )
 
 type TransicionEstado string
@@ -42,11 +43,12 @@ type CancelarInput struct {
 }
 
 type ReservaService struct {
-	repo      *repository.ReservaRepo
-	disponSvc *ReservaDisponibilidad
-	cuponSvc  *CuponService
-	comisionH float64
-	comisionA float64
+	repo          *repository.ReservaRepo
+	disponSvc     *ReservaDisponibilidad
+	cuponSvc      *CuponService
+	storeItemRepo *repository.StoreItemRepo
+	comisionH     float64
+	comisionA     float64
 }
 
 func NewReservaService(repo *repository.ReservaRepo, disponSvc *ReservaDisponibilidad, comisionH, comisionA float64) *ReservaService {
@@ -60,6 +62,11 @@ func NewReservaService(repo *repository.ReservaRepo, disponSvc *ReservaDisponibi
 
 func (s *ReservaService) WithCuponService(svc *CuponService) *ReservaService {
 	s.cuponSvc = svc
+	return s
+}
+
+func (s *ReservaService) WithStoreItemRepo(r *repository.StoreItemRepo) *ReservaService {
+	s.storeItemRepo = r
 	return s
 }
 
@@ -82,39 +89,108 @@ type CrearConPagoInput struct {
 }
 
 func (s *ReservaService) CrearConPago(ctx context.Context, input *CrearConPagoInput) (*CrearReservaResult, error) {
-	result, err := s.Crear(ctx, &CrearReservaInput{
-		PropiedadID:       input.PropiedadID,
-		HuespedID:         input.HuespedID,
-		FechaEntrada:      input.FechaEntrada,
-		FechaSalida:       input.FechaSalida,
-		CantidadHuespedes: input.CantidadHuespedes,
-		NotasHuesped:      input.NotasHuesped,
-		CuponCodigo:       input.CuponCodigo,
+	prop, err := s.repo.GetPropiedadForReserva(ctx, input.PropiedadID)
+	if err != nil {
+		return nil, bizerrors.PropiedadNoEncontrada()
+	}
+
+	if prop.Estado != string(enums.EstadoPublicacionPublicada) {
+		return nil, bizerrors.PropiedadNoPublicada()
+	}
+
+	if prop.PropietarioID == input.HuespedID {
+		return nil, bizerrors.PropiedadPropia()
+	}
+
+	if input.CantidadHuespedes > prop.Capacidad {
+		return nil, bizerrors.CapacidadExcedida(prop.Capacidad)
+	}
+
+	if s.disponSvc != nil {
+		solapado, dispErr := s.disponSvc.HaySolapamiento(ctx, input.PropiedadID, input.FechaEntrada, input.FechaSalida)
+		if dispErr != nil {
+			return nil, fmt.Errorf("error al verificar disponibilidad: %w", dispErr)
+		}
+		if solapado {
+			return nil, bizerrors.EstadoInvalido("las fechas seleccionadas no estan disponibles")
+		}
+	}
+
+	var result *CrearReservaResult
+
+	err = repository.WithTx(ctx, s.repo.Pool(), func(tx pgx.Tx) error {
+		reserva, txErr := s.repo.CrearWithDB(ctx, tx, prop, input.HuespedID, input.FechaEntrada, input.FechaSalida, input.CantidadHuespedes, input.NotasHuesped, s.comisionH, s.comisionA)
+		if txErr != nil {
+			return fmt.Errorf("error al crear reserva: %w", txErr)
+		}
+
+		result = &CrearReservaResult{Reserva: reserva}
+
+		if input.CuponCodigo != "" && s.cuponSvc != nil {
+			validado, cuponErr := s.cuponSvc.ValidarCupon(ctx, input.CuponCodigo, input.HuespedID, input.PropiedadID, reserva.Subtotal, reserva.Noches)
+			if cuponErr != nil {
+				slog.Warn("[reserva-service] cupón inválido, reserva creada sin descuento", "codigo", input.CuponCodigo, "error", cuponErr)
+			} else {
+				nuevoSubtotal := reserva.Subtotal - validado.Descuento
+				if nuevoSubtotal < 0 {
+					nuevoSubtotal = 0
+				}
+				nuevaComisionH := util.Round2(nuevoSubtotal * s.comisionH)
+				nuevoTotal := util.Round2(nuevoSubtotal + nuevaComisionH)
+
+				if updateErr := s.repo.UpdateCuponDescuentoWithDB(ctx, tx, reserva.ID, validado.ID, validado.Descuento, nuevoSubtotal, nuevaComisionH, nuevoTotal); updateErr != nil {
+					return fmt.Errorf("error al aplicar cupón: %w", updateErr)
+				}
+				reserva.Subtotal = nuevoSubtotal
+				reserva.ComisionPlataforma = nuevaComisionH
+				reserva.Total = nuevoTotal
+				reserva.CuponID = &validado.ID
+				reserva.Descuento = validado.Descuento
+
+				if usoErr := s.cuponSvc.RegistrarUsoWithDB(ctx, tx, validado.ID, input.HuespedID, reserva.ID, validado.Descuento); usoErr != nil {
+					return fmt.Errorf("error al registrar uso de cupón: %w", usoErr)
+				}
+			}
+		}
+
+		if notifErr := s.repo.InsertNotificacionWithDB(ctx, tx,
+			"NUEVA_RESERVA", "Nueva reserva recibida",
+			fmt.Sprintf("Tienes una nueva reserva para \"%s\"", prop.Titulo),
+			prop.PropietarioID, "/dashboard/reservas-recibidas",
+		); notifErr != nil {
+			slog.Error("[reserva-service] notificacion error", "error", notifErr)
+		}
+
+		_, txErr = s.repo.InsertPagoManualWithDB(ctx, tx, &repository.NuevoPago{
+			ReservaID:      reserva.ID,
+			UsuarioID:      input.HuespedID,
+			Monto:          input.Monto,
+			Moneda:         input.Moneda,
+			MetodoPago:     input.MetodoPago,
+			Referencia:     input.Referencia,
+			ComprobanteURL: input.ComprobanteURL,
+			BancoEmisor:    input.BancoEmisor,
+			TelefonoEmisor: input.TelefonoEmisor,
+		})
+		if txErr != nil {
+			return fmt.Errorf("error al registrar pago: %w", txErr)
+		}
+
+		if len(input.StoreItems) > 0 && s.storeItemRepo != nil {
+			items := make([]repository.StoreItemInput, len(input.StoreItems))
+			copy(items, input.StoreItems)
+			for i := range items {
+				items[i].ReservaID = reserva.ID
+			}
+			if batchErr := s.storeItemRepo.InsertBatchWithDB(ctx, tx, items); batchErr != nil {
+				return fmt.Errorf("error al insertar store items: %w", batchErr)
+			}
+		}
+
+		return nil
 	})
 	if err != nil {
 		return nil, err
-	}
-
-	_, err = s.repo.InsertPagoManual(ctx, &repository.NuevoPago{
-		ReservaID:      result.Reserva.ID,
-		UsuarioID:      input.HuespedID,
-		Monto:          input.Monto,
-		Moneda:         input.Moneda,
-		MetodoPago:     input.MetodoPago,
-		Referencia:     input.Referencia,
-		ComprobanteURL: input.ComprobanteURL,
-		BancoEmisor:    input.BancoEmisor,
-		TelefonoEmisor: input.TelefonoEmisor,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("error al registrar pago: %w", err)
-	}
-
-	if len(input.StoreItems) > 0 {
-		storeRepo := repository.NewStoreItemRepo(s.repo.Pool())
-		if err := storeRepo.InsertBatch(ctx, input.StoreItems); err != nil {
-			slog.Error("[reserva/crear-con-pago] store items error", "error", err)
-		}
 	}
 
 	return result, nil
@@ -173,50 +249,60 @@ func (s *ReservaService) Crear(ctx context.Context, input *CrearReservaInput) (*
 		}
 	}
 
-	reserva, err := s.repo.Crear(ctx, prop, input.HuespedID, input.FechaEntrada, input.FechaSalida, input.CantidadHuespedes, input.NotasHuesped, s.comisionH, s.comisionA)
-	if err != nil {
-		return nil, fmt.Errorf("error al crear reserva: %w", err)
-	}
+	var result *CrearReservaResult
 
-	if input.CuponCodigo != "" && s.cuponSvc != nil {
-		validado, cuponErr := s.cuponSvc.ValidarCupon(ctx, input.CuponCodigo, input.HuespedID, input.PropiedadID, reserva.Subtotal, reserva.Noches)
-		if cuponErr != nil {
-			slog.Warn("[reserva-service] cupón inválido, reserva creada sin descuento", "codigo", input.CuponCodigo, "error", cuponErr)
-		} else {
-			nuevoSubtotal := reserva.Subtotal - validado.Descuento
-			if nuevoSubtotal < 0 {
-				nuevoSubtotal = 0
-			}
-			nuevaComisionH := util.Round2(nuevoSubtotal * s.comisionH)
-			nuevoTotal := util.Round2(nuevoSubtotal + nuevaComisionH)
+	err = repository.WithTx(ctx, s.repo.Pool(), func(tx pgx.Tx) error {
+		reserva, txErr := s.repo.CrearWithDB(ctx, tx, prop, input.HuespedID, input.FechaEntrada, input.FechaSalida, input.CantidadHuespedes, input.NotasHuesped, s.comisionH, s.comisionA)
+		if txErr != nil {
+			return fmt.Errorf("error al crear reserva: %w", txErr)
+		}
 
-			if updateErr := s.repo.UpdateCuponDescuento(ctx, reserva.ID, validado.ID, validado.Descuento, nuevoSubtotal, nuevaComisionH, nuevoTotal); updateErr != nil {
-				slog.Error("[reserva-service] error al aplicar cupón", "error", updateErr)
+		result = &CrearReservaResult{Reserva: reserva}
+
+		if input.CuponCodigo != "" && s.cuponSvc != nil {
+			validado, cuponErr := s.cuponSvc.ValidarCupon(ctx, input.CuponCodigo, input.HuespedID, input.PropiedadID, reserva.Subtotal, reserva.Noches)
+			if cuponErr != nil {
+				slog.Warn("[reserva-service] cupón inválido, reserva creada sin descuento", "codigo", input.CuponCodigo, "error", cuponErr)
 			} else {
+				nuevoSubtotal := reserva.Subtotal - validado.Descuento
+				if nuevoSubtotal < 0 {
+					nuevoSubtotal = 0
+				}
+				nuevaComisionH := util.Round2(nuevoSubtotal * s.comisionH)
+				nuevoTotal := util.Round2(nuevoSubtotal + nuevaComisionH)
+
+				if updateErr := s.repo.UpdateCuponDescuentoWithDB(ctx, tx, reserva.ID, validado.ID, validado.Descuento, nuevoSubtotal, nuevaComisionH, nuevoTotal); updateErr != nil {
+					return fmt.Errorf("error al aplicar cupón: %w", updateErr)
+				}
 				reserva.Subtotal = nuevoSubtotal
 				reserva.ComisionPlataforma = nuevaComisionH
 				reserva.Total = nuevoTotal
 				reserva.CuponID = &validado.ID
 				reserva.Descuento = validado.Descuento
 
-				if usoErr := s.cuponSvc.RegistrarUso(ctx, validado.ID, input.HuespedID, reserva.ID, validado.Descuento); usoErr != nil {
-					slog.Error("[reserva-service] error al registrar uso de cupón", "error", usoErr)
+				if usoErr := s.cuponSvc.RegistrarUsoWithDB(ctx, tx, validado.ID, input.HuespedID, reserva.ID, validado.Descuento); usoErr != nil {
+					return fmt.Errorf("error al registrar uso de cupón: %w", usoErr)
 				}
 			}
 		}
+
+		if notifErr := s.repo.InsertNotificacionWithDB(ctx, tx,
+			"NUEVA_RESERVA",
+			"Nueva reserva recibida",
+			fmt.Sprintf("Tienes una nueva reserva para \"%s\"", prop.Titulo),
+			prop.PropietarioID,
+			"/dashboard/reservas-recibidas",
+		); notifErr != nil {
+			slog.Error("[reserva-service] notificacion nueva reserva", "error", notifErr)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
-	if err := s.repo.InsertNotificacion(ctx,
-		"NUEVA_RESERVA",
-		"Nueva reserva recibida",
-		fmt.Sprintf("Tienes una nueva reserva para \"%s\"", prop.Titulo),
-		prop.PropietarioID,
-		"/dashboard/reservas-recibidas",
-	); err != nil {
-		slog.Error("[reserva-service] notificacion nueva reserva", "error", err)
-	}
-
-	return &CrearReservaResult{Reserva: reserva}, nil
+	return result, nil
 }
 
 func (s *ReservaService) ConfirmarORechazar(ctx context.Context, reservaID, userID string, accion TransicionEstado, motivo *string) error {

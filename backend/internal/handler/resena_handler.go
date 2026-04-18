@@ -84,8 +84,7 @@ func (h *ResenaHandler) Crear(w http.ResponseWriter, r *http.Request) {
 		Comentario:   req.Comentario,
 	})
 	if err != nil {
-		slog.Error("[resenas/crear] error", "error", err, "userId", userID)
-		ErrorJSON(w, http.StatusBadRequest, "RESENA_ERROR", err.Error())
+		mapError(w, err, "[resenas/crear] error", "userId", userID)
 		return
 	}
 
@@ -128,8 +127,7 @@ func (h *ResenaHandler) Responder(w http.ResponseWriter, r *http.Request) {
 		UserID:    userID,
 		Respuesta: req.Respuesta,
 	}); err != nil {
-		slog.Error("[resenas/responder] error", "error", err, "resenaId", resenaID)
-		ErrorJSON(w, http.StatusBadRequest, "RESPONDER_ERROR", err.Error())
+		mapError(w, err, "[resenas/responder] error", "resenaId", resenaID)
 		return
 	}
 
