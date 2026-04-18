@@ -5,3 +5,4 @@ coverage.out
 .env
 vendor/
 tmp/
+server

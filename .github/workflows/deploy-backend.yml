@@ -8,42 +8,57 @@ on:
 
 jobs:
   deploy:
-    name: Deploy to Linode
+    name: Build & Deploy
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/master'
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - name: Cross-compile
+        run: |
+          cd backend
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o server ./cmd/server
+
+      - name: Upload binary to Linode
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.LINODE_HOST }}
+          username: ${{ secrets.LINODE_USER }}
+          key: ${{ secrets.LINODE_SSH_KEY }}
+          source: "backend/server"
+          target: "/opt/boogie-repo"
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.LINODE_HOST }}
           username: ${{ secrets.LINODE_USER }}
           key: ${{ secrets.LINODE_SSH_KEY }}
-          command_timeout: 10m
+          command_timeout: 5m
           script: |
             set -euo pipefail
 
             echo "==> Pulling latest code..."
             cd /opt/boogie-repo
             git pull origin master
+            chmod +x backend/server
 
-            echo "==> Building Docker image..."
-            docker build -t boogie-backend:latest ./backend
+            echo "==> Building Docker image (prebuilt)..."
+            docker build -f backend/Dockerfile.prebuilt -t boogie-backend:latest ./backend
 
-            echo "==> Restarting container..."
-            docker stop boogie-backend || true
-            docker rm boogie-backend || true
-            docker run -d \
-              --name boogie-backend \
-              --restart unless-stopped \
-              --env-file /opt/boogie-backend/.env \
-              -p 8080:8080 \
-              boogie-backend:latest
+            echo "==> Restarting stack..."
+            docker compose up -d --force-recreate api
 
             echo "==> Waiting for health check..."
             sleep 5
 
-            if curl -sf http://localhost:8080/healthz; then
-              echo ""
+            if docker exec boogie-backend wget -qO- http://localhost:8080/healthz 2>/dev/null | grep -q ok; then
               echo "==> Deploy successful!"
             else
               echo "==> Health check FAILED"

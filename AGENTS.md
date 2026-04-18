@@ -62,29 +62,30 @@ git push origin master
 
 ### Backend → Linode (manual)
 
-Docker Desktop must NOT be required. Build directly on Linode:
+Linode has 1GB RAM — Go compilation OOMs. Use cross-compile + prebuilt Dockerfile:
 
 ```bash
-# 1. Ensure repo exists on Linode (first time only)
-ssh root@172.238.217.35 "git clone https://github.com/SilvioAndolini/boogie.git /opt/boogie-repo"
+# 1. Cross-compile locally (Windows PowerShell)
+$env:GOOS="linux"; $env:GOARCH="amd64"; $env:CGO_ENABLED="0"
+cd backend && go build -ldflags="-s -w" -o server ./cmd/server
 
-# 2. Pull latest code
-ssh root@172.238.217.35 "cd /opt/boogie-repo && git pull origin master"
+# 2. Upload binary + pull code
+scp backend/server root@172.238.217.35:/opt/boogie-repo/backend/server
+ssh root@172.238.217.35 "cd /opt/boogie-repo && git pull origin master && chmod +x backend/server"
 
-# 3. Build Docker image
-ssh root@172.238.217.35 "cd /opt/boogie-repo && docker build -t boogie-backend:latest ./backend"
+# 3. Build minimal Docker image (no Go compilation)
+ssh root@172.238.217.35 "cd /opt/boogie-repo && docker build -f backend/Dockerfile.prebuilt -t boogie-backend:latest ./backend"
 
-# 4. Restart container
-ssh root@172.238.217.35 "docker stop boogie-backend; docker rm boogie-backend; docker run -d --name boogie-backend --restart unless-stopped --env-file /opt/boogie-backend/.env -p 8080:8080 boogie-backend:latest"
+# 4. Restart stack
+ssh root@172.238.217.35 "cd /opt/boogie-repo && docker compose up -d --force-recreate api"
 
 # 5. Verify
-ssh root@172.238.217.35 "sleep 3 && curl -sf http://localhost:8080/healthz"
+ssh root@172.238.217.35 "docker exec boogie-backend wget -qO- http://localhost:8080/healthz"
 # Expected: {"status":"ok"}
 ```
 
-Alternative (local Docker): `bash backend/deploy.sh 172.238.217.35`
-- Requires Docker Desktop running locally
-- Uses `docker save | ssh docker load` pattern
+CI/CD (GitHub Actions): auto-deploys on push to master with `backend/**` changes.
+Uses same cross-compile approach — no Go build on Linode.
 
 ## Environment Variables
 
