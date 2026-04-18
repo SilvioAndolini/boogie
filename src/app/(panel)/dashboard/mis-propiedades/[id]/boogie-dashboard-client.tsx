@@ -306,7 +306,7 @@ export default function BoogieDashboardClient({ data }: { data: DashboardData })
                         <Tooltip
                           contentStyle={{ borderRadius: 12, border: '1px solid #E8E4DF', fontSize: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
                           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          formatter={(value: any, name: any) => [formatMoney(Number(value)), name === 'ingresos' ? 'Ingresos' : 'Gastos']}
+formatter={(value: string | number | Array<string | number>, name: string) => [formatMoney(Number(value)), name === 'ingresos' ? 'Ingresos' : 'Gastos']}
                         />
                         <Area type="monotone" dataKey="ingresos" stroke="#10B981" strokeWidth={2.5} fill="url(#gradIngresos)" />
                         <Area type="monotone" dataKey="gastos" stroke="#EF4444" strokeWidth={2.5} fill="url(#gradGastos)" />

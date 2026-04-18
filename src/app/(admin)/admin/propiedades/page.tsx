@@ -111,7 +111,7 @@ export default function AdminPropiedadesPage() {
 
   useEffect(() => {
     getCiudadesPropiedades().then((res) => {
-      if (Array.isArray(res)) setCiudades(res)
+      if (Array.isArray(res)) startTransition(() => { setCiudades(res) })
     })
   }, [])
 

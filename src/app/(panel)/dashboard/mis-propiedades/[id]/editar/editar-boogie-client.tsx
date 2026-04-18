@@ -639,7 +639,7 @@ export default function EditarBoogieClient({ boogie }: { boogie: Record<string, 
                     {sec.id === 'politicas' && (<>
                        <div className="space-y-1.5">
                          <Label className="text-xs font-semibold text-[#6B6560]">Política de cancelación</Label>
-                         <Select onValueChange={(v) => setValue('politicaCancelacion', v as any)} defaultValue={(boogie.politica_cancelacion as string) || 'MODERADA'}>
+                         <Select onValueChange={(v) => setValue('politicaCancelacion', v as 'FLEXIBLE' | 'MODERADA' | 'ESTRICTA')} defaultValue={(boogie.politica_cancelacion as string) || 'MODERADA'}>
                            <SelectTrigger className="h-11 border-[#E8E4DF] bg-[#FDFCFA] text-sm focus:ring-[#1B4332]/20">
                              <SelectValue />
                            </SelectTrigger>

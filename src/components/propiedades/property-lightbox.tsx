@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, startTransition } from 'react'
 import Image from 'next/image'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
@@ -82,16 +82,18 @@ export function PropertyLightbox({
 
   useEffect(() => {
     if (isOpen) {
-      const targetImg = sorted[initialIndex]
-      if (targetImg && groups.length === 1) {
-        setView('viewer')
-        setViewerCategory(null)
-        setViewerIndex(initialIndex)
-      } else {
-        setView('gallery')
-        setViewerCategory(null)
-        setViewerIndex(0)
-      }
+      startTransition(() => {
+        const targetImg = sorted[initialIndex]
+        if (targetImg && groups.length === 1) {
+          setView('viewer')
+          setViewerCategory(null)
+          setViewerIndex(initialIndex)
+        } else {
+          setView('gallery')
+          setViewerCategory(null)
+          setViewerIndex(0)
+        }
+      })
     }
   }, [isOpen])
 

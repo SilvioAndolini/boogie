@@ -56,7 +56,7 @@ export default function AdminCanchasPage() {
     setLoading(false)
   }, [busqueda, estadoFiltro])
 
-  useEffect(() => { cargar(pagina) }, [pagina, cargar])
+  useEffect(() => { startTransition(() => { cargar(pagina) }) }, [pagina, cargar])
 
   const totalPaginas = Math.ceil(total / 20)
 

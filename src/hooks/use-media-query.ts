@@ -1,7 +1,7 @@
 // Hook para detectar media queries
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, startTransition } from 'react'
 
 export function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(false)

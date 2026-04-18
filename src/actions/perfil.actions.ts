@@ -47,8 +47,8 @@ export async function actualizarPerfil(formData: FormData) {
     await goPut('/api/v1/auth/perfil', datos)
     revalidatePath('/dashboard/perfil')
     return { exito: true }
-  } catch (err: any) {
-    return { error: err.message || 'Error al guardar los cambios' }
+  } catch (err: unknown) {
+    return { error: err instanceof Error ? err.message : 'Error al guardar los cambios' }
   }
 }
 
@@ -63,7 +63,7 @@ export async function cambiarContrasena(formData: FormData) {
   try {
     await goPost('/api/v1/auth/password', { passwordNueva })
     return { exito: true }
-  } catch (err: any) {
+  } catch (err: unknown) {
     return { error: err.message || 'Error al cambiar la contraseña' }
   }
 }
@@ -87,7 +87,7 @@ export async function subirAvatar(formData: FormData) {
     const result = await goPost<{ ok: boolean; url: string }>('/api/v1/auth/avatar', formData)
     revalidatePath('/dashboard/perfil')
     return { exito: true, url: result.url }
-  } catch (err: any) {
-    return { error: err.message || 'Error al subir la imagen' }
+  } catch (err: unknown) {
+    return { error: err instanceof Error ? err.message : 'Error al subir la imagen' }
   }
 }

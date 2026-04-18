@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, startTransition } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown, ArrowLeft, CheckCircle2, BookOpen, Menu, X } from 'lucide-react'
 import Link from 'next/link'
@@ -139,7 +139,7 @@ export function GuiaAnfitrionClient() {
 
   useEffect(() => {
     const savedLecturas = localStorage.getItem('guia-lecturas')
-    if (savedLecturas) setLecturas(JSON.parse(savedLecturas))
+    if (savedLecturas) startTransition(() => setLecturas(JSON.parse(savedLecturas)))
   }, [])
 
   const toggleSeccion = (id: string) => {

@@ -289,7 +289,7 @@ export function PaymentForm({
           </div>
 
           <p className="mt-3 text-[11px] text-[#9E9892] text-center">
-            Realiza el pago móvil desde tu banco y luego presiona "Procesar pago"
+            Realiza el pago móvil desde tu banco y luego presiona &quot;Procesar pago&quot;
           </p>
         </div>
       </div>

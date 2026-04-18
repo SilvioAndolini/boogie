@@ -82,7 +82,7 @@ export default function AdminAuditoriaPage() {
     setCargando(false)
   }
 
-  useEffect(() => { cargarDatos() }, [filtroEntidad])
+  useEffect(() => { startTransition(() => { cargarDatos() }) }, [filtroEntidad])
 
   if (cargando) {
     return (

@@ -35,8 +35,8 @@ export async function getSeccionesDestacadasAdmin() {
   try {
     const secciones = await goGet<SeccionDestacada[]>('/api/v1/admin/secciones-destacadas')
     return { secciones: secciones || [] }
-  } catch (err: any) {
-    return { error: err.message || 'Error al cargar secciones' }
+  } catch (err: unknown) {
+    return { error: err instanceof Error ? err.message : 'Error al cargar secciones' }
   }
 }
 
@@ -80,8 +80,8 @@ export async function actualizarSeccionDestacada(formData: FormData) {
     revalidatePath('/')
     revalidatePath('/admin/secciones')
     return { exito: true }
-  } catch (err: any) {
-    return { error: err.message || 'Error al guardar seccion' }
+  } catch (err: unknown) {
+    return { error: err instanceof Error ? err.message : 'Error al guardar seccion' }
   }
 }
 
@@ -97,8 +97,8 @@ export async function eliminarSeccionDestacada(formData: FormData) {
     revalidatePath('/')
     revalidatePath('/admin/secciones')
     return { exito: true }
-  } catch (err: any) {
-    return { error: err.message || 'Error al eliminar sección' }
+  } catch (err: unknown) {
+    return { error: err instanceof Error ? err.message : 'Error al eliminar sección' }
   }
 }
 

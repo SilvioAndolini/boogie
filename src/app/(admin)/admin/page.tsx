@@ -12,6 +12,7 @@ import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip,
 } from 'recharts'
+import type { ValueType, NameType, Formatter } from 'recharts/types/component/DefaultTooltipContent'
 import { AdminHeader, AdminStatCard, AdminEmptyState } from '@/components/admin'
 import {
   getAdminStats,
@@ -198,13 +199,17 @@ export default function AdminDashboardPage() {
   }, [])
 
   useEffect(() => {
-    loadStats()
-    loadCharts()
-    loadTables()
+    startTransition(() => {
+      loadStats()
+      loadCharts()
+      loadTables()
+    })
 
     const interval = setInterval(() => {
-      loadStats()
-      loadTables()
+      startTransition(() => {
+        loadStats()
+        loadTables()
+      })
     }, 30000)
     return () => clearInterval(interval)
   }, [loadStats, loadCharts, loadTables])
@@ -351,7 +356,7 @@ export default function AdminDashboardPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#F4F1EC" />
                   <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#9E9892' }} axisLine={{ stroke: '#E8E4DF' }} tickLine={false} />
                   <YAxis tick={{ fontSize: 11, fill: '#9E9892' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${v}`} />
-                  <Tooltip contentStyle={tooltipStyle} formatter={(value: any) => [formatMoney(Number(value)), 'Ingresos']} />
+                  <Tooltip contentStyle={tooltipStyle} formatter={((value: ValueType) => [formatMoney(Number(value)), 'Ingresos']) as Formatter<ValueType, NameType>} />
                   <Area type="monotone" dataKey="ingresos" stroke="#1B4332" strokeWidth={2.5} fill="url(#gradAdminIngresos)" />
                 </AreaChart>
               )}
@@ -365,7 +370,7 @@ export default function AdminDashboardPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#F4F1EC" />
                   <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#9E9892' }} axisLine={{ stroke: '#E8E4DF' }} tickLine={false} />
                   <YAxis tick={{ fontSize: 11, fill: '#9E9892' }} axisLine={false} tickLine={false} allowDecimals={false} />
-                  <Tooltip contentStyle={tooltipStyle} formatter={(value: any) => [value, 'Usuarios']} />
+                  <Tooltip contentStyle={tooltipStyle} formatter={((value: ValueType) => [value, 'Usuarios']) as Formatter<ValueType, NameType>} />
                   <Bar dataKey="usuarios" fill="#D8F3DC" stroke="#1B4332" strokeWidth={1} radius={[4, 4, 0, 0]} />
                 </BarChart>
               )}
@@ -394,7 +399,7 @@ export default function AdminDashboardPage() {
                           <Cell key={`cell-${index}`} fill={entry.fill} />
                         ))}
                       </Pie>
-                      <Tooltip contentStyle={tooltipStyle} formatter={(value: any, name: any) => [value, name]} />
+                      <Tooltip contentStyle={tooltipStyle} formatter={((value: ValueType, name: NameType) => [value, name]) as Formatter<ValueType, NameType>} />
                     </PieChart>
                   </div>
                   <div className="flex flex-wrap justify-center gap-3">
@@ -422,7 +427,7 @@ export default function AdminDashboardPage() {
                     <CartesianGrid strokeDasharray="3 3" stroke="#F4F1EC" horizontal={false} />
                     <XAxis type="number" tick={{ fontSize: 11, fill: '#9E9892' }} axisLine={false} tickLine={false} allowDecimals={false} />
                     <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#6B6560' }} axisLine={false} tickLine={false} width={90} />
-                    <Tooltip contentStyle={tooltipStyle} formatter={(value: any) => [value, 'Boogies']} />
+                    <Tooltip contentStyle={tooltipStyle} formatter={((value: ValueType) => [value, 'Boogies']) as Formatter<ValueType, NameType>} />
                     <Bar dataKey="value" fill="#52B788" radius={[0, 4, 4, 0]} barSize={20} />
                   </BarChart>
                 </div>

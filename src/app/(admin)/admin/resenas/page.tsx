@@ -61,7 +61,7 @@ export default function AdminResenasPage() {
     setCargando(false)
   }
 
-  useEffect(() => { cargarDatos() }, [filtroRating])
+  useEffect(() => { startTransition(() => { cargarDatos() }) }, [filtroRating])
 
   useEffect(() => {
     const timer = setTimeout(() => { if (!cargando) cargarDatos() }, 400)

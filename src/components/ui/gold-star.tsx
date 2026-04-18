@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { Star } from 'lucide-react'
 
 interface GoldStarProps {
@@ -8,7 +9,7 @@ interface GoldStarProps {
 }
 
 export function GoldStar({ size = 16, rating, showValue = false, className = '' }: GoldStarProps) {
-  const id = `gs-${Math.random().toString(36).slice(2, 8)}`
+  const id = useMemo(() => `gs-${Math.random().toString(36).slice(2, 8)}`, [])
   const s = `${size / 16}rem` // 16px base -> rem
 
   return (

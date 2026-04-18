@@ -22,6 +22,43 @@ interface PropiedadesLayoutProps {
   titleLabel?: string
 }
 
+function PaginationBar({ totalPaginas, paginaActual, onGoToPage }: {
+  totalPaginas: number
+  paginaActual: number
+  onGoToPage: (page: number) => void
+}) {
+  if (totalPaginas <= 1) return null
+  return (
+    <div className="flex items-center justify-center gap-2 border-t border-[#E8E4DF] bg-white py-3 shrink-0">
+      <button
+        onClick={() => onGoToPage(paginaActual - 1)}
+        disabled={paginaActual <= 1}
+        className="h-9 rounded-lg border border-[#E8E4DF] px-3 text-sm font-medium text-[#6B6560] transition-colors hover:bg-[#F8F6F3] disabled:opacity-30"
+      >
+        Anterior
+      </button>
+      {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((p) => (
+        <button
+          key={p}
+          onClick={() => onGoToPage(p)}
+          className={`h-9 w-9 rounded-lg text-sm font-medium transition-colors ${
+            p === paginaActual ? 'bg-[#1B4332] text-white' : 'border border-[#E8E4DF] text-[#6B6560] hover:bg-[#F8F6F3]'
+          }`}
+        >
+          {p}
+        </button>
+      ))}
+      <button
+        onClick={() => onGoToPage(paginaActual + 1)}
+        disabled={paginaActual >= totalPaginas}
+        className="h-9 rounded-lg border border-[#E8E4DF] px-3 text-sm font-medium text-[#6B6560] transition-colors hover:bg-[#F8F6F3] disabled:opacity-30"
+      >
+        Siguiente
+      </button>
+    </div>
+  )
+}
+
 export function PropiedadesLayout({
   propiedades,
   propiedadesMapa,
@@ -54,39 +91,6 @@ export function PropiedadesLayout({
     const params = new URLSearchParams(searchParams.toString())
     params.set('pagina', String(page))
     router.push(`${basePath}?${params.toString()}`)
-  }
-
-  const PaginationBar = () => {
-    if (totalPaginas <= 1) return null
-    return (
-      <div className="flex items-center justify-center gap-2 border-t border-[#E8E4DF] bg-white py-3 shrink-0">
-        <button
-          onClick={() => goToPage(paginaActual - 1)}
-          disabled={paginaActual <= 1}
-          className="h-9 rounded-lg border border-[#E8E4DF] px-3 text-sm font-medium text-[#6B6560] transition-colors hover:bg-[#F8F6F3] disabled:opacity-30"
-        >
-          Anterior
-        </button>
-        {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((p) => (
-          <button
-            key={p}
-            onClick={() => goToPage(p)}
-            className={`h-9 w-9 rounded-lg text-sm font-medium transition-colors ${
-              p === paginaActual ? 'bg-[#1B4332] text-white' : 'border border-[#E8E4DF] text-[#6B6560] hover:bg-[#F8F6F3]'
-            }`}
-          >
-            {p}
-          </button>
-        ))}
-        <button
-          onClick={() => goToPage(paginaActual + 1)}
-          disabled={paginaActual >= totalPaginas}
-          className="h-9 rounded-lg border border-[#E8E4DF] px-3 text-sm font-medium text-[#6B6560] transition-colors hover:bg-[#F8F6F3] disabled:opacity-30"
-        >
-          Siguiente
-        </button>
-      </div>
-    )
   }
 
   return (
@@ -128,7 +132,7 @@ export function PropiedadesLayout({
                 <PropertyGrid propiedades={propiedades} />
               </div>
             </div>
-            <PaginationBar />
+            <PaginationBar totalPaginas={totalPaginas} paginaActual={paginaActual} onGoToPage={goToPage} />
           </div>
 
           {propiedadesMapa.length > 0 && (
@@ -170,7 +174,7 @@ export function PropiedadesLayout({
 
         <section className="px-4 py-6 sm:px-6">
           <PropertyGrid propiedades={propiedades} />
-          <PaginationBar />
+          <PaginationBar totalPaginas={totalPaginas} paginaActual={paginaActual} onGoToPage={goToPage} />
         </section>
       </div>
 

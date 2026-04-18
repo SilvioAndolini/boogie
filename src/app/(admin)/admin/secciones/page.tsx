@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useTransition, useCallback, useMemo } from 'react'
+import { useState, useEffect, useTransition, useCallback, useMemo, startTransition } from 'react'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -294,7 +294,7 @@ function SeccionEditor({ seccion, onSave, onDelete, creating }: {
                 {previewProps.map((p) => <PropiedadPreviewMini key={p.id} p={p} />)}
               </div>
             ) : (
-              <p className="text-[11px] text-[#9E9892] py-2">Configura estado o ciudad y presiona "Cargar vista previa"</p>
+              <p className="text-[11px] text-[#9E9892] py-2">Configura estado o ciudad y presiona &quot;Cargar vista previa&quot;</p>
             )}
           </div>
         )}

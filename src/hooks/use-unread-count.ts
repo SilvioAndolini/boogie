@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, startTransition } from 'react'
 import { getConteoNoLeidos } from '@/actions/chat.actions'
 
 export function useUnreadCount(intervalMs = 15000) {

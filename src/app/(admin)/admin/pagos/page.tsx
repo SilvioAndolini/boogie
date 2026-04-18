@@ -126,7 +126,7 @@ export default function AdminPagosPage() {
     setCargando(false)
   }
 
-  useEffect(() => { cargarDatos() }, [filtroEstado, filtroMetodo])
+  useEffect(() => { startTransition(() => { cargarDatos() }) }, [filtroEstado, filtroMetodo])
 
   useEffect(() => {
     getTasaBCV().then((res) => { if (res.tasa) setTasaBCV(res.tasa) })
