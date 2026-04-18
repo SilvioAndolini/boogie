@@ -23,7 +23,7 @@ services:
     container_name: boogie-backend
     restart: unless-stopped
     env_file:
-      - ./backend/.env
+      - /opt/boogie-backend/.env
     expose:
       - "8080"
     healthcheck:
