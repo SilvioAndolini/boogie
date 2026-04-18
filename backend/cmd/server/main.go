@@ -47,6 +47,8 @@ func main() {
 		}
 	}
 
+	appCache := service.NewCache(rdb)
+
 	db, err := repository.NewPool(context.Background(), cfg.DatabaseURL)
 	if err != nil {
 		slog.Warn("database connection skipped", "error", err)
@@ -297,7 +299,7 @@ func main() {
 		cuponHandlers.Validar = cuponH.Validar
 
 		propiedadesRepo := repository.NewPropiedadesRepo(db)
-		propiedadesSvc := service.NewPropiedadesService(propiedadesRepo, 2)
+		propiedadesSvc := service.NewPropiedadesService(propiedadesRepo, 2, appCache)
 
 		reservaDisponSvc := service.NewReservaDisponibilidad(db)
 		reservaSvc := service.NewReservaService(reservaRepo, reservaDisponSvc, cfg.ComisionPlataformaHuesped, cfg.ComisionPlataformaAnfitrion)

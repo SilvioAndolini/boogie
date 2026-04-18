@@ -14,11 +14,11 @@ import (
 type PropiedadesService struct {
 	repo    *repository.PropiedadesRepo
 	maxFree int
-	cache   *CacheService
+	cache   Cache
 }
 
-func NewPropiedadesService(repo *repository.PropiedadesRepo, maxFree int) *PropiedadesService {
-	return &PropiedadesService{repo: repo, maxFree: maxFree, cache: GetCache()}
+func NewPropiedadesService(repo *repository.PropiedadesRepo, maxFree int, cache Cache) *PropiedadesService {
+	return &PropiedadesService{repo: repo, maxFree: maxFree, cache: cache}
 }
 
 func (s *PropiedadesService) Search(ctx context.Context, filtros *repository.PropiedadesFiltros) ([]repository.PropiedadListado, int, error) {
@@ -32,7 +32,7 @@ func (s *PropiedadesService) Search(ctx context.Context, filtros *repository.Pro
 	key := fmt.Sprintf("propiedades:search:%s", filtros.CacheKey())
 	ttl := 2 * time.Minute
 
-	val, err := s.cache.GetOrFetch(key, ttl, func() (interface{}, error) {
+	val, err := s.cache.GetOrFetch(ctx, key, ttl, func() (interface{}, error) {
 		items, total, e := s.repo.SearchPublic(ctx, filtros)
 		return propiedadesSearchResult{Items: items, Total: total}, e
 	})
@@ -53,7 +53,7 @@ func (s *PropiedadesService) GetByID(ctx context.Context, id string) (*repositor
 	key := "propiedades:detail:" + id
 	ttl := 5 * time.Minute
 
-	val, err := s.cache.GetOrFetch(key, ttl, func() (interface{}, error) {
+	val, err := s.cache.GetOrFetch(ctx, key, ttl, func() (interface{}, error) {
 		return s.repo.GetByID(ctx, id)
 	})
 	if err != nil {
@@ -66,7 +66,7 @@ func (s *PropiedadesService) GetBySlug(ctx context.Context, slug string) (*repos
 	key := "propiedades:slug:" + slug
 	ttl := 5 * time.Minute
 
-	val, err := s.cache.GetOrFetch(key, ttl, func() (interface{}, error) {
+	val, err := s.cache.GetOrFetch(ctx, key, ttl, func() (interface{}, error) {
 		return s.repo.GetBySlug(ctx, slug)
 	})
 	if err != nil {
@@ -76,10 +76,19 @@ func (s *PropiedadesService) GetBySlug(ctx context.Context, slug string) (*repos
 }
 
 func (s *PropiedadesService) GetByIDOrSlug(ctx context.Context, idOrSlug string) (*repository.PropiedadDetalleFull, error) {
-	if isUUID(idOrSlug) {
-		return s.repo.GetByID(ctx, idOrSlug)
+	key := "propiedades:lookup:" + idOrSlug
+	ttl := 5 * time.Minute
+
+	val, err := s.cache.GetOrFetch(ctx, key, ttl, func() (interface{}, error) {
+		if isUUID(idOrSlug) {
+			return s.repo.GetByID(ctx, idOrSlug)
+		}
+		return s.repo.GetBySlug(ctx, idOrSlug)
+	})
+	if err != nil {
+		return nil, err
 	}
-	return s.repo.GetBySlug(ctx, idOrSlug)
+	return val.(*repository.PropiedadDetalleFull), nil
 }
 
 func (s *PropiedadesService) ListByPropietario(ctx context.Context, propietarioID string) ([]repository.PropiedadListado, error) {
@@ -101,11 +110,26 @@ func (s *PropiedadesService) CanCreate(ctx context.Context, propietarioID, plan 
 }
 
 func (s *PropiedadesService) UpdateEstado(ctx context.Context, id, estado, propietarioID string) error {
-	return s.repo.UpdateEstadoWithOwner(ctx, id, estado, propietarioID)
+	if err := s.repo.UpdateEstadoWithOwner(ctx, id, estado, propietarioID); err != nil {
+		return err
+	}
+	s.invalidatePropiedad(ctx, id)
+	return nil
 }
 
 func (s *PropiedadesService) Delete(ctx context.Context, id, propietarioID string) error {
-	return s.repo.DeleteWithOwner(ctx, id, propietarioID)
+	if err := s.repo.DeleteWithOwner(ctx, id, propietarioID); err != nil {
+		return err
+	}
+	s.invalidatePropiedad(ctx, id)
+	return nil
+}
+
+func (s *PropiedadesService) invalidatePropiedad(ctx context.Context, id string) {
+	s.cache.Delete(ctx, "propiedades:detail:"+id)
+	s.cache.Delete(ctx, "propiedades:lookup:"+id)
+	s.cache.DeleteByPrefix(ctx, "propiedades:search:")
+	s.cache.DeleteByPrefix(ctx, "propiedades:slug:")
 }
 
 func FilterByDistance(results []repository.PropiedadListado, lat, lng, radiusKm float64) []repository.PropiedadListado {
@@ -261,6 +285,8 @@ func (s *PropiedadesService) Crear(ctx context.Context, userID string, input *re
 		return nil, fmt.Errorf("error al crear propiedad: %w", err)
 	}
 
+	s.cache.DeleteByPrefix(ctx, "propiedades:search:")
+
 	return result, nil
 }
 
@@ -288,6 +314,8 @@ func (s *PropiedadesService) Actualizar(ctx context.Context, userID, propiedadID
 	if err := s.repo.ActualizarPropiedad(ctx, propiedadID, userID, *input, amenidadIDs); err != nil {
 		return nil, fmt.Errorf("error al actualizar propiedad: %w", err)
 	}
+
+	s.invalidatePropiedad(ctx, propiedadID)
 
 	detalle, err := s.repo.GetByID(ctx, propiedadID)
 	if err != nil {
@@ -331,5 +359,10 @@ func (s *PropiedadesService) ActualizarImagenes(ctx context.Context, userID, pro
 		return fmt.Errorf("no eres el propietario de esta propiedad")
 	}
 
-	return s.repo.ActualizarImagenes(ctx, propiedadID, updates)
+	if err := s.repo.ActualizarImagenes(ctx, propiedadID, updates); err != nil {
+		return err
+	}
+
+	s.invalidatePropiedad(ctx, propiedadID)
+	return nil
 }

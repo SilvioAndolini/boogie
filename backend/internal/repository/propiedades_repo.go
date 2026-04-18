@@ -218,12 +218,6 @@ func (r *PropiedadesRepo) SearchPublic(ctx context.Context, f *PropiedadesFiltro
 		argIdx += 2
 	}
 
-	countSQL := fmt.Sprintf("SELECT COUNT(*) FROM propiedades p WHERE %s", whereClause)
-	var total int
-	if err := r.pool.QueryRow(ctx, countSQL, args...).Scan(&total); err != nil {
-		return nil, 0, fmt.Errorf("count propiedades: %w", err)
-	}
-
 	offset := 0
 	if f.Pagina > 0 {
 		offset = (f.Pagina - 1) * f.PorPagina
@@ -240,7 +234,8 @@ func (r *PropiedadesRepo) SearchPublic(ctx context.Context, f *PropiedadesFiltro
 		       (SELECT url FROM imagenes_propiedad WHERE propiedad_id = p.id ORDER BY orden LIMIT 1) as imagen_principal,
 		       u.plan_suscripcion,
 		       COALESCE(p.categoria, 'ALOJAMIENTO'), p.tipo_cancha, p.precio_por_hora,
-		       COALESCE(p.es_express, false), p.precio_express
+		       COALESCE(p.es_express, false), p.precio_express,
+		       COUNT(*) OVER() as total_count
 		FROM propiedades p
 		LEFT JOIN usuarios u ON u.id = p.propietario_id
 		WHERE %s
@@ -256,6 +251,7 @@ func (r *PropiedadesRepo) SearchPublic(ctx context.Context, f *PropiedadesFiltro
 	defer rows.Close()
 
 	var results []PropiedadListado
+	var total int
 	for rows.Next() {
 		var item PropiedadListado
 		if err := rows.Scan(
@@ -266,6 +262,7 @@ func (r *PropiedadesRepo) SearchPublic(ctx context.Context, f *PropiedadesFiltro
 			&item.ImagenPrincipal, &item.PlanSuscripcion,
 			&item.Categoria, &item.TipoCancha, &item.PrecioPorHora,
 			&item.EsExpress, &item.PrecioExpress,
+			&total,
 		); err != nil {
 			return nil, 0, fmt.Errorf("scan propiedad: %w", err)
 		}
