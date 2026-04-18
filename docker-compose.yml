@@ -3,8 +3,8 @@ services:
     image: caddy:2-alpine
     container_name: boogie-caddy
     restart: unless-stopped
-    environment:
-      - MONITORING_PASSWORD_HASH=${MONITORING_PASSWORD_HASH}
+    env_file:
+      - /opt/boogie-backend/.env
     ports:
       - "80:80"
       - "443:443"
