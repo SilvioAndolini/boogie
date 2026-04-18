@@ -35,6 +35,9 @@ export default function RootLayout({
     <html lang="es" className={`${jakartaSans.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-[#FEFCF9]">
         <Providers>
+          <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-white focus:text-black">
+            Skip to content
+          </a>
           {children}
           <Toaster position="top-right" richColors />
         </Providers>
