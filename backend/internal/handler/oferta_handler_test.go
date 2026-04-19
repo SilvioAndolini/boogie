@@ -114,7 +114,7 @@ func TestOfertaGetByID_MissingID(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 
 	var resp map[string]interface{}
-	json.NewDecoder(w.Body).Decode(&resp)
+	_ = json.NewDecoder(w.Body).Decode(&resp)
 	errBody := resp["error"].(map[string]interface{})
 	assert.Equal(t, "MISSING_ID", errBody["code"])
 }
@@ -134,7 +134,7 @@ func TestOfertaGetByID_NotFound(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, w.Code)
 
 	var resp map[string]interface{}
-	json.NewDecoder(w.Body).Decode(&resp)
+	_ = json.NewDecoder(w.Body).Decode(&resp)
 	errBody := resp["error"].(map[string]interface{})
 	assert.Equal(t, "NOT_FOUND", errBody["code"])
 	repo.AssertExpectations(t)
@@ -188,7 +188,7 @@ func TestOfertaGetByID_Success_AsHuesped(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var resp map[string]interface{}
-	json.NewDecoder(w.Body).Decode(&resp)
+	_ = json.NewDecoder(w.Body).Decode(&resp)
 	data := resp["data"].(map[string]interface{})
 	assert.Equal(t, "oferta-1", data["id"])
 	assert.Equal(t, "PENDIENTE", data["estado"])
@@ -249,7 +249,7 @@ func TestOfertaGetByID_Success_AsOwner(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var resp map[string]interface{}
-	json.NewDecoder(w.Body).Decode(&resp)
+	_ = json.NewDecoder(w.Body).Decode(&resp)
 	data := resp["data"].(map[string]interface{})
 	assert.Equal(t, "oferta-2", data["id"])
 	assert.Equal(t, 3.0, data["noches"])
@@ -334,7 +334,7 @@ func TestOfertaGetByID_Success_NoImagen(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var resp map[string]interface{}
-	json.NewDecoder(w.Body).Decode(&resp)
+	_ = json.NewDecoder(w.Body).Decode(&resp)
 	data := resp["data"].(map[string]interface{})
 	prop := data["propiedad"].(map[string]interface{})
 	imgs := prop["imagenes"].([]interface{})
@@ -390,7 +390,7 @@ func TestOfertaGetByID_WithRechazo(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var resp map[string]interface{}
-	json.NewDecoder(w.Body).Decode(&resp)
+	_ = json.NewDecoder(w.Body).Decode(&resp)
 	data := resp["data"].(map[string]interface{})
 	assert.Equal(t, "RECHAZADA", data["estado"])
 	assert.Equal(t, motivo, data["motivo_rechazo"])

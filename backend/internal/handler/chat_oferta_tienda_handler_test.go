@@ -51,7 +51,7 @@ func TestChatGetOrCreateConversacion_MissingOtroID(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 
 	var resp map[string]interface{}
-	json.NewDecoder(w.Body).Decode(&resp)
+	_ = json.NewDecoder(w.Body).Decode(&resp)
 	errBody := resp["error"].(map[string]interface{})
 	assert.Equal(t, "MISSING_OTRO_ID", errBody["code"])
 }
@@ -81,7 +81,7 @@ func TestChatGetMensajes_MissingConvID(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 
 	var resp map[string]interface{}
-	json.NewDecoder(w.Body).Decode(&resp)
+	_ = json.NewDecoder(w.Body).Decode(&resp)
 	errBody := resp["error"].(map[string]interface{})
 	assert.Equal(t, "MISSING_CONV_ID", errBody["code"])
 }
@@ -100,7 +100,7 @@ func TestChatEnviarMensaje_MissingConvID(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 
 	var resp map[string]interface{}
-	json.NewDecoder(w.Body).Decode(&resp)
+	_ = json.NewDecoder(w.Body).Decode(&resp)
 	errBody := resp["error"].(map[string]interface{})
 	assert.Equal(t, "MISSING_CONV_ID", errBody["code"])
 }
@@ -156,7 +156,7 @@ func TestOfertaCrear_MissingPropiedadID(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 
 	var resp map[string]interface{}
-	json.NewDecoder(w.Body).Decode(&resp)
+	_ = json.NewDecoder(w.Body).Decode(&resp)
 	errBody := resp["error"].(map[string]interface{})
 	assert.Equal(t, "MISSING_PARAMS", errBody["code"])
 }
@@ -175,7 +175,7 @@ func TestOfertaCrear_InvalidFecha(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 
 	var resp map[string]interface{}
-	json.NewDecoder(w.Body).Decode(&resp)
+	_ = json.NewDecoder(w.Body).Decode(&resp)
 	errBody := resp["error"].(map[string]interface{})
 	assert.Equal(t, "INVALID_FECHA", errBody["code"])
 }

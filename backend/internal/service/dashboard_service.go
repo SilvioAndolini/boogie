@@ -101,9 +101,10 @@ func (s *DashboardService) GetDashboard(ctx context.Context, propiedadID, userID
 	}
 
 	for _, g := range gastos {
-		if g.Moneda == "USD" {
+		switch g.Moneda {
+		case "USD":
 			totalGastos += g.Monto
-		} else if g.Moneda == "VES" {
+		case "VES":
 			totalGastosVes += g.Monto
 		}
 		fechaStr := g.Fecha.Format("2006-01-02")

@@ -102,7 +102,7 @@ func TestAuthLogin_MissingParams(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 
 	var resp map[string]interface{}
-	json.NewDecoder(w.Body).Decode(&resp)
+	_ = json.NewDecoder(w.Body).Decode(&resp)
 	errBody := resp["error"].(map[string]interface{})
 	assert.Equal(t, "MISSING_PARAMS", errBody["code"])
 }
@@ -127,7 +127,7 @@ func TestAuthSendOtpEmail_MissingEmail(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 
 	var resp map[string]interface{}
-	json.NewDecoder(w.Body).Decode(&resp)
+	_ = json.NewDecoder(w.Body).Decode(&resp)
 	errBody := resp["error"].(map[string]interface{})
 	assert.Equal(t, "MISSING_EMAIL", errBody["code"])
 }
@@ -181,7 +181,7 @@ func TestAuthRegister_PasswordMismatch(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 
 	var resp map[string]interface{}
-	json.NewDecoder(w.Body).Decode(&resp)
+	_ = json.NewDecoder(w.Body).Decode(&resp)
 	errBody := resp["error"].(map[string]interface{})
 	assert.Equal(t, "PASSWORD_MISMATCH", errBody["code"])
 }
@@ -196,7 +196,7 @@ func TestAuthRegister_PasswordTooShort(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 
 	var resp map[string]interface{}
-	json.NewDecoder(w.Body).Decode(&resp)
+	_ = json.NewDecoder(w.Body).Decode(&resp)
 	errBody := resp["error"].(map[string]interface{})
 	assert.Equal(t, "PASSWORD_TOO_SHORT", errBody["code"])
 }
@@ -248,7 +248,7 @@ func TestAuthGoogleOAuthURL(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var resp map[string]interface{}
-	json.NewDecoder(w.Body).Decode(&resp)
+	_ = json.NewDecoder(w.Body).Decode(&resp)
 	data := resp["data"].(map[string]interface{})
 	assert.Contains(t, data["url"], "google")
 }
@@ -328,7 +328,7 @@ func TestAuthMe_OK(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var resp map[string]interface{}
-	json.NewDecoder(w.Body).Decode(&resp)
+	_ = json.NewDecoder(w.Body).Decode(&resp)
 	data := resp["data"].(map[string]interface{})
 	assert.Equal(t, "Test", data["nombre"])
 	assert.Equal(t, "User", data["apellido"])
@@ -353,7 +353,7 @@ func TestAuthMe_ProfileError(t *testing.T) {
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 
 	var resp map[string]interface{}
-	json.NewDecoder(w.Body).Decode(&resp)
+	_ = json.NewDecoder(w.Body).Decode(&resp)
 	errBody := resp["error"].(map[string]interface{})
 	assert.Equal(t, "INTERNAL_ERROR", errBody["code"])
 }
@@ -394,7 +394,7 @@ func TestAuthCompletarPerfil_OK(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var resp map[string]interface{}
-	json.NewDecoder(w.Body).Decode(&resp)
+	_ = json.NewDecoder(w.Body).Decode(&resp)
 	data := resp["data"].(map[string]interface{})
 	assert.Equal(t, true, data["ok"])
 
@@ -521,7 +521,7 @@ func TestCambiarContrasena_MissingCurrentPassword(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 
 	var resp map[string]interface{}
-	json.NewDecoder(w.Body).Decode(&resp)
+	_ = json.NewDecoder(w.Body).Decode(&resp)
 	errBody := resp["error"].(map[string]interface{})
 	assert.Equal(t, "MISSING_CURRENT_PASSWORD", errBody["code"])
 }
@@ -537,7 +537,7 @@ func TestCambiarContrasena_PasswordTooShort(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 
 	var resp map[string]interface{}
-	json.NewDecoder(w.Body).Decode(&resp)
+	_ = json.NewDecoder(w.Body).Decode(&resp)
 	errBody := resp["error"].(map[string]interface{})
 	assert.Equal(t, "INVALID_PASSWORD", errBody["code"])
 }

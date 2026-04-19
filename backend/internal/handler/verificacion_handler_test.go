@@ -40,8 +40,8 @@ func TestVerificacionSubirDocumento_Unauthorized(t *testing.T) {
 
 	var buf strings.Builder
 	writer := multipart.NewWriter(&buf)
-	writer.WriteField("fotoFrontal", "dummy")
-	writer.Close()
+	_ = writer.WriteField("fotoFrontal", "dummy")
+	_ = writer.Close()
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/verificacion/subir-documento", strings.NewReader(buf.String()))
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	w := httptest.NewRecorder()
@@ -55,7 +55,7 @@ func TestVerificacionSubirDocumento_StorageNotConfigured(t *testing.T) {
 
 	var buf strings.Builder
 	writer := multipart.NewWriter(&buf)
-	writer.Close()
+	_ = writer.Close()
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/verificacion/subir-documento", strings.NewReader(buf.String()))
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	ctx := context.WithValue(req.Context(), auth.UserIDKey, "user-1")
@@ -66,7 +66,7 @@ func TestVerificacionSubirDocumento_StorageNotConfigured(t *testing.T) {
 	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
 
 	var resp map[string]interface{}
-	json.NewDecoder(w.Body).Decode(&resp)
+	_ = json.NewDecoder(w.Body).Decode(&resp)
 	errBody := resp["error"].(map[string]interface{})
 	assert.Equal(t, "SERVICE_UNAVAILABLE", errBody["code"])
 }

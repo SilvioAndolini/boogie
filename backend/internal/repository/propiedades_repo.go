@@ -350,7 +350,7 @@ func (r *PropiedadesRepo) GetByID(ctx context.Context, id string) (*PropiedadDet
 	batch.Queue(`SELECT id, propiedad_id, url, thumbnail_url, alt, categoria, orden FROM imagenes_propiedad WHERE propiedad_id = $1 ORDER BY orden`, p.ID)
 
 	br := r.pool.SendBatch(ctx, &batch)
-	defer br.Close()
+	defer func() { _ = br.Close() }()
 
 	amenidades, err := r.scanAmenidades(ctx, br)
 	if err != nil {
@@ -446,7 +446,7 @@ func (r *PropiedadesRepo) Delete(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	if _, err := tx.Exec(ctx, `DELETE FROM propiedad_amenidades WHERE propiedad_id = $1`, id); err != nil {
 		return fmt.Errorf("delete amenidades: %w", err)
@@ -465,7 +465,7 @@ func (r *PropiedadesRepo) DeleteWithOwner(ctx context.Context, id, propietarioID
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	tag, err := tx.Exec(ctx, `DELETE FROM propiedades WHERE id = $1 AND propietario_id = $2`, id, propietarioID)
 	if err != nil {
@@ -529,27 +529,6 @@ func (r *PropiedadesRepo) GetAmenidades(ctx context.Context, propiedadID string)
 			return nil, err
 		}
 		results = append(results, a)
-	}
-	return results, nil
-}
-
-func (r *PropiedadesRepo) getImagenes(ctx context.Context, propiedadID string) ([]models.ImagenPropiedad, error) {
-	rows, err := r.pool.Query(ctx, `
-		SELECT id, propiedad_id, url, thumbnail_url, alt, categoria, orden
-		FROM imagenes_propiedad WHERE propiedad_id = $1 ORDER BY orden
-	`, propiedadID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var results []models.ImagenPropiedad
-	for rows.Next() {
-		var img models.ImagenPropiedad
-		if err := rows.Scan(&img.ID, &img.PropiedadID, &img.URL, &img.ThumbnailURL, &img.Alt, &img.Categoria, &img.Orden); err != nil {
-			return nil, err
-		}
-		results = append(results, img)
 	}
 	return results, nil
 }

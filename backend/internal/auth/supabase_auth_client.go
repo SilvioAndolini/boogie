@@ -54,7 +54,7 @@ func (c *SupabaseAuthClient) doRequest(ctx context.Context, method, path string,
 	if err != nil {
 		return nil, 0, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -231,7 +231,7 @@ func (c *SupabaseAuthClient) GetUser(ctx context.Context, accessToken string) (*
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -344,7 +344,7 @@ func (c *SupabaseAuthClient) UploadStorage(ctx context.Context, supabaseURL, ser
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)

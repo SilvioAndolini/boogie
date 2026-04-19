@@ -14,6 +14,8 @@ import (
 	"sync"
 	"time"
 
+	"golang.org/x/sync/singleflight"
+
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -49,6 +51,7 @@ type SupabaseVerifier struct {
 	keys        map[string]*ecdsa.PublicKey
 	mu          sync.RWMutex
 	fetchedAt   time.Time
+	sf          singleflight.Group
 	FetchRole   func(ctx context.Context, userID string) string
 }
 
@@ -103,7 +106,7 @@ func (v *SupabaseVerifier) fetchKeys() error {
 	if err != nil {
 		return fmt.Errorf("JWKS HTTP request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("JWKS HTTP status %d", resp.StatusCode)
@@ -139,36 +142,52 @@ func (v *SupabaseVerifier) fetchKeys() error {
 
 func (v *SupabaseVerifier) getKey(kid string) *ecdsa.PublicKey {
 	v.mu.RLock()
-	if time.Since(v.fetchedAt) > 1*time.Hour {
-		v.mu.RUnlock()
+	stale := time.Since(v.fetchedAt) > 1*time.Hour
+	key := v.keys[kid]
+	v.mu.RUnlock()
+
+	if !stale && key != nil {
+		return key
+	}
+
+	_, _, _ = v.sf.Do("jwks-refresh", func() (interface{}, error) {
 		if err := v.fetchKeys(); err != nil {
 			slog.Error("[auth] JWKS background refresh failed", "error", err)
 		}
-		v.mu.RLock()
-	}
+		return nil, nil
+	})
+
+	v.mu.RLock()
 	defer v.mu.RUnlock()
 	return v.keys[kid]
 }
 
 func (v *SupabaseVerifier) VerifyToken(tokenString string) (*UserClaims, error) {
-	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
-		if _, ok := t.Method.(*jwt.SigningMethodECDSA); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
-		}
+	parser := jwt.NewParser(
+		jwt.WithExpirationRequired(),
+		jwt.WithIssuedAt(),
+		jwt.WithValidMethods([]string{"ES256"}),
+		jwt.WithLeeway(30*time.Second),
+		jwt.WithIssuer(v.supabaseURL+"/auth/v1"),
+		jwt.WithAudience("authenticated"),
+	)
 
-		kid, _ := t.Header["kid"].(string)
-		key := v.getKey(kid)
-		if key == nil {
-			v.fetchKeys()
-			key = v.getKey(kid)
-		}
-		if key == nil {
-			return nil, fmt.Errorf("key not found for kid: %s", kid)
-		}
-		return key, nil
-	})
+	token, err := parser.ParseWithClaims(tokenString, jwt.MapClaims{},
+		func(t *jwt.Token) (interface{}, error) {
+			kid, _ := t.Header["kid"].(string)
+			key := v.getKey(kid)
+			if key == nil {
+				_ = v.fetchKeys()
+				key = v.getKey(kid)
+			}
+			if key == nil {
+				return nil, fmt.Errorf("key not found for kid: %s", kid)
+			}
+			return key, nil
+		},
+	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("invalid token: %w", err)
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
@@ -239,7 +258,7 @@ func (v *SupabaseVerifier) Middleware(next http.Handler) http.Handler {
 func writeAuthError(w http.ResponseWriter, status int, code, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	if _, err := w.Write([]byte(fmt.Sprintf(`{"error":{"code":"%s","message":"%s"}}`, code, message))); err != nil {
+	if _, err := fmt.Fprintf(w, `{"error":{"code":"%s","message":"%s"}}`, code, message); err != nil {
 		slog.Error("[auth] failed to write error response", "error", err)
 	}
 }

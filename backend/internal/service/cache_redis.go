@@ -48,7 +48,7 @@ func (c *RedisCache) GetOrFetchInto(ctx context.Context, key string, ttl time.Du
 		if setErr := c.rdb.Set(ctx, key, string(data), ttl).Err(); setErr != nil {
 			slog.Warn("[redis-cache] set error", "key", key, "error", setErr)
 		}
-		json.Unmarshal(data, target)
+		_ = json.Unmarshal(data, target)
 	}
 
 	return nil

@@ -167,7 +167,7 @@ func (r *AdminRepo) GetCiudades(ctx context.Context) ([]string, error) {
 func (r *AdminRepo) GetPropiedadIngresos(ctx context.Context, id string) (map[string]interface{}, error) {
 	var totalReservas, noches, confirmadas int
 	var ingresos float64
-	r.pool.QueryRow(ctx, `
+	_ = r.pool.QueryRow(ctx, `
 		SELECT COUNT(*), COALESCE(SUM(noches), 0), COALESCE(SUM(CASE WHEN estado IN ('CONFIRMADA','EN_CURSO','COMPLETADA') THEN total ELSE 0 END), 0),
 		       COUNT(*) FILTER (WHERE estado IN ('CONFIRMADA','EN_CURSO','COMPLETADA'))
 		FROM reservas WHERE propiedad_id = $1`, id).Scan(&totalReservas, &noches, &ingresos, &confirmadas)
@@ -176,8 +176,8 @@ func (r *AdminRepo) GetPropiedadIngresos(ctx context.Context, id string) (map[st
 	now := time.Now()
 	inicioMes := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
 	inicioMesPasado := time.Date(now.Year(), now.Month()-1, 1, 0, 0, 0, 0, now.Location())
-	r.pool.QueryRow(ctx, `SELECT COALESCE(SUM(total), 0) FROM reservas WHERE propiedad_id = $1 AND estado IN ('CONFIRMADA','EN_CURSO','COMPLETADA') AND fecha_creacion >= $2`, id, inicioMes).Scan(&ingresosMes)
-	r.pool.QueryRow(ctx, `SELECT COALESCE(SUM(total), 0) FROM reservas WHERE propiedad_id = $1 AND estado IN ('CONFIRMADA','EN_CURSO','COMPLETADA') AND fecha_creacion >= $2 AND fecha_creacion < $3`, id, inicioMesPasado, inicioMes).Scan(&ingresosMesPasado)
+	_ = r.pool.QueryRow(ctx, `SELECT COALESCE(SUM(total), 0) FROM reservas WHERE propiedad_id = $1 AND estado IN ('CONFIRMADA','EN_CURSO','COMPLETADA') AND fecha_creacion >= $2`, id, inicioMes).Scan(&ingresosMes)
+	_ = r.pool.QueryRow(ctx, `SELECT COALESCE(SUM(total), 0) FROM reservas WHERE propiedad_id = $1 AND estado IN ('CONFIRMADA','EN_CURSO','COMPLETADA') AND fecha_creacion >= $2 AND fecha_creacion < $3`, id, inicioMesPasado, inicioMes).Scan(&ingresosMesPasado)
 
 	crecimiento := 0
 	if ingresosMesPasado > 0 {
@@ -185,11 +185,11 @@ func (r *AdminRepo) GetPropiedadIngresos(ctx context.Context, id string) (map[st
 	}
 
 	var comisionPlat, comisionAnf float64
-	r.pool.QueryRow(ctx, `
+	_ = r.pool.QueryRow(ctx, `
 		SELECT COALESCE(SUM(comision_plataforma), 0), COALESCE(SUM(comision_anfitrion), 0)
 		FROM reservas WHERE propiedad_id = $1 AND estado IN ('CONFIRMADA','EN_CURSO','COMPLETADA')`, id).Scan(&comisionPlat, &comisionAnf)
 	var totalHuespedes int
-	r.pool.QueryRow(ctx, `SELECT COALESCE(SUM(cantidad_huespedes), 0) FROM reservas WHERE propiedad_id = $1 AND estado IN ('CONFIRMADA','EN_CURSO','COMPLETADA')`, id).Scan(&totalHuespedes)
+	_ = r.pool.QueryRow(ctx, `SELECT COALESCE(SUM(cantidad_huespedes), 0) FROM reservas WHERE propiedad_id = $1 AND estado IN ('CONFIRMADA','EN_CURSO','COMPLETADA')`, id).Scan(&totalHuespedes)
 
 	var tarifaPromedio float64
 	if noches > 0 {

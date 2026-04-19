@@ -111,7 +111,6 @@ func (r *AdminRepo) UpdateUsuarioAdmin(ctx context.Context, id string, rol, plan
 	if activo != nil {
 		sets = append(sets, fmt.Sprintf("activo = $%d", argIdx))
 		args = append(args, *activo)
-		argIdx++
 	}
 
 	if len(sets) == 0 {

@@ -386,12 +386,6 @@ func (h *ReservaHandler) Cancelar(w http.ResponseWriter, r *http.Request) {
 	JSON(w, http.StatusOK, resp)
 }
 
-type disponibilidadRequest struct {
-	PropiedadID  string `json:"propiedadId"`
-	FechaEntrada string `json:"fechaEntrada"`
-	FechaSalida  string `json:"fechaSalida"`
-}
-
 func (h *ReservaHandler) Disponibilidad(w http.ResponseWriter, r *http.Request) {
 	propID := r.URL.Query().Get("propiedadId")
 	fe := r.URL.Query().Get("fechaEntrada")

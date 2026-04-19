@@ -165,18 +165,18 @@ func (r *AdminRepo) GetDashboardStats(ctx context.Context) (map[string]interface
 	inicioMesPasado := time.Date(now.Year(), now.Month()-1, 1, 0, 0, 0, 0, now.Location())
 
 	var usuariosTotal, propTotal, propPublicadas, resTotal, resPendientes int
-	r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM usuarios WHERE activo = true`).Scan(&usuariosTotal)
-	r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM propiedades`).Scan(&propTotal)
-	r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM propiedades WHERE estado_publicacion = 'PUBLICADA'`).Scan(&propPublicadas)
-	r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM reservas`).Scan(&resTotal)
-	r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM reservas WHERE estado = 'PENDIENTE'`).Scan(&resPendientes)
+	_ = r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM usuarios WHERE activo = true`).Scan(&usuariosTotal)
+	_ = r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM propiedades`).Scan(&propTotal)
+	_ = r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM propiedades WHERE estado_publicacion = 'PUBLICADA'`).Scan(&propPublicadas)
+	_ = r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM reservas`).Scan(&resTotal)
+	_ = r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM reservas WHERE estado = 'PENDIENTE'`).Scan(&resPendientes)
 
 	var usuariosNuevosSemana int
-	r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM usuarios WHERE fecha_registro >= $1`, inicioSemana).Scan(&usuariosNuevosSemana)
+	_ = r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM usuarios WHERE fecha_registro >= $1`, inicioSemana).Scan(&usuariosNuevosSemana)
 
 	var resMes, resMesPasado int
-	r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM reservas WHERE fecha_creacion >= $1`, inicioMes).Scan(&resMes)
-	r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM reservas WHERE fecha_creacion >= $1 AND fecha_creacion < $2`, inicioMesPasado, inicioMes).Scan(&resMesPasado)
+	_ = r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM reservas WHERE fecha_creacion >= $1`, inicioMes).Scan(&resMes)
+	_ = r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM reservas WHERE fecha_creacion >= $1 AND fecha_creacion < $2`, inicioMesPasado, inicioMes).Scan(&resMesPasado)
 
 	crecimientoReservas := 0
 	if resMesPasado > 0 {
@@ -184,8 +184,8 @@ func (r *AdminRepo) GetDashboardStats(ctx context.Context) (map[string]interface
 	}
 
 	var ingresosMes, ingresosMesPasado float64
-	r.pool.QueryRow(ctx, `SELECT COALESCE(SUM(monto), 0) FROM pagos WHERE estado IN ('VERIFICADO','ACREDITADO') AND fecha_creacion >= $1`, inicioMes).Scan(&ingresosMes)
-	r.pool.QueryRow(ctx, `SELECT COALESCE(SUM(monto), 0) FROM pagos WHERE estado IN ('VERIFICADO','ACREDITADO') AND fecha_creacion >= $1 AND fecha_creacion < $2`, inicioMesPasado, inicioMes).Scan(&ingresosMesPasado)
+	_ = r.pool.QueryRow(ctx, `SELECT COALESCE(SUM(monto), 0) FROM pagos WHERE estado IN ('VERIFICADO','ACREDITADO') AND fecha_creacion >= $1`, inicioMes).Scan(&ingresosMes)
+	_ = r.pool.QueryRow(ctx, `SELECT COALESCE(SUM(monto), 0) FROM pagos WHERE estado IN ('VERIFICADO','ACREDITADO') AND fecha_creacion >= $1 AND fecha_creacion < $2`, inicioMesPasado, inicioMes).Scan(&ingresosMesPasado)
 
 	crecimientoIngresos := 0
 	if ingresosMesPasado > 0 {

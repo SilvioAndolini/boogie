@@ -276,7 +276,7 @@ func (r *DashboardRepo) GetDashboardBatched(ctx context.Context, propiedadID str
 		WHERE pa.propiedad_id = $1`, propiedadID)
 
 	br := r.pool.SendBatch(ctx, &batch)
-	defer br.Close()
+	defer func() { _ = br.Close() }()
 
 	gastos, err := r.scanGastos(br)
 	if err != nil {

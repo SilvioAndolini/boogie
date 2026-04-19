@@ -376,6 +376,11 @@ func main() {
 		}
 	}
 
+	var redisCmdable redis.Cmdable
+	if rdb != nil {
+		redisCmdable = rdb
+	}
+
 	srv := &http.Server{
 		Addr: fmt.Sprintf(":%s", cfg.Port),
 		Handler: router.New(&router.RouterOpts{
@@ -411,12 +416,12 @@ func main() {
 			AuthVerifier:         verifier,
 			AppURL:               cfg.AppURL,
 			CronSecret:           cfg.CronSecret,
-			ExchangeLimiter:      router.NewExchangeLimiter(),
-			UbicacionesLimiter:   router.NewUbicacionesLimiter(),
-			AuthLimiter:          router.NewAuthLimiter(),
-			WebhookLimiter:       router.NewWebhookLimiter(),
-			SearchLimiter:        router.NewSearchLimiter(),
-			DisponibilidadLimiter: router.NewDisponibilidadLimiter(),
+			ExchangeLimiter:       router.NewExchangeLimiter(redisCmdable),
+			UbicacionesLimiter:    router.NewUbicacionesLimiter(redisCmdable),
+			AuthLimiter:           router.NewAuthLimiter(redisCmdable),
+			WebhookLimiter:        router.NewWebhookLimiter(redisCmdable),
+			SearchLimiter:         router.NewSearchLimiter(redisCmdable),
+			DisponibilidadLimiter: router.NewDisponibilidadLimiter(redisCmdable),
 		}),
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
@@ -452,7 +457,9 @@ func main() {
 	}
 
 	if rdb != nil {
-		rdb.Close()
+		if err := rdb.Close(); err != nil {
+			slog.Error("redis close error", "error", err)
+		}
 	}
 
 	slog.Info("server exited")

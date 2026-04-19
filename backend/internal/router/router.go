@@ -3,13 +3,14 @@ package router
 import (
 	"crypto/subtle"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/redis/go-redis/v9"
 	"github.com/rs/cors"
-	"golang.org/x/time/rate"
 
 	"github.com/boogie/backend/internal/auth"
 	handlermw "github.com/boogie/backend/internal/handler"
@@ -232,12 +233,12 @@ type RouterOpts struct {
 	AuthVerifier         *auth.SupabaseVerifier
 	AppURL               string
 	CronSecret           string
-	ExchangeLimiter      *handlermw.IPRateLimiter
-	UbicacionesLimiter   *handlermw.IPRateLimiter
-	AuthLimiter          *handlermw.IPRateLimiter
-	WebhookLimiter       *handlermw.IPRateLimiter
-	SearchLimiter        *handlermw.IPRateLimiter
-	DisponibilidadLimiter *handlermw.IPRateLimiter
+	ExchangeLimiter       *handlermw.RedisRateLimiter
+	UbicacionesLimiter    *handlermw.RedisRateLimiter
+	AuthLimiter           *handlermw.RedisRateLimiter
+	WebhookLimiter        *handlermw.RedisRateLimiter
+	SearchLimiter         *handlermw.RedisRateLimiter
+	DisponibilidadLimiter *handlermw.RedisRateLimiter
 }
 
 func New(opts *RouterOpts) http.Handler {
@@ -249,14 +250,20 @@ func New(opts *RouterOpts) http.Handler {
 	r.Use(handlermw.MetricsMiddleware)
 	r.Use(handlermw.LoggingMiddleware)
 	r.Use(handlermw.RecoveryMiddleware)
+	r.Use(handlermw.SecurityHeadersMiddleware)
+	allowedOrigins := []string{opts.AppURL}
+	if os.Getenv("GO_ENV") != "production" {
+		allowedOrigins = append(allowedOrigins, "http://localhost:3000")
+	}
 	r.Use(cors.New(cors.Options{
-		AllowedOrigins:   []string{opts.AppURL},
+		AllowedOrigins:   allowedOrigins,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
 		ExposedHeaders:   []string{"X-RateLimit-Remaining"},
 		AllowCredentials: true,
 		MaxAge:           300,
 	}).Handler)
+	r.Use(handlermw.BodyLimitMiddleware(handlermw.BodyLimitDefault))
 
 	r.Get("/healthz", opts.Handlers.Healthz)
 	r.Handle("/metrics", promhttp.Handler())
@@ -274,7 +281,7 @@ func New(opts *RouterOpts) http.Handler {
 		})
 
 		r.With(rateLimitMiddleware(opts.WebhookLimiter)).Get("/crypto/callback", opts.Handlers.CryptoCallback)
-		r.With(rateLimitMiddleware(opts.WebhookLimiter)).Post("/crypto/callback", opts.Handlers.CryptoCallbackPost)
+		r.With(rateLimitMiddleware(opts.WebhookLimiter), handlermw.BodyLimitMiddleware(handlermw.BodyLimitCallback)).Post("/crypto/callback", opts.Handlers.CryptoCallbackPost)
 		r.With(cronSecretMiddleware(opts.CronSecret)).Post("/crypto/cron/expirar-abandonados", opts.Handlers.CryptoExpirarAbandonados)
 		r.Post("/metamap/webhook", opts.Handlers.MetamapWebhook)
 
@@ -355,7 +362,7 @@ func New(opts *RouterOpts) http.Handler {
 				r.Post("/mensajes-rapidos/seed", opts.ChatHandlers.SeedMensajesRapidos)
 				r.Put("/mensajes-rapidos/{id}", opts.ChatHandlers.ActualizarMensajeRapido)
 				r.Delete("/mensajes-rapidos/{id}", opts.ChatHandlers.EliminarMensajeRapido)
-				r.Post("/imagen", opts.ChatHandlers.SubirImagen)
+				r.With(handlermw.BodyLimitMiddleware(handlermw.BodyLimitImagenes)).Post("/imagen", opts.ChatHandlers.SubirImagen)
 			})
 		}
 
@@ -396,7 +403,7 @@ func New(opts *RouterOpts) http.Handler {
 						r.Put("/", opts.PropiedadesHandlers.Actualizar)
 						r.Get("/editar", opts.PropiedadesHandlers.GetByID)
 						r.Delete("/", opts.PropiedadesHandlers.Delete)
-						r.Post("/imagenes", opts.PropiedadesHandlers.AgregarImagenes)
+						r.With(handlermw.BodyLimitMiddleware(handlermw.BodyLimitImagenes)).Post("/imagenes", opts.PropiedadesHandlers.AgregarImagenes)
 						r.Put("/imagenes", opts.PropiedadesHandlers.ActualizarImagenes)
 						if opts.DashboardHandlers != nil {
 							r.Get("/dashboard", opts.DashboardHandlers.GetDashboard)
@@ -507,7 +514,7 @@ func New(opts *RouterOpts) http.Handler {
 					r.Post("/store/servicios", opts.AdminHandlers.CrearServicioStore)
 					r.Patch("/store/servicios/{id}", opts.AdminHandlers.ActualizarServicioStore)
 					r.Delete("/store/servicios/{id}", opts.AdminHandlers.EliminarServicioStore)
-					r.Post("/store/upload-imagen", opts.AdminHandlers.SubirImagenStore)
+					r.With(handlermw.BodyLimitMiddleware(handlermw.BodyLimitImagenes)).Post("/store/upload-imagen", opts.AdminHandlers.SubirImagenStore)
 				}
 			})
 		}
@@ -529,7 +536,6 @@ func New(opts *RouterOpts) http.Handler {
 				r.Post("/auth/otp/verify", opts.AuthHandlers.VerifyOtp)
 				r.Post("/auth/register", opts.AuthHandlers.Register)
 				r.Post("/auth/reset-password", opts.AuthHandlers.ResetPassword)
-				r.Post("/auth/reset-password", opts.AuthHandlers.ResetPassword)
 			}
 			r.Get("/auth/google", opts.AuthHandlers.GoogleOAuthURL)
 			r.Get("/auth/google/callback", opts.AuthHandlers.GoogleCallback)
@@ -540,7 +546,7 @@ func New(opts *RouterOpts) http.Handler {
 				r.Get("/auth/me", opts.AuthHandlers.Me)
 				r.Put("/auth/perfil", opts.AuthHandlers.ActualizarPerfil)
 				r.Post("/auth/password", opts.AuthHandlers.CambiarContrasena)
-				r.Post("/auth/avatar", opts.AuthHandlers.SubirAvatar)
+				r.With(handlermw.BodyLimitMiddleware(handlermw.BodyLimitAvatar)).Post("/auth/avatar", opts.AuthHandlers.SubirAvatar)
 			})
 		}
 	})
@@ -548,32 +554,32 @@ func New(opts *RouterOpts) http.Handler {
 	return r
 }
 
-func rateLimitMiddleware(limiter *handlermw.IPRateLimiter) func(http.Handler) http.Handler {
+func rateLimitMiddleware(limiter *handlermw.RedisRateLimiter) func(http.Handler) http.Handler {
 	return handlermw.RateLimitMiddleware(limiter)
 }
 
-func NewExchangeLimiter() *handlermw.IPRateLimiter {
-	return handlermw.NewIPRateLimiter(rate.Every(time.Second), 60)
+func NewExchangeLimiter(client redis.Cmdable) *handlermw.RedisRateLimiter {
+	return handlermw.NewRedisRateLimiter(client, 60, 1*time.Minute)
 }
 
-func NewUbicacionesLimiter() *handlermw.IPRateLimiter {
-	return handlermw.NewIPRateLimiter(rate.Every(2*time.Second), 30)
+func NewUbicacionesLimiter(client redis.Cmdable) *handlermw.RedisRateLimiter {
+	return handlermw.NewRedisRateLimiter(client, 30, 1*time.Minute)
 }
 
-func NewAuthLimiter() *handlermw.IPRateLimiter {
-	return handlermw.NewIPRateLimiter(rate.Every(12*time.Second), 5)
+func NewAuthLimiter(client redis.Cmdable) *handlermw.RedisRateLimiter {
+	return handlermw.NewRedisRateLimiter(client, 5, 1*time.Minute)
 }
 
-func NewWebhookLimiter() *handlermw.IPRateLimiter {
-	return handlermw.NewIPRateLimiter(rate.Every(6*time.Second), 10)
+func NewWebhookLimiter(client redis.Cmdable) *handlermw.RedisRateLimiter {
+	return handlermw.NewRedisRateLimiter(client, 10, 1*time.Minute)
 }
 
-func NewSearchLimiter() *handlermw.IPRateLimiter {
-	return handlermw.NewIPRateLimiter(rate.Every(2*time.Second), 30)
+func NewSearchLimiter(client redis.Cmdable) *handlermw.RedisRateLimiter {
+	return handlermw.NewRedisRateLimiter(client, 30, 1*time.Minute)
 }
 
-func NewDisponibilidadLimiter() *handlermw.IPRateLimiter {
-	return handlermw.NewIPRateLimiter(rate.Every(2*time.Second), 30)
+func NewDisponibilidadLimiter(client redis.Cmdable) *handlermw.RedisRateLimiter {
+	return handlermw.NewRedisRateLimiter(client, 30, 1*time.Minute)
 }
 
 func cronSecretMiddleware(secret string) func(http.Handler) http.Handler {

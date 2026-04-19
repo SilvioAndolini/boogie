@@ -49,10 +49,6 @@ var photonInvalidValues = map[string]bool{
 	"footway": true, "pedestrian": true,
 }
 
-var photonValidKeys = map[string]bool{
-	"place": true, "boundary": true, "tourism": true,
-}
-
 var nominatimTipos = map[string]string{
 	"city": "Ciudad", "town": "Ciudad", "village": "Pueblo",
 	"suburb": "Zona", "neighbourhood": "Barrio", "quarter": "Barrio",
@@ -136,7 +132,7 @@ func (s *UbicacionesService) searchPhoton(q string) ([]models.LocationSuggestion
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Photon status: %d", resp.StatusCode)
+		return nil, fmt.Errorf("photon status: %d", resp.StatusCode)
 	}
 
 	var data photonResponse
@@ -162,11 +158,12 @@ func (s *UbicacionesService) searchPhoton(q string) ([]models.LocationSuggestion
 		osmKey, _ := props["osm_key"].(string)
 		tipo := photonTipos[osmValue]
 		if tipo == "" {
-			if osmKey == "place" {
+			switch osmKey {
+			case "place":
 				tipo = "Lugar"
-			} else if osmKey == "boundary" {
+			case "boundary":
 				tipo = "Zona"
-			} else {
+			default:
 				continue
 			}
 		}
@@ -255,7 +252,7 @@ func (s *UbicacionesService) searchNominatim(q string) ([]models.LocationSuggest
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Nominatim status: %d", resp.StatusCode)
+		return nil, fmt.Errorf("nominatim status: %d", resp.StatusCode)
 	}
 
 	var data []nominatimResult
@@ -292,9 +289,9 @@ func (s *UbicacionesService) searchNominatim(q string) ([]models.LocationSuggest
 
 		detalle := buildNominatimDetalle(item.Address, nombre)
 
-		var lat, lng float64
-		fmt.Sscanf(item.Lat, "%f", &lat)
-		fmt.Sscanf(item.Lon, "%f", &lng)
+	var lat, lng float64
+	_, _ = fmt.Sscanf(item.Lat, "%f", &lat)
+	_, _ = fmt.Sscanf(item.Lon, "%f", &lng)
 
 		key := fmt.Sprintf("%s-%.2f-%.2f", nombre, lat, lng)
 		if seen[key] {

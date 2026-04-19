@@ -340,11 +340,9 @@ func (r *SeccionesRepo) PreviewPropiedades(ctx context.Context, tipoFiltro strin
 	if filtroCiudad != nil && *filtroCiudad != "" {
 		query += fmt.Sprintf(" AND p.ciudad = $%d", argIdx)
 		args = append(args, *filtroCiudad)
-		argIdx++
 	} else if filtroEstado != nil && *filtroEstado != "" {
 		query += fmt.Sprintf(" AND p.estado = $%d", argIdx)
 		args = append(args, *filtroEstado)
-		argIdx++
 	}
 
 	if tipoFiltro == "RATING" {

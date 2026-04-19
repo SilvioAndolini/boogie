@@ -65,7 +65,7 @@ func TestHealthz(t *testing.T) {
 	}
 
 	var resp map[string]string
-	json.NewDecoder(w.Body).Decode(&resp)
+	_ = json.NewDecoder(w.Body).Decode(&resp)
 
 	if resp["status"] != "ok" {
 		t.Errorf("expected status ok, got %s", resp["status"])

@@ -1,9 +1,10 @@
 api.boogierent.com {
 	@metrics path /metrics*
+	@metrics_blocked path /metrics* not remote_ip 127.0.0.1/32 172.16.0.0/12 10.0.0.0/8 192.168.0.0/16
+	handle @metrics_blocked {
+		respond 403
+	}
 	handle @metrics {
-		basic_auth {
-			admin {$MONITORING_PASSWORD_HASH}
-		}
 		reverse_proxy api:8080
 	}
 

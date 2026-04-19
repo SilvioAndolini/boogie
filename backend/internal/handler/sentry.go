@@ -16,7 +16,7 @@ func SentryMiddleware(next http.Handler) http.Handler {
 		hub.Scope().SetTag("http.method", r.Method)
 		hub.Scope().SetTag("http.url", r.URL.Path)
 		hub.Scope().SetTag("http.user_agent", r.UserAgent())
-		hub.Scope().SetExtra("remote_addr", r.RemoteAddr)
+		hub.Scope().SetTag("remote_addr", r.RemoteAddr)
 
 		ctx := sentrysdk.SetHubOnContext(r.Context(), hub)
 		next.ServeHTTP(w, r.WithContext(ctx))

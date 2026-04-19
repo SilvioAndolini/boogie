@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 	"runtime/debug"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5/middleware"
@@ -60,4 +61,39 @@ type responseWriter struct {
 func (rw *responseWriter) WriteHeader(code int) {
 	rw.statusCode = code
 	rw.ResponseWriter.WriteHeader(code)
+}
+
+const (
+	BodyLimitDefault   int64 = 1 << 20
+	BodyLimitAvatar    int64 = 2<<20 + 1024
+	BodyLimitImagenes  int64 = 5 << 20
+	BodyLimitCallback  int64 = 10 << 10
+)
+
+func SecurityHeadersMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Frame-Options", "DENY")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+
+		if strings.Contains(r.URL.Path, "/auth/") ||
+			strings.Contains(r.URL.Path, "/reservas") ||
+			strings.Contains(r.URL.Path, "/perfil") {
+			w.Header().Set("Cache-Control", "no-store")
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func BodyLimitMiddleware(maxBytes int64) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodPost || r.Method == http.MethodPut || r.Method == http.MethodPatch {
+				r.Body = http.MaxBytesReader(w, r.Body, maxBytes)
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
 }

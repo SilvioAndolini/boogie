@@ -108,7 +108,7 @@ func TestAdminVerificarPago_MissingParams(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 
 	var resp map[string]interface{}
-	json.NewDecoder(w.Body).Decode(&resp)
+	_ = json.NewDecoder(w.Body).Decode(&resp)
 	errBody := resp["error"].(map[string]interface{})
 	assert.Equal(t, "MISSING_PARAMS", errBody["code"])
 }

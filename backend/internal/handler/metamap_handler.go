@@ -135,6 +135,6 @@ func verifyHMAC(body, signature, secret string) bool {
 }
 
 func readBody(r *http.Request) ([]byte, error) {
-	defer r.Body.Close()
+	defer func() { _ = r.Body.Close() }()
 	return io.ReadAll(r.Body)
 }

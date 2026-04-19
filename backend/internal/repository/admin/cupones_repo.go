@@ -238,9 +238,10 @@ func (r *AdminRepo) GetComisiones(ctx context.Context) (map[string]float64, erro
 		}
 		if m, ok := value.(map[string]interface{}); ok {
 			if v, ok := m["valor"].(float64); ok {
-				if key == "comision_huesped" {
+				switch key {
+				case "comision_huesped":
 					result["huesped"] = v
-				} else if key == "comision_anfitrion" {
+				case "comision_anfitrion":
 					result["anfitrion"] = v
 				}
 			}

@@ -295,10 +295,6 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	JSON(w, http.StatusOK, OKMensajeResponse{Ok: true, Mensaje: "Correo de recuperacion enviado"})
 }
 
-type googleOAuthRequest struct {
-	RedirectTo string `json:"redirectTo"`
-}
-
 func (h *AuthHandler) GoogleOAuthURL(w http.ResponseWriter, r *http.Request) {
 	redirectTo := r.URL.Query().Get("redirectTo")
 	if redirectTo == "" {
@@ -306,10 +302,6 @@ func (h *AuthHandler) GoogleOAuthURL(w http.ResponseWriter, r *http.Request) {
 	}
 	url := h.authClient.GetOAuthURL("google", redirectTo)
 	JSON(w, http.StatusOK, OAuthURLResponse{URL: url})
-}
-
-type googleCallbackRequest struct {
-	Code string `json:"code"`
 }
 
 func (h *AuthHandler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
@@ -521,7 +513,6 @@ func (h *AuthHandler) SubirAvatar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, avatarMaxSize+1024)
 	if err := r.ParseMultipartForm(avatarMaxSize); err != nil {
 		ErrorJSON(w, http.StatusBadRequest, "FILE_TOO_LARGE", "La imagen no debe superar 2 MB")
 		return
@@ -532,7 +523,7 @@ func (h *AuthHandler) SubirAvatar(w http.ResponseWriter, r *http.Request) {
 		ErrorJSON(w, http.StatusBadRequest, "MISSING_FILE", "No se selecciono ninguna imagen")
 		return
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	contentType := header.Header.Get("Content-Type")
 	allowed := map[string]bool{"image/jpeg": true, "image/png": true, "image/webp": true}

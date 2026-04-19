@@ -143,7 +143,7 @@ func (r *TiendaRepo) ActualizarProducto(ctx context.Context, id string, nombre *
 	if imagenURL != nil { sets = append(sets, fmt.Sprintf("imagen_url = $%d", argIdx)); args = append(args, *imagenURL); argIdx++ }
 	if categoria != nil { sets = append(sets, fmt.Sprintf("categoria = $%d", argIdx)); args = append(args, *categoria); argIdx++ }
 	if activo != nil { sets = append(sets, fmt.Sprintf("activo = $%d", argIdx)); args = append(args, *activo); argIdx++ }
-	if orden != nil { sets = append(sets, fmt.Sprintf("orden = $%d", argIdx)); args = append(args, *orden); argIdx++ }
+	if orden != nil { sets = append(sets, fmt.Sprintf("orden = $%d", argIdx)); args = append(args, *orden) }
 
 	if len(sets) == 0 {
 		return nil
@@ -179,7 +179,7 @@ func (r *TiendaRepo) ActualizarServicio(ctx context.Context, id string, nombre *
 	if imagenURL != nil { sets = append(sets, fmt.Sprintf("imagen_url = $%d", argIdx)); args = append(args, *imagenURL); argIdx++ }
 	if categoria != nil { sets = append(sets, fmt.Sprintf("categoria = $%d", argIdx)); args = append(args, *categoria); argIdx++ }
 	if activo != nil { sets = append(sets, fmt.Sprintf("activo = $%d", argIdx)); args = append(args, *activo); argIdx++ }
-	if orden != nil { sets = append(sets, fmt.Sprintf("orden = $%d", argIdx)); args = append(args, *orden); argIdx++ }
+	if orden != nil { sets = append(sets, fmt.Sprintf("orden = $%d", argIdx)); args = append(args, *orden) }
 
 	if len(sets) == 0 {
 		return nil

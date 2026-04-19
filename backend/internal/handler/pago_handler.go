@@ -223,9 +223,10 @@ func (h *PagoHandler) SubirComprobante(w http.ResponseWriter, r *http.Request) {
 
 	ext := strings.TrimPrefix(req.Ext, ".")
 	contentType := "image/jpeg"
-	if ext == "png" {
+	switch ext {
+	case "png":
 		contentType = "image/png"
-	} else if ext == "webp" {
+	case "webp":
 		contentType = "image/webp"
 	}
 

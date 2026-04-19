@@ -101,7 +101,7 @@ func (s *ChatService) SeedMensajesRapidos(ctx context.Context, userID, rol strin
 	}
 
 	var mensajes []string
-	tipo := "ambos"
+	var tipo string
 	if rol == "ANFITRION" || rol == "AMBOS" {
 		tipo = "anfitrion"
 		mensajes = []string{

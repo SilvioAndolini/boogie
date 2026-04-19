@@ -3,8 +3,10 @@ package config
 import (
 	"fmt"
 	"log/slog"
+	"net/url"
 	"os"
 	"strconv"
+	"strings"
 )
 
 // Config holds all application configuration loaded from environment variables.
@@ -54,7 +56,28 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("DATABASE_URL is required")
 	}
 
+	if err := c.ValidateForProduction(); err != nil {
+		return nil, err
+	}
+
 	return c, nil
+}
+
+func (c *Config) ValidateForProduction() error {
+	if c.AppURL == "" {
+		return fmt.Errorf("APP_URL is required")
+	}
+	if strings.Contains(c.AppURL, "localhost") && os.Getenv("GO_ENV") == "production" {
+		return fmt.Errorf("APP_URL cannot be localhost in production, got: %s", c.AppURL)
+	}
+	u, err := url.Parse(c.AppURL)
+	if err != nil {
+		return fmt.Errorf("APP_URL is not a valid URL: %w", err)
+	}
+	if u.Scheme != "https" && os.Getenv("GO_ENV") == "production" {
+		return fmt.Errorf("APP_URL must use HTTPS in production, got: %s", c.AppURL)
+	}
+	return nil
 }
 
 func getEnv(key, fallback string) string {

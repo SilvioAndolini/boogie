@@ -332,7 +332,6 @@ func (h *ChatHandler) SubirImagen(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, chatImagenMaxSize+1024)
 	if err := r.ParseMultipartForm(chatImagenMaxSize); err != nil {
 		ErrorJSON(w, http.StatusBadRequest, "FILE_TOO_LARGE", "Imagen muy grande (max 5MB)")
 		return
@@ -343,7 +342,7 @@ func (h *ChatHandler) SubirImagen(w http.ResponseWriter, r *http.Request) {
 		ErrorJSON(w, http.StatusBadRequest, "MISSING_FILE", "No se encontro imagen")
 		return
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	contentType := header.Header.Get("Content-Type")
 	ext := filepath.Ext(header.Filename)
