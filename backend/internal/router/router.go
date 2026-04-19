@@ -437,7 +437,6 @@ func New(opts *RouterOpts) http.Handler {
 					r.Post("/crear-con-pago", opts.ReservaHandlers.CrearConPago)
 					r.Get("/mias", opts.ReservaHandlers.MisReservas)
 					r.Get("/recibidas", opts.ReservaHandlers.ReservasRecibidas)
-					r.Post("/cron/auto-confirmar", opts.ReservaHandlers.AutoConfirmarExpiradas)
 					r.Get("/modos-reserva", opts.ReservaHandlers.GetModosReserva)
 					r.Put("/modos-reserva", opts.ReservaHandlers.UpdateModoReserva)
 					r.Get("/{id}", opts.ReservaHandlers.GetByID)
@@ -445,6 +444,8 @@ func New(opts *RouterOpts) http.Handler {
 					r.Post("/{id}/confirmar", opts.ReservaHandlers.ConfirmarORechazar)
 					r.Post("/{id}/rechazar", opts.ReservaHandlers.ConfirmarORechazar)
 				})
+
+				r.With(cronSecretMiddleware(opts.CronSecret)).Post("/cron/auto-confirmar", opts.ReservaHandlers.AutoConfirmarExpiradas)
 			})
 		}
 

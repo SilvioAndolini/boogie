@@ -2,6 +2,8 @@ package handler
 
 import (
 	"context"
+	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"reflect"
@@ -27,16 +29,16 @@ func NewRedisRateLimiter(client redis.Cmdable, requests int, window time.Duratio
 
 func (l *RedisRateLimiter) Allow(ctx context.Context, key string) (bool, error) {
 	if l.client == nil {
-		return true, nil
+		return false, fmt.Errorf("rate limiter not configured")
 	}
 	v := reflect.ValueOf(l.client)
 	if !v.IsValid() || (v.Kind() == reflect.Ptr && v.IsNil()) {
-		return true, nil
+		return false, fmt.Errorf("rate limiter client invalid")
 	}
 	fullKey := "ratelimit:" + key
 	count, err := l.client.Incr(ctx, fullKey).Result()
 	if err != nil {
-		return true, nil
+		return false, fmt.Errorf("rate limiter redis error: %w", err)
 	}
 	if count == 1 {
 		l.client.Expire(ctx, fullKey, l.window)
@@ -53,6 +55,9 @@ func RateLimitMiddleware(limiter *RedisRateLimiter) func(http.Handler) http.Hand
 				group = "auth"
 			}
 			allowed, err := limiter.Allow(r.Context(), group+":"+ip)
+			if err != nil {
+				slog.Error("rate limiter failure", "error", err, "ip", ip, "path", r.URL.Path)
+			}
 			if err != nil || !allowed {
 				w.Header().Set("Retry-After", "60")
 				ErrorJSON(w, http.StatusTooManyRequests, "RATE_LIMITED", "Demasiadas solicitudes. Intenta mas tarde.")
