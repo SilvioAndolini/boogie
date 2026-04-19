@@ -17,7 +17,7 @@ Code/commits/PRs: normal. Off: "stop caveman" / "normal mode".
 # Project Core Rules — PERMANENT
 
 1. **NO deadlines.** Solutions implemented correctly regardless of time. No rushed patches.
-2. **Data flows through backend.** Frontend → Go backend (validate/authorize/sanitize) → Database. NEVER write to DB directly from frontend Server Actions unless explicitly approved by project owner.
+2. **Data flows through backend. ABSOLUTELY NO EXCEPTIONS.** Frontend → Go backend (validate/authorize/sanitize) → Database. NEVER write to DB directly from frontend Server Actions. This includes `supabase.auth.updateUser()`, `supabase.auth.getUser()`, and any other Supabase client calls that mutate data. ALL data mutations go through Go. Before writing any server action that touches Supabase, ask: "Does this go through Go?" If not, stop and fix it.
 3. **Consult before implementing.** If unsure about approach, ask the project owner. Bad solutions worse than delayed solutions.
 4. **Security over speed.** Every data mutation must have server-side validation, authorization, and sanitization in Go.
 5. **NO unauthorized modifications.** Agents MUST ONLY modify files explicitly requested by the project owner. If a task requires touching files outside the stated scope (e.g., router.go, shared configs, unrelated pages), STOP and ASK first. Breaking changes to unrelated code are unacceptable.

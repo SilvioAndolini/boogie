@@ -203,8 +203,9 @@ type AuthHandlers struct {
 	CompletarPerfil   http.HandlerFunc
 	Me                http.HandlerFunc
 	ActualizarPerfil  http.HandlerFunc
-	CambiarContrasena http.HandlerFunc
-	SubirAvatar       http.HandlerFunc
+	CambiarContrasena     http.HandlerFunc
+	RestablecerContrasena http.HandlerFunc
+	SubirAvatar           http.HandlerFunc
 }
 
 type CuponHandlers struct {
@@ -547,6 +548,7 @@ func New(opts *RouterOpts) http.Handler {
 				r.Get("/auth/me", opts.AuthHandlers.Me)
 				r.Put("/auth/perfil", opts.AuthHandlers.ActualizarPerfil)
 				r.Post("/auth/password", opts.AuthHandlers.CambiarContrasena)
+				r.Put("/auth/recovery-password", opts.AuthHandlers.RestablecerContrasena)
 				r.With(handlermw.BodyLimitMiddleware(handlermw.BodyLimitAvatar)).Post("/auth/avatar", opts.AuthHandlers.SubirAvatar)
 			})
 		}

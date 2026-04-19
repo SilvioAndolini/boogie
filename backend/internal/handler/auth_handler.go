@@ -296,10 +296,15 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	redirectTo := h.appURL + "/recuperar-contrasena"
+	redirectTo := h.appURL + "/auth/recovery"
 	if err := h.authClient.ResetPasswordForEmail(r.Context(), req.Email, redirectTo); err != nil {
 		slog.Error("[auth/reset-password] error", "error", err)
-		ErrorJSON(w, http.StatusBadRequest, "RESET_ERROR", "No pudimos enviar el correo")
+		authErr, ok := err.(*auth.AuthError)
+		if ok && (authErr.Code == "rate_limit_exceeded" || authErr.Code == "429") {
+			ErrorJSON(w, http.StatusTooManyRequests, "RATE_LIMITED", "Demasiados intentos. Espera un momento.")
+			return
+		}
+		ErrorJSON(w, http.StatusBadRequest, "RESET_ERROR", err.Error())
 		return
 	}
 
@@ -611,6 +616,42 @@ func normalizarCedula(valor string) string {
 		return string(limpio[0]) + "-" + limpio[1:]
 	}
 	return "V-" + limpio
+}
+
+type restablecerContrasenaRequest struct {
+	Password string `json:"password"`
+}
+
+func (h *AuthHandler) RestablecerContrasena(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetUserID(r.Context())
+	if userID == "" {
+		ErrorJSON(w, http.StatusUnauthorized, "AUTH_REQUIRED", "No autenticado")
+		return
+	}
+
+	var req restablecerContrasenaRequest
+	if err := DecodeJSON(r, &req); err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "JSON invalido")
+		return
+	}
+
+	if req.Password == "" {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_PASSWORD", "La contrasena es requerida")
+		return
+	}
+	if err := validatePassword(req.Password); err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_PASSWORD", err.Error())
+		return
+	}
+
+	if err := h.authClient.UpdateUserPassword(r.Context(), h.serviceKey, userID, req.Password); err != nil {
+		slog.Error("[auth/restablecer] error", "userID", userID, "error", err)
+		ErrorJSON(w, http.StatusInternalServerError, "UPDATE_ERROR", "No pudimos actualizar la contraseña. Intenta de nuevo.")
+		return
+	}
+
+	slog.Info("[auth/restablecer] password updated", "userID", userID)
+	JSON(w, http.StatusOK, OKMensajeResponse{Ok: true, Mensaje: "Contraseña actualizada"})
 }
 
 func validatePassword(pw string) error {

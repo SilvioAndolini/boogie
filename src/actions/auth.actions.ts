@@ -191,14 +191,20 @@ export async function recuperarContrasena(formData: FormData) {
     return { error: validacion.error.issues[0].message }
   }
 
-  const supabase = await createClient()
-
-  const { error } = await supabase.auth.resetPasswordForEmail(datos.email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?type=recovery`,
-  })
-
-  if (error) {
-    console.error('[recuperarContrasena] Error:', error.message)
+  try {
+    await goFetch('/api/v1/auth/reset-password', {
+      method: 'POST',
+      body: { email: datos.email },
+    })
+  } catch (err) {
+    if (err instanceof GoAPIError) {
+      console.error('[recuperarContrasena] Backend error:', { code: err.code, status: err.status, message: err.message })
+      if (err.code === 'RATE_LIMITED') {
+        return { error: 'Demasiados intentos. Espera un momento e intenta de nuevo.' }
+      }
+      return { error: err.message || 'No pudimos enviar el correo. Intenta de nuevo.' }
+    }
+    console.error('[recuperarContrasena] Error:', err)
     return { error: 'No pudimos enviar el correo. Intenta de nuevo.' }
   }
 
@@ -217,21 +223,24 @@ export async function restablecerContrasena(formData: FormData) {
     return { error: 'Las contraseñas no coinciden' }
   }
 
-  const supabase = await createClient()
-
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
-
-  if (userError || !user) {
-    return { error: 'Sesión inválida. Solicita un nuevo enlace de recuperación.' }
-  }
-
-  const { error } = await supabase.auth.updateUser({ password })
-
-  if (error) {
-    console.error('[restablecerContrasena] Error:', error.message)
+  try {
+    const { goPut } = await import('@/lib/go-api-client')
+    await goPut('/api/v1/auth/recovery-password', { password })
+  } catch (err) {
+    if (err instanceof Error && 'status' in err) {
+      const goErr = err as { code?: string; status: number; message: string }
+      console.error('[restablecerContrasena] Backend error:', { code: goErr.code, status: goErr.status, message: goErr.message })
+      if (goErr.status === 401) {
+        return { error: 'Sesión inválida. Solicita un nuevo enlace de recuperación.' }
+      }
+      return { error: goErr.message || 'No pudimos actualizar la contraseña. Intenta de nuevo.' }
+    }
+    console.error('[restablecerContrasena] Error:', err)
     return { error: 'No pudimos actualizar la contraseña. Intenta de nuevo.' }
   }
 
+  const { createClient } = await import('@/lib/supabase/server')
+  const supabase = await createClient()
   await supabase.auth.signOut()
 
   return { exito: true }

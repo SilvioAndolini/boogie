@@ -56,3 +56,8 @@ docs/
 CREDENCIALES_NECESARIAS.md
 imagenes/
 tsconfig.tsbuildinfo
+
+# local dev scripts
+dev.bat
+dev.ps1
+stop.bat

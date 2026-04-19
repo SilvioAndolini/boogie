@@ -10,6 +10,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/joho/godotenv"
+
 	"github.com/boogie/backend/internal/auth"
 	"github.com/boogie/backend/internal/config"
 	"github.com/boogie/backend/internal/handler"
@@ -26,6 +28,7 @@ import (
 var commitSHA = "dev"
 
 func main() {
+	godotenv.Load()
 	slog.Info("starting boogie-backend")
 
 	cfg, err := config.Load()
@@ -132,8 +135,9 @@ func main() {
 		CompletarPerfil:   authH.CompletarPerfil,
 		Me:                authH.Me,
 		ActualizarPerfil:  authH.ActualizarPerfil,
-		CambiarContrasena: authH.CambiarContrasena,
-		SubirAvatar:       authH.SubirAvatar,
+		CambiarContrasena:     authH.CambiarContrasena,
+		RestablecerContrasena: authH.RestablecerContrasena,
+		SubirAvatar:           authH.SubirAvatar,
 	}
 
 	if db != nil {

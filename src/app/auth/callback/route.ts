@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextResponse, type NextRequest } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 function sanitizeRedirectPath(path: string): string {
@@ -15,7 +15,17 @@ function sanitizeRedirectPath(path: string): string {
   return path
 }
 
-export async function GET(request: Request) {
+function redirectWithCookies(request: NextRequest, destination: string, cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }>) {
+  const url = request.nextUrl.clone()
+  const dest = new URL(destination, request.url)
+  url.pathname = dest.pathname
+  url.search = dest.search
+  const res = NextResponse.redirect(url)
+  cookiesToSet.forEach(({ name, value, options }) => res.cookies.set(name, value, options as Record<string, unknown>))
+  return res
+}
+
+export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   const errorParam = searchParams.get('error')
@@ -26,33 +36,51 @@ export async function GET(request: Request) {
 
   if (errorParam) {
     console.error('[auth/callback] OAuth error:', errorParam)
-    return NextResponse.redirect(`${origin}/login?error=oauth`)
+    return NextResponse.redirect(new URL('/login?error=oauth', request.url))
   }
 
   if (!code) {
     console.error('[auth/callback] No code param')
-    return NextResponse.redirect(`${origin}/login?error=nocode`)
+    return NextResponse.redirect(new URL('/login?error=nocode', request.url))
   }
 
-  const supabase = await createClient()
+  const collectedCookies: Array<{ name: string; value: string; options?: Record<string, unknown> }> = []
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            request.cookies.set(name, value)
+            collectedCookies.push({ name, value, options: options as Record<string, unknown> })
+          })
+        },
+      },
+    }
+  )
 
   const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
 
   if (exchangeError) {
     console.error('[auth/callback] Exchange error:', exchangeError.message)
-    return NextResponse.redirect(`${origin}/login?error=exchange`)
+    return NextResponse.redirect(new URL('/login?error=exchange', request.url))
   }
 
   if (type === 'recovery') {
     console.log('[auth/callback] Password recovery flow, redirecting to reset form')
-    return NextResponse.redirect(`${origin}/recuperar-contrasena?type=recovery`)
+    return redirectWithCookies(request, '/recuperar-contrasena?type=recovery', collectedCookies)
   }
 
   const { data: { user }, error: userError } = await supabase.auth.getUser()
 
   if (userError || !user) {
     console.error('[auth/callback] GetUser error:', userError?.message)
-    return NextResponse.redirect(`${origin}/login?error=user`)
+    return redirectWithCookies(request, '/login?error=user', collectedCookies)
   }
 
   console.log('[auth/callback] User authenticated')
@@ -98,7 +126,7 @@ export async function GET(request: Request) {
     }
 
     console.log('[auth/callback] Redirecting to completar-perfil')
-    return NextResponse.redirect(`${origin}/completar-perfil`)
+    return redirectWithCookies(request, '/completar-perfil', collectedCookies)
   }
 
   if (!existingProfile.cedula || !existingProfile.telefono) {
@@ -113,9 +141,9 @@ export async function GET(request: Request) {
   const perfilIncompleto = !existingProfile.cedula || !existingProfile.telefono
   if (perfilIncompleto) {
     console.log('[auth/callback] Profile incomplete, redirecting to completar-perfil')
-    return NextResponse.redirect(`${origin}/completar-perfil`)
+    return redirectWithCookies(request, '/completar-perfil', collectedCookies)
   }
 
   console.log('[auth/callback] Redirecting to:', next)
-  return NextResponse.redirect(`${origin}${next}`)
+  return redirectWithCookies(request, next, collectedCookies)
 }
