@@ -7,6 +7,14 @@ export function AuthHashHandler() {
   useEffect(() => {
     if (window.location.pathname === '/auth/recovery') return
 
+    const searchParams = new URLSearchParams(window.location.search)
+    const code = searchParams.get('code')
+
+    if (code) {
+      window.location.href = '/auth/recovery?code=' + encodeURIComponent(code)
+      return
+    }
+
     const hash = window.location.hash
     if (!hash) return
 
