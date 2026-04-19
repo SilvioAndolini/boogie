@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -83,16 +84,13 @@ func RateLimitMiddleware(limiter *IPRateLimiter) func(http.Handler) http.Handler
 }
 
 func GetClientIP(r *http.Request) string {
-	forwarded := r.Header.Get("X-Forwarded-For")
-	if forwarded != "" {
-		ip := strings.TrimSpace(strings.SplitN(forwarded, ",", 2)[0])
-		if ip != "" {
-			return ip
-		}
-	}
-	realIP := r.Header.Get("X-Real-Ip")
-	if realIP != "" {
+	if realIP := r.Header.Get("X-Real-IP"); realIP != "" {
 		return realIP
 	}
-	return r.RemoteAddr
+	if fwd := r.Header.Get("X-Forwarded-For"); fwd != "" {
+		parts := strings.Split(fwd, ",")
+		return strings.TrimSpace(parts[len(parts)-1])
+	}
+	ip, _, _ := net.SplitHostPort(r.RemoteAddr)
+	return ip
 }
