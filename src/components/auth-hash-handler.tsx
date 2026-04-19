@@ -9,7 +9,9 @@ export function AuthHashHandler() {
     const code = searchParams.get('code')
 
     if (code) {
-      window.location.href = '/auth/recovery?code=' + encodeURIComponent(code)
+      const type = searchParams.get('type')
+      const redirectUrl = '/auth/callback?code=' + encodeURIComponent(code)
+      window.location.href = type ? redirectUrl + '&type=' + encodeURIComponent(type) : redirectUrl
       return
     }
 
