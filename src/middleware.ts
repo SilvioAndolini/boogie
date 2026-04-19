@@ -73,7 +73,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
 
-    if (user && pathname !== '/completar-perfil') {
+    if (user && !esRutaPublica(pathname) && pathname !== '/completar-perfil') {
       const cedula = user.user_metadata?.cedula
       const telefono = user.user_metadata?.telefono
       if (!cedula || !telefono) {
