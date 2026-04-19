@@ -6,7 +6,7 @@ import { exchangePkceCode } from '@/actions/auth.actions'
 const PKCE_KEY = 'pkce_code_verifier'
 
 export default function RecoveryPage() {
-  const [, setStatus] = useState<'exchanging' | 'error'>('exchanging')
+  const [status, setStatus] = useState<'exchanging' | 'error'>('exchanging')
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)

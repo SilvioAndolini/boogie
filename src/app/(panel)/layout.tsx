@@ -1,5 +1,6 @@
-// Layout para el panel de usuario (dashboard)
 import { Navbar } from '@/components/layout/navbar'
+
+export const dynamic = 'force-dynamic'
 import { Sidebar } from '@/components/layout/sidebar'
 
 export default function PanelLayout({
