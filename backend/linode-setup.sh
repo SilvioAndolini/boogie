@@ -21,7 +21,6 @@ ufw default allow outgoing
 ufw allow ssh
 ufw allow 80/tcp
 ufw allow 443/tcp
-ufw allow 8080/tcp
 ufw --force enable
 
 echo "==> Creating deploy directory..."

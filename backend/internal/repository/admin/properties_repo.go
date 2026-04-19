@@ -184,8 +184,10 @@ func (r *AdminRepo) GetPropiedadIngresos(ctx context.Context, id string) (map[st
 		crecimiento = int((ingresosMes - ingresosMesPasado) / ingresosMesPasado * 100)
 	}
 
-	comisionPlat := ingresos * 0.06
-	comisionAnf := ingresos * 0.03
+	var comisionPlat, comisionAnf float64
+	r.pool.QueryRow(ctx, `
+		SELECT COALESCE(SUM(comision_plataforma), 0), COALESCE(SUM(comision_anfitrion), 0)
+		FROM reservas WHERE propiedad_id = $1 AND estado IN ('CONFIRMADA','EN_CURSO','COMPLETADA')`, id).Scan(&comisionPlat, &comisionAnf)
 	var totalHuespedes int
 	r.pool.QueryRow(ctx, `SELECT COALESCE(SUM(cantidad_huespedes), 0) FROM reservas WHERE propiedad_id = $1 AND estado IN ('CONFIRMADA','EN_CURSO','COMPLETADA')`, id).Scan(&totalHuespedes)
 

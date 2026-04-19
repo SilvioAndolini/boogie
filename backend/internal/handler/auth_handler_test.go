@@ -79,6 +79,7 @@ func newAuthHandlerWithMockRepo(mockRepo *mockAuthRepo) *AuthHandler {
 
 func withAuthContext(r *http.Request, userID string) *http.Request {
 	ctx := context.WithValue(r.Context(), auth.UserIDKey, userID)
+	ctx = context.WithValue(ctx, auth.UserEmailKey, "test@test.com")
 	return r.WithContext(ctx)
 }
 
@@ -501,7 +502,7 @@ func TestActualizarPerfil_UpdateError(t *testing.T) {
 
 func TestCambiarContrasena_Unauthorized(t *testing.T) {
 	h := newAuthHandler()
-	body := `{"passwordNueva":"newpass123"}`
+	body := `{"passwordActual":"oldpass123","passwordNueva":"newpass123"}`
 	req := httptest.NewRequest(http.MethodPut, "/api/v1/auth/password", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -509,9 +510,25 @@ func TestCambiarContrasena_Unauthorized(t *testing.T) {
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 }
 
+func TestCambiarContrasena_MissingCurrentPassword(t *testing.T) {
+	h := newAuthHandler()
+	body := `{"passwordNueva":"newpass123"}`
+	req := httptest.NewRequest(http.MethodPut, "/api/v1/auth/password", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req = withAuthContext(req, "user-1")
+	w := httptest.NewRecorder()
+	h.CambiarContrasena(w, req)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+
+	var resp map[string]interface{}
+	json.NewDecoder(w.Body).Decode(&resp)
+	errBody := resp["error"].(map[string]interface{})
+	assert.Equal(t, "MISSING_CURRENT_PASSWORD", errBody["code"])
+}
+
 func TestCambiarContrasena_PasswordTooShort(t *testing.T) {
 	h := newAuthHandler()
-	body := `{"passwordNueva":"short"}`
+	body := `{"passwordActual":"oldpass123","passwordNueva":"short"}`
 	req := httptest.NewRequest(http.MethodPut, "/api/v1/auth/password", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req = withAuthContext(req, "user-1")

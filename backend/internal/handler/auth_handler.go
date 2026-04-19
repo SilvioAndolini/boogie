@@ -460,7 +460,8 @@ func (h *AuthHandler) ActualizarPerfil(w http.ResponseWriter, r *http.Request) {
 }
 
 type cambiarContrasenaRequest struct {
-	PasswordNueva string `json:"passwordNueva"`
+	PasswordActual string `json:"passwordActual"`
+	PasswordNueva  string `json:"passwordNueva"`
 }
 
 func (h *AuthHandler) CambiarContrasena(w http.ResponseWriter, r *http.Request) {
@@ -475,8 +476,25 @@ func (h *AuthHandler) CambiarContrasena(w http.ResponseWriter, r *http.Request) 
 		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "JSON invalido")
 		return
 	}
+
+	if req.PasswordActual == "" {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_CURRENT_PASSWORD", "La contrasena actual es requerida")
+		return
+	}
 	if req.PasswordNueva == "" || len(req.PasswordNueva) < 8 {
 		ErrorJSON(w, http.StatusBadRequest, "INVALID_PASSWORD", "La contrasena debe tener al menos 8 caracteres")
+		return
+	}
+
+	email := auth.GetUserEmail(r.Context())
+	if email == "" {
+		ErrorJSON(w, http.StatusUnauthorized, "AUTH_REQUIRED", "No autenticado")
+		return
+	}
+
+	if _, err := h.authClient.SignInWithPassword(r.Context(), email, req.PasswordActual); err != nil {
+		slog.Warn("[auth/password] current password verification failed", "userID", userID, "error", err)
+		ErrorJSON(w, http.StatusUnauthorized, "INVALID_CURRENT_PASSWORD", "La contrasena actual es incorrecta")
 		return
 	}
 

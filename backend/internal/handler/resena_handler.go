@@ -73,7 +73,7 @@ func (h *ResenaHandler) Crear(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resenaID, err := h.svc.Crear(r.Context(), userID, &service.CrearResenaInput{
+	resenaID, propiedadID, err := h.svc.Crear(r.Context(), userID, &service.CrearResenaInput{
 		ReservaID:    req.ReservaID,
 		Calificacion: req.Calificacion,
 		Limpieza:     req.Limpieza,
@@ -87,9 +87,14 @@ func (h *ResenaHandler) Crear(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	JSON(w, http.StatusCreated, IDMensajeResponse{
-		ID:      resenaID,
-		Mensaje: "Reseña creada exitosamente",
+	JSON(w, http.StatusCreated, struct {
+		ID          string `json:"id"`
+		PropiedadID string `json:"propiedad_id"`
+		Mensaje     string `json:"mensaje"`
+	}{
+		ID:          resenaID,
+		PropiedadID: propiedadID,
+		Mensaje:     "Reseña creada exitosamente",
 	})
 }
 
@@ -121,18 +126,24 @@ func (h *ResenaHandler) Responder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.svc.Responder(r.Context(), &service.ResponderInput{
+	propiedadID, err := h.svc.Responder(r.Context(), &service.ResponderInput{
 		ResenaID:  resenaID,
 		UserID:    userID,
 		Respuesta: req.Respuesta,
-	}); err != nil {
+	})
+	if err != nil {
 		mapError(w, err, "[resenas/responder] error", "resenaId", resenaID)
 		return
 	}
 
-	JSON(w, http.StatusOK, OKMensajeResponse{
-		Ok:      true,
-		Mensaje: "Respuesta publicada exitosamente",
+	JSON(w, http.StatusOK, struct {
+		Ok          bool   `json:"ok"`
+		PropiedadID string `json:"propiedad_id"`
+		Mensaje     string `json:"mensaje"`
+	}{
+		Ok:          true,
+		PropiedadID: propiedadID,
+		Mensaje:     "Respuesta publicada exitosamente",
 	})
 }
 

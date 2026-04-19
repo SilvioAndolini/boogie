@@ -15,17 +15,21 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+var errFechasNoDisponibles = fmt.Errorf("fechas no disponibles")
+
 type CryptoHandler struct {
-	cryptoSvc  *service.CryptoService
-	reservaSvc *service.ReservaDisponibilidad
-	cryptoRepo *repository.CryptoRepo
+	cryptoSvc   *service.CryptoService
+	reservaSvc  *service.ReservaDisponibilidad
+	cryptoRepo  *repository.CryptoRepo
+	reservaRepo *repository.ReservaRepo
 }
 
-func NewCryptoHandler(cryptoSvc *service.CryptoService, reservaSvc *service.ReservaDisponibilidad, cryptoRepo *repository.CryptoRepo) *CryptoHandler {
+func NewCryptoHandler(cryptoSvc *service.CryptoService, reservaSvc *service.ReservaDisponibilidad, cryptoRepo *repository.CryptoRepo, reservaRepo *repository.ReservaRepo) *CryptoHandler {
 	return &CryptoHandler{
-		cryptoSvc:  cryptoSvc,
-		reservaSvc: reservaSvc,
-		cryptoRepo: cryptoRepo,
+		cryptoSvc:   cryptoSvc,
+		reservaSvc:  reservaSvc,
+		cryptoRepo:  cryptoRepo,
+		reservaRepo: reservaRepo,
 	}
 }
 
@@ -83,21 +87,6 @@ func (h *CryptoHandler) Create(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		disp, err := h.reservaSvc.Verificar(r.Context(), req.PropiedadID, fechaEntrada, fechaSalida)
-		if err != nil {
-			mapError(w, err, "[crypto/create] availability", "propId", req.PropiedadID)
-			return
-		}
-
-		if !disp.Disponible {
-			msg := "Las fechas seleccionadas ya no estan disponibles"
-			if disp.Conflicto != nil && disp.Conflicto.Tipo == "FECHA_BLOQUEADA" {
-				msg = "Las fechas seleccionadas estan bloqueadas"
-			}
-			ErrorJSON(w, http.StatusBadRequest, "RESERVA_NOT_AVAILABLE", msg)
-			return
-		}
-
 		_, titulo, precioPorNoche, moneda, propietarioID, err := h.reservaSvc.ObtenerPropiedad(r.Context(), req.PropiedadID)
 		if err != nil {
 			mapError(w, err, "[crypto/create] propiedad", "propId", req.PropiedadID)
@@ -117,37 +106,51 @@ func (h *CryptoHandler) Create(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		newReservaID, err := h.cryptoRepo.InsertReservaCrypto(
-			r.Context(), req.PropiedadID, userID, precioPorNoche, enums.Moneda(moneda),
-			req.FechaEntrada, req.FechaSalida, req.CantidadHuespedes,
-		)
-		if err != nil {
-			mapError(w, err, "[crypto/create] reserva insert", "propId", req.PropiedadID)
+		var newReservaID string
+		comisionH, comisionA := h.cryptoSvc.Comisiones()
+		txErr := repository.WithTx(r.Context(), h.cryptoRepo.Pool(), func(tx pgx.Tx) error {
+			solapado, dispErr := h.reservaRepo.ExistsSolapamientoWithDB(r.Context(), tx, req.PropiedadID, fechaEntrada, fechaSalida)
+			if dispErr != nil {
+				return fmt.Errorf("error al verificar disponibilidad: %w", dispErr)
+			}
+			if solapado {
+				return errFechasNoDisponibles
+			}
+
+			rid, insertErr := h.cryptoRepo.InsertReservaCryptoWithDB(
+				r.Context(), tx, req.PropiedadID, userID, precioPorNoche, enums.Moneda(moneda),
+				req.FechaEntrada, req.FechaSalida, req.CantidadHuespedes,
+				comisionH, comisionA,
+			)
+			if insertErr != nil {
+				return fmt.Errorf("error al crear reserva: %w", insertErr)
+			}
+			newReservaID = rid
+
+			if nerr := h.cryptoRepo.InsertNotificacionWithDB(r.Context(), tx,
+				"NUEVA_RESERVA", "Nueva reserva recibida",
+				fmt.Sprintf("Tienes una nueva reserva cripto para \"%s\"", titulo),
+				propietarioID, "/dashboard/reservas-recibidas",
+			); nerr != nil {
+				slog.Error("[crypto/create] notificacion error", "error", nerr)
+			}
+
+			if pErr := h.cryptoRepo.InsertCryptoPagoWithDB(r.Context(), tx, newReservaID, userID, req.Monto, cryptoResult.AddressIn); pErr != nil {
+				slog.Error("[crypto/create] pago insert error", "error", pErr)
+			}
+
+			return nil
+		})
+		if txErr != nil {
+			if txErr == errFechasNoDisponibles {
+				ErrorJSON(w, http.StatusBadRequest, "RESERVA_NOT_AVAILABLE", "Las fechas seleccionadas ya no estan disponibles")
+				return
+			}
+			mapError(w, txErr, "[crypto/create] tx", "propId", req.PropiedadID)
 			return
 		}
 
 		reservaIDFinal = newReservaID
-
-		callbackURL2 := h.cryptoSvc.BuildCallbackURL(map[string]string{
-			"reservaId":    reservaIDFinal,
-			"propiedadId":  req.PropiedadID,
-			"fechaEntrada": req.FechaEntrada,
-			"fechaSalida":  req.FechaSalida,
-			"secret":       h.cryptoSvc.Config.CallbackSecret,
-		})
-		_ = callbackURL2
-
-		if nerr := h.cryptoRepo.InsertNotificacion(r.Context(),
-			"NUEVA_RESERVA", "Nueva reserva recibida",
-			fmt.Sprintf("Tienes una nueva reserva cripto para \"%s\"", titulo),
-			propietarioID, "/dashboard/reservas-recibidas",
-		); nerr != nil {
-			slog.Error("[crypto/create] notificacion error", "error", nerr)
-		}
-
-		if err := h.cryptoRepo.InsertCryptoPago(r.Context(), reservaIDFinal, userID, req.Monto, cryptoResult.AddressIn); err != nil {
-			slog.Error("[crypto/create] pago insert error", "error", err)
-		}
 
 		JSON(w, http.StatusOK, CryptoAddressResponse{
 			Address:   cryptoResult.AddressIn,

@@ -8,6 +8,8 @@ import (
 
 	"github.com/boogie/backend/internal/domain/enums"
 	"github.com/boogie/backend/internal/repository"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type PagoRepository interface {
@@ -24,6 +26,11 @@ type PagoRepository interface {
 	CreateWallet(ctx context.Context, userID string) error
 	InsertWalletTransaccion(ctx context.Context, walletID, tipo, descripcion string, montoUSD float64, referenciaID *string) (string, error)
 	GetWalletTransacciones(ctx context.Context, walletID string) ([]repository.WalletTransaccion, error)
+	VerificarWithDB(ctx context.Context, db repository.DBTX, pagoID, verificadoPor, estado string, notas *string) error
+	GetReservaOwnerForPagoWithDB(ctx context.Context, db repository.DBTX, pagoID string) (reservaID, propietarioID, estadoReserva string, err error)
+	ConfirmarReservaWithDB(ctx context.Context, db repository.DBTX, reservaID string) error
+	SetReservaPendienteConfirmWithDB(ctx context.Context, db repository.DBTX, reservaID string) error
+	Pool() *pgxpool.Pool
 }
 
 type PagoService struct {
@@ -52,43 +59,45 @@ func (s *PagoService) Verificar(ctx context.Context, pagoID, userID string, apro
 		return fmt.Errorf("pago no encontrado")
 	}
 
-	reservaID, propietarioID, estadoReserva, err := s.pagoRepo.GetReservaOwnerForPago(ctx, pagoID)
-	if err != nil {
-		return fmt.Errorf("reserva no encontrada para este pago")
-	}
-
-	if propietarioID != userID {
-		return fmt.Errorf("sin permisos para verificar este pago")
-	}
-
 	estado := "RECHAZADO"
 	if aprobado {
 		estado = "VERIFICADO"
 	}
 
-	if err := s.pagoRepo.Verificar(ctx, pagoID, userID, estado, notas); err != nil {
-		return fmt.Errorf("error al verificar pago: %w", err)
-	}
+	return repository.WithTx(ctx, s.pagoRepo.Pool(), func(tx pgx.Tx) error {
+		reservaID, propietarioID, estadoReserva, err := s.pagoRepo.GetReservaOwnerForPagoWithDB(ctx, tx, pagoID)
+		if err != nil {
+			return fmt.Errorf("reserva no encontrada para este pago")
+		}
 
-	if aprobado && (estadoReserva == "PENDIENTE" || estadoReserva == "PENDIENTE_PAGO") {
-		modoReserva := "MANUAL"
-		if s.reservaRepo != nil {
-			if m, err := s.reservaRepo.GetModoReservaByReservaID(ctx, reservaID); err == nil {
-				modoReserva = m
+		if propietarioID != userID {
+			return fmt.Errorf("sin permisos para verificar este pago")
+		}
+
+		if err := s.pagoRepo.VerificarWithDB(ctx, tx, pagoID, userID, estado, notas); err != nil {
+			return fmt.Errorf("error al verificar pago: %w", err)
+		}
+
+		if aprobado && (estadoReserva == "PENDIENTE" || estadoReserva == "PENDIENTE_PAGO") {
+			modoReserva := "MANUAL"
+			if s.reservaRepo != nil {
+				if m, mErr := s.reservaRepo.GetModoReservaByReservaID(ctx, reservaID); mErr == nil {
+					modoReserva = m
+				}
+			}
+			if modoReserva == "AUTOMATICO" {
+				if err := s.pagoRepo.ConfirmarReservaWithDB(ctx, tx, reservaID); err != nil {
+					return fmt.Errorf("pago verificado pero error al confirmar reserva automaticamente: %w", err)
+				}
+			} else {
+				if err := s.pagoRepo.SetReservaPendienteConfirmWithDB(ctx, tx, reservaID); err != nil {
+					return fmt.Errorf("pago verificado pero error al actualizar reserva: %w", err)
+				}
 			}
 		}
-		if modoReserva == "AUTOMATICO" {
-			if err := s.pagoRepo.ConfirmarReserva(ctx, reservaID); err != nil {
-				return fmt.Errorf("pago verificado pero error al confirmar reserva automaticamente: %w", err)
-			}
-		} else {
-			if err := s.pagoRepo.SetReservaPendienteConfirm(ctx, reservaID); err != nil {
-				return fmt.Errorf("pago verificado pero error al actualizar reserva: %w", err)
-			}
-		}
-	}
 
-	return nil
+		return nil
+	})
 }
 
 func (s *PagoService) RegistrarPagoSimple(ctx context.Context, reservaID, usuarioID string, monto float64, moneda enums.Moneda, metodo enums.MetodoPagoEnum, referencia string) (string, error) {

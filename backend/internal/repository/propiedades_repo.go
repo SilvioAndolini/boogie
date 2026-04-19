@@ -437,20 +437,32 @@ func (r *PropiedadesRepo) UpdateEstadoWithOwner(ctx context.Context, id, estado,
 }
 
 func (r *PropiedadesRepo) Delete(ctx context.Context, id string) error {
-	_, err := r.pool.Exec(ctx, `DELETE FROM propiedad_amenidades WHERE propiedad_id = $1`, id)
+	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return err
 	}
-	_, err = r.pool.Exec(ctx, `DELETE FROM imagenes_propiedad WHERE propiedad_id = $1`, id)
-	if err != nil {
-		return err
+	defer tx.Rollback(ctx)
+
+	if _, err := tx.Exec(ctx, `DELETE FROM propiedad_amenidades WHERE propiedad_id = $1`, id); err != nil {
+		return fmt.Errorf("delete amenidades: %w", err)
 	}
-	_, err = r.pool.Exec(ctx, `DELETE FROM propiedades WHERE id = $1`, id)
-	return err
+	if _, err := tx.Exec(ctx, `DELETE FROM imagenes_propiedad WHERE propiedad_id = $1`, id); err != nil {
+		return fmt.Errorf("delete imagenes: %w", err)
+	}
+	if _, err := tx.Exec(ctx, `DELETE FROM propiedades WHERE id = $1`, id); err != nil {
+		return fmt.Errorf("delete propiedad: %w", err)
+	}
+	return tx.Commit(ctx)
 }
 
 func (r *PropiedadesRepo) DeleteWithOwner(ctx context.Context, id, propietarioID string) error {
-	tag, err := r.pool.Exec(ctx, `DELETE FROM propiedades WHERE id = $1 AND propietario_id = $2`, id, propietarioID)
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	tag, err := tx.Exec(ctx, `DELETE FROM propiedades WHERE id = $1 AND propietario_id = $2`, id, propietarioID)
 	if err != nil {
 		if isFKViolation(err) {
 			return fmt.Errorf("La propiedad no puede ser eliminada porque tiene reservas pendientes por concretar")
@@ -460,9 +472,14 @@ func (r *PropiedadesRepo) DeleteWithOwner(ctx context.Context, id, propietarioID
 	if tag.RowsAffected() == 0 {
 		return fmt.Errorf("propiedad no encontrada o no eres el propietario")
 	}
-	_, _ = r.pool.Exec(ctx, `DELETE FROM propiedad_amenidades WHERE propiedad_id = $1`, id)
-	_, _ = r.pool.Exec(ctx, `DELETE FROM imagenes_propiedad WHERE propiedad_id = $1`, id)
-	return nil
+
+	if _, err := tx.Exec(ctx, `DELETE FROM propiedad_amenidades WHERE propiedad_id = $1`, id); err != nil {
+		return fmt.Errorf("delete amenidades: %w", err)
+	}
+	if _, err := tx.Exec(ctx, `DELETE FROM imagenes_propiedad WHERE propiedad_id = $1`, id); err != nil {
+		return fmt.Errorf("delete imagenes: %w", err)
+	}
+	return tx.Commit(ctx)
 }
 
 func isFKViolation(err error) bool {

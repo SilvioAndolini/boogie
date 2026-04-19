@@ -20,8 +20,6 @@ type Conflicto struct {
 }
 
 type DisponibilidadRepository interface {
-	FindConflictingReserva(ctx context.Context, propiedadID string, entrada, salida time.Time) (string, error)
-	FindFechaBloqueada(ctx context.Context, propiedadID string, entrada, salida time.Time) (string, error)
 	GetPropiedadBasica(ctx context.Context, propiedadID string) (id, titulo string, precio float64, moneda, propietarioID string, err error)
 	ListFechasOcupadas(ctx context.Context, propiedadID string) ([]repository.FechaOcupadaRow, []repository.FechaOcupadaRow, error)
 	ExistsSolapamiento(ctx context.Context, propiedadID string, entrada, salida time.Time) (bool, error)
@@ -36,31 +34,14 @@ func NewReservaDisponibilidad(repo DisponibilidadRepository) *ReservaDisponibili
 }
 
 func (r *ReservaDisponibilidad) Verificar(ctx context.Context, propiedadID string, fechaEntrada, fechaSalida time.Time) (*DisponibilidadResult, error) {
-	reservaID, err := r.repo.FindConflictingReserva(ctx, propiedadID, fechaEntrada, fechaSalida)
+	solapado, err := r.repo.ExistsSolapamiento(ctx, propiedadID, fechaEntrada, fechaSalida)
 	if err != nil {
-		return nil, fmt.Errorf("checking reserva conflicts: %w", err)
+		return nil, fmt.Errorf("checking availability: %w", err)
 	}
-	if reservaID != "" {
+	if solapado {
 		return &DisponibilidadResult{
 			Disponible: false,
-			Conflicto: &Conflicto{
-				Tipo:      "RESERVA_EXISTENTE",
-				ReservaID: reservaID,
-			},
-		}, nil
-	}
-
-	bloqueadaID, err := r.repo.FindFechaBloqueada(ctx, propiedadID, fechaEntrada, fechaSalida)
-	if err != nil {
-		return nil, fmt.Errorf("checking blocked dates: %w", err)
-	}
-	if bloqueadaID != "" {
-		return &DisponibilidadResult{
-			Disponible: false,
-			Conflicto: &Conflicto{
-				Tipo:             "FECHA_BLOQUEADA",
-				FechaBloqueadaID: bloqueadaID,
-			},
+			Conflicto:  &Conflicto{Tipo: "SOLAPAMIENTO"},
 		}, nil
 	}
 

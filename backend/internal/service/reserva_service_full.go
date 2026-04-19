@@ -106,19 +106,17 @@ func (s *ReservaService) CrearConPago(ctx context.Context, input *CrearConPagoIn
 		return nil, bizerrors.CapacidadExcedida(prop.Capacidad)
 	}
 
-	if s.disponSvc != nil {
-		solapado, dispErr := s.disponSvc.HaySolapamiento(ctx, input.PropiedadID, input.FechaEntrada, input.FechaSalida)
-		if dispErr != nil {
-			return nil, fmt.Errorf("error al verificar disponibilidad: %w", dispErr)
-		}
-		if solapado {
-			return nil, bizerrors.EstadoInvalido("las fechas seleccionadas no estan disponibles")
-		}
-	}
-
 	var result *CrearReservaResult
 
 	err = repository.WithTx(ctx, s.repo.Pool(), func(tx pgx.Tx) error {
+		solapado, dispErr := s.repo.ExistsSolapamientoWithDB(ctx, tx, input.PropiedadID, input.FechaEntrada, input.FechaSalida)
+		if dispErr != nil {
+			return fmt.Errorf("error al verificar disponibilidad: %w", dispErr)
+		}
+		if solapado {
+			return bizerrors.EstadoInvalido("las fechas seleccionadas no estan disponibles")
+		}
+
 		reserva, txErr := s.repo.CrearWithDB(ctx, tx, prop, input.HuespedID, input.FechaEntrada, input.FechaSalida, input.CantidadHuespedes, input.NotasHuesped, s.comisionH, s.comisionA)
 		if txErr != nil {
 			return fmt.Errorf("error al crear reserva: %w", txErr)
@@ -239,19 +237,17 @@ func (s *ReservaService) Crear(ctx context.Context, input *CrearReservaInput) (*
 		return nil, bizerrors.NochesFueraDeRango()
 	}
 
-	if s.disponSvc != nil {
-		solapado, err := s.disponSvc.HaySolapamiento(ctx, input.PropiedadID, input.FechaEntrada, input.FechaSalida)
-		if err != nil {
-			return nil, fmt.Errorf("error al verificar disponibilidad: %w", err)
-		}
-		if solapado {
-			return nil, bizerrors.EstadoInvalido("las fechas seleccionadas no estan disponibles")
-		}
-	}
-
 	var result *CrearReservaResult
 
 	err = repository.WithTx(ctx, s.repo.Pool(), func(tx pgx.Tx) error {
+		solapado, dispErr := s.repo.ExistsSolapamientoWithDB(ctx, tx, input.PropiedadID, input.FechaEntrada, input.FechaSalida)
+		if dispErr != nil {
+			return fmt.Errorf("error al verificar disponibilidad: %w", dispErr)
+		}
+		if solapado {
+			return bizerrors.EstadoInvalido("las fechas seleccionadas no estan disponibles")
+		}
+
 		reserva, txErr := s.repo.CrearWithDB(ctx, tx, prop, input.HuespedID, input.FechaEntrada, input.FechaSalida, input.CantidadHuespedes, input.NotasHuesped, s.comisionH, s.comisionA)
 		if txErr != nil {
 			return fmt.Errorf("error al crear reserva: %w", txErr)

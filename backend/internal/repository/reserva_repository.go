@@ -753,25 +753,6 @@ func (r *ReservaRepo) InsertNotificacionWithDB(ctx context.Context, db DBTX, tip
 	return err
 }
 
-func (r *ReservaRepo) FindConflictingReserva(ctx context.Context, propiedadID string, entrada, salida time.Time) (string, error) {
-	var reservaID string
-	err := r.pool.QueryRow(ctx, `
-		SELECT id FROM reservas
-		WHERE propiedad_id = $1
-		  AND estado IN ('PENDIENTE_PAGO', 'PENDIENTE', 'PENDIENTE_CONFIRMACION', 'CONFIRMADA', 'EN_CURSO')
-		  AND fecha_entrada < $3
-		  AND fecha_salida > $2
-		LIMIT 1
-	`, propiedadID, entrada, salida).Scan(&reservaID)
-	if err == pgx.ErrNoRows {
-		return "", nil
-	}
-	if err != nil {
-		return "", fmt.Errorf("find conflicting reserva: %w", err)
-	}
-	return reservaID, nil
-}
-
 func (r *ReservaRepo) FindFechaBloqueada(ctx context.Context, propiedadID string, entrada, salida time.Time) (string, error) {
 	var bloqueadaID string
 	err := r.pool.QueryRow(ctx, `
@@ -877,6 +858,40 @@ func (r *ReservaRepo) ExistsSolapamiento(ctx context.Context, propiedadID string
 	`, propiedadID, entrada, salida).Scan(&exists)
 	if err != nil {
 		return false, fmt.Errorf("check solapamiento bloqueadas: %w", err)
+	}
+	return exists, nil
+}
+
+func (r *ReservaRepo) ExistsSolapamientoWithDB(ctx context.Context, db DBTX, propiedadID string, entrada, salida time.Time) (bool, error) {
+	var exists bool
+	err := db.QueryRow(ctx, `
+		SELECT EXISTS(
+			SELECT 1 FROM reservas
+			WHERE propiedad_id = $1
+			  AND estado IN ('PENDIENTE_PAGO', 'PENDIENTE', 'PENDIENTE_CONFIRMACION', 'CONFIRMADA', 'EN_CURSO')
+			  AND fecha_entrada < $3
+			  AND fecha_salida > $2
+			FOR UPDATE
+		)
+	`, propiedadID, entrada, salida).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("check solapamiento reservas (tx): %w", err)
+	}
+	if exists {
+		return true, nil
+	}
+
+	err = db.QueryRow(ctx, `
+		SELECT EXISTS(
+			SELECT 1 FROM fechas_bloqueadas
+			WHERE propiedad_id = $1
+			  AND fecha_inicio < $3
+			  AND fecha_fin > $2
+			FOR UPDATE
+		)
+	`, propiedadID, entrada, salida).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("check solapamiento bloqueadas (tx): %w", err)
 	}
 	return exists, nil
 }

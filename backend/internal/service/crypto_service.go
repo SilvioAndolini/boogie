@@ -125,6 +125,10 @@ func (s *CryptoService) VerifyCallbackSecret(secret string) bool {
 	return subtle.ConstantTimeCompare([]byte(secret), []byte(s.Config.CallbackSecret)) == 1
 }
 
+func (s *CryptoService) Comisiones() (huesped, anfitrion float64) {
+	return s.comisionH, s.comisionA
+}
+
 func CalcularPrecioReserva(precioPorNoche float64, fechaEntrada, fechaSalida time.Time, moneda enums.Moneda, comisionH, comisionA float64) PrecioReserva {
 	dEntrada := time.Date(fechaEntrada.Year(), fechaEntrada.Month(), fechaEntrada.Day(), 0, 0, 0, 0, time.UTC)
 	dSalida := time.Date(fechaSalida.Year(), fechaSalida.Month(), fechaSalida.Day(), 0, 0, 0, 0, time.UTC)

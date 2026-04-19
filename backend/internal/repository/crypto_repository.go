@@ -24,14 +24,14 @@ func (r *CryptoRepo) Pool() *pgxpool.Pool {
 }
 
 // InsertReservaCrypto creates a reserva in PENDIENTE_PAGO state with crypto payment info.
-func (r *CryptoRepo) InsertReservaCrypto(ctx context.Context, propiedadID, huespedID string, precioPorNoche float64, moneda enums.Moneda, fechaEntrada, fechaSalida string, cantidadHuespedes int) (string, error) {
+func (r *CryptoRepo) InsertReservaCrypto(ctx context.Context, propiedadID, huespedID string, precioPorNoche float64, moneda enums.Moneda, fechaEntrada, fechaSalida string, cantidadHuespedes int, comisionRateH, comisionRateA float64) (string, error) {
 	id := idgen.New()
 	codigo := idgen.CodigoReserva()
 	noches := 1
 
 	subtotal := util.Round2(precioPorNoche * float64(noches))
-	comisionH := util.Round2(subtotal * 0.06)
-	comisionA := util.Round2(subtotal * 0.03)
+	comisionH := util.Round2(subtotal * comisionRateH)
+	comisionA := util.Round2(subtotal * comisionRateA)
 	total := util.Round2(subtotal + comisionH)
 
 	_, err := r.pool.Exec(ctx, `
@@ -118,6 +118,54 @@ func (r *CryptoRepo) InsertNotificacion(ctx context.Context, tipo, titulo, mensa
 	`, tipo, titulo, mensaje, usuarioID, urlAccion)
 	if err != nil {
 		return fmt.Errorf("insert notificacion crypto: %w", err)
+	}
+	return nil
+}
+
+func (r *CryptoRepo) InsertReservaCryptoWithDB(ctx context.Context, db DBTX, propiedadID, huespedID string, precioPorNoche float64, moneda enums.Moneda, fechaEntrada, fechaSalida string, cantidadHuespedes int, comisionRateH, comisionRateA float64) (string, error) {
+	id := idgen.New()
+	codigo := idgen.CodigoReserva()
+	noches := 1
+
+	subtotal := util.Round2(precioPorNoche * float64(noches))
+	comisionH := util.Round2(subtotal * comisionRateH)
+	comisionA := util.Round2(subtotal * comisionRateA)
+	total := util.Round2(subtotal + comisionH)
+
+	_, err := db.Exec(ctx, `
+		INSERT INTO reservas (id, codigo, propiedad_id, huesped_id, fecha_entrada, fecha_salida,
+			noches, precio_por_noche, subtotal, comision_plataforma, comision_anfitrion, total,
+			moneda, cantidad_huespedes, estado, fecha_creacion)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'PENDIENTE_PAGO', NOW())
+	`, id, codigo, propiedadID, huespedID, fechaEntrada, fechaSalida,
+		noches, precioPorNoche, subtotal, comisionH, comisionA, total, string(moneda), cantidadHuespedes,
+	)
+	if err != nil {
+		return "", fmt.Errorf("insert reserva crypto (tx): %w", err)
+	}
+	return id, nil
+}
+
+func (r *CryptoRepo) InsertCryptoPagoWithDB(ctx context.Context, db DBTX, reservaID, usuarioID string, monto float64, cryptoAddress string) error {
+	id := idgen.New()
+	_, err := db.Exec(ctx, `
+		INSERT INTO pagos (id, monto, moneda, metodo_pago, estado, referencia, fecha_creacion,
+			reserva_id, usuario_id, crypto_address)
+		VALUES ($1, $2, 'USD', 'CRIPTO', 'PENDIENTE', 'Crypto - pendiente TX', NOW(), $3, $4, $5)
+	`, id, monto, reservaID, usuarioID, cryptoAddress)
+	if err != nil {
+		return fmt.Errorf("insert crypto pago (tx): %w", err)
+	}
+	return nil
+}
+
+func (r *CryptoRepo) InsertNotificacionWithDB(ctx context.Context, db DBTX, tipo, titulo, mensaje, usuarioID, urlAccion string) error {
+	_, err := db.Exec(ctx, `
+		INSERT INTO notificaciones (tipo, titulo, mensaje, usuario_id, url_accion, created_at)
+		VALUES ($1, $2, $3, $4, $5, NOW())
+	`, tipo, titulo, mensaje, usuarioID, urlAccion)
+	if err != nil {
+		return fmt.Errorf("insert notificacion crypto (tx): %w", err)
 	}
 	return nil
 }

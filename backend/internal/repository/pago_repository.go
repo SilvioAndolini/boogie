@@ -18,6 +18,8 @@ func NewPagoRepo(pool *pgxpool.Pool) *PagoRepo {
 	return &PagoRepo{pool: pool}
 }
 
+func (r *PagoRepo) Pool() *pgxpool.Pool { return r.pool }
+
 type PagoConReserva struct {
 	ID              string    `json:"id"`
 	ReservaID       *string   `json:"reserva_id"`
@@ -258,4 +260,40 @@ func (r *PagoRepo) InsertPagoManualWithDB(ctx context.Context, db DBTX, pago *Nu
 		return "", fmt.Errorf("insert pago manual: %w", err)
 	}
 	return id, nil
+}
+
+func (r *PagoRepo) VerificarWithDB(ctx context.Context, db DBTX, pagoID, verificadoPor, estado string, notas *string) error {
+	_, err := db.Exec(ctx, `
+		UPDATE pagos SET estado = $2, verificado_por = $3, notas_verificacion = $4,
+			fecha_verificacion = NOW()
+		WHERE id = $1
+	`, pagoID, estado, verificadoPor, notas)
+	return err
+}
+
+func (r *PagoRepo) GetReservaOwnerForPagoWithDB(ctx context.Context, db DBTX, pagoID string) (reservaID, propietarioID string, estadoReserva string, err error) {
+	err = db.QueryRow(ctx, `
+		SELECT r.id, prop.propietario_id, r.estado
+		FROM pagos p
+		JOIN reservas r ON r.id = p.reserva_id
+		JOIN propiedades prop ON prop.id = r.propiedad_id
+		WHERE p.id = $1
+	`, pagoID).Scan(&reservaID, &propietarioID, &estadoReserva)
+	return
+}
+
+func (r *PagoRepo) ConfirmarReservaWithDB(ctx context.Context, db DBTX, reservaID string) error {
+	_, err := db.Exec(ctx, `
+		UPDATE reservas SET estado = 'CONFIRMADA', fecha_confirmacion = NOW()
+		WHERE id = $1 AND estado IN ('PENDIENTE_PAGO','PENDIENTE')
+	`, reservaID)
+	return err
+}
+
+func (r *PagoRepo) SetReservaPendienteConfirmWithDB(ctx context.Context, db DBTX, reservaID string) error {
+	_, err := db.Exec(ctx, `
+		UPDATE reservas SET estado = 'PENDIENTE_CONFIRMACION', fecha_confirmacion = NOW()
+		WHERE id = $1 AND estado IN ('PENDIENTE_PAGO','PENDIENTE')
+	`, reservaID)
+	return err
 }

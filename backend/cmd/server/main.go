@@ -87,7 +87,7 @@ func main() {
 		reservaDisponRepo := repository.NewReservaRepo(db)
 		reservaDisponSvc := service.NewReservaDisponibilidad(reservaDisponRepo)
 		cryptoRepo := repository.NewCryptoRepo(db)
-		cryptoHandler = handler.NewCryptoHandler(cryptoSvc, reservaDisponSvc, cryptoRepo)
+		cryptoHandler = handler.NewCryptoHandler(cryptoSvc, reservaDisponSvc, cryptoRepo, reservaDisponRepo)
 
 		metamapRepo := repository.NewMetamapRepo(db)
 		metamapHandler = handler.NewMetamapHandler(metamapRepo, cfg.MetamapWebhookSecret)
