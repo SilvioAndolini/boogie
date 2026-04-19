@@ -1,20 +1,25 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 export function AuthHashHandler() {
-  const router = useRouter()
-
   useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search)
+    const code = searchParams.get('code')
+
+    if (code) {
+      window.location.href = '/auth/recovery?code=' + encodeURIComponent(code)
+      return
+    }
+
     const hash = window.location.hash
     if (!hash) return
 
-    const params = new URLSearchParams(hash.substring(1))
-    const type = params.get('type')
-    const accessToken = params.get('access_token')
-    const refreshToken = params.get('refresh_token')
+    const hashParams = new URLSearchParams(hash.substring(1))
+    const type = hashParams.get('type')
+    const accessToken = hashParams.get('access_token')
+    const refreshToken = hashParams.get('refresh_token')
 
     if (type === 'recovery' && accessToken && refreshToken) {
       const supabase = createClient()
@@ -35,7 +40,7 @@ export function AuthHashHandler() {
           window.location.href = '/recuperar-contrasena?type=recovery'
         })
     }
-  }, [router])
+  }, [])
 
   return null
 }
