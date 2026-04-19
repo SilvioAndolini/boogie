@@ -62,23 +62,8 @@ export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl
 
     if (user && pathname.startsWith('/admin-login')) {
-      const secretKey = process.env.SUPABASE_SECRET_KEY || supabaseKey
-      const adminClient = createServerClient(supabaseUrl, secretKey, {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll()
-          },
-          setAll() {},
-        },
-      })
-
-      const { data: usuario } = await adminClient
-        .from('usuarios')
-        .select('rol')
-        .eq('id', user.id)
-        .single()
-
-      if (usuario && usuario.rol === 'ADMIN') {
+      const rol = user.app_metadata?.rol
+      if (rol === 'ADMIN') {
         return NextResponse.redirect(new URL('/admin', request.url))
       }
       return NextResponse.redirect(new URL('/dashboard', request.url))
@@ -89,21 +74,9 @@ export async function middleware(request: NextRequest) {
     }
 
     if (user && pathname !== '/completar-perfil') {
-      const secretKey = process.env.SUPABASE_SECRET_KEY || supabaseKey
-      const adminClient = createServerClient(supabaseUrl, secretKey, {
-        cookies: {
-          getAll() { return request.cookies.getAll() },
-          setAll() {},
-        },
-      })
-
-      const { data: perfil } = await adminClient
-        .from('usuarios')
-        .select('cedula, telefono')
-        .eq('id', user.id)
-        .maybeSingle()
-
-      if (!perfil || !perfil.cedula || !perfil.telefono) {
+      const cedula = user.user_metadata?.cedula
+      const telefono = user.user_metadata?.telefono
+      if (!cedula || !telefono) {
         return NextResponse.redirect(new URL('/completar-perfil', request.url))
       }
     }
@@ -118,23 +91,8 @@ export async function middleware(request: NextRequest) {
     }
 
     if (user && pathname.startsWith('/admin') && !pathname.startsWith('/admin-login')) {
-      const secretKey = process.env.SUPABASE_SECRET_KEY || supabaseKey
-      const adminClient = createServerClient(supabaseUrl, secretKey, {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll()
-          },
-          setAll() {},
-        },
-      })
-
-      const { data: usuario } = await adminClient
-        .from('usuarios')
-        .select('rol')
-        .eq('id', user.id)
-        .single()
-
-      if (!usuario || usuario.rol !== 'ADMIN') {
+      const rol = user.app_metadata?.rol
+      if (rol !== 'ADMIN') {
         return NextResponse.redirect(new URL('/dashboard', request.url))
       }
     }

@@ -1,9 +1,13 @@
 'use server'
 
 import { goApi, goPost, GoAPIError } from '@/lib/go-api-client'
+import { requireAdmin } from '@/lib/admin-auth'
 import { revalidatePath } from 'next/cache'
 
 export async function enviarNotificacionAdmin(formData: FormData) {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
   const usuarioId = (formData.get('usuarioId') as string) || undefined
   const titulo = formData.get('titulo') as string
   const mensaje = formData.get('mensaje') as string
@@ -22,6 +26,9 @@ export async function enviarNotificacionAdmin(formData: FormData) {
 export async function getNotificacionesAdmin(filtros?: {
   pagina?: number
 }) {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
   try {
     const params = new URLSearchParams()
     if (filtros?.pagina) params.set('pagina', String(filtros.pagina))

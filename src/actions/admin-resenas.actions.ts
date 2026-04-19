@@ -1,6 +1,7 @@
 'use server'
 
 import { goApi, goPost, GoAPIError } from '@/lib/go-api-client'
+import { requireAdmin } from '@/lib/admin-auth'
 import { revalidatePath } from 'next/cache'
 
 type ResenasResult = {
@@ -14,6 +15,9 @@ export async function getResenasAdmin(filtros?: {
   busqueda?: string
   pagina?: number
 }): Promise<ResenasResult> {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
   try {
     const params = new URLSearchParams()
     if (filtros?.calificacionMin) params.set('calificacionMin', String(filtros.calificacionMin))
@@ -33,6 +37,9 @@ export async function getResenasAdmin(filtros?: {
 }
 
 export async function moderarResenaAdmin(formData: FormData) {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
   const resenaId = formData.get('resenaId') as string
   const accion = formData.get('accion') as string
   const motivo = (formData.get('motivo') as string) || undefined

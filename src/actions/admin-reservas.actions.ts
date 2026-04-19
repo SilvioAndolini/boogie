@@ -1,6 +1,7 @@
 'use server'
 
 import { goApi, goGet, goPost, GoAPIError } from '@/lib/go-api-client'
+import { requireAdmin } from '@/lib/admin-auth'
 import { revalidatePath } from 'next/cache'
 
 type ReservasResult = {
@@ -29,6 +30,9 @@ export async function getReservasAdmin(filtros?: {
   busqueda?: string
   pagina?: number
 }): Promise<ReservasResult> {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
   try {
     const params = new URLSearchParams()
     if (filtros?.estado && filtros.estado !== 'TODOS') params.set('estado', filtros.estado)
@@ -50,6 +54,9 @@ export async function getReservasAdmin(filtros?: {
 }
 
 export async function getReservaDetalleAdmin(reservaId: string) {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
   try {
     const data = await goGet<Record<string, unknown>>(`/api/v1/admin/reservas/${reservaId}`)
     let tasaBCV = 78.39
@@ -72,6 +79,9 @@ export async function getReservaDetalleAdmin(reservaId: string) {
 }
 
 export async function accionReservaAdmin(formData: FormData) {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
   const reservaId = formData.get('reservaId') as string
   const accion = formData.get('accion') as string
   const motivo = (formData.get('motivo') as string) || undefined
@@ -91,6 +101,9 @@ export async function accionReservaAdmin(formData: FormData) {
 }
 
 export async function getReservasStatsAdmin(): Promise<ReservasStatsResult> {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
   try {
     return await goGet<{
       PENDIENTE: number;

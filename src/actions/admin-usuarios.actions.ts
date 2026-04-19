@@ -1,8 +1,12 @@
 'use server'
 
 import { goPost, GoAPIError } from '@/lib/go-api-client'
+import { requireAdmin } from '@/lib/admin-auth'
 
 export async function registrarUsuarioAdmin(formData: FormData) {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
   const datos = {
     nombre: formData.get('nombre') as string,
     apellido: formData.get('apellido') as string,
@@ -17,7 +21,7 @@ export async function registrarUsuarioAdmin(formData: FormData) {
   }
 
   try {
-    const result = await goPost('/api/v1/admin/usuarios', datos) as { ok?: boolean; mensaje?: string }
+    await goPost('/api/v1/admin/usuarios', datos) as { ok?: boolean; mensaje?: string }
     return { exito: true }
   } catch (err) {
     if (err instanceof GoAPIError) return { error: err.message }

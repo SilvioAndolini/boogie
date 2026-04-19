@@ -22,6 +22,9 @@ export async function subirImagenStore(formData: FormData): Promise<{ url?: stri
 }
 
 export async function getProductosStoreAdmin() {
+  const auth = await requireAdmin()
+  if (auth.error) return []
+
   try {
     return await goGet('/api/v1/admin/tienda/productos')
   } catch {
@@ -30,6 +33,9 @@ export async function getProductosStoreAdmin() {
 }
 
 export async function getServiciosStoreAdmin() {
+  const auth = await requireAdmin()
+  if (auth.error) return []
+
   try {
     return await goGet('/api/v1/admin/tienda/servicios')
   } catch {
@@ -46,6 +52,9 @@ export async function crearProductoStore(datos: {
   categoria: string
   orden?: number
 }) {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
   try {
     await goPost('/api/v1/admin/store/productos', datos)
     revalidatePath('/admin/boogie-store')
@@ -66,6 +75,9 @@ export async function actualizarProductoStore(id: string, datos: {
   activo?: boolean
   orden?: number
 }) {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
   try {
     await goPatch(`/api/v1/admin/store/productos/${id}`, datos)
     revalidatePath('/admin/boogie-store')
@@ -77,6 +89,9 @@ export async function actualizarProductoStore(id: string, datos: {
 }
 
 export async function eliminarProductoStore(id: string) {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
   try {
     await goDelete(`/api/v1/admin/store/productos/${id}`)
     revalidatePath('/admin/boogie-store')
@@ -97,6 +112,9 @@ export async function crearServicioStore(datos: {
   categoria: string
   orden?: number
 }) {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
   try {
     await goPost('/api/v1/admin/store/servicios', datos)
     revalidatePath('/admin/boogie-store')
@@ -118,6 +136,9 @@ export async function actualizarServicioStore(id: string, datos: {
   activo?: boolean
   orden?: number
 }) {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
   try {
     await goPatch(`/api/v1/admin/store/servicios/${id}`, datos)
     revalidatePath('/admin/boogie-store')
@@ -129,6 +150,9 @@ export async function actualizarServicioStore(id: string, datos: {
 }
 
 export async function eliminarServicioStore(id: string) {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
   try {
     await goDelete(`/api/v1/admin/store/servicios/${id}`)
     revalidatePath('/admin/boogie-store')

@@ -250,6 +250,7 @@ func main() {
 		adminSvc := service.NewAdminService(adminRepo, reservaRepo)
 		adminH := handler.NewAdminHandler(adminSvc, tiendaSvc)
 		adminH.WithStorage(storageSvc, cfg.SupabaseURL, cfg.SupabaseSecretKey)
+		adminH.WithAuthClient(authClient)
 
 		adminHandlers = &router.AdminHandlers{
 			GetDashboard:            adminH.GetDashboard,

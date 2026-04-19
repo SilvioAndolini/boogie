@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -78,6 +79,13 @@ func (h *AdminHandler) UpdateUsuario(w http.ResponseWriter, r *http.Request) {
 	if err := h.svc.UpdateUsuario(r.Context(), id, req.Rol, plan, req.Reputacion, req.Activo); err != nil {
 		mapError(w, err, "[admin/usuarios/update]")
 		return
+	}
+	if req.Rol != nil && h.authClient != nil {
+		if err := h.authClient.UpdateAppMetadata(r.Context(), h.serviceKey, id, map[string]interface{}{
+			"rol": *req.Rol,
+		}); err != nil {
+			slog.Warn("[admin/usuarios/update] app_metadata sync failed", "error", err)
+		}
 	}
 	h.auditLog(r, "", "update_usuario", "usuario", &id, map[string]interface{}{"rol": req.Rol, "activo": req.Activo})
 	JSON(w, http.StatusOK, OKResponse{Ok: true})

@@ -1,6 +1,7 @@
 'use server'
 
 import { goApi, goGet, goPost, GoAPIError } from '@/lib/go-api-client'
+import { requireAdmin } from '@/lib/admin-auth'
 import { revalidatePath } from 'next/cache'
 
 type PagosResult = {
@@ -27,6 +28,9 @@ export async function getPagosAdmin(filtros?: {
   busqueda?: string
   pagina?: number
 }): Promise<PagosResult> {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
   try {
     const params = new URLSearchParams()
     if (filtros?.estado && filtros.estado !== 'TODOS') params.set('estado', filtros.estado)
@@ -49,6 +53,9 @@ export async function getPagosAdmin(filtros?: {
 }
 
 export async function getPagosStatsAdmin(): Promise<PagosStatsResult> {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
   try {
     return await goGet<PagosStatsResult>('/api/v1/admin/pagos/stats')
   } catch (err) {
@@ -58,6 +65,9 @@ export async function getPagosStatsAdmin(): Promise<PagosStatsResult> {
 }
 
 export async function verificarPagoAdmin(formData: FormData) {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
   const pagoId = formData.get('pagoId') as string
   const accion = formData.get('accion') as string
   const notasVerificacion = (formData.get('notasVerificacion') as string) || undefined

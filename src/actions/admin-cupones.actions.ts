@@ -1,9 +1,13 @@
 'use server'
 
 import { goGet, goPost, goPut, goPatch, goDelete, goApi, GoAPIError } from '@/lib/go-api-client'
+import { requireAdmin } from '@/lib/admin-auth'
 import { revalidatePath } from 'next/cache'
 
 export async function getCupones() {
+  const auth = await requireAdmin()
+  if (auth.error) return []
+
   try {
     return await goGet<Array<Record<string, unknown>>>('/api/v1/admin/cupones')
   } catch {
@@ -12,6 +16,9 @@ export async function getCupones() {
 }
 
 export async function getCuponPorId(id: string) {
+  const auth = await requireAdmin()
+  if (auth.error) return null
+
   try {
     return await goGet<Record<string, unknown> | null>(`/api/v1/admin/cupones/${id}`)
   } catch {
@@ -20,6 +27,9 @@ export async function getCuponPorId(id: string) {
 }
 
 export async function crearCupon(formData: FormData) {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
   try {
     const data = Object.fromEntries(formData.entries())
     await goPost('/api/v1/admin/cupones', data)
@@ -32,6 +42,9 @@ export async function crearCupon(formData: FormData) {
 }
 
 export async function editarCupon(formData: FormData) {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
   try {
     const data = Object.fromEntries(formData.entries())
     await goPut('/api/v1/admin/cupones', data)
@@ -44,6 +57,9 @@ export async function editarCupon(formData: FormData) {
 }
 
 export async function toggleCuponActivo(id: string, activo: boolean) {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
   try {
     await goPatch(`/api/v1/admin/cupones/${id}/activo`, { activo })
     revalidatePath('/admin/cupones')
@@ -55,6 +71,9 @@ export async function toggleCuponActivo(id: string, activo: boolean) {
 }
 
 export async function eliminarCupon(id: string) {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
   try {
     await goDelete(`/api/v1/admin/cupones/${id}`)
     revalidatePath('/admin/cupones')
@@ -66,6 +85,9 @@ export async function eliminarCupon(id: string) {
 }
 
 export async function getCuponesUsos(cuponId?: string) {
+  const auth = await requireAdmin()
+  if (auth.error) return []
+
   try {
     const qs = cuponId ? `?cuponId=${cuponId}` : ''
     return await goGet<Array<Record<string, unknown>>>(`/api/v1/admin/cupon-usos${qs}`)
@@ -75,6 +97,9 @@ export async function getCuponesUsos(cuponId?: string) {
 }
 
 export async function getComisiones() {
+  const auth = await requireAdmin()
+  if (auth.error) return { huesped: 0, anfitrion: 0, error: auth.error }
+
   try {
     return await goGet<{ huesped: number; anfitrion: number }>('/api/v1/admin/comisiones')
   } catch {
@@ -83,6 +108,9 @@ export async function getComisiones() {
 }
 
 export async function actualizarComisiones(formData: FormData) {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
   try {
     const comisionHuesped = formData.get('comisionHuesped')
     const comisionAnfitrion = formData.get('comisionAnfitrion')
@@ -96,6 +124,9 @@ export async function actualizarComisiones(formData: FormData) {
 }
 
 export async function getCuponesActivosUsuario(_usuarioId: string) {
+  const auth = await requireAdmin()
+  if (auth.error) return []
+
   try {
     return await goApi<Array<Record<string, unknown>>>('/api/v1/cupones/activos')
   } catch {

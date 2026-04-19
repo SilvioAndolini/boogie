@@ -1,6 +1,7 @@
 'use server'
 
 import { goGet, goApi, goPatch, goDelete, GoAPIError } from '@/lib/go-api-client'
+import { requireAdmin } from '@/lib/admin-auth'
 import { revalidatePath } from 'next/cache'
 
 export async function getPropiedadesAdmin(filters: {
@@ -11,6 +12,9 @@ export async function getPropiedadesAdmin(filters: {
   limite?: number
   categoria?: string
 }) {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
   try {
     const params = new URLSearchParams()
     if (filters.estado) params.set('estado', filters.estado)
@@ -34,6 +38,9 @@ export async function getPropiedadesAdmin(filters: {
 }
 
 export async function getCiudadesPropiedades() {
+  const auth = await requireAdmin()
+  if (auth.error) return []
+
   try {
     return await goGet<string[]>('/api/v1/admin/propiedades/ciudades')
   } catch {
@@ -42,6 +49,9 @@ export async function getCiudadesPropiedades() {
 }
 
 export async function getPropiedadDetalleAdmin(id: string) {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
   try {
     const data = await goGet<Record<string, unknown>>(`/api/v1/admin/propiedades/${id}`)
     const ingresos = await goGet<Record<string, unknown>>(`/api/v1/admin/propiedades/${id}/ingresos`)
@@ -56,6 +66,9 @@ export async function getPropiedadDetalleAdmin(id: string) {
 }
 
 export async function actualizarPropiedadAdmin(formData: FormData) {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
   const propiedadId = formData.get('propiedadId') as string
   const estadoPublicacion = (formData.get('estadoPublicacion') as string) || undefined
   const destacada = formData.get('destacada') === 'true' ? true : formData.get('destacada') === 'false' ? false : undefined
@@ -72,6 +85,9 @@ export async function actualizarPropiedadAdmin(formData: FormData) {
 }
 
 export async function eliminarPropiedadAdmin(formData: FormData) {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
   const propiedadId = formData.get('propiedadId') as string
   if (!propiedadId) return { error: 'ID de propiedad requerido' }
 
@@ -86,6 +102,9 @@ export async function eliminarPropiedadAdmin(formData: FormData) {
 }
 
 export async function getPropiedadIngresos(propiedadId: string) {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
   try {
     return await goGet<Record<string, unknown>>(`/api/v1/admin/propiedades/${propiedadId}/ingresos`)
   } catch (err) {

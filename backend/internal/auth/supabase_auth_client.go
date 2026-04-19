@@ -302,6 +302,20 @@ func (c *SupabaseAuthClient) UpdateUserMetadata(ctx context.Context, serviceRole
 	return nil
 }
 
+func (c *SupabaseAuthClient) UpdateAppMetadata(ctx context.Context, serviceRoleKey, userID string, metadata map[string]interface{}) error {
+	body := map[string]interface{}{
+		"app_metadata": metadata,
+	}
+	data, status, err := c.doRequest(ctx, http.MethodPut, "/admin/users/"+userID, body, serviceRoleKey)
+	if err != nil {
+		return err
+	}
+	if status != http.StatusOK {
+		return parseAuthError(data, status)
+	}
+	return nil
+}
+
 func (c *SupabaseAuthClient) UpdateUserPassword(ctx context.Context, serviceRoleKey, userID, password string) error {
 	body := map[string]interface{}{
 		"password": password,

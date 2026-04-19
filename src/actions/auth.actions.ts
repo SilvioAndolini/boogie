@@ -94,6 +94,7 @@ export async function verificarOtpYRegistrar(formData: FormData) {
         nombre: datos.nombre,
         apellido: datos.apellido,
         telefono: telefonoCompleto,
+        cedula: datos.numeroDocumento,
       },
     })
 
@@ -122,6 +123,13 @@ export async function verificarOtpYRegistrar(formData: FormData) {
       } else {
         return { error: 'No se pudo crear tu perfil. Intenta de nuevo.' }
       }
+    }
+
+    const { error: appMetaError } = await admin.auth.admin.updateUserById(userId, {
+      app_metadata: { rol: 'BOOGER' },
+    })
+    if (appMetaError) {
+      console.warn('[registro] app_metadata sync failed:', appMetaError.message)
     }
 
     await supabase.auth.signOut()

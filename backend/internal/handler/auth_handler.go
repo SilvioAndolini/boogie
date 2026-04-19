@@ -248,6 +248,19 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := h.authClient.UpdateUserMetadata(r.Context(), h.serviceKey, userID, map[string]interface{}{
+		"cedula":  documento,
+		"telefono": telefonoCompleto,
+	}); err != nil {
+		slog.Warn("[auth/register] user_metadata update failed", "error", err)
+	}
+
+	if err := h.authClient.UpdateAppMetadata(r.Context(), h.serviceKey, userID, map[string]interface{}{
+		"rol": "BOOGER",
+	}); err != nil {
+		slog.Warn("[auth/register] app_metadata update failed", "error", err)
+	}
+
 	JSON(w, http.StatusCreated, RegisterResponse{
 		Ok:      true,
 		UserID:  userID,
@@ -351,6 +364,19 @@ func (h *AuthHandler) CompletarPerfil(w http.ResponseWriter, r *http.Request) {
 	if err := h.repo.UpdateProfile(r.Context(), userID, req.Nombre, req.Apellido, documento, telefonoCompleto); err != nil {
 		mapError(w, err, "[auth/completar-perfil]", "userId", userID)
 		return
+	}
+
+	if err := h.authClient.UpdateUserMetadata(r.Context(), h.serviceKey, userID, map[string]interface{}{
+		"cedula":  documento,
+		"telefono": telefonoCompleto,
+	}); err != nil {
+		slog.Warn("[auth/completar-perfil] metadata update failed", "error", err)
+	}
+
+	if err := h.authClient.UpdateAppMetadata(r.Context(), h.serviceKey, userID, map[string]interface{}{
+		"rol": "BOOGER",
+	}); err != nil {
+		slog.Warn("[auth/completar-perfil] app_metadata update failed", "error", err)
 	}
 
 	JSON(w, http.StatusOK, OKResponse{Ok: true})

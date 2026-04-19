@@ -84,8 +84,24 @@ export async function GET(request: Request) {
       console.error('[auth/callback] Profile insert error:', profileError.message)
     }
 
+    const { error: appMetaError } = await admin.auth.admin.updateUserById(user.id, {
+      app_metadata: { rol: 'BOOGER' },
+    })
+    if (appMetaError) {
+      console.warn('[auth/callback] app_metadata sync failed:', appMetaError.message)
+    }
+
     console.log('[auth/callback] Redirecting to completar-perfil')
     return NextResponse.redirect(`${origin}/completar-perfil`)
+  }
+
+  if (!existingProfile.cedula || !existingProfile.telefono) {
+    const { error: metaError } = await admin.auth.admin.updateUserById(user.id, {
+      app_metadata: { rol: 'BOOGER' },
+    })
+    if (metaError) {
+      console.warn('[auth/callback] app_metadata sync failed:', metaError.message)
+    }
   }
 
   const perfilIncompleto = !existingProfile.cedula || !existingProfile.telefono

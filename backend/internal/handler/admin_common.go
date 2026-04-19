@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 
@@ -14,6 +15,11 @@ type AdminHandler struct {
 	storage     StorageUploader
 	supabaseURL string
 	serviceKey  string
+	authClient  AuthMetadataClient
+}
+
+type AuthMetadataClient interface {
+	UpdateAppMetadata(ctx context.Context, serviceRoleKey, userID string, metadata map[string]interface{}) error
 }
 
 func NewAdminHandler(svc *service.AdminService, tiendaSvc *service.TiendaService) *AdminHandler {
@@ -24,6 +30,11 @@ func (h *AdminHandler) WithStorage(uploader StorageUploader, supabaseURL, servic
 	h.storage = uploader
 	h.supabaseURL = supabaseURL
 	h.serviceKey = serviceKey
+	return h
+}
+
+func (h *AdminHandler) WithAuthClient(client AuthMetadataClient) *AdminHandler {
+	h.authClient = client
 	return h
 }
 

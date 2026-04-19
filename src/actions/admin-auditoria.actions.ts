@@ -1,6 +1,7 @@
 'use server'
 
 import { goApi, GoAPIError } from '@/lib/go-api-client'
+import { requireAdmin } from '@/lib/admin-auth'
 
 type AuditResult = {
   data?: Array<{ id: string; admin_id: string; accion: string; entidad: string; entidad_id: string; detalles: unknown; ip: string; user_agent: string; created_at: string; usuarios: { nombre: string; apellido: string; email: string } }>;
@@ -17,6 +18,9 @@ export async function getAuditLogAdmin(filtros?: {
   fechaFin?: string
   pagina?: number
 }): Promise<AuditResult> {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
   try {
     const params = new URLSearchParams()
     if (filtros?.entidad && filtros.entidad !== 'TODOS') params.set('entidad', filtros.entidad)
