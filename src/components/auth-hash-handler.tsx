@@ -5,15 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 
 export function AuthHashHandler() {
   useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search)
-    const code = searchParams.get('code')
-
-    if (code) {
-      const type = searchParams.get('type')
-      const redirectUrl = '/auth/callback?code=' + encodeURIComponent(code)
-      window.location.href = type ? redirectUrl + '&type=' + encodeURIComponent(type) : redirectUrl
-      return
-    }
+    if (window.location.pathname === '/auth/recovery') return
 
     const hash = window.location.hash
     if (!hash) return

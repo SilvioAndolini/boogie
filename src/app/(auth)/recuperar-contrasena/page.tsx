@@ -149,6 +149,7 @@ function FormularioRecuperar({
       } else {
         if (resultado?.codeVerifier) {
           localStorage.setItem('pkce_code_verifier', resultado.codeVerifier)
+          document.cookie = `pkce_code_verifier=${encodeURIComponent(resultado.codeVerifier)}; path=/; max-age=3600; samesite=lax`
         }
         setEnviado(true)
       }

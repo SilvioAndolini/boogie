@@ -5,6 +5,26 @@ import { exchangePkceCode } from '@/actions/auth.actions'
 
 const PKCE_KEY = 'pkce_code_verifier'
 
+function getCookie(name: string): string | null {
+  const match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()\[\]\\\/+^])/g, '\\$1') + '=([^;]*)'))
+  return match ? decodeURIComponent(match[1]) : null
+}
+
+function getPkceVerifier(): string | null {
+  const fromStorage = localStorage.getItem(PKCE_KEY)
+  if (fromStorage) {
+    localStorage.removeItem(PKCE_KEY)
+    document.cookie = `${PKCE_KEY}=; path=/; max-age=0`
+    return fromStorage
+  }
+  const fromCookie = getCookie(PKCE_KEY)
+  if (fromCookie) {
+    document.cookie = `${PKCE_KEY}=; path=/; max-age=0`
+    return fromCookie
+  }
+  return null
+}
+
 export default function RecoveryPage() {
   const [status, setStatus] = useState<'exchanging' | 'error'>('exchanging')
 
@@ -18,8 +38,7 @@ export default function RecoveryPage() {
       return
     }
 
-    const codeVerifier = localStorage.getItem(PKCE_KEY)
-    localStorage.removeItem(PKCE_KEY)
+    const codeVerifier = getPkceVerifier()
 
     if (!codeVerifier) {
       console.error('[recovery] No code_verifier in localStorage')
