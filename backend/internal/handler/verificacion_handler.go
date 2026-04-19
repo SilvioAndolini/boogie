@@ -3,7 +3,6 @@ package handler
 import (
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"path/filepath"
 	"time"
@@ -70,11 +69,11 @@ func (h *VerificacionHandler) IniciarMetaMap(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	JSON(w, http.StatusCreated, map[string]interface{}{
-		"id":      id,
-		"metodo":  "METAMAP",
-		"estado":  "PENDIENTE",
-		"mensaje": "Verificación iniciada exitosamente",
+	JSON(w, http.StatusCreated, VerificacionIniciadaResponse{
+		ID:      id,
+		Metodo:  "METAMAP",
+		Estado:  "PENDIENTE",
+		Mensaje: "Verificación iniciada exitosamente",
 	})
 }
 
@@ -152,11 +151,11 @@ func (h *VerificacionHandler) SubirDocumento(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	JSON(w, http.StatusCreated, map[string]interface{}{
-		"id":      id,
-		"metodo":  "MANUAL",
-		"estado":  "PENDIENTE",
-		"mensaje": "Documento registrado exitosamente",
+	JSON(w, http.StatusCreated, VerificacionIniciadaResponse{
+		ID:      id,
+		Metodo:  "MANUAL",
+		Estado:  "PENDIENTE",
+		Mensaje: "Documento registrado exitosamente",
 	})
 }
 
@@ -169,8 +168,7 @@ func (h *VerificacionHandler) ListAll(w http.ResponseWriter, r *http.Request) {
 
 	verifs, err := h.svc.ListAll(r.Context())
 	if err != nil {
-		slog.Error("[admin/verificaciones] error", "error", err)
-		ErrorJSON(w, http.StatusInternalServerError, "LIST_ERROR", "Error al cargar verificaciones")
+		mapError(w, err, "[admin/verificaciones]")
 		return
 	}
 
@@ -212,9 +210,9 @@ func (h *VerificacionHandler) Revisar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	JSON(w, http.StatusOK, map[string]interface{}{
-		"ok":      true,
-		"mensaje": "Verificación actualizada exitosamente",
+	JSON(w, http.StatusOK, OKMensajeResponse{
+		Ok:      true,
+		Mensaje: "Verificación actualizada exitosamente",
 	})
 }
 
@@ -227,8 +225,7 @@ func (h *VerificacionHandler) AdminCounts(w http.ResponseWriter, r *http.Request
 
 	counts, err := h.svc.GetAdminCounts(r.Context())
 	if err != nil {
-		slog.Error("[admin/counts] error", "error", err)
-		ErrorJSON(w, http.StatusInternalServerError, "COUNTS_ERROR", "Error al obtener conteos")
+		mapError(w, err, "[admin/counts]")
 		return
 	}
 

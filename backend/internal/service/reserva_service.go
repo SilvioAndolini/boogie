@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/boogie/backend/internal/repository"
 )
 
 type DisponibilidadResult struct {
@@ -20,26 +19,28 @@ type Conflicto struct {
 	FechaBloqueadaID string
 }
 
-type ReservaDisponibilidad struct {
-	pool *pgxpool.Pool
+type DisponibilidadRepository interface {
+	FindConflictingReserva(ctx context.Context, propiedadID string, entrada, salida time.Time) (string, error)
+	FindFechaBloqueada(ctx context.Context, propiedadID string, entrada, salida time.Time) (string, error)
+	GetPropiedadBasica(ctx context.Context, propiedadID string) (id, titulo string, precio float64, moneda, propietarioID string, err error)
+	ListFechasOcupadas(ctx context.Context, propiedadID string) ([]repository.FechaOcupadaRow, []repository.FechaOcupadaRow, error)
+	ExistsSolapamiento(ctx context.Context, propiedadID string, entrada, salida time.Time) (bool, error)
 }
 
-func NewReservaDisponibilidad(pool *pgxpool.Pool) *ReservaDisponibilidad {
-	return &ReservaDisponibilidad{pool: pool}
+type ReservaDisponibilidad struct {
+	repo DisponibilidadRepository
+}
+
+func NewReservaDisponibilidad(repo DisponibilidadRepository) *ReservaDisponibilidad {
+	return &ReservaDisponibilidad{repo: repo}
 }
 
 func (r *ReservaDisponibilidad) Verificar(ctx context.Context, propiedadID string, fechaEntrada, fechaSalida time.Time) (*DisponibilidadResult, error) {
-	var reservaID string
-	err := r.pool.QueryRow(ctx, `
-		SELECT id FROM reservas
-		WHERE propiedad_id = $1
-		  AND estado IN ('PENDIENTE_PAGO', 'PENDIENTE', 'PENDIENTE_CONFIRMACION', 'CONFIRMADA', 'EN_CURSO')
-		  AND fecha_entrada < $3
-		  AND fecha_salida > $2
-		LIMIT 1
-	`, propiedadID, fechaEntrada, fechaSalida).Scan(&reservaID)
-
-	if err == nil {
+	reservaID, err := r.repo.FindConflictingReserva(ctx, propiedadID, fechaEntrada, fechaSalida)
+	if err != nil {
+		return nil, fmt.Errorf("checking reserva conflicts: %w", err)
+	}
+	if reservaID != "" {
 		return &DisponibilidadResult{
 			Disponible: false,
 			Conflicto: &Conflicto{
@@ -48,20 +49,12 @@ func (r *ReservaDisponibilidad) Verificar(ctx context.Context, propiedadID strin
 			},
 		}, nil
 	}
-	if err != nil && err != pgx.ErrNoRows {
-		return nil, fmt.Errorf("checking reserva conflicts: %w", err)
+
+	bloqueadaID, err := r.repo.FindFechaBloqueada(ctx, propiedadID, fechaEntrada, fechaSalida)
+	if err != nil {
+		return nil, fmt.Errorf("checking blocked dates: %w", err)
 	}
-
-	var bloqueadaID string
-	err = r.pool.QueryRow(ctx, `
-		SELECT id FROM fechas_bloqueadas
-		WHERE propiedad_id = $1
-		  AND fecha_inicio < $3
-		  AND fecha_fin > $2
-		LIMIT 1
-	`, propiedadID, fechaEntrada, fechaSalida).Scan(&bloqueadaID)
-
-	if err == nil {
+	if bloqueadaID != "" {
 		return &DisponibilidadResult{
 			Disponible: false,
 			Conflicto: &Conflicto{
@@ -70,19 +63,12 @@ func (r *ReservaDisponibilidad) Verificar(ctx context.Context, propiedadID strin
 			},
 		}, nil
 	}
-	if err != pgx.ErrNoRows {
-		return nil, fmt.Errorf("checking blocked dates: %w", err)
-	}
 
 	return &DisponibilidadResult{Disponible: true}, nil
 }
 
 func (r *ReservaDisponibilidad) ObtenerPropiedad(ctx context.Context, propiedadID string) (id, titulo string, precio float64, moneda, propietarioID string, err error) {
-	err = r.pool.QueryRow(ctx, `
-		SELECT id, titulo, precio_por_noche, moneda, propietario_id
-		FROM propiedades WHERE id = $1
-	`, propiedadID).Scan(&id, &titulo, &precio, &moneda, &propietarioID)
-	return
+	return r.repo.GetPropiedadBasica(ctx, propiedadID)
 }
 
 type FechaOcupada struct {
@@ -92,41 +78,17 @@ type FechaOcupada struct {
 }
 
 func (r *ReservaDisponibilidad) ObtenerFechasOcupadas(ctx context.Context, propiedadID string) ([]FechaOcupada, error) {
-	rows, err := r.pool.Query(ctx, `
-		SELECT fecha_entrada, fecha_salida, estado FROM reservas
-		WHERE propiedad_id = $1
-		  AND estado IN ('PENDIENTE_PAGO', 'PENDIENTE', 'PENDIENTE_CONFIRMACION', 'CONFIRMADA', 'EN_CURSO')
-	`, propiedadID)
+	reservas, bloqueadas, err := r.repo.ListFechasOcupadas(ctx, propiedadID)
 	if err != nil {
-		return nil, fmt.Errorf("query fechas ocupadas reservas: %w", err)
+		return nil, err
 	}
-	defer rows.Close()
 
 	var results []FechaOcupada
-	for rows.Next() {
-		var f FechaOcupada
-		if err := rows.Scan(&f.Inicio, &f.Fin, &f.Estado); err != nil {
-			return nil, err
-		}
-		results = append(results, f)
+	for _, f := range reservas {
+		results = append(results, FechaOcupada{Inicio: f.Inicio, Fin: f.Fin, Estado: f.Estado})
 	}
-
-	blockedRows, err := r.pool.Query(ctx, `
-		SELECT fecha_inicio, fecha_fin FROM fechas_bloqueadas
-		WHERE propiedad_id = $1
-	`, propiedadID)
-	if err != nil {
-		return nil, fmt.Errorf("query fechas bloqueadas: %w", err)
-	}
-	defer blockedRows.Close()
-
-	for blockedRows.Next() {
-		var f FechaOcupada
-		if err := blockedRows.Scan(&f.Inicio, &f.Fin); err != nil {
-			return nil, err
-		}
-		f.Estado = "BLOQUEADA"
-		results = append(results, f)
+	for _, f := range bloqueadas {
+		results = append(results, FechaOcupada{Inicio: f.Inicio, Fin: f.Fin, Estado: f.Estado})
 	}
 
 	if results == nil {
@@ -136,33 +98,5 @@ func (r *ReservaDisponibilidad) ObtenerFechasOcupadas(ctx context.Context, propi
 }
 
 func (r *ReservaDisponibilidad) HaySolapamiento(ctx context.Context, propiedadID string, fechaEntrada, fechaSalida time.Time) (bool, error) {
-	var exists bool
-	err := r.pool.QueryRow(ctx, `
-		SELECT EXISTS(
-			SELECT 1 FROM reservas
-			WHERE propiedad_id = $1
-			  AND estado IN ('PENDIENTE_PAGO', 'PENDIENTE', 'PENDIENTE_CONFIRMACION', 'CONFIRMADA', 'EN_CURSO')
-			  AND fecha_entrada < $3
-			  AND fecha_salida > $2
-		)
-	`, propiedadID, fechaEntrada, fechaSalida).Scan(&exists)
-	if err != nil {
-		return false, err
-	}
-	if exists {
-		return true, nil
-	}
-
-	err = r.pool.QueryRow(ctx, `
-		SELECT EXISTS(
-			SELECT 1 FROM fechas_bloqueadas
-			WHERE propiedad_id = $1
-			  AND fecha_inicio < $3
-			  AND fecha_fin > $2
-		)
-	`, propiedadID, fechaEntrada, fechaSalida).Scan(&exists)
-	if err != nil {
-		return false, err
-	}
-	return exists, nil
+	return r.repo.ExistsSolapamiento(ctx, propiedadID, fechaEntrada, fechaSalida)
 }

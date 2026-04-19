@@ -8,11 +8,29 @@ import (
 	"github.com/boogie/backend/internal/repository"
 )
 
-type ChatService struct {
-	repo *repository.ChatRepo
+type ChatRepository interface {
+	GetConversaciones(ctx context.Context, userID string) ([]repository.Conversacion, error)
+	GetOrCreateConversacion(ctx context.Context, userID, otroID string, propiedadID *string) (*repository.Conversacion, error)
+	IsParticipant(ctx context.Context, conversacionID, userID string) bool
+	GetMensajes(ctx context.Context, conversacionID string, limit, offset int) ([]repository.Mensaje, error)
+	MarkAsRead(ctx context.Context, conversacionID, userID string) error
+	InsertMensaje(ctx context.Context, conversacionID, remitenteID, contenido, tipo string, imagenURL *string) (*repository.Mensaje, error)
+	CountNoLeidos(ctx context.Context, userID string) (int, error)
+	GetConversacionInfo(ctx context.Context, convID, userID string) (*repository.ConversacionInfo, error)
+	GetMensajesRapidos(ctx context.Context, userID string) ([]repository.MensajeRapido, error)
+	ExistsMensajesRapidos(ctx context.Context, userID string) (bool, error)
+	SeedMensajesRapidos(ctx context.Context, userID, tipo string, mensajes []string) error
+	GetMaxOrdenMensajeRapido(ctx context.Context, userID string) (int, error)
+	InsertMensajeRapido(ctx context.Context, userID, contenido, tipo string, orden int) (*repository.MensajeRapido, error)
+	UpdateMensajeRapido(ctx context.Context, id, userID, contenido string) error
+	DeleteMensajeRapido(ctx context.Context, id, userID string) error
 }
 
-func NewChatService(repo *repository.ChatRepo) *ChatService {
+type ChatService struct {
+	repo ChatRepository
+}
+
+func NewChatService(repo ChatRepository) *ChatService {
 	return &ChatService{repo: repo}
 }
 

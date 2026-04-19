@@ -8,11 +8,22 @@ import (
 	"github.com/boogie/backend/internal/repository"
 )
 
-type VerificacionService struct {
-	repo *repository.VerificacionRepo
+type VerificacionRepository interface {
+	GetLatestByUser(ctx context.Context, userID string) (*repository.VerificacionDocumento, error)
+	GetActiveByUser(ctx context.Context, userID string) (*repository.VerificacionDocumento, error)
+	Insert(ctx context.Context, userID, metodo, estado string, fotoFrontal, fotoTrasera, fotoSelfie *string) (string, error)
+	ListAll(ctx context.Context) ([]repository.VerificacionConUsuario, error)
+	GetByID(ctx context.Context, id string) (*repository.VerificacionDocumento, error)
+	Revisar(ctx context.Context, verifID, accion, revisadoPor string, motivoRechazo *string) error
+	SetUsuarioVerificado(ctx context.Context, userID string, verificado bool) error
+	CountPendientes(ctx context.Context, tabla string) (int, error)
 }
 
-func NewVerificacionService(repo *repository.VerificacionRepo) *VerificacionService {
+type VerificacionService struct {
+	repo VerificacionRepository
+}
+
+func NewVerificacionService(repo VerificacionRepository) *VerificacionService {
 	return &VerificacionService{repo: repo}
 }
 

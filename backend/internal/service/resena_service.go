@@ -8,12 +8,24 @@ import (
 	"github.com/boogie/backend/internal/repository"
 )
 
+type ResenaRepository interface {
+	GetReservaForResena(ctx context.Context, reservaID, userID string) (*repository.ReservaForResena, error)
+	ExistsByReserva(ctx context.Context, reservaID string) (bool, error)
+	GetPropietarioID(ctx context.Context, propiedadID string) (string, error)
+	Insert(ctx context.Context, reservaID, propiedadID, autorID, anfitrionID string, calificacion int, limpieza, comunicacion, ubicacion, valor *int, comentario string) (string, error)
+	UpdatePropiedadRating(ctx context.Context, propiedadID string) error
+	GetAnfitrionIDForResena(ctx context.Context, resenaID string) (string, error)
+	GetByID(ctx context.Context, resenaID string) (*repository.ResenaConAutor, error)
+	SetRespuesta(ctx context.Context, resenaID, respuesta string) error
+	GetByPropiedad(ctx context.Context, propiedadID string, page, perPage int) ([]repository.ResenaConAutor, int, error)
+}
+
 type ResenaService struct {
-	repo  *repository.ResenaRepo
+	repo  ResenaRepository
 	cache *CacheService
 }
 
-func NewResenaService(repo *repository.ResenaRepo) *ResenaService {
+func NewResenaService(repo ResenaRepository) *ResenaService {
 	return &ResenaService{repo: repo, cache: GetCache()}
 }
 

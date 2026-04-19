@@ -102,8 +102,7 @@ func (h *MetamapHandler) Webhook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.metamapRepo.UpdateVerificacionEstado(r.Context(), verifID, nuevoEstado, resourceJSON); err != nil {
-		slog.Error("[metamap/webhook] update error", "error", err)
-		ErrorJSON(w, http.StatusInternalServerError, "DB_ERROR", "Error updating verification")
+		mapError(w, err, "[metamap/webhook] update", "verifId", verifID)
 		return
 	}
 
@@ -125,7 +124,7 @@ func (h *MetamapHandler) Webhook(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	JSON(w, http.StatusOK, map[string]interface{}{"received": true})
+	JSON(w, http.StatusOK, WebhookReceivedResponse{Received: true})
 }
 
 func verifyHMAC(body, signature, secret string) bool {

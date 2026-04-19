@@ -18,21 +18,17 @@ func (h *UbicacionesHandler) Search(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("q")
 	if len(q) < 2 {
 		w.Header().Set("Cache-Control", "public, s-maxage=1800, stale-while-revalidate=3600")
-		JSON(w, http.StatusOK, map[string]interface{}{
-			"resultados": []interface{}{},
-		})
+		JSON(w, http.StatusOK, ResultadosResponse{Resultados: []interface{}{}})
 		return
 	}
 
 	results, err := h.service.Search(q)
 	if err != nil {
-		ErrorJSON(w, http.StatusInternalServerError, "UBICACIONES_ERROR", "Error al buscar ubicaciones")
+		mapError(w, err, "[ubicaciones/search]")
 		return
 	}
 
 	w.Header().Set("Cache-Control", "public, s-maxage=1800, stale-while-revalidate=3600")
 	w.Header().Set("Vary", "Accept-Encoding")
-	JSON(w, http.StatusOK, map[string]interface{}{
-		"resultados": results,
-	})
+	JSON(w, http.StatusOK, ResultadosResponse{Resultados: results})
 }

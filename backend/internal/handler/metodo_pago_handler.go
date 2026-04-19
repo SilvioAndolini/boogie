@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"log/slog"
 	"net/http"
 
 	"github.com/boogie/backend/internal/auth"
@@ -26,8 +25,7 @@ func (h *MetodoPagoHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	metodos, err := h.svc.List(r.Context(), userID)
 	if err != nil {
-		slog.Error("[metodos-pago/list] error", "error", err)
-		ErrorJSON(w, http.StatusInternalServerError, "LIST_ERROR", "Error al obtener metodos de pago")
+		mapError(w, err, "[metodos-pago/list]", "userId", userID)
 		return
 	}
 
@@ -99,8 +97,8 @@ func (h *MetodoPagoHandler) Eliminar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	JSON(w, http.StatusOK, map[string]interface{}{
-		"ok":      true,
-		"mensaje": "Metodo de pago eliminado",
+	JSON(w, http.StatusOK, OKMensajeResponse{
+		Ok:      true,
+		Mensaje: "Metodo de pago eliminado",
 	})
 }

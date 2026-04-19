@@ -8,13 +8,20 @@ import (
 
 	"github.com/boogie/backend/internal/domain/util"
 	"github.com/boogie/backend/internal/repository"
+	"github.com/boogie/backend/internal/repository/admin"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type CuponService struct {
-	repo *repository.AdminRepo
+type CuponAdminRepository interface {
+	GetCuponByCodigo(ctx context.Context, codigo string) (*admin.Cupon, error)
+	Pool() *pgxpool.Pool
 }
 
-func NewCuponService(repo *repository.AdminRepo) *CuponService {
+type CuponService struct {
+	repo CuponAdminRepository
+}
+
+func NewCuponService(repo CuponAdminRepository) *CuponService {
 	return &CuponService{repo: repo}
 }
 

@@ -2,9 +2,7 @@ package handler
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -12,7 +10,6 @@ import (
 
 	"github.com/boogie/backend/internal/auth"
 	"github.com/boogie/backend/internal/domain/enums"
-	bizerrors "github.com/boogie/backend/internal/domain/errors"
 	"github.com/boogie/backend/internal/repository"
 	"github.com/boogie/backend/internal/service"
 	"github.com/go-chi/chi/v5"
@@ -79,25 +76,25 @@ func (h *ReservaHandler) Crear(w http.ResponseWriter, r *http.Request) {
 		NotasHuesped:      req.NotasHuesped,
 	})
 	if err != nil {
-		handleBusinessError(w, err, "[reservas/crear]", userID, req.PropiedadID)
+		mapError(w, err, "[reservas/crear]", "userId", userID, "propId", req.PropiedadID)
 		return
 	}
 
-	JSON(w, http.StatusCreated, map[string]interface{}{
-		"id":                 result.Reserva.ID,
-		"codigo":             result.Reserva.Codigo,
-		"propiedadId":        result.Reserva.PropiedadID,
-		"fechaEntrada":       result.Reserva.FechaEntrada,
-		"fechaSalida":        result.Reserva.FechaSalida,
-		"noches":             result.Reserva.Noches,
-		"precioPorNoche":     result.Reserva.PrecioPorNoche,
-		"subtotal":           result.Reserva.Subtotal,
-		"comisionPlataforma": result.Reserva.ComisionPlataforma,
-		"comisionAnfitrion":  result.Reserva.ComisionAnfitrion,
-		"total":              result.Reserva.Total,
-		"moneda":             result.Reserva.Moneda,
-		"cantidadHuespedes":  result.Reserva.CantidadHuespedes,
-		"estado":             result.Reserva.Estado,
+	JSON(w, http.StatusCreated, CrearReservaResponse{
+		ID:                 result.Reserva.ID,
+		Codigo:             result.Reserva.Codigo,
+		PropiedadID:        result.Reserva.PropiedadID,
+		FechaEntrada:       result.Reserva.FechaEntrada,
+		FechaSalida:        result.Reserva.FechaSalida,
+		Noches:             result.Reserva.Noches,
+		PrecioPorNoche:     result.Reserva.PrecioPorNoche,
+		Subtotal:           result.Reserva.Subtotal,
+		ComisionPlataforma: result.Reserva.ComisionPlataforma,
+		ComisionAnfitrion:  result.Reserva.ComisionAnfitrion,
+		Total:              result.Reserva.Total,
+		Moneda:             result.Reserva.Moneda,
+		CantidadHuespedes:  result.Reserva.CantidadHuespedes,
+		Estado:             result.Reserva.Estado,
 	})
 }
 
@@ -205,27 +202,27 @@ func (h *ReservaHandler) CrearConPago(w http.ResponseWriter, r *http.Request) {
 		CuponCodigo:       req.CuponCodigo,
 	})
 	if err != nil {
-		handleBusinessError(w, err, "[reservas/crear-con-pago]", userID, req.PropiedadID)
+		mapError(w, err, "[reservas/crear-con-pago]", "userId", userID, "propId", req.PropiedadID)
 		return
 	}
 
-	JSON(w, http.StatusCreated, map[string]interface{}{
-		"id":                 result.Reserva.ID,
-		"codigo":             result.Reserva.Codigo,
-		"propiedadId":        result.Reserva.PropiedadID,
-		"fechaEntrada":       result.Reserva.FechaEntrada,
-		"fechaSalida":        result.Reserva.FechaSalida,
-		"noches":             result.Reserva.Noches,
-		"precioPorNoche":     result.Reserva.PrecioPorNoche,
-		"subtotal":           result.Reserva.Subtotal,
-		"comisionPlataforma": result.Reserva.ComisionPlataforma,
-		"comisionAnfitrion":  result.Reserva.ComisionAnfitrion,
-		"total":              result.Reserva.Total,
-		"moneda":             result.Reserva.Moneda,
-		"cantidadHuespedes":  result.Reserva.CantidadHuespedes,
-		"estado":             result.Reserva.Estado,
-		"cuponId":            result.Reserva.CuponID,
-		"descuento":          result.Reserva.Descuento,
+	JSON(w, http.StatusCreated, CrearReservaConPagoResponse{
+		ID:                 result.Reserva.ID,
+		Codigo:             result.Reserva.Codigo,
+		PropiedadID:        result.Reserva.PropiedadID,
+		FechaEntrada:       result.Reserva.FechaEntrada,
+		FechaSalida:        result.Reserva.FechaSalida,
+		Noches:             result.Reserva.Noches,
+		PrecioPorNoche:     result.Reserva.PrecioPorNoche,
+		Subtotal:           result.Reserva.Subtotal,
+		ComisionPlataforma: result.Reserva.ComisionPlataforma,
+		ComisionAnfitrion:  result.Reserva.ComisionAnfitrion,
+		Total:              result.Reserva.Total,
+		Moneda:             result.Reserva.Moneda,
+		CantidadHuespedes:  result.Reserva.CantidadHuespedes,
+		Estado:             result.Reserva.Estado,
+		CuponID:            result.Reserva.CuponID,
+		Descuento:          result.Reserva.Descuento,
 	})
 }
 
@@ -262,8 +259,7 @@ func (h *ReservaHandler) MisReservas(w http.ResponseWriter, r *http.Request) {
 
 	reservas, total, err := h.svc.ListByHuesped(r.Context(), userID, page, perPage)
 	if err != nil {
-		slog.Error("[reservas/mis] error", "error", err)
-		ErrorJSON(w, http.StatusInternalServerError, "LIST_ERROR", "Error al obtener reservas")
+		mapError(w, err, "[reservas/mis]", "userId", userID)
 		return
 	}
 
@@ -290,8 +286,7 @@ func (h *ReservaHandler) ReservasRecibidas(w http.ResponseWriter, r *http.Reques
 
 	reservas, total, err := h.svc.ListByPropietario(r.Context(), userID, estado, page, perPage)
 	if err != nil {
-		slog.Error("[reservas/recibidas] error", "error", err)
-		ErrorJSON(w, http.StatusInternalServerError, "LIST_ERROR", "Error al obtener reservas")
+		mapError(w, err, "[reservas/recibidas]", "userId", userID)
 		return
 	}
 
@@ -337,15 +332,13 @@ func (h *ReservaHandler) ConfirmarORechazar(w http.ResponseWriter, r *http.Reque
 
 	err := h.svc.ConfirmarORechazar(r.Context(), reservaID, userID, service.TransicionEstado(req.Accion), req.Motivo)
 	if err != nil {
-		slog.Error("[reservas/confirmar-rechazar] error", "error", err, "reservaId", reservaID)
-		status, code := mapBizErrorToHTTP(err)
-		ErrorJSON(w, status, code, err.Error())
+		mapError(w, err, "[reservas/confirmar-rechazar]", "reservaId", reservaID)
 		return
 	}
 
-	JSON(w, http.StatusOK, map[string]interface{}{
-		"ok":      true,
-		"mensaje": fmt.Sprintf("Reserva %s exitosamente", req.Accion),
+	JSON(w, http.StatusOK, ConfirmarRechazarResponse{
+		Ok:      true,
+		Mensaje: fmt.Sprintf("Reserva %s exitosamente", req.Accion),
 	})
 }
 
@@ -378,18 +371,16 @@ func (h *ReservaHandler) Cancelar(w http.ResponseWriter, r *http.Request) {
 		Motivo:    req.Motivo,
 	})
 	if err != nil {
-		slog.Error("[reservas/cancelar] error", "error", err, "reservaId", reservaID)
-		status, code := mapBizErrorToHTTP(err)
-		ErrorJSON(w, status, code, err.Error())
+		mapError(w, err, "[reservas/cancelar]", "reservaId", reservaID)
 		return
 	}
 
-	resp := map[string]interface{}{
-		"ok":      true,
-		"mensaje": "Reserva cancelada exitosamente",
+	resp := CancelarReservaResponse{
+		Ok:      true,
+		Mensaje: "Reserva cancelada exitosamente",
 	}
 	if reembolso != nil {
-		resp["reembolso"] = reembolso
+		resp.Reembolso = reembolso
 	}
 
 	JSON(w, http.StatusOK, resp)
@@ -424,13 +415,12 @@ func (h *ReservaHandler) Disponibilidad(w http.ResponseWriter, r *http.Request) 
 
 	result, err := h.disponSvc.Verificar(r.Context(), propID, fechaEntrada, fechaSalida)
 	if err != nil {
-		slog.Error("[reservas/disponibilidad] error", "error", err)
-		ErrorJSON(w, http.StatusInternalServerError, "CHECK_ERROR", "Error al verificar disponibilidad")
+		mapError(w, err, "[reservas/disponibilidad]")
 		return
 	}
 
-	JSON(w, http.StatusOK, map[string]interface{}{
-		"disponible": result.Disponible,
+	JSON(w, http.StatusOK, DisponibilidadResponse{
+		Disponible: result.Disponible,
 	})
 }
 
@@ -443,8 +433,7 @@ func (h *ReservaHandler) FechasOcupadas(w http.ResponseWriter, r *http.Request) 
 
 	fechas, err := h.disponSvc.ObtenerFechasOcupadas(r.Context(), propID)
 	if err != nil {
-		slog.Error("[reservas/fechas-ocupadas] error", "error", err)
-		ErrorJSON(w, http.StatusInternalServerError, "FETCH_ERROR", "Error al obtener fechas ocupadas")
+		mapError(w, err, "[reservas/fechas-ocupadas]")
 		return
 	}
 
@@ -507,51 +496,17 @@ func parseFlexibleDate(s string) (time.Time, error) {
 	return time.Parse(time.RFC3339, s)
 }
 
-// mapBizErrorToHTTP maps a BusinessError code to an HTTP status.
-func mapBizErrorToHTTP(err error) (int, string) {
-	var bizErr *bizerrors.BusinessError
-	if errors.As(err, &bizErr) {
-		switch bizErr.Code {
-		case bizerrors.CodeNotFound:
-			return http.StatusNotFound, "NOT_FOUND"
-		case bizerrors.CodeForbidden:
-			return http.StatusForbidden, "FORBIDDEN"
-		case bizerrors.CodeValidation, bizerrors.CodeBadRequest:
-			return http.StatusBadRequest, "RESERVA_ERROR"
-		case bizerrors.CodeConflict:
-			return http.StatusConflict, "CONFLICT"
-		case bizerrors.CodeStateConflict:
-			return http.StatusBadRequest, "STATE_ERROR"
-		default:
-			return http.StatusBadRequest, "RESERVA_ERROR"
-		}
-	}
-	return http.StatusInternalServerError, "INTERNAL_ERROR"
-}
 
-// handleBusinessError logs and responds for reserva operations.
-func handleBusinessError(w http.ResponseWriter, err error, logPrefix, userID, propID string) {
-	var bizErr *bizerrors.BusinessError
-	if errors.As(err, &bizErr) {
-		status, code := mapBizErrorToHTTP(err)
-		slog.Error(logPrefix, "error", err, "code", bizErr.Code)
-		ErrorJSON(w, status, code, err.Error())
-		return
-	}
-	slog.Error(logPrefix, "error", err, "userId", userID, "propId", propID)
-	ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Error al procesar reserva")
-}
 
 func (h *ReservaHandler) AutoConfirmarExpiradas(w http.ResponseWriter, r *http.Request) {
 	confirmadas, err := h.svc.AutoConfirmarExpiradas(r.Context())
 	if err != nil {
-		slog.Error("[reserva/auto-confirmar] error", "error", err)
-		ErrorJSON(w, http.StatusInternalServerError, "AUTO_CONFIRM_ERROR", "Error al auto-confirmar")
+		mapError(w, err, "[reserva/auto-confirmar]")
 		return
 	}
-	JSON(w, http.StatusOK, map[string]interface{}{
-		"ok":          true,
-		"confirmadas": confirmadas,
+	JSON(w, http.StatusOK, AutoConfirmarResponse{
+		Ok:          true,
+		Confirmadas: confirmadas,
 	})
 }
 
@@ -564,8 +519,7 @@ func (h *ReservaHandler) GetModosReserva(w http.ResponseWriter, r *http.Request)
 
 	props, err := h.svc.ListPropiedadesModoReserva(r.Context(), userID)
 	if err != nil {
-		slog.Error("[reservas/modos-reserva] error", "error", err)
-		ErrorJSON(w, http.StatusInternalServerError, "LIST_ERROR", "Error al obtener modos de reserva")
+		mapError(w, err, "[reservas/modos-reserva]", "userId", userID)
 		return
 	}
 
@@ -609,8 +563,8 @@ func (h *ReservaHandler) UpdateModoReserva(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	JSON(w, http.StatusOK, map[string]interface{}{
-		"ok":      true,
-		"mensaje": fmt.Sprintf("Modo de reserva actualizado a %s", req.Modo),
+	JSON(w, http.StatusOK, UpdateModoReservaResponse{
+		Ok:      true,
+		Mensaje: fmt.Sprintf("Modo de reserva actualizado a %s", req.Modo),
 	})
 }

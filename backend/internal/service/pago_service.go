@@ -10,12 +10,28 @@ import (
 	"github.com/boogie/backend/internal/repository"
 )
 
-type PagoService struct {
-	pagoRepo    *repository.PagoRepo
-	reservaRepo *repository.ReservaRepo
+type PagoRepository interface {
+	GetMisPagos(ctx context.Context, userID string) ([]repository.PagoConReserva, error)
+	GetByID(ctx context.Context, pagoID string) (*repository.PagoConReserva, error)
+	GetReservaOwnerForPago(ctx context.Context, pagoID string) (reservaID, propietarioID, estadoReserva string, err error)
+	Verificar(ctx context.Context, pagoID, verificadoPor, estado string, notas *string) error
+	ConfirmarReserva(ctx context.Context, reservaID string) error
+	SetReservaPendienteConfirm(ctx context.Context, reservaID string) error
+	ReservaBelongsToUser(ctx context.Context, reservaID, userID string) (bool, error)
+	InsertPagoSimple(ctx context.Context, reservaID, usuarioID string, monto float64, moneda enums.Moneda, metodo enums.MetodoPagoEnum, referencia string) (string, error)
+	InsertPagoConComprobante(ctx context.Context, reservaID, usuarioID string, monto float64, moneda enums.Moneda, metodo enums.MetodoPagoEnum, referencia string, comprobanteURL *string, bancoEmisor, telefonoEmisor *string) (string, error)
+	GetWallet(ctx context.Context, userID string) (*repository.WalletData, error)
+	CreateWallet(ctx context.Context, userID string) error
+	InsertWalletTransaccion(ctx context.Context, walletID, tipo, descripcion string, montoUSD float64, referenciaID *string) (string, error)
+	GetWalletTransacciones(ctx context.Context, walletID string) ([]repository.WalletTransaccion, error)
 }
 
-func NewPagoService(pagoRepo *repository.PagoRepo, reservaRepo *repository.ReservaRepo) *PagoService {
+type PagoService struct {
+	pagoRepo    PagoRepository
+	reservaRepo ReservaModoRepository
+}
+
+func NewPagoService(pagoRepo PagoRepository, reservaRepo ReservaModoRepository) *PagoService {
 	return &PagoService{pagoRepo: pagoRepo, reservaRepo: reservaRepo}
 }
 
@@ -109,10 +125,10 @@ func (s *PagoService) RegistrarPagoConComprobante(ctx context.Context, reservaID
 }
 
 type WalletService struct {
-	pagoRepo *repository.PagoRepo
+	pagoRepo PagoRepository
 }
 
-func NewWalletService(pagoRepo *repository.PagoRepo) *WalletService {
+func NewWalletService(pagoRepo PagoRepository) *WalletService {
 	return &WalletService{pagoRepo: pagoRepo}
 }
 

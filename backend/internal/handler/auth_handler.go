@@ -10,13 +10,12 @@ import (
 	"time"
 
 	"github.com/boogie/backend/internal/auth"
-	"github.com/boogie/backend/internal/repository"
 )
 
 type AuthHandler struct {
 	authClient  *auth.SupabaseAuthClient
 	verifier    *auth.SupabaseVerifier
-	repo        *repository.AuthRepo
+	repo        AuthRepository
 	supabaseURL string
 	serviceKey  string
 	appURL      string
@@ -25,7 +24,7 @@ type AuthHandler struct {
 func NewAuthHandler(
 	authClient *auth.SupabaseAuthClient,
 	verifier *auth.SupabaseVerifier,
-	repo *repository.AuthRepo,
+	repo AuthRepository,
 	supabaseURL, serviceKey, appURL string,
 ) *AuthHandler {
 	return &AuthHandler{
@@ -122,7 +121,7 @@ func (h *AuthHandler) SendOtpEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	JSON(w, http.StatusOK, map[string]interface{}{"ok": true, "mensaje": "Codigo enviado"})
+	JSON(w, http.StatusOK, OKMensajeResponse{Ok: true, Mensaje: "Codigo enviado"})
 }
 
 type sendOtpSmsRequest struct {
@@ -149,7 +148,7 @@ func (h *AuthHandler) SendOtpSms(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	JSON(w, http.StatusOK, map[string]interface{}{"ok": true, "mensaje": "Codigo SMS enviado"})
+	JSON(w, http.StatusOK, OKMensajeResponse{Ok: true, Mensaje: "Codigo SMS enviado"})
 }
 
 type verifyOtpRequest struct {
@@ -245,15 +244,14 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.repo.CreateUserProfile(r.Context(), userID, req.Email, req.Nombre, req.Apellido, telefonoCompleto, documento); err != nil {
-		slog.Error("[auth/register] profile error", "error", err)
-		ErrorJSON(w, http.StatusInternalServerError, "PROFILE_ERROR", "Error al crear perfil de usuario")
+		mapError(w, err, "[auth/register] profile error", "userId", userID)
 		return
 	}
 
-	JSON(w, http.StatusCreated, map[string]interface{}{
-		"ok":      true,
-		"userId":  userID,
-		"mensaje": "Registro exitoso",
+	JSON(w, http.StatusCreated, RegisterResponse{
+		Ok:      true,
+		UserID:  userID,
+		Mensaje: "Registro exitoso",
 	})
 }
 
@@ -279,7 +277,7 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	JSON(w, http.StatusOK, map[string]interface{}{"ok": true, "mensaje": "Correo de recuperacion enviado"})
+	JSON(w, http.StatusOK, OKMensajeResponse{Ok: true, Mensaje: "Correo de recuperacion enviado"})
 }
 
 type googleOAuthRequest struct {
@@ -292,7 +290,7 @@ func (h *AuthHandler) GoogleOAuthURL(w http.ResponseWriter, r *http.Request) {
 		redirectTo = h.appURL + "/auth/callback"
 	}
 	url := h.authClient.GetOAuthURL("google", redirectTo)
-	JSON(w, http.StatusOK, map[string]interface{}{"url": url})
+	JSON(w, http.StatusOK, OAuthURLResponse{URL: url})
 }
 
 type googleCallbackRequest struct {
@@ -306,7 +304,7 @@ func (h *AuthHandler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	JSON(w, http.StatusOK, map[string]interface{}{"ok": true, "mensaje": "Callback recibido. El frontend debe intercambiar el code con Supabase directamente."})
+	JSON(w, http.StatusOK, OKMensajeResponse{Ok: true, Mensaje: "Callback recibido. El frontend debe intercambiar el code con Supabase directamente."})
 }
 
 type completarPerfilRequest struct {
@@ -351,12 +349,11 @@ func (h *AuthHandler) CompletarPerfil(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.repo.UpdateProfile(r.Context(), userID, req.Nombre, req.Apellido, documento, telefonoCompleto); err != nil {
-		slog.Error("[auth/completar-perfil] error", "error", err)
-		ErrorJSON(w, http.StatusBadRequest, "UPDATE_ERROR", "Error al guardar datos")
+		mapError(w, err, "[auth/completar-perfil]", "userId", userID)
 		return
 	}
 
-	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+	JSON(w, http.StatusOK, OKResponse{Ok: true})
 }
 
 func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
@@ -373,8 +370,7 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 
 	profile, err := h.repo.GetUserProfile(r.Context(), userID)
 	if err != nil {
-		slog.Error("[auth/me] error", "error", err, "userID", userID)
-		ErrorJSON(w, http.StatusInternalServerError, "PROFILE_ERROR", "Error al obtener perfil")
+		mapError(w, err, "[auth/me]", "userId", userID)
 		return
 	}
 
@@ -422,8 +418,7 @@ func (h *AuthHandler) ActualizarPerfil(w http.ResponseWriter, r *http.Request) {
 		"tiktok":                req.Tiktok,
 		"instagram":             req.Instagram,
 	}); err != nil {
-		slog.Error("[auth/perfil] update error", "error", err, "userID", userID)
-		ErrorJSON(w, http.StatusInternalServerError, "UPDATE_ERROR", "Error al guardar cambios")
+		mapError(w, err, "[auth/perfil] update", "userId", userID)
 		return
 	}
 
@@ -435,7 +430,7 @@ func (h *AuthHandler) ActualizarPerfil(w http.ResponseWriter, r *http.Request) {
 		slog.Warn("[auth/perfil] metadata update failed", "error", err)
 	}
 
-	JSON(w, http.StatusOK, map[string]interface{}{"ok": true, "mensaje": "Perfil actualizado"})
+	JSON(w, http.StatusOK, OKMensajeResponse{Ok: true, Mensaje: "Perfil actualizado"})
 }
 
 type cambiarContrasenaRequest struct {
@@ -464,7 +459,7 @@ func (h *AuthHandler) CambiarContrasena(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	JSON(w, http.StatusOK, map[string]interface{}{"ok": true, "mensaje": "Contrasena actualizada"})
+	JSON(w, http.StatusOK, OKMensajeResponse{Ok: true, Mensaje: "Contrasena actualizada"})
 }
 
 const avatarMaxSize = 2 << 20
@@ -510,8 +505,7 @@ func (h *AuthHandler) SubirAvatar(w http.ResponseWriter, r *http.Request) {
 
 	publicURL, err := h.authClient.UploadStorage(r.Context(), h.supabaseURL, h.serviceKey, "imagenes", storagePath, fileBytes, contentType)
 	if err != nil {
-		slog.Error("[auth/avatar] upload error", "error", err, "userID", userID)
-		ErrorJSON(w, http.StatusInternalServerError, "UPLOAD_ERROR", "Error al subir imagen")
+		mapError(w, err, "[auth/avatar] upload", "userId", userID)
 		return
 	}
 
@@ -520,8 +514,7 @@ func (h *AuthHandler) SubirAvatar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.repo.UpdateAvatarURL(r.Context(), userID, publicURL); err != nil {
-		slog.Error("[auth/avatar] db update error", "error", err, "userID", userID)
-		ErrorJSON(w, http.StatusInternalServerError, "DB_ERROR", "Error al actualizar avatar")
+		mapError(w, err, "[auth/avatar] db update", "userId", userID)
 		return
 	}
 
@@ -531,9 +524,9 @@ func (h *AuthHandler) SubirAvatar(w http.ResponseWriter, r *http.Request) {
 		slog.Warn("[auth/avatar] metadata update failed", "error", err)
 	}
 
-	JSON(w, http.StatusOK, map[string]interface{}{
-		"ok":  true,
-		"url": fmt.Sprintf("%s?t=%d", publicURL, time.Now().Unix()),
+	JSON(w, http.StatusOK, AvatarUploadResponse{
+		Ok:  true,
+		URL: fmt.Sprintf("%s?t=%d", publicURL, time.Now().Unix()),
 	})
 }
 

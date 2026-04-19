@@ -753,6 +753,134 @@ func (r *ReservaRepo) InsertNotificacionWithDB(ctx context.Context, db DBTX, tip
 	return err
 }
 
+func (r *ReservaRepo) FindConflictingReserva(ctx context.Context, propiedadID string, entrada, salida time.Time) (string, error) {
+	var reservaID string
+	err := r.pool.QueryRow(ctx, `
+		SELECT id FROM reservas
+		WHERE propiedad_id = $1
+		  AND estado IN ('PENDIENTE_PAGO', 'PENDIENTE', 'PENDIENTE_CONFIRMACION', 'CONFIRMADA', 'EN_CURSO')
+		  AND fecha_entrada < $3
+		  AND fecha_salida > $2
+		LIMIT 1
+	`, propiedadID, entrada, salida).Scan(&reservaID)
+	if err == pgx.ErrNoRows {
+		return "", nil
+	}
+	if err != nil {
+		return "", fmt.Errorf("find conflicting reserva: %w", err)
+	}
+	return reservaID, nil
+}
+
+func (r *ReservaRepo) FindFechaBloqueada(ctx context.Context, propiedadID string, entrada, salida time.Time) (string, error) {
+	var bloqueadaID string
+	err := r.pool.QueryRow(ctx, `
+		SELECT id FROM fechas_bloqueadas
+		WHERE propiedad_id = $1
+		  AND fecha_inicio < $3
+		  AND fecha_fin > $2
+		LIMIT 1
+	`, propiedadID, entrada, salida).Scan(&bloqueadaID)
+	if err == pgx.ErrNoRows {
+		return "", nil
+	}
+	if err != nil {
+		return "", fmt.Errorf("find fecha bloqueada: %w", err)
+	}
+	return bloqueadaID, nil
+}
+
+func (r *ReservaRepo) GetPropiedadBasica(ctx context.Context, propiedadID string) (id, titulo string, precio float64, moneda, propietarioID string, err error) {
+	err = r.pool.QueryRow(ctx, `
+		SELECT id, titulo, precio_por_noche, moneda, propietario_id
+		FROM propiedades WHERE id = $1
+	`, propiedadID).Scan(&id, &titulo, &precio, &moneda, &propietarioID)
+	if err != nil {
+		return "", "", 0, "", "", fmt.Errorf("get propiedad basica: %w", err)
+	}
+	return
+}
+
+type FechaOcupadaRow struct {
+	Inicio time.Time
+	Fin    time.Time
+	Estado string
+}
+
+func (r *ReservaRepo) ListFechasOcupadas(ctx context.Context, propiedadID string) ([]FechaOcupadaRow, []FechaOcupadaRow, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT fecha_entrada, fecha_salida, estado FROM reservas
+		WHERE propiedad_id = $1
+		  AND estado IN ('PENDIENTE_PAGO', 'PENDIENTE', 'PENDIENTE_CONFIRMACION', 'CONFIRMADA', 'EN_CURSO')
+	`, propiedadID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("query fechas ocupadas reservas: %w", err)
+	}
+	defer rows.Close()
+
+	var reservas []FechaOcupadaRow
+	for rows.Next() {
+		var f FechaOcupadaRow
+		if err := rows.Scan(&f.Inicio, &f.Fin, &f.Estado); err != nil {
+			return nil, nil, err
+		}
+		reservas = append(reservas, f)
+	}
+
+	blockedRows, err := r.pool.Query(ctx, `
+		SELECT fecha_inicio, fecha_fin FROM fechas_bloqueadas
+		WHERE propiedad_id = $1
+	`, propiedadID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("query fechas bloqueadas: %w", err)
+	}
+	defer blockedRows.Close()
+
+	var bloqueadas []FechaOcupadaRow
+	for blockedRows.Next() {
+		var f FechaOcupadaRow
+		if err := blockedRows.Scan(&f.Inicio, &f.Fin); err != nil {
+			return nil, nil, err
+		}
+		f.Estado = "BLOQUEADA"
+		bloqueadas = append(bloqueadas, f)
+	}
+
+	return reservas, bloqueadas, nil
+}
+
+func (r *ReservaRepo) ExistsSolapamiento(ctx context.Context, propiedadID string, entrada, salida time.Time) (bool, error) {
+	var exists bool
+	err := r.pool.QueryRow(ctx, `
+		SELECT EXISTS(
+			SELECT 1 FROM reservas
+			WHERE propiedad_id = $1
+			  AND estado IN ('PENDIENTE_PAGO', 'PENDIENTE', 'PENDIENTE_CONFIRMACION', 'CONFIRMADA', 'EN_CURSO')
+			  AND fecha_entrada < $3
+			  AND fecha_salida > $2
+		)
+	`, propiedadID, entrada, salida).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("check solapamiento reservas: %w", err)
+	}
+	if exists {
+		return true, nil
+	}
+
+	err = r.pool.QueryRow(ctx, `
+		SELECT EXISTS(
+			SELECT 1 FROM fechas_bloqueadas
+			WHERE propiedad_id = $1
+			  AND fecha_inicio < $3
+			  AND fecha_fin > $2
+		)
+	`, propiedadID, entrada, salida).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("check solapamiento bloqueadas: %w", err)
+	}
+	return exists, nil
+}
+
 func (r *ReservaRepo) UpdateModoReserva(ctx context.Context, propiedadID, propietarioID, modo string) error {
 	tag, err := r.pool.Exec(ctx, `
 		UPDATE propiedades SET modo_reserva = $1::text

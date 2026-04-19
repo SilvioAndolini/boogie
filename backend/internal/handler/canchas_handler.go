@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"log/slog"
 	"net/http"
 
 	"github.com/boogie/backend/internal/repository"
@@ -33,8 +32,7 @@ func (h *CanchasHandler) GetDisponibilidad(w http.ResponseWriter, r *http.Reques
 
 	bloques, err := h.repo.GetDisponibilidadHoraria(r.Context(), id, fecha)
 	if err != nil {
-		slog.Error("[canchas/disponibilidad] error", "error", err)
-		ErrorJSON(w, http.StatusInternalServerError, "AVAILABILITY_ERROR", "Error al obtener disponibilidad")
+		mapError(w, err, "[canchas/disponibilidad]", "id", id)
 		return
 	}
 

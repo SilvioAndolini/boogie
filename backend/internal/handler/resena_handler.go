@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"log/slog"
 	"net/http"
 
 	"github.com/boogie/backend/internal/auth"
@@ -88,9 +87,9 @@ func (h *ResenaHandler) Crear(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	JSON(w, http.StatusCreated, map[string]interface{}{
-		"id":      resenaID,
-		"mensaje": "Reseña creada exitosamente",
+	JSON(w, http.StatusCreated, IDMensajeResponse{
+		ID:      resenaID,
+		Mensaje: "Reseña creada exitosamente",
 	})
 }
 
@@ -131,9 +130,9 @@ func (h *ResenaHandler) Responder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	JSON(w, http.StatusOK, map[string]interface{}{
-		"ok":      true,
-		"mensaje": "Respuesta publicada exitosamente",
+	JSON(w, http.StatusOK, OKMensajeResponse{
+		Ok:      true,
+		Mensaje: "Respuesta publicada exitosamente",
 	})
 }
 
@@ -148,8 +147,7 @@ func (h *ResenaHandler) ListByPropiedad(w http.ResponseWriter, r *http.Request) 
 
 	resenas, total, err := h.svc.ListByPropiedad(r.Context(), propiedadID, page, perPage)
 	if err != nil {
-		slog.Error("[resenas/list] error", "error", err)
-		ErrorJSON(w, http.StatusInternalServerError, "LIST_ERROR", "Error al obtener reseñas")
+		mapError(w, err, "[resenas/list]", "propiedadId", propiedadID)
 		return
 	}
 

@@ -14,6 +14,7 @@ import (
 	"github.com/boogie/backend/internal/config"
 	"github.com/boogie/backend/internal/handler"
 	"github.com/boogie/backend/internal/repository"
+	"github.com/boogie/backend/internal/repository/admin"
 	appredis "github.com/boogie/backend/internal/redis"
 	"github.com/boogie/backend/internal/router"
 	boogiesentry "github.com/boogie/backend/internal/sentry"
@@ -83,7 +84,8 @@ func main() {
 			CallbackSecret:  cfg.CryptapiCallbackSecret,
 			CallbackBaseURL: cfg.AppURL,
 		}, cfg.ComisionPlataformaHuesped, cfg.ComisionPlataformaAnfitrion)
-		reservaDisponSvc := service.NewReservaDisponibilidad(db)
+		reservaDisponRepo := repository.NewReservaRepo(db)
+		reservaDisponSvc := service.NewReservaDisponibilidad(reservaDisponRepo)
 		cryptoRepo := repository.NewCryptoRepo(db)
 		cryptoHandler = handler.NewCryptoHandler(cryptoSvc, reservaDisponSvc, cryptoRepo)
 
@@ -244,7 +246,7 @@ func main() {
 			GetAllServicios: tiendaH.GetAllServicios,
 		}
 
-		adminRepo := repository.NewAdminRepo(db)
+		adminRepo := admin.NewAdminRepo(db)
 		adminSvc := service.NewAdminService(adminRepo, reservaRepo)
 		adminH := handler.NewAdminHandler(adminSvc, tiendaSvc)
 		adminH.WithStorage(storageSvc, cfg.SupabaseURL, cfg.SupabaseSecretKey)
@@ -303,7 +305,7 @@ func main() {
 		propiedadesRepo := repository.NewPropiedadesRepo(db)
 		propiedadesSvc := service.NewPropiedadesService(propiedadesRepo, 2, appCache)
 
-		reservaDisponSvc := service.NewReservaDisponibilidad(db)
+		reservaDisponSvc := service.NewReservaDisponibilidad(reservaRepo)
 		reservaSvc := service.NewReservaService(reservaRepo, reservaDisponSvc, cfg.ComisionPlataformaHuesped, cfg.ComisionPlataformaAnfitrion)
 		reservaSvc.WithCuponService(cuponSvc)
 		reservaSvc.WithStoreItemRepo(storeItemRepo)

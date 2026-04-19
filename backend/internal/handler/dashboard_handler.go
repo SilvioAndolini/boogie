@@ -43,17 +43,17 @@ func (h *DashboardHandler) GetDashboard(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	JSON(w, http.StatusOK, map[string]interface{}{
-		"propiedad":         propiedad,
-		"gastos":            dashboardData.Gastos,
-		"fechasBloqueadas":  dashboardData.FechasBloqueadas,
-		"preciosEspeciales": dashboardData.PreciosEspeciales,
-		"reservas":          dashboardData.Reservas,
-		"amenidades":        dashboardData.Amenidades,
-		"kpis":              dashboardData.KPIs,
-		"ingresosByMonth":   dashboardData.IngresosByMonth,
-		"gastosByMonth":     dashboardData.GastosByMonth,
-		"ocupadas":          dashboardData.Ocupadas,
+	JSON(w, http.StatusOK, DashboardPropiedadResponse{
+		Propiedad:         propiedad,
+		Gastos:            dashboardData.Gastos,
+		FechasBloqueadas:  dashboardData.FechasBloqueadas,
+		PreciosEspeciales: dashboardData.PreciosEspeciales,
+		Reservas:          dashboardData.Reservas,
+		Amenidades:        dashboardData.Amenidades,
+		KPIs:              dashboardData.KPIs,
+		IngresosByMonth:   dashboardData.IngresosByMonth,
+		GastosByMonth:     dashboardData.GastosByMonth,
+		Ocupadas:          dashboardData.Ocupadas,
 	})
 }
 
@@ -112,5 +112,5 @@ func (h *DashboardHandler) EliminarGasto(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	JSON(w, http.StatusOK, map[string]interface{}{"ok": true, "mensaje": "Gasto eliminado"})
+	JSON(w, http.StatusOK, OKMensajeResponse{Ok: true, Mensaje: "Gasto eliminado"})
 }

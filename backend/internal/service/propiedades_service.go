@@ -10,15 +10,35 @@ import (
 	"github.com/boogie/backend/internal/domain/enums"
 	"github.com/boogie/backend/internal/repository"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+type PropiedadesRepository interface {
+	SearchPublic(ctx context.Context, f *repository.PropiedadesFiltros) ([]repository.PropiedadListado, int, error)
+	GetByID(ctx context.Context, id string) (*repository.PropiedadDetalleFull, error)
+	GetBySlug(ctx context.Context, slug string) (*repository.PropiedadDetalleFull, error)
+	ListByPropietario(ctx context.Context, propietarioID string) ([]repository.PropiedadListado, error)
+	CountByPropietario(ctx context.Context, propietarioID string) (int, error)
+	UpdateEstadoWithOwner(ctx context.Context, id, estado, propietarioID string) error
+	DeleteWithOwner(ctx context.Context, id, propietarioID string) error
+	GetUserPlan(ctx context.Context, userID string) (string, error)
+	GetPropiedadOwner(ctx context.Context, propiedadID string) (string, error)
+	FindAmenidadesByNombres(ctx context.Context, nombres []string) ([]string, error)
+	GetAmenidades(ctx context.Context, propiedadID string) ([]repository.AmenidadInfo, error)
+	CrearPropiedadWithDB(ctx context.Context, db repository.DBTX, propietarioID string, input repository.CrearPropiedadInput, amenidadIDs []string) (*repository.CrearPropiedadResult, error)
+	ActualizarPropiedadWithDB(ctx context.Context, db repository.DBTX, propiedadID, propietarioID string, input repository.CrearPropiedadInput, amenidadIDs []string) error
+	AgregarImagenesWithDB(ctx context.Context, db repository.DBTX, propiedadID string, imagenes []repository.ImagenInput) error
+	ActualizarImagenes(ctx context.Context, propiedadID string, updates []repository.ImagenUpdate) error
+	Pool() *pgxpool.Pool
+}
+
 type PropiedadesService struct {
-	repo    *repository.PropiedadesRepo
+	repo    PropiedadesRepository
 	maxFree int
 	cache   Cache
 }
 
-func NewPropiedadesService(repo *repository.PropiedadesRepo, maxFree int, cache Cache) *PropiedadesService {
+func NewPropiedadesService(repo PropiedadesRepository, maxFree int, cache Cache) *PropiedadesService {
 	return &PropiedadesService{repo: repo, maxFree: maxFree, cache: cache}
 }
 

@@ -7,11 +7,18 @@ import (
 	"github.com/boogie/backend/internal/repository"
 )
 
-type MetodoPagoService struct {
-	repo *repository.MetodoPagoRepo
+type MetodoPagoRepository interface {
+	ListByUsuario(ctx context.Context, usuarioID string) ([]repository.MetodoPago, error)
+	ExistsByTipo(ctx context.Context, usuarioID, tipo string) (bool, error)
+	Insert(ctx context.Context, usuarioID string, input *repository.CrearMetodoPagoInput) (*repository.MetodoPago, error)
+	Delete(ctx context.Context, id, usuarioID string) error
 }
 
-func NewMetodoPagoService(repo *repository.MetodoPagoRepo) *MetodoPagoService {
+type MetodoPagoService struct {
+	repo MetodoPagoRepository
+}
+
+func NewMetodoPagoService(repo MetodoPagoRepository) *MetodoPagoService {
 	return &MetodoPagoService{repo: repo}
 }
 

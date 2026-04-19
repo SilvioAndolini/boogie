@@ -7,11 +7,18 @@ import (
 	"github.com/boogie/backend/internal/repository"
 )
 
-type DashboardService struct {
-	repo *repository.DashboardRepo
+type DashboardRepository interface {
+	IsPropietario(ctx context.Context, propiedadID, userID string) (bool, error)
+	GetDashboardBatched(ctx context.Context, propiedadID string) (*repository.DashboardBatchResult, error)
+	InsertGasto(ctx context.Context, propiedadID, descripcion string, monto float64, moneda, categoria, fecha string) (*repository.GastoMantenimiento, error)
+	DeleteGasto(ctx context.Context, gastoID, propiedadID string) error
 }
 
-func NewDashboardService(repo *repository.DashboardRepo) *DashboardService {
+type DashboardService struct {
+	repo DashboardRepository
+}
+
+func NewDashboardService(repo DashboardRepository) *DashboardService {
 	return &DashboardService{repo: repo}
 }
 

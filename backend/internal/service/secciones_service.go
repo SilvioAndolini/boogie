@@ -8,12 +8,24 @@ import (
 	"github.com/boogie/backend/internal/repository"
 )
 
+type SeccionesRepository interface {
+	GetPublicas(ctx context.Context) ([]repository.SeccionDestacada, error)
+	GetAdmin(ctx context.Context) ([]repository.SeccionDestacada, error)
+	Insert(ctx context.Context, s *repository.SeccionDestacada) error
+	Update(ctx context.Context, s *repository.SeccionDestacada) error
+	Delete(ctx context.Context, id string) error
+	GetPropiedadesByIDs(ctx context.Context, ids []string) ([]repository.PropiedadResumen, error)
+	GetPropiedadesFiltradas(ctx context.Context, tipoFiltro string, filtroEstado, filtroCiudad *string, limit int) ([]repository.PropiedadResumen, error)
+	SearchPropiedades(ctx context.Context, query string) ([]repository.PropiedadSearchResult, error)
+	PreviewPropiedades(ctx context.Context, tipoFiltro string, filtroEstado, filtroCiudad *string) ([]repository.PropiedadPreview, error)
+}
+
 type SeccionesService struct {
-	repo  *repository.SeccionesRepo
+	repo  SeccionesRepository
 	cache *CacheService
 }
 
-func NewSeccionesService(repo *repository.SeccionesRepo) *SeccionesService {
+func NewSeccionesService(repo SeccionesRepository) *SeccionesService {
 	return &SeccionesService{repo: repo, cache: GetCache()}
 }
 

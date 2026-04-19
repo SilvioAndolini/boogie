@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"strings"
 
@@ -81,9 +80,9 @@ func (h *PagoHandler) RegistrarSimple(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	JSON(w, http.StatusCreated, map[string]interface{}{
-		"id":      pagoID,
-		"mensaje": "Pago registrado exitosamente",
+	JSON(w, http.StatusCreated, IDMensajeResponse{
+		ID:      pagoID,
+		Mensaje: "Pago registrado exitosamente",
 	})
 }
 
@@ -135,9 +134,9 @@ func (h *PagoHandler) RegistrarConComprobante(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	JSON(w, http.StatusCreated, map[string]interface{}{
-		"id":      pagoID,
-		"mensaje": "Pago registrado exitosamente",
+	JSON(w, http.StatusCreated, IDMensajeResponse{
+		ID:      pagoID,
+		Mensaje: "Pago registrado exitosamente",
 	})
 }
 
@@ -170,9 +169,9 @@ func (h *PagoHandler) Verificar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	JSON(w, http.StatusOK, map[string]interface{}{
-		"ok":      true,
-		"mensaje": "Pago verificado exitosamente",
+	JSON(w, http.StatusOK, OKMensajeResponse{
+		Ok:      true,
+		Mensaje: "Pago verificado exitosamente",
 	})
 }
 
@@ -185,8 +184,7 @@ func (h *PagoHandler) MisPagos(w http.ResponseWriter, r *http.Request) {
 
 	pagos, err := h.svc.GetMisPagos(r.Context(), userID)
 	if err != nil {
-		slog.Error("[pagos/mis-pagos] error", "error", err)
-		ErrorJSON(w, http.StatusInternalServerError, "LIST_ERROR", "Error al obtener pagos")
+		mapError(w, err, "[pagos/mis-pagos]", "userId", userID)
 		return
 	}
 
@@ -234,14 +232,13 @@ func (h *PagoHandler) SubirComprobante(w http.ResponseWriter, r *http.Request) {
 	path := fmt.Sprintf("comprobantes/%s/%s.%s", userID, req.ReservaID, ext)
 	publicURL, err := h.authClient.UploadStorage(r.Context(), h.supabaseURL, h.serviceKey, "pagos", path, fileBytes, contentType)
 	if err != nil {
-		slog.Error("[pagos/subir-comprobante] upload error", "error", err)
-		ErrorJSON(w, http.StatusInternalServerError, "UPLOAD_ERROR", "Error al subir comprobante")
+		mapError(w, err, "[pagos/subir-comprobante]", "userId", userID)
 		return
 	}
 
-	JSON(w, http.StatusOK, map[string]interface{}{
-		"ok":  true,
-		"url": publicURL,
+	JSON(w, http.StatusOK, OKURLResponse{
+		Ok:  true,
+		URL: publicURL,
 	})
 }
 
@@ -279,7 +276,7 @@ func (h *PagoHandler) AgregarStoreItems(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if len(req.Items) == 0 {
-		JSON(w, http.StatusOK, map[string]interface{}{"ok": true, "mensaje": "sin items"})
+		JSON(w, http.StatusOK, StoreItemsResponse{Ok: true, Mensaje: "sin items"})
 		return
 	}
 
@@ -299,13 +296,12 @@ func (h *PagoHandler) AgregarStoreItems(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if err := h.storeItemRepo.InsertBatch(r.Context(), items); err != nil {
-		slog.Error("[pagos/store-items] error", "error", err)
-		ErrorJSON(w, http.StatusInternalServerError, "INSERT_ERROR", "Error al guardar items del store")
+		mapError(w, err, "[pagos/store-items]", "reservaId", req.ReservaID)
 		return
 	}
 
-	JSON(w, http.StatusCreated, map[string]interface{}{
-		"ok":      true,
-		"mensaje": fmt.Sprintf("%d items guardados", len(items)),
+	JSON(w, http.StatusCreated, StoreItemsResponse{
+		Ok:      true,
+		Mensaje: fmt.Sprintf("%d items guardados", len(items)),
 	})
 }

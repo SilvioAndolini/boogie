@@ -6,15 +6,63 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/boogie/backend/internal/repository"
+	"github.com/boogie/backend/internal/repository/admin"
 )
 
-type AdminService struct {
-	repo        *repository.AdminRepo
-	reservaRepo *repository.ReservaRepo
+type AdminRepository interface {
+	GetReservasAdmin(ctx context.Context, estado, busqueda string, pagina, limite int) ([]admin.AdminReservaListItem, int, error)
+	GetReservasStats(ctx context.Context) (map[string]int, error)
+	GetReservaByID(ctx context.Context, reservaID string) (*admin.AdminReserva, error)
+	UpdateReservaEstado(ctx context.Context, reservaID, nuevoEstado string, confirmacion, cancelacion *time.Time) error
+	GetPagosAdmin(ctx context.Context, estado, metodoPago, busqueda string, pagina, limite int) ([]admin.AdminPago, int, error)
+	GetPagosStats(ctx context.Context) (map[string]int, error)
+	GetPagoEstado(ctx context.Context, pagoID string) (string, error)
+	UpdatePagoEstado(ctx context.Context, pagoID, nuevoEstado string, notas *string, verificadoEn, acreditadoEn *time.Time) error
+	GetPagoReservaID(ctx context.Context, pagoID string) (*string, error)
+	GetPropiedadesAdmin(ctx context.Context, estado, ciudad, busqueda, categoria string, pagina, limite int) ([]admin.AdminPropiedad, int, error)
+	UpdatePropiedadAdmin(ctx context.Context, propiedadID, estadoPublicacion string, destacada *bool) error
+	DeletePropiedad(ctx context.Context, id string) error
+	GetResenasAdmin(ctx context.Context, calificacionMin int, busqueda string, pagina, limite int) ([]admin.AdminResena, int, error)
+	GetResenaStats(ctx context.Context) (int, float64, map[int]int, error)
+	DeleteResena(ctx context.Context, resenaID string) error
+	UpdateResenaOculta(ctx context.Context, resenaID string, oculta bool) error
+	GetCupones(ctx context.Context) ([]admin.Cupon, error)
+	GetCuponByID(ctx context.Context, id string) (*admin.Cupon, error)
+	ExistsCuponCodigo(ctx context.Context, codigo string) (bool, error)
+	CrearCupon(ctx context.Context, c *admin.Cupon) error
+	UpdateCupon(ctx context.Context, id string, fields map[string]interface{}) error
+	ToggleCuponActivo(ctx context.Context, id string, activo bool) error
+	DeleteCupon(ctx context.Context, id string) error
+	GetCuponUsos(ctx context.Context, cuponID string) ([]admin.CuponUso, error)
+	GetCuponesActivosUsuario(ctx context.Context, usuarioID string) ([]admin.CuponActivoUsuario, error)
+	GetComisiones(ctx context.Context) (map[string]float64, error)
+	UpdateComisiones(ctx context.Context, huesped, anfitrion float64, updatedBy string) error
+	InsertAuditLog(ctx context.Context, adminID, accion, entidad string, entidadID *string, detalles interface{}, ip, userAgent *string) error
+	GetAuditLog(ctx context.Context, entidad, adminID, fechaInicio, fechaFin string, pagina, limite int) ([]admin.AuditLog, int, error)
+	GetNotificacionesAdmin(ctx context.Context, pagina, limite int) ([]admin.Notificacion, int, error)
+	EnviarNotificacion(ctx context.Context, usuarioID, titulo, mensaje string, urlAccion *string) error
+	EnviarNotificacionBroadcast(ctx context.Context, titulo, mensaje string, urlAccion *string) (int, error)
+	GetDashboardStats(ctx context.Context) (map[string]interface{}, error)
+	GetUsuariosAdmin(ctx context.Context, busqueda, rol string, pagina, limite int) ([]admin.AdminUser, int, error)
+	CrearUsuarioAdmin(ctx context.Context, email, password, nombre, apellido string, telefono *string, rol, adminID string) (map[string]interface{}, error)
+	UpdateUsuarioAdmin(ctx context.Context, id string, rol, plan *string, reputacion *float64, activo *bool) error
+	DeleteUsuarioAdmin(ctx context.Context, id string) error
+	GetPropiedadByIDAdmin(ctx context.Context, id string) (*admin.AdminPropiedad, error)
+	GetCiudades(ctx context.Context) ([]string, error)
+	GetPropiedadIngresos(ctx context.Context, id string) (map[string]interface{}, error)
+	GetReservaByIDFull(ctx context.Context, id string) (*admin.AdminReserva, error)
 }
 
-func NewAdminService(repo *repository.AdminRepo, reservaRepo *repository.ReservaRepo) *AdminService {
+type ReservaModoRepository interface {
+	GetModoReservaByReservaID(ctx context.Context, reservaID string) (string, error)
+}
+
+type AdminService struct {
+	repo        AdminRepository
+	reservaRepo ReservaModoRepository
+}
+
+func NewAdminService(repo AdminRepository, reservaRepo ReservaModoRepository) *AdminService {
 	return &AdminService{repo: repo, reservaRepo: reservaRepo}
 }
 
@@ -235,15 +283,15 @@ func (s *AdminService) ModerarResena(ctx context.Context, resenaID, accion strin
 	}
 }
 
-func (s *AdminService) GetCupones(ctx context.Context) ([]repository.Cupon, error) {
+func (s *AdminService) GetCupones(ctx context.Context) ([]admin.Cupon, error) {
 	return s.repo.GetCupones(ctx)
 }
 
-func (s *AdminService) GetCuponByID(ctx context.Context, id string) (*repository.Cupon, error) {
+func (s *AdminService) GetCuponByID(ctx context.Context, id string) (*admin.Cupon, error) {
 	return s.repo.GetCuponByID(ctx, id)
 }
 
-func (s *AdminService) CrearCupon(ctx context.Context, c *repository.Cupon) error {
+func (s *AdminService) CrearCupon(ctx context.Context, c *admin.Cupon) error {
 	exists, _ := s.repo.ExistsCuponCodigo(ctx, c.Codigo)
 	if exists {
 		return fmt.Errorf("ya existe un cupón con ese código")
@@ -263,11 +311,11 @@ func (s *AdminService) DeleteCupon(ctx context.Context, id string) error {
 	return s.repo.DeleteCupon(ctx, id)
 }
 
-func (s *AdminService) GetCuponUsos(ctx context.Context, cuponID string) ([]repository.CuponUso, error) {
+func (s *AdminService) GetCuponUsos(ctx context.Context, cuponID string) ([]admin.CuponUso, error) {
 	return s.repo.GetCuponUsos(ctx, cuponID)
 }
 
-func (s *AdminService) GetCuponesActivosUsuario(ctx context.Context, usuarioID string) ([]repository.CuponActivoUsuario, error) {
+func (s *AdminService) GetCuponesActivosUsuario(ctx context.Context, usuarioID string) ([]admin.CuponActivoUsuario, error) {
 	return s.repo.GetCuponesActivosUsuario(ctx, usuarioID)
 }
 
@@ -365,7 +413,7 @@ func (s *AdminService) DeleteUsuario(ctx context.Context, id string) error {
 	return s.repo.DeleteUsuarioAdmin(ctx, id)
 }
 
-func (s *AdminService) GetPropiedadByID(ctx context.Context, id string) (*repository.AdminPropiedad, error) {
+func (s *AdminService) GetPropiedadByID(ctx context.Context, id string) (*admin.AdminPropiedad, error) {
 	return s.repo.GetPropiedadByIDAdmin(ctx, id)
 }
 
@@ -377,6 +425,6 @@ func (s *AdminService) GetPropiedadIngresos(ctx context.Context, id string) (map
 	return s.repo.GetPropiedadIngresos(ctx, id)
 }
 
-func (s *AdminService) GetReservaByID(ctx context.Context, id string) (*repository.AdminReserva, error) {
+func (s *AdminService) GetReservaByID(ctx context.Context, id string) (*admin.AdminReserva, error) {
 	return s.repo.GetReservaByIDFull(ctx, id)
 }

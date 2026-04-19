@@ -7,12 +7,25 @@ import (
 	"github.com/boogie/backend/internal/repository"
 )
 
+type TiendaRepository interface {
+	GetProductosActivos(ctx context.Context) ([]repository.StoreProducto, error)
+	GetServiciosActivos(ctx context.Context) ([]repository.StoreServicio, error)
+	GetAllProductos(ctx context.Context) ([]repository.StoreProducto, error)
+	GetAllServicios(ctx context.Context) ([]repository.StoreServicio, error)
+	CrearProducto(ctx context.Context, nombre string, descripcion *string, precio float64, moneda, categoria string, imagenURL *string, orden int) error
+	ActualizarProducto(ctx context.Context, id string, nombre *string, descripcion *string, precio *float64, moneda *string, imagenURL *string, categoria *string, activo *bool, orden *int) error
+	EliminarProducto(ctx context.Context, id string) error
+	CrearServicio(ctx context.Context, nombre string, descripcion *string, precio float64, moneda, tipoPrecio, categoria string, imagenURL *string, orden int) error
+	ActualizarServicio(ctx context.Context, id string, nombre *string, descripcion *string, precio *float64, moneda *string, tipoPrecio *string, imagenURL *string, categoria *string, activo *bool, orden *int) error
+	EliminarServicio(ctx context.Context, id string) error
+}
+
 type TiendaService struct {
-	repo  *repository.TiendaRepo
+	repo  TiendaRepository
 	cache *CacheService
 }
 
-func NewTiendaService(repo *repository.TiendaRepo) *TiendaService {
+func NewTiendaService(repo TiendaRepository) *TiendaService {
 	return &TiendaService{repo: repo, cache: GetCache()}
 }
 

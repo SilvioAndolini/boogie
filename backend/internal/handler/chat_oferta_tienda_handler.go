@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -47,8 +46,7 @@ func (h *ChatHandler) GetConversaciones(w http.ResponseWriter, r *http.Request) 
 
 	convs, err := h.svc.GetConversaciones(r.Context(), userID)
 	if err != nil {
-		slog.Error("[chat/conversaciones] error", "error", err)
-		ErrorJSON(w, http.StatusInternalServerError, "LIST_ERROR", "Error al obtener conversaciones")
+		mapError(w, err, "[chat/conversaciones]", "userId", userID)
 		return
 	}
 
@@ -165,7 +163,7 @@ func (h *ChatHandler) CountNoLeidos(w http.ResponseWriter, r *http.Request) {
 	}
 
 	count, _ := h.svc.CountNoLeidos(r.Context(), userID)
-	JSON(w, http.StatusOK, map[string]interface{}{"noLeidos": count})
+	JSON(w, http.StatusOK, NoLeidosResponse{NoLeidos: count})
 }
 
 func (h *ChatHandler) GetConversacionInfo(w http.ResponseWriter, r *http.Request) {
@@ -199,8 +197,7 @@ func (h *ChatHandler) GetMensajesRapidos(w http.ResponseWriter, r *http.Request)
 
 	mensajes, err := h.svc.GetMensajesRapidos(r.Context(), userID)
 	if err != nil {
-		slog.Error("[chat/mensajes-rapidos] list error", "error", err)
-		ErrorJSON(w, http.StatusInternalServerError, "LIST_ERROR", "Error al obtener mensajes rapidos")
+		mapError(w, err, "[chat/mensajes-rapidos]", "userId", userID)
 		return
 	}
 
@@ -267,7 +264,7 @@ func (h *ChatHandler) ActualizarMensajeRapido(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+	JSON(w, http.StatusOK, OKResponse{Ok: true})
 }
 
 func (h *ChatHandler) EliminarMensajeRapido(w http.ResponseWriter, r *http.Request) {
@@ -288,7 +285,7 @@ func (h *ChatHandler) EliminarMensajeRapido(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+	JSON(w, http.StatusOK, OKResponse{Ok: true})
 }
 
 type seedMensajesRapidosRequest struct {
@@ -318,7 +315,7 @@ func (h *ChatHandler) SeedMensajesRapidos(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+	JSON(w, http.StatusOK, OKResponse{Ok: true})
 }
 
 const chatImagenMaxSize = 5 << 20
@@ -363,12 +360,11 @@ func (h *ChatHandler) SubirImagen(w http.ResponseWriter, r *http.Request) {
 
 	publicURL, err := h.storage.UploadStorage(r.Context(), h.supabaseURL, h.serviceKey, "imagenes-chat", storagePath, fileBytes, contentType)
 	if err != nil {
-		slog.Error("[chat/imagen] upload error", "error", err, "userID", userID)
-		ErrorJSON(w, http.StatusInternalServerError, "UPLOAD_ERROR", "Error al subir imagen")
+		mapError(w, err, "[chat/imagen] upload", "userId", userID)
 		return
 	}
 
-	JSON(w, http.StatusOK, map[string]interface{}{"ok": true, "url": publicURL})
+	JSON(w, http.StatusOK, OKURLResponse{Ok: true, URL: publicURL})
 }
 
 type OfertaHandler struct {
@@ -433,7 +429,7 @@ func (h *OfertaHandler) Crear(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	JSON(w, http.StatusCreated, map[string]interface{}{"id": id, "mensaje": "Oferta creada exitosamente"})
+	JSON(w, http.StatusCreated, OfertaCreadaResponse{ID: id, Mensaje: "Oferta creada exitosamente"})
 }
 
 type responderOfertaRequest struct {
@@ -465,7 +461,7 @@ func (h *OfertaHandler) Responder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	JSON(w, http.StatusOK, map[string]interface{}{"ok": true, "mensaje": "Oferta actualizada"})
+	JSON(w, http.StatusOK, OKMensajeResponse{Ok: true, Mensaje: "Oferta actualizada"})
 }
 
 func (h *OfertaHandler) GetRecibidas(w http.ResponseWriter, r *http.Request) {
@@ -477,8 +473,7 @@ func (h *OfertaHandler) GetRecibidas(w http.ResponseWriter, r *http.Request) {
 
 	ofertas, err := h.svc.GetRecibidas(r.Context(), userID)
 	if err != nil {
-		slog.Error("[ofertas/recibidas] error", "error", err, "userID", userID)
-		ErrorJSON(w, http.StatusInternalServerError, "LIST_ERROR", "Error al obtener ofertas")
+		mapError(w, err, "[ofertas/recibidas]", "userId", userID)
 		return
 	}
 
@@ -513,50 +508,50 @@ func (h *OfertaHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		huespedAvatar = *detalle.HuespedAvatar
 	}
 
-	JSON(w, http.StatusOK, map[string]interface{}{
-		"id":                 detalle.ID,
-		"codigo":             detalle.Codigo,
-		"propiedad_id":       detalle.PropiedadID,
-		"huesped_id":         detalle.HuespedID,
-		"estado":             detalle.Estado,
-		"precio_ofertado":    detalle.PrecioOfertado,
-		"precio_original":    detalle.PrecioOriginal,
-		"moneda":             detalle.Moneda,
-		"fecha_entrada":      detalle.FechaEntrada.Format("2006-01-02"),
-		"fecha_salida":       detalle.FechaSalida.Format("2006-01-02"),
-		"noches":             detalle.Noches,
-		"cantidad_huespedes": detalle.CantidadHuespedes,
-		"mensaje":            detalle.Mensaje,
-		"motivo_rechazo":     detalle.MotivoRechazo,
-		"fecha_creacion":     detalle.FechaCreacion,
-		"fecha_aprobada":     detalle.FechaAprobada,
-		"fecha_expiracion":   detalle.FechaExpiracion,
-		"fecha_rechazada":    detalle.FechaRechazada,
-		"reserva_id":         detalle.ReservaID,
-		"propiedad": map[string]interface{}{
-			"id":               detalle.PropiedadID,
-			"titulo":           detalle.PropiedadTitulo,
-			"precio_por_noche": detalle.PropiedadPrecio,
-			"moneda":           detalle.PropiedadMoneda,
-			"propietario_id":   detalle.PropietarioID,
-			"imagenes":         buildImagenList(imagenURL),
+	JSON(w, http.StatusOK, OfertaDetalleResponse{
+		ID:               detalle.ID,
+		Codigo:           detalle.Codigo,
+		PropiedadID:      detalle.PropiedadID,
+		HuespedID:        detalle.HuespedID,
+		Estado:           detalle.Estado,
+		PrecioOfertado:   detalle.PrecioOfertado,
+		PrecioOriginal:   detalle.PrecioOriginal,
+		Moneda:           detalle.Moneda,
+		FechaEntrada:     detalle.FechaEntrada.Format("2006-01-02"),
+		FechaSalida:      detalle.FechaSalida.Format("2006-01-02"),
+		Noches:           detalle.Noches,
+		CantidadHuespedes: detalle.CantidadHuespedes,
+		Mensaje:          detalle.Mensaje,
+		MotivoRechazo:    detalle.MotivoRechazo,
+		FechaCreacion:    detalle.FechaCreacion,
+		FechaAprobada:    detalle.FechaAprobada,
+		FechaExpiracion:  detalle.FechaExpiracion,
+		FechaRechazada:   detalle.FechaRechazada,
+		ReservaID:        detalle.ReservaID,
+		Propiedad: OfertaDetallePropiedad{
+			ID:             detalle.PropiedadID,
+			Titulo:         detalle.PropiedadTitulo,
+			PrecioPorNoche: detalle.PropiedadPrecio,
+			Moneda:         detalle.PropiedadMoneda,
+			PropietarioID:  detalle.PropietarioID,
+			Imagenes:       buildImagenList(imagenURL),
 		},
-		"huesped": map[string]interface{}{
-			"id":         detalle.HuespedID,
-			"nombre":     detalle.HuespedNombre,
-			"apellido":   detalle.HuespedApellido,
-			"email":      detalle.HuespedEmail,
-			"avatar_url": huespedAvatar,
-			"verificado": detalle.HuespedVerificado,
+		Huesped: OfertaDetalleHuesped{
+			ID:         detalle.HuespedID,
+			Nombre:     detalle.HuespedNombre,
+			Apellido:   detalle.HuespedApellido,
+			Email:      detalle.HuespedEmail,
+			AvatarURL:  huespedAvatar,
+			Verificado: detalle.HuespedVerificado,
 		},
 	})
 }
 
-func buildImagenList(url string) []map[string]interface{} {
+func buildImagenList(url string) []ImagenEntry {
 	if url == "" {
-		return []map[string]interface{}{}
+		return []ImagenEntry{}
 	}
-	return []map[string]interface{}{{"url": url, "es_principal": true}}
+	return []ImagenEntry{{URL: url, EsPrincipal: true}}
 }
 
 func (h *OfertaHandler) GetEnviadas(w http.ResponseWriter, r *http.Request) {
@@ -568,8 +563,7 @@ func (h *OfertaHandler) GetEnviadas(w http.ResponseWriter, r *http.Request) {
 
 	ofertas, err := h.svc.GetEnviadas(r.Context(), userID)
 	if err != nil {
-		slog.Error("[ofertas/enviadas] error", "error", err, "userID", userID)
-		ErrorJSON(w, http.StatusInternalServerError, "LIST_ERROR", "Error al obtener ofertas")
+		mapError(w, err, "[ofertas/enviadas]", "userId", userID)
 		return
 	}
 
@@ -587,7 +581,7 @@ func NewTiendaHandler(svc *service.TiendaService) *TiendaHandler {
 func (h *TiendaHandler) GetProductos(w http.ResponseWriter, r *http.Request) {
 	prods, err := h.svc.GetProductos(r.Context())
 	if err != nil {
-		ErrorJSON(w, http.StatusInternalServerError, "LIST_ERROR", "Error al obtener productos")
+		mapError(w, err, "[tienda/productos]")
 		return
 	}
 	JSON(w, http.StatusOK, prods)
@@ -596,7 +590,7 @@ func (h *TiendaHandler) GetProductos(w http.ResponseWriter, r *http.Request) {
 func (h *TiendaHandler) GetServicios(w http.ResponseWriter, r *http.Request) {
 	servs, err := h.svc.GetServicios(r.Context())
 	if err != nil {
-		ErrorJSON(w, http.StatusInternalServerError, "LIST_ERROR", "Error al obtener servicios")
+		mapError(w, err, "[tienda/servicios]")
 		return
 	}
 	JSON(w, http.StatusOK, servs)
@@ -610,7 +604,7 @@ func (h *TiendaHandler) GetAllProductos(w http.ResponseWriter, r *http.Request) 
 	}
 	prods, err := h.svc.GetAllProductos(r.Context())
 	if err != nil {
-		ErrorJSON(w, http.StatusInternalServerError, "LIST_ERROR", "Error al obtener productos")
+		mapError(w, err, "[tienda/all-productos]")
 		return
 	}
 	JSON(w, http.StatusOK, prods)
@@ -624,7 +618,7 @@ func (h *TiendaHandler) GetAllServicios(w http.ResponseWriter, r *http.Request) 
 	}
 	servs, err := h.svc.GetAllServicios(r.Context())
 	if err != nil {
-		ErrorJSON(w, http.StatusInternalServerError, "LIST_ERROR", "Error al obtener servicios")
+		mapError(w, err, "[tienda/all-servicios]")
 		return
 	}
 	JSON(w, http.StatusOK, servs)

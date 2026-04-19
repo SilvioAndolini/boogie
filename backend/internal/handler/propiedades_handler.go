@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -86,8 +85,7 @@ func (h *PropiedadesHandler) Search(w http.ResponseWriter, r *http.Request) {
 
 	results, total, err := h.svc.Search(r.Context(), filtros)
 	if err != nil {
-		slog.Error("[propiedades/search] error", "error", err)
-		ErrorJSON(w, http.StatusInternalServerError, "SEARCH_ERROR", "Error al buscar propiedades")
+		mapError(w, err, "[propiedades/search]")
 		return
 	}
 
@@ -112,8 +110,7 @@ func (h *PropiedadesHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.svc.GetByIDOrSlug(r.Context(), id)
 	if err != nil {
-		slog.Error("[propiedades/get-by-id] error", "error", err, "id", id)
-		ErrorJSON(w, http.StatusNotFound, "NOT_FOUND", "Propiedad no encontrada")
+		mapError(w, err, "[propiedades/get-by-id]", "id", id)
 		return
 	}
 
@@ -130,8 +127,7 @@ func (h *PropiedadesHandler) MisPropiedades(w http.ResponseWriter, r *http.Reque
 
 	results, err := h.svc.ListByPropietario(r.Context(), userID)
 	if err != nil {
-		slog.Error("[propiedades/mis] error", "error", err)
-		ErrorJSON(w, http.StatusInternalServerError, "LIST_ERROR", "Error al obtener propiedades")
+		mapError(w, err, "[propiedades/mis]", "userId", userID)
 		return
 	}
 
@@ -353,7 +349,7 @@ func (h *PropiedadesHandler) AgregarImagenes(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+	JSON(w, http.StatusOK, OKResponse{Ok: true})
 }
 
 func (h *PropiedadesHandler) ActualizarImagenes(w http.ResponseWriter, r *http.Request) {
@@ -382,7 +378,7 @@ func (h *PropiedadesHandler) ActualizarImagenes(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+	JSON(w, http.StatusOK, OKResponse{Ok: true})
 }
 
 func (h *PropiedadesHandler) UpdateEstado(w http.ResponseWriter, r *http.Request) {
@@ -415,12 +411,11 @@ func (h *PropiedadesHandler) UpdateEstado(w http.ResponseWriter, r *http.Request
 	}
 
 	if err := h.svc.UpdateEstado(r.Context(), id, req.Estado, userID); err != nil {
-		slog.Error("[propiedades/update-estado] error", "error", err)
-		ErrorJSON(w, http.StatusInternalServerError, "UPDATE_ERROR", "Error al actualizar estado")
+		mapError(w, err, "[propiedades/update-estado]", "id", id, "userId", userID)
 		return
 	}
 
-	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+	JSON(w, http.StatusOK, OKResponse{Ok: true})
 }
 
 func (h *PropiedadesHandler) Delete(w http.ResponseWriter, r *http.Request) {
@@ -437,12 +432,11 @@ func (h *PropiedadesHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.svc.Delete(r.Context(), id, userID); err != nil {
-		slog.Error("[propiedades/delete] error", "error", err)
-		ErrorJSON(w, http.StatusInternalServerError, "DELETE_ERROR", "Error al eliminar propiedad")
+		mapError(w, err, "[propiedades/delete]", "id", id, "userId", userID)
 		return
 	}
 
-	JSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+	JSON(w, http.StatusOK, OKResponse{Ok: true})
 }
 
 func (h *PropiedadesHandler) GetAmenidades(w http.ResponseWriter, r *http.Request) {
@@ -454,8 +448,7 @@ func (h *PropiedadesHandler) GetAmenidades(w http.ResponseWriter, r *http.Reques
 
 	amenidades, err := h.svc.GetAmenidades(r.Context(), id)
 	if err != nil {
-		slog.Error("[propiedades/amenidades] error", "error", err, "id", id)
-		ErrorJSON(w, http.StatusInternalServerError, "FETCH_ERROR", "Error al obtener amenidades")
+		mapError(w, err, "[propiedades/amenidades]", "id", id)
 		return
 	}
 
@@ -482,8 +475,7 @@ func (h *PropiedadesHandler) GetReservas(w http.ResponseWriter, r *http.Request)
 
 	reservas, total, err := h.reservaSvc.ListByPropiedad(r.Context(), id, page, perPage)
 	if err != nil {
-		slog.Error("[propiedades/reservas] error", "error", err, "id", id)
-		ErrorJSON(w, http.StatusInternalServerError, "FETCH_ERROR", "Error al obtener reservas")
+		mapError(w, err, "[propiedades/reservas]", "id", id)
 		return
 	}
 

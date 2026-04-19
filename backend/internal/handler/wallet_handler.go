@@ -86,9 +86,9 @@ func (h *WalletHandler) Recarga(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	JSON(w, http.StatusCreated, map[string]interface{}{
-		"id":      txID,
-		"mensaje": "Recarga registrada exitosamente",
+	JSON(w, http.StatusCreated, IDMensajeResponse{
+		ID:      txID,
+		Mensaje: "Recarga registrada exitosamente",
 	})
 }
 
