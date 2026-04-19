@@ -7,7 +7,18 @@ import { registroSchema, loginSchema, recuperacionSchema } from '@/lib/validatio
 import { goPost, GoAPIError } from '@/lib/go-api-client'
 
 export async function enviarOtpEmail(email: string) {
-  console.log('[enviarOtpEmail] Enviando OTP')
+  console.log('[enviarOtpEmail] Verificando correo')
+
+  const admin = createAdminClient()
+  const { data: existente } = await admin
+    .from('usuarios')
+    .select('id')
+    .eq('email', email)
+    .maybeSingle()
+
+  if (existente) {
+    return { error: 'Este correo ya está registrado. Inicia sesión o usa otro correo.' }
+  }
 
   const supabase = await createClient()
   const { error } = await supabase.auth.signInWithOtp({
@@ -233,12 +244,45 @@ export async function recuperarContrasena(formData: FormData) {
   const supabase = await createClient()
 
   const { error } = await supabase.auth.resetPasswordForEmail(datos.email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/recuperar-contrasena`,
+    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?type=recovery`,
   })
 
   if (error) {
+    console.error('[recuperarContrasena] Error:', error.message)
     return { error: 'No pudimos enviar el correo. Intenta de nuevo.' }
   }
 
   return { exito: true, mensaje: 'Te enviamos un correo para restablecer tu contraseña.' }
+}
+
+export async function restablecerContrasena(formData: FormData) {
+  const password = formData.get('password') as string
+  const confirmPassword = formData.get('confirmPassword') as string
+
+  if (!password || password.length < 8) {
+    return { error: 'La contraseña debe tener al menos 8 caracteres' }
+  }
+
+  if (password !== confirmPassword) {
+    return { error: 'Las contraseñas no coinciden' }
+  }
+
+  const supabase = await createClient()
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+  if (userError || !user) {
+    return { error: 'Sesión inválida. Solicita un nuevo enlace de recuperación.' }
+  }
+
+  const { error } = await supabase.auth.updateUser({ password })
+
+  if (error) {
+    console.error('[restablecerContrasena] Error:', error.message)
+    return { error: 'No pudimos actualizar la contraseña. Intenta de nuevo.' }
+  }
+
+  await supabase.auth.signOut()
+
+  return { exito: true }
 }

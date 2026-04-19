@@ -20,8 +20,9 @@ export async function GET(request: Request) {
   const code = searchParams.get('code')
   const errorParam = searchParams.get('error')
   const next = sanitizeRedirectPath(searchParams.get('next') ?? '/dashboard')
+  const type = searchParams.get('type')
 
-  console.log('[auth/callback] Params:', { code: !!code, error: errorParam, next })
+  console.log('[auth/callback] Params:', { code: !!code, error: errorParam, next, type })
 
   if (errorParam) {
     console.error('[auth/callback] OAuth error:', errorParam)
@@ -40,6 +41,11 @@ export async function GET(request: Request) {
   if (exchangeError) {
     console.error('[auth/callback] Exchange error:', exchangeError.message)
     return NextResponse.redirect(`${origin}/login?error=exchange`)
+  }
+
+  if (type === 'recovery') {
+    console.log('[auth/callback] Password recovery flow, redirecting to reset form')
+    return NextResponse.redirect(`${origin}/recuperar-contrasena?type=recovery`)
   }
 
   const { data: { user }, error: userError } = await supabase.auth.getUser()
