@@ -147,6 +147,9 @@ function FormularioRecuperar({
       if (resultado?.error) {
         setErrorForm(resultado.error)
       } else {
+        if (resultado?.codeVerifier) {
+          localStorage.setItem('pkce_code_verifier', resultado.codeVerifier)
+        }
         setEnviado(true)
       }
     } catch {

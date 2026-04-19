@@ -138,6 +138,7 @@ func main() {
 		CambiarContrasena:     authH.CambiarContrasena,
 		RestablecerContrasena: authH.RestablecerContrasena,
 		SubirAvatar:           authH.SubirAvatar,
+		ExchangeCode:          authH.ExchangeCode,
 	}
 
 	if db != nil {

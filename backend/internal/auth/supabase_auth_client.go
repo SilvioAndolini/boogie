@@ -3,6 +3,9 @@ package auth
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -201,12 +204,29 @@ func (c *SupabaseAuthClient) SignUp(ctx context.Context, email, password string,
 	return &resp, nil
 }
 
-func (c *SupabaseAuthClient) ResetPasswordForEmail(ctx context.Context, email, redirectTo string) error {
+func GenerateCodeVerifier() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(b), nil
+}
+
+func ComputeCodeChallenge(verifier string) string {
+	h := sha256.Sum256([]byte(verifier))
+	return base64.RawURLEncoding.EncodeToString(h[:])
+}
+
+func (c *SupabaseAuthClient) ResetPasswordForEmail(ctx context.Context, email, redirectTo, codeChallenge string) error {
 	body := map[string]string{
 		"email": email,
 	}
 	if redirectTo != "" {
 		body["redirect_to"] = redirectTo
+	}
+	if codeChallenge != "" {
+		body["code_challenge"] = codeChallenge
+		body["code_challenge_method"] = "s256"
 	}
 	data, status, err := c.doRequest(ctx, http.MethodPost, "/recover", body, "")
 	if err != nil {
@@ -216,6 +236,25 @@ func (c *SupabaseAuthClient) ResetPasswordForEmail(ctx context.Context, email, r
 		return parseAuthError(data, status)
 	}
 	return nil
+}
+
+func (c *SupabaseAuthClient) ExchangeCodeForSession(ctx context.Context, code, codeVerifier string) (*AuthResponse, error) {
+	body := map[string]string{
+		"auth_code":      code,
+		"code_verifier":  codeVerifier,
+	}
+	data, status, err := c.doRequest(ctx, http.MethodPost, "/token?grant_type=pkce", body, "")
+	if err != nil {
+		return nil, err
+	}
+	if status != http.StatusOK {
+		return nil, parseAuthError(data, status)
+	}
+	var resp AuthResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("error parsing response")
+	}
+	return &resp, nil
 }
 
 func (c *SupabaseAuthClient) GetUser(ctx context.Context, accessToken string) (*AuthUser, error) {

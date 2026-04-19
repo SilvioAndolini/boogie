@@ -192,10 +192,12 @@ export async function recuperarContrasena(formData: FormData) {
   }
 
   try {
-    await goFetch('/api/v1/auth/reset-password', {
+    const result = await goFetch<{ code_verifier?: string }>('/api/v1/auth/reset-password', {
       method: 'POST',
       body: { email: datos.email },
     })
+
+    return { exito: true, mensaje: 'Te enviamos un correo para restablecer tu contraseña.', codeVerifier: result.code_verifier }
   } catch (err) {
     if (err instanceof GoAPIError) {
       console.error('[recuperarContrasena] Backend error:', { code: err.code, status: err.status, message: err.message })
@@ -207,8 +209,6 @@ export async function recuperarContrasena(formData: FormData) {
     console.error('[recuperarContrasena] Error:', err)
     return { error: 'No pudimos enviar el correo. Intenta de nuevo.' }
   }
-
-  return { exito: true, mensaje: 'Te enviamos un correo para restablecer tu contraseña.' }
 }
 
 export async function restablecerContrasena(formData: FormData) {
@@ -244,4 +244,20 @@ export async function restablecerContrasena(formData: FormData) {
   await supabase.auth.signOut()
 
   return { exito: true }
+}
+
+export async function exchangePkceCode(code: string, codeVerifier: string) {
+  try {
+    const result = await goFetch<{ access_token: string; refresh_token: string }>('/api/v1/auth/exchange-code', {
+      method: 'POST',
+      body: { code, code_verifier: codeVerifier },
+    })
+    return {
+      accessToken: result.access_token,
+      refreshToken: result.refresh_token,
+    }
+  } catch (err) {
+    console.error('[exchangePkceCode] Error:', err)
+    return { error: 'No se pudo verificar el codigo' }
+  }
 }

@@ -296,8 +296,16 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	codeVerifier, err := auth.GenerateCodeVerifier()
+	if err != nil {
+		slog.Error("[auth/reset-password] generate code_verifier", "error", err)
+		ErrorJSON(w, http.StatusInternalServerError, "INTERNAL", "Error interno")
+		return
+	}
+	codeChallenge := auth.ComputeCodeChallenge(codeVerifier)
+
 	redirectTo := h.appURL + "/auth/recovery"
-	if err := h.authClient.ResetPasswordForEmail(r.Context(), req.Email, redirectTo); err != nil {
+	if err := h.authClient.ResetPasswordForEmail(r.Context(), req.Email, redirectTo, codeChallenge); err != nil {
 		slog.Error("[auth/reset-password] error", "error", err)
 		authErr, ok := err.(*auth.AuthError)
 		if ok && (authErr.Code == "rate_limit_exceeded" || authErr.Code == "429") {
@@ -308,7 +316,15 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	JSON(w, http.StatusOK, OKMensajeResponse{Ok: true, Mensaje: "Correo de recuperacion enviado"})
+	JSON(w, http.StatusOK, struct {
+		Ok           bool   `json:"ok"`
+		Mensaje      string `json:"mensaje"`
+		CodeVerifier string `json:"code_verifier"`
+	}{
+		Ok:           true,
+		Mensaje:      "Correo de recuperacion enviado",
+		CodeVerifier: codeVerifier,
+	})
 }
 
 func (h *AuthHandler) GoogleOAuthURL(w http.ResponseWriter, r *http.Request) {
@@ -676,4 +692,30 @@ func validatePassword(pw string) error {
 		return errors.New("la contraseña debe contener al menos una mayúscula, una minúscula y un número")
 	}
 	return nil
+}
+
+type exchangeCodeRequest struct {
+	Code         string `json:"code"`
+	CodeVerifier string `json:"code_verifier"`
+}
+
+func (h *AuthHandler) ExchangeCode(w http.ResponseWriter, r *http.Request) {
+	var req exchangeCodeRequest
+	if err := DecodeJSON(r, &req); err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_BODY", "JSON invalido")
+		return
+	}
+	if req.Code == "" || req.CodeVerifier == "" {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_PARAMS", "code y code_verifier requeridos")
+		return
+	}
+
+	resp, err := h.authClient.ExchangeCodeForSession(r.Context(), req.Code, req.CodeVerifier)
+	if err != nil {
+		slog.Error("[auth/exchange-code] error", "error", err)
+		ErrorJSON(w, http.StatusBadRequest, "EXCHANGE_ERROR", "No se pudo intercambiar el codigo")
+		return
+	}
+
+	JSON(w, http.StatusOK, resp)
 }

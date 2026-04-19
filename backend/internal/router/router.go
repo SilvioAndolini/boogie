@@ -206,6 +206,7 @@ type AuthHandlers struct {
 	CambiarContrasena     http.HandlerFunc
 	RestablecerContrasena http.HandlerFunc
 	SubirAvatar           http.HandlerFunc
+	ExchangeCode          http.HandlerFunc
 }
 
 type CuponHandlers struct {
@@ -541,6 +542,7 @@ func New(opts *RouterOpts) http.Handler {
 			}
 			r.Get("/auth/google", opts.AuthHandlers.GoogleOAuthURL)
 			r.Get("/auth/google/callback", opts.AuthHandlers.GoogleCallback)
+			r.Post("/auth/exchange-code", opts.AuthHandlers.ExchangeCode)
 
 			r.Group(func(r chi.Router) {
 				r.Use(opts.AuthVerifier.Middleware)
