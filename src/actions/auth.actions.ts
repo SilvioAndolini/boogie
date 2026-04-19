@@ -7,7 +7,7 @@ import { registroSchema, loginSchema, recuperacionSchema } from '@/lib/validatio
 import { goPost, GoAPIError } from '@/lib/go-api-client'
 
 export async function enviarOtpEmail(email: string) {
-  console.log('[enviarOtpEmail] Enviando OTP a:', email)
+  console.log('[enviarOtpEmail] Enviando OTP')
 
   const supabase = await createClient()
   const { error } = await supabase.auth.signInWithOtp({
@@ -19,7 +19,7 @@ export async function enviarOtpEmail(email: string) {
     return { error: `No pudimos enviar el código (${error.message}). Verifica tu correo e intenta de nuevo.` }
   }
 
-  console.log('[enviarOtpEmail] OTP enviado exitosamente a:', email)
+  console.log('[enviarOtpEmail] OTP enviado exitosamente')
   return { exito: true }
 }
 
@@ -27,7 +27,7 @@ export async function enviarOtpSms(telefono: string, codigoPais: string) {
   const telefonoLimpio = telefono.replace(/\D/g, '')
   const telefonoCompleto = `${codigoPais}${telefonoLimpio}`
 
-  console.log('[enviarOtpSms] Enviando OTP a:', telefonoCompleto)
+  console.log('[enviarOtpSms] Enviando OTP')
 
   const supabase = await createClient()
   const { error } = await supabase.auth.signInWithOtp({
@@ -39,7 +39,7 @@ export async function enviarOtpSms(telefono: string, codigoPais: string) {
     return { error: `No pudimos enviar el código SMS (${error.message}). Verifica el número e intenta de nuevo.` }
   }
 
-  console.log('[enviarOtpSms] OTP enviado exitosamente a:', telefonoCompleto)
+  console.log('[enviarOtpSms] OTP enviado exitosamente')
   return { exito: true }
 }
 

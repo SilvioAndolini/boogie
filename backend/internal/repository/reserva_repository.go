@@ -7,6 +7,7 @@ import (
 
 	"github.com/boogie/backend/internal/domain/enums"
 	"github.com/boogie/backend/internal/domain/idgen"
+	bizerrors "github.com/boogie/backend/internal/domain/errors"
 	"github.com/boogie/backend/internal/domain/models"
 	"github.com/boogie/backend/internal/domain/util"
 	"github.com/jackc/pgx/v5"
@@ -137,10 +138,12 @@ func (r *ReservaRepo) ListByHuesped(ctx context.Context, huespedID string, limit
 		       r.notas_huesped, r.fecha_creacion,
 		       p.titulo, p.slug, p.direccion, p.ciudad,
 		       COALESCE(p.politica_cancelacion, 'FLEXIBLE'),
-		       (SELECT ip.url FROM imagenes_propiedad ip WHERE ip.propiedad_id = p.id AND ip.es_principal = true LIMIT 1),
-		       (SELECT COALESCE(p2.estado, '') FROM pagos p2 WHERE p2.reserva_id = r.id ORDER BY p2.fecha_creacion DESC LIMIT 1)
+		       ip.url,
+		       COALESCE(pg2.estado, '')
 		FROM reservas r
 		JOIN propiedades p ON p.id = r.propiedad_id
+		LEFT JOIN LATERAL (SELECT url FROM imagenes_propiedad WHERE propiedad_id = p.id AND es_principal = true LIMIT 1) ip ON true
+		LEFT JOIN LATERAL (SELECT estado FROM pagos WHERE reserva_id = r.id ORDER BY fecha_creacion DESC LIMIT 1) pg2 ON true
 		WHERE r.huesped_id = $1
 		ORDER BY r.fecha_creacion DESC
 		LIMIT $2 OFFSET $3
@@ -204,11 +207,13 @@ func (r *ReservaRepo) ListByPropietario(ctx context.Context, propietarioID strin
 			       r.notas_huesped, r.fecha_creacion,
 			       p.titulo, p.slug,
 			       u.nombre, u.apellido, u.email, u.avatar_url,
-			       (SELECT ip.url FROM imagenes_propiedad ip WHERE ip.propiedad_id = p.id AND ip.es_principal = true LIMIT 1),
-			       COALESCE((SELECT pg.estado FROM pagos pg WHERE pg.reserva_id = r.id ORDER BY pg.fecha_creacion DESC LIMIT 1), '')
+			       ip.url,
+			       COALESCE(pg2.estado, '')
 			FROM reservas r
 			JOIN propiedades p ON p.id = r.propiedad_id
 			JOIN usuarios u ON u.id = r.huesped_id
+			LEFT JOIN LATERAL (SELECT url FROM imagenes_propiedad WHERE propiedad_id = p.id AND es_principal = true LIMIT 1) ip ON true
+			LEFT JOIN LATERAL (SELECT estado FROM pagos WHERE reserva_id = r.id ORDER BY fecha_creacion DESC LIMIT 1) pg2 ON true
 			WHERE p.propietario_id = $1 AND r.estado = $2
 			ORDER BY r.fecha_creacion DESC
 			LIMIT $3 OFFSET $4
@@ -222,11 +227,13 @@ func (r *ReservaRepo) ListByPropietario(ctx context.Context, propietarioID strin
 			       r.notas_huesped, r.fecha_creacion,
 			       p.titulo, p.slug,
 			       u.nombre, u.apellido, u.email, u.avatar_url,
-			       (SELECT ip.url FROM imagenes_propiedad ip WHERE ip.propiedad_id = p.id AND ip.es_principal = true LIMIT 1),
-			       COALESCE((SELECT pg.estado FROM pagos pg WHERE pg.reserva_id = r.id ORDER BY pg.fecha_creacion DESC LIMIT 1), '')
+			       ip.url,
+			       COALESCE(pg2.estado, '')
 			FROM reservas r
 			JOIN propiedades p ON p.id = r.propiedad_id
 			JOIN usuarios u ON u.id = r.huesped_id
+			LEFT JOIN LATERAL (SELECT url FROM imagenes_propiedad WHERE propiedad_id = p.id AND es_principal = true LIMIT 1) ip ON true
+			LEFT JOIN LATERAL (SELECT estado FROM pagos WHERE reserva_id = r.id ORDER BY fecha_creacion DESC LIMIT 1) pg2 ON true
 			WHERE p.propietario_id = $1
 			ORDER BY r.fecha_creacion DESC
 			LIMIT $2 OFFSET $3
@@ -368,7 +375,7 @@ func (r *ReservaRepo) Confirmar(ctx context.Context, reservaID string) error {
 		return fmt.Errorf("confirmar reserva: %w", err)
 	}
 	if tag.RowsAffected() == 0 {
-		return fmt.Errorf("reserva no encontrada o no esta pendiente de confirmacion")
+		return bizerrors.ReservaNoModificable("reserva no encontrada o no esta pendiente de confirmacion")
 	}
 	return nil
 }
@@ -382,7 +389,7 @@ func (r *ReservaRepo) Rechazar(ctx context.Context, reservaID, motivo string) er
 		return fmt.Errorf("rechazar reserva: %w", err)
 	}
 	if tag.RowsAffected() == 0 {
-		return fmt.Errorf("reserva no encontrada o no esta pendiente de confirmacion")
+		return bizerrors.ReservaNoModificable("reserva no encontrada o no esta pendiente de confirmacion")
 	}
 	return nil
 }
@@ -451,7 +458,7 @@ func (r *ReservaRepo) CancelarHuesped(ctx context.Context, reservaID, motivo str
 		return fmt.Errorf("cancelar reserva huesped: %w", err)
 	}
 	if tag.RowsAffected() == 0 {
-		return fmt.Errorf("reserva no encontrada o no se puede cancelar")
+		return bizerrors.ReservaNoModificable("reserva no encontrada o no se puede cancelar")
 	}
 	return nil
 }
@@ -465,7 +472,7 @@ func (r *ReservaRepo) CancelarAnfitrion(ctx context.Context, reservaID, motivo s
 		return fmt.Errorf("cancelar reserva anfitrion: %w", err)
 	}
 	if tag.RowsAffected() == 0 {
-		return fmt.Errorf("reserva no encontrada o no se puede cancelar")
+		return bizerrors.ReservaNoModificable("reserva no encontrada o no se puede cancelar")
 	}
 	return nil
 }
@@ -576,11 +583,13 @@ func (r *ReservaRepo) ListByPropiedadID(ctx context.Context, propiedadID string,
 		       r.notas_huesped, r.fecha_creacion,
 		       p.titulo, p.slug,
 		       u.nombre, u.apellido, u.email, u.avatar_url,
-		       (SELECT ip.url FROM imagenes_propiedad ip WHERE ip.propiedad_id = p.id AND ip.es_principal = true LIMIT 1),
-		       COALESCE((SELECT pg.estado FROM pagos pg WHERE pg.reserva_id = r.id ORDER BY pg.fecha_creacion DESC LIMIT 1), '')
+		       ip.url,
+		       COALESCE(pg2.estado, '')
 		FROM reservas r
 		JOIN propiedades p ON p.id = r.propiedad_id
 		JOIN usuarios u ON u.id = r.huesped_id
+		LEFT JOIN LATERAL (SELECT url FROM imagenes_propiedad WHERE propiedad_id = p.id AND es_principal = true LIMIT 1) ip ON true
+		LEFT JOIN LATERAL (SELECT estado FROM pagos WHERE reserva_id = r.id ORDER BY fecha_creacion DESC LIMIT 1) pg2 ON true
 		WHERE r.propiedad_id = $1
 		ORDER BY r.fecha_creacion DESC
 		LIMIT $2 OFFSET $3
@@ -651,8 +660,9 @@ type PropiedadModoReserva struct {
 func (r *ReservaRepo) ListPropiedadesModoReserva(ctx context.Context, propietarioID string) ([]PropiedadModoReserva, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT p.id, p.titulo, COALESCE(p.modo_reserva, 'MANUAL'),
-		       (SELECT ip.url FROM imagenes_propiedad ip WHERE ip.propiedad_id = p.id AND ip.es_principal = true LIMIT 1)
+		       ip.url
 		FROM propiedades p
+		LEFT JOIN LATERAL (SELECT url FROM imagenes_propiedad WHERE propiedad_id = p.id AND es_principal = true LIMIT 1) ip ON true
 		WHERE p.propietario_id = $1 AND p.estado_publicacion = 'PUBLICADA'
 		ORDER BY p.titulo
 	`, propietarioID)
@@ -905,7 +915,7 @@ func (r *ReservaRepo) UpdateModoReserva(ctx context.Context, propiedadID, propie
 		return fmt.Errorf("update modo reserva: %w", err)
 	}
 	if tag.RowsAffected() == 0 {
-		return fmt.Errorf("propiedad no encontrada o no pertenece al usuario")
+		return bizerrors.PropiedadNoPertenece()
 	}
 	return nil
 }

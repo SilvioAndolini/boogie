@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/boogie/backend/internal/domain/idgen"
+	bizerrors "github.com/boogie/backend/internal/domain/errors"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -240,7 +241,7 @@ func (r *DashboardRepo) DeleteGasto(ctx context.Context, gastoID, propiedadID st
 		return fmt.Errorf("delete gasto: %w", err)
 	}
 	if tag.RowsAffected() == 0 {
-		return fmt.Errorf("gasto no encontrado")
+		return bizerrors.GastoNoEncontrado()
 	}
 	return nil
 }

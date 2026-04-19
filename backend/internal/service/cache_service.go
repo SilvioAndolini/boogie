@@ -17,6 +17,7 @@ type cacheEntry struct {
 type CacheService struct {
 	mu      sync.RWMutex
 	entries map[string]*cacheEntry
+	maxSize int
 }
 
 var globalCache *CacheService
@@ -26,6 +27,7 @@ func GetCache() *CacheService {
 	cacheOnce.Do(func() {
 		globalCache = &CacheService{
 			entries: make(map[string]*cacheEntry),
+			maxSize: 5000,
 		}
 		go globalCache.cleanup()
 	})
@@ -45,23 +47,24 @@ func (c *CacheService) Get(key string) (interface{}, bool) {
 		return entry.value, true
 	}
 
-	c.mu.RLock()
-	stale := entry.value
-	c.mu.RUnlock()
-
-	return stale, false
+	return entry.value, false
 }
 
 func (c *CacheService) Set(key string, value interface{}, ttl time.Duration) {
-	now := time.Now()
 	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if len(c.entries) >= c.maxSize {
+		c.evictOldest(len(c.entries) - c.maxSize + 1)
+	}
+
+	now := time.Now()
 	c.entries[key] = &cacheEntry{
 		value:     value,
 		cachedAt:  now,
 		ttl:       ttl,
 		expiresAt: now.Add(ttl),
 	}
-	c.mu.Unlock()
 }
 
 func (c *CacheService) Delete(key string) {
@@ -111,8 +114,25 @@ func (c *CacheService) backgroundRefresh(key string, ttl time.Duration, fetch fu
 	c.Set(key, fresh, ttl)
 }
 
+func (c *CacheService) evictOldest(count int) {
+	for i := 0; i < count; i++ {
+		var oldestKey string
+		var oldestTime time.Time
+		for k, v := range c.entries {
+			if oldestKey == "" || v.cachedAt.Before(oldestTime) {
+				oldestKey = k
+				oldestTime = v.cachedAt
+			}
+		}
+		if oldestKey == "" {
+			break
+		}
+		delete(c.entries, oldestKey)
+	}
+}
+
 func (c *CacheService) cleanup() {
-	ticker := time.NewTicker(5 * time.Minute)
+	ticker := time.NewTicker(1 * time.Minute)
 	defer ticker.Stop()
 	for range ticker.C {
 		c.mu.Lock()
@@ -122,6 +142,11 @@ func (c *CacheService) cleanup() {
 				delete(c.entries, k)
 			}
 		}
+		count := len(c.entries)
 		c.mu.Unlock()
+
+		if count > c.maxSize*3/4 {
+			slog.Warn("[cache] approaching max size", "current", count, "max", c.maxSize)
+		}
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"math"
 	"strconv"
@@ -11,7 +12,9 @@ import (
 	"time"
 
 	"github.com/boogie/backend/internal/domain/enums"
+	bizerrors "github.com/boogie/backend/internal/domain/errors"
 	"github.com/boogie/backend/internal/domain/models"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -234,13 +237,14 @@ func (r *PropiedadesRepo) SearchPublic(ctx context.Context, f *PropiedadesFiltro
 		SELECT p.id, p.titulo, p.slug, p.tipo_propiedad, p.precio_por_noche, p.moneda,
 		       COALESCE(p.capacidad_maxima, 1), COALESCE(p.habitaciones, 0), p.banos, p.ciudad, p.estado,
 		       p.latitud, p.longitud, COALESCE(p.rating_promedio, 0), COALESCE(p.total_resenas, 0),
-		       (SELECT url FROM imagenes_propiedad WHERE propiedad_id = p.id ORDER BY orden LIMIT 1) as imagen_principal,
+		       ip.url as imagen_principal,
 		       u.plan_suscripcion,
 		       COALESCE(p.categoria, 'ALOJAMIENTO'), p.tipo_cancha, p.precio_por_hora,
 		       COALESCE(p.es_express, false), p.precio_express,
 		       COUNT(*) OVER() as total_count
 		FROM propiedades p
 		LEFT JOIN usuarios u ON u.id = p.propietario_id
+		LEFT JOIN LATERAL (SELECT url FROM imagenes_propiedad WHERE propiedad_id = p.id ORDER BY orden LIMIT 1) ip ON true
 		WHERE %s
 		ORDER BY %s
 		LIMIT $%d OFFSET $%d
@@ -380,12 +384,13 @@ func (r *PropiedadesRepo) ListByPropietario(ctx context.Context, propietarioID s
 		SELECT p.id, p.titulo, p.slug, p.tipo_propiedad, p.precio_por_noche, p.moneda,
 		       COALESCE(p.capacidad_maxima, 1), COALESCE(p.habitaciones, 0), p.banos, p.ciudad, p.estado,
 		       p.latitud, p.longitud, COALESCE(p.rating_promedio, 0), COALESCE(p.total_resenas, 0),
-		       (SELECT url FROM imagenes_propiedad WHERE propiedad_id = p.id ORDER BY orden LIMIT 1),
+		       ip.url,
 		       NULL::text,
 		       COALESCE(p.categoria, 'ALOJAMIENTO'), p.tipo_cancha, p.precio_por_hora,
 		       COALESCE(p.es_express, false), p.precio_express,
 		       COALESCE(p.estado_publicacion, 'BORRADOR')
 		FROM propiedades p
+		LEFT JOIN LATERAL (SELECT url FROM imagenes_propiedad WHERE propiedad_id = p.id ORDER BY orden LIMIT 1) ip ON true
 		WHERE p.propietario_id = $1
 		ORDER BY p.fecha_actualizacion DESC
 	`, propietarioID)
@@ -431,7 +436,7 @@ func (r *PropiedadesRepo) UpdateEstadoWithOwner(ctx context.Context, id, estado,
 		return err
 	}
 	if tag.RowsAffected() == 0 {
-		return fmt.Errorf("propiedad no encontrada o no eres el propietario")
+		return bizerrors.PropiedadSinPermiso()
 	}
 	return nil
 }
@@ -465,12 +470,12 @@ func (r *PropiedadesRepo) DeleteWithOwner(ctx context.Context, id, propietarioID
 	tag, err := tx.Exec(ctx, `DELETE FROM propiedades WHERE id = $1 AND propietario_id = $2`, id, propietarioID)
 	if err != nil {
 		if isFKViolation(err) {
-			return fmt.Errorf("La propiedad no puede ser eliminada porque tiene reservas pendientes por concretar")
+			return bizerrors.PropiedadConReservas()
 		}
 		return err
 	}
 	if tag.RowsAffected() == 0 {
-		return fmt.Errorf("propiedad no encontrada o no eres el propietario")
+		return bizerrors.PropiedadSinPermiso()
 	}
 
 	if _, err := tx.Exec(ctx, `DELETE FROM propiedad_amenidades WHERE propiedad_id = $1`, id); err != nil {
@@ -483,10 +488,8 @@ func (r *PropiedadesRepo) DeleteWithOwner(ctx context.Context, id, propietarioID
 }
 
 func isFKViolation(err error) bool {
-	if err == nil {
-		return false
-	}
-	return strings.Contains(err.Error(), "violates foreign key constraint") || strings.Contains(err.Error(), "SQLSTATE 23503")
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "23503"
 }
 
 func (r *PropiedadesRepo) getPropietario(ctx context.Context, userID string) (*PropietarioInfo, error) {
@@ -830,7 +833,7 @@ func (r *PropiedadesRepo) ActualizarPropiedad(ctx context.Context, propiedadID, 
 		return fmt.Errorf("update propiedad: %w", err)
 	}
 	if tag.RowsAffected() == 0 {
-		return fmt.Errorf("propiedad no encontrada o no eres el propietario")
+		return bizerrors.PropiedadSinPermiso()
 	}
 
 	_, err = r.pool.Exec(ctx, `DELETE FROM propiedad_amenidades WHERE propiedad_id = $1`, propiedadID)
@@ -1062,7 +1065,7 @@ func (r *PropiedadesRepo) ActualizarPropiedadWithDB(ctx context.Context, db DBTX
 		return fmt.Errorf("update propiedad: %w", err)
 	}
 	if tag.RowsAffected() == 0 {
-		return fmt.Errorf("propiedad no encontrada o no eres el propietario")
+		return bizerrors.PropiedadSinPermiso()
 	}
 
 	_, err = db.Exec(ctx, `DELETE FROM propiedad_amenidades WHERE propiedad_id = $1`, propiedadID)

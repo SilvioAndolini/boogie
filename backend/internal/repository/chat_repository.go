@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/boogie/backend/internal/domain/idgen"
+	bizerrors "github.com/boogie/backend/internal/domain/errors"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -56,10 +57,11 @@ func (r *ChatRepo) GetConversaciones(ctx context.Context, userID string) ([]Conv
 		       u.nombre, u.apellido, u.avatar_url,
 		       CASE WHEN c.participante_1 = $1 THEN c.participante_2 ELSE c.participante_1 END,
 		       p.titulo,
-		       (SELECT COUNT(*) FROM mensajes m WHERE m.conversacion_id = c.id AND m.remitente_id != $1 AND m.leido = false)
+		       COALESCE(ml.no_leidos, 0)
 		FROM conversaciones c
 		LEFT JOIN usuarios u ON u.id = CASE WHEN c.participante_1 = $1 THEN c.participante_2 ELSE c.participante_1 END
 		LEFT JOIN propiedades p ON p.id = c.propiedad_id
+		LEFT JOIN LATERAL (SELECT COUNT(*) as no_leidos FROM mensajes m WHERE m.conversacion_id = c.id AND m.remitente_id != $1 AND m.leido = false) ml ON true
 		WHERE c.participante_1 = $1 OR c.participante_2 = $1
 		ORDER BY c.ultimo_mensaje_at DESC NULLS LAST
 	`, userID)
@@ -246,7 +248,7 @@ func (r *ChatRepo) GetConversacionInfo(ctx context.Context, convID, userID strin
 		&info.PropiedadID, &info.PropiedadTitulo,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("conversacion no encontrada o sin permisos")
+		return nil, bizerrors.ConversacionNoEncontrada()
 	}
 	return &info, nil
 }
@@ -333,7 +335,7 @@ func (r *ChatRepo) UpdateMensajeRapido(ctx context.Context, id, userID, contenid
 		return fmt.Errorf("update mensaje_rapido: %w", err)
 	}
 	if tag.RowsAffected() == 0 {
-		return fmt.Errorf("mensaje rapido no encontrado")
+		return bizerrors.MensajeRapidoNoEncontrado()
 	}
 	return nil
 }
@@ -346,7 +348,7 @@ func (r *ChatRepo) DeleteMensajeRapido(ctx context.Context, id, userID string) e
 		return fmt.Errorf("delete mensaje_rapido: %w", err)
 	}
 	if tag.RowsAffected() == 0 {
-		return fmt.Errorf("mensaje rapido no encontrado")
+		return bizerrors.MensajeRapidoNoEncontrado()
 	}
 	return nil
 }

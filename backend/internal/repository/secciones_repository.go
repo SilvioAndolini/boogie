@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/boogie/backend/internal/domain/idgen"
+	bizerrors "github.com/boogie/backend/internal/domain/errors"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -145,7 +146,7 @@ func (r *SeccionesRepo) Delete(ctx context.Context, id string) error {
 		return fmt.Errorf("delete seccion: %w", err)
 	}
 	if tag.RowsAffected() == 0 {
-		return fmt.Errorf("seccion no encontrada")
+		return bizerrors.SeccionNoEncontrada()
 	}
 	return nil
 }

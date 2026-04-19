@@ -49,7 +49,7 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/login?error=user`)
   }
 
-  console.log('[auth/callback] User authenticated:', user.email)
+  console.log('[auth/callback] User authenticated')
 
   const admin = createAdminClient()
   const { data: existingProfile, error: profileQueryError } = await admin
@@ -66,7 +66,7 @@ export async function GET(request: Request) {
     const nombre = user.user_metadata?.given_name || user.user_metadata?.nombre || ''
     const apellido = user.user_metadata?.family_name || user.user_metadata?.apellido || ''
 
-    console.log('[auth/callback] Creating profile for:', user.email, { nombre, apellido })
+    console.log('[auth/callback] Creating profile')
 
     const { error: profileError } = await admin.from('usuarios').insert({
       id: user.id,

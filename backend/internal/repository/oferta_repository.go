@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	bizerrors "github.com/boogie/backend/internal/domain/errors"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -101,7 +103,7 @@ func (r *OfertaRepo) Responder(ctx context.Context, ofertaID, estado string, mot
 		`, ofertaID, estado)
 		return err
 	}
-	return fmt.Errorf("estado invalido")
+	return bizerrors.EstadoInvalidoOferta()
 }
 
 func (r *OfertaRepo) GetRecibidas(ctx context.Context, propietarioID string) ([]OfertaConPropiedad, error) {

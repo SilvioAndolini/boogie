@@ -119,3 +119,63 @@ func AccionInvalida(msg string) *BusinessError {
 func PagoSoloHuesped() *BusinessError {
 	return New(CodeForbidden, "solo el huesped puede registrar pagos")
 }
+
+// PropiedadSinPermiso returns forbidden when user is not the owner.
+func PropiedadSinPermiso() *BusinessError {
+	return New(CodeForbidden, "no eres el propietario de esta propiedad")
+}
+
+// PropiedadConReservas returns conflict when deleting propiedad with active reservas.
+func PropiedadConReservas() *BusinessError {
+	return New(CodeConflict, "la propiedad no puede ser eliminada porque tiene reservas pendientes por concretar")
+}
+
+// ReservaAccionInvalida returns state conflict when action not allowed for current state.
+func ReservaAccionInvalida(msg string) *BusinessError {
+	return New(CodeStateConflict, msg)
+}
+
+// ConversacionNoEncontrada returns not-found or forbidden for chat conversation.
+func ConversacionNoEncontrada() *BusinessError {
+	return New(CodeNotFound, "conversacion no encontrada o sin permisos")
+}
+
+// MensajeRapidoNoEncontrado returns not-found for quick message.
+func MensajeRapidoNoEncontrado() *BusinessError {
+	return New(CodeNotFound, "mensaje rapido no encontrado")
+}
+
+// GastoNoEncontrado returns not-found for maintenance expense.
+func GastoNoEncontrado() *BusinessError {
+	return New(CodeNotFound, "gasto no encontrado")
+}
+
+// MetodoPagoNoEncontrado returns not-found for payment method.
+func MetodoPagoNoEncontrado() *BusinessError {
+	return New(CodeNotFound, "metodo de pago no encontrado")
+}
+
+// SeccionNoEncontrada returns not-found for section.
+func SeccionNoEncontrada() *BusinessError {
+	return New(CodeNotFound, "seccion no encontrada")
+}
+
+// TablaInvalida returns bad-request for invalid table name.
+func TablaInvalida(tabla string) *BusinessError {
+	return New(CodeBadRequest, "tabla invalida: "+tabla)
+}
+
+// EstadoInvalidoOferta returns bad-request for invalid oferta state transition.
+func EstadoInvalidoOferta() *BusinessError {
+	return New(CodeBadRequest, "estado invalido")
+}
+
+// PropiedadNoPertenece returns forbidden when propiedad doesn't belong to user.
+func PropiedadNoPertenece() *BusinessError {
+	return New(CodeForbidden, "propiedad no encontrada o no pertenece al usuario")
+}
+
+// ReservaNoModificable returns state conflict when reserva state prevents action.
+func ReservaNoModificable(msg string) *BusinessError {
+	return New(CodeStateConflict, msg)
+}

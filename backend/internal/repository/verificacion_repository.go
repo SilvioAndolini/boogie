@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	bizerrors "github.com/boogie/backend/internal/domain/errors"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -185,7 +187,7 @@ var allowedCountTables = map[string]string{
 func (r *VerificacionRepo) CountPendientes(ctx context.Context, tabla string) (int, error) {
 	safeTable, ok := allowedCountTables[tabla]
 	if !ok {
-		return 0, fmt.Errorf("tabla invalida: %s", tabla)
+		return 0, bizerrors.TablaInvalida(tabla)
 	}
 	var count int
 	err := r.pool.QueryRow(ctx, fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE estado = 'PENDIENTE'`, safeTable)).Scan(&count)

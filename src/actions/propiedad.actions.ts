@@ -340,26 +340,29 @@ export async function crearPropiedad(formData: FormData) {
     const bucket = 'imagenes'
     const imagenes: { url: string; categoria: string; orden: number }[] = []
 
-    for (let i = 0; i < imagenFiles.length; i++) {
-      const file = imagenFiles[i]
-      const ext = file.name.replace(/.*\./, '.') || '.webp'
-      const path = `propiedades/${propiedadId}/${Date.now()}-${i}${ext}`
-      const arrayBuffer = await file.arrayBuffer()
-      const uint8 = new Uint8Array(arrayBuffer)
+    const uploadResults = await Promise.all(
+      imagenFiles.map(async (file, i) => {
+        const ext = file.name.replace(/.*\./, '.') || '.webp'
+        const path = `propiedades/${propiedadId}/${Date.now()}-${i}${ext}`
+        const arrayBuffer = await file.arrayBuffer()
+        const uint8 = new Uint8Array(arrayBuffer)
 
-      const { error: uploadError } = await supabase.storage
-        .from(bucket)
-        .upload(path, uint8, { contentType: file.type || 'image/webp', upsert: false })
+        const { error: uploadError } = await supabase.storage
+          .from(bucket)
+          .upload(path, uint8, { contentType: file.type || 'image/webp', upsert: false })
 
-      if (uploadError) {
-        console.error('[crearPropiedad] upload error:', uploadError)
-        continue
-      }
+        if (uploadError) {
+          console.error('[crearPropiedad] upload error:', uploadError)
+          return null
+        }
 
-      const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path)
-      const publicUrl = urlData?.publicUrl || ''
+        const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path)
+        return { url: urlData?.publicUrl || '', categoria: imagenCategorias[i] || 'otro', orden: i }
+      })
+    )
 
-      imagenes.push({ url: publicUrl, categoria: imagenCategorias[i] || 'otro', orden: i })
+    for (const result of uploadResults) {
+      if (result) imagenes.push(result)
     }
 
     if (imagenes.length > 0) {
@@ -513,26 +516,29 @@ export async function actualizarPropiedad(propiedadId: string, formData: FormDat
     const bucket = 'imagenes'
     const imagenes: { url: string; categoria: string; orden: number }[] = []
 
-    for (let i = 0; i < imagenFiles.length; i++) {
-      const file = imagenFiles[i]
-      const ext = file.name.replace(/.*\./, '.') || '.webp'
-      const path = `propiedades/${propiedadId}/${Date.now()}-${i}${ext}`
-      const arrayBuffer = await file.arrayBuffer()
-      const uint8 = new Uint8Array(arrayBuffer)
+    const uploadResults = await Promise.all(
+      imagenFiles.map(async (file, i) => {
+        const ext = file.name.replace(/.*\./, '.') || '.webp'
+        const path = `propiedades/${propiedadId}/${Date.now()}-${i}${ext}`
+        const arrayBuffer = await file.arrayBuffer()
+        const uint8 = new Uint8Array(arrayBuffer)
 
-      const { error: uploadError } = await supabase.storage
-        .from(bucket)
-        .upload(path, uint8, { contentType: file.type || 'image/webp', upsert: false })
+        const { error: uploadError } = await supabase.storage
+          .from(bucket)
+          .upload(path, uint8, { contentType: file.type || 'image/webp', upsert: false })
 
-      if (uploadError) {
-        console.error('[actualizarPropiedad] upload error:', uploadError)
-        continue
-      }
+        if (uploadError) {
+          console.error('[actualizarPropiedad] upload error:', uploadError)
+          return null
+        }
 
-      const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path)
-      const publicUrl = urlData?.publicUrl || ''
+        const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path)
+        return { url: urlData?.publicUrl || '', categoria: imagenCategorias[i] || 'otro', orden: imagenIds.length + i }
+      })
+    )
 
-      imagenes.push({ url: publicUrl, categoria: imagenCategorias[i] || 'otro', orden: imagenIds.length + i })
+    for (const result of uploadResults) {
+      if (result) imagenes.push(result)
     }
 
     if (imagenes.length > 0) {

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/boogie/backend/internal/domain/idgen"
+	bizerrors "github.com/boogie/backend/internal/domain/errors"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -113,7 +114,7 @@ func (r *MetodoPagoRepo) Delete(ctx context.Context, id, usuarioID string) error
 		return fmt.Errorf("delete metodo_pago: %w", err)
 	}
 	if tag.RowsAffected() == 0 {
-		return fmt.Errorf("metodo de pago no encontrado")
+		return bizerrors.MetodoPagoNoEncontrado()
 	}
 	return nil
 }

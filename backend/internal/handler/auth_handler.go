@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -8,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/boogie/backend/internal/auth"
 )
@@ -206,8 +208,8 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		ErrorJSON(w, http.StatusBadRequest, "MISSING_PARAMS", "email, password y otp son requeridos")
 		return
 	}
-	if len(req.Password) < 8 {
-		ErrorJSON(w, http.StatusBadRequest, "PASSWORD_TOO_SHORT", "La contrasena debe tener al menos 8 caracteres")
+	if err := validatePassword(req.Password); err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_PASSWORD", err.Error())
 		return
 	}
 	if req.Password != req.ConfirmPassword {
@@ -481,8 +483,12 @@ func (h *AuthHandler) CambiarContrasena(w http.ResponseWriter, r *http.Request) 
 		ErrorJSON(w, http.StatusBadRequest, "MISSING_CURRENT_PASSWORD", "La contrasena actual es requerida")
 		return
 	}
-	if req.PasswordNueva == "" || len(req.PasswordNueva) < 8 {
-		ErrorJSON(w, http.StatusBadRequest, "INVALID_PASSWORD", "La contrasena debe tener al menos 8 caracteres")
+	if req.PasswordNueva == "" {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_PASSWORD", "La contraseña nueva es requerida")
+		return
+	}
+	if err := validatePassword(req.PasswordNueva); err != nil {
+		ErrorJSON(w, http.StatusBadRequest, "INVALID_PASSWORD", err.Error())
 		return
 	}
 
@@ -603,4 +609,28 @@ func normalizarCedula(valor string) string {
 		return string(limpio[0]) + "-" + limpio[1:]
 	}
 	return "V-" + limpio
+}
+
+func validatePassword(pw string) error {
+	if len(pw) < 8 {
+		return errors.New("la contraseña debe tener al menos 8 caracteres")
+	}
+	if len(pw) > 128 {
+		return errors.New("la contraseña no puede exceder 128 caracteres")
+	}
+	var hasUpper, hasLower, hasDigit bool
+	for _, c := range pw {
+		switch {
+		case unicode.IsUpper(c):
+			hasUpper = true
+		case unicode.IsLower(c):
+			hasLower = true
+		case unicode.IsDigit(c):
+			hasDigit = true
+		}
+	}
+	if !hasUpper || !hasLower || !hasDigit {
+		return errors.New("la contraseña debe contener al menos una mayúscula, una minúscula y un número")
+	}
+	return nil
 }
