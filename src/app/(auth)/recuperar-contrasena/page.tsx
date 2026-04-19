@@ -252,6 +252,7 @@ function FormularioRestablecer({
     try {
       const formData = new FormData()
       formData.append('password', datos.password)
+      formData.append('confirmPassword', datos.confirmPassword)
       const resultado = await restablecerContrasena(formData)
       if (resultado?.error) {
         setErrorForm(resultado.error)
