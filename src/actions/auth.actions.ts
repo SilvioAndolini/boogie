@@ -1,33 +1,26 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { registroSchema, loginSchema, recuperacionSchema } from '@/lib/validations'
-import { goPost, GoAPIError } from '@/lib/go-api-client'
+import { goPost, goFetch, GoAPIError } from '@/lib/go-api-client'
 
 export async function enviarOtpEmail(email: string) {
-  console.log('[enviarOtpEmail] Verificando correo')
+  console.log('[enviarOtpEmail] Enviando OTP via backend')
 
-  const admin = createAdminClient()
-  const { data: existente } = await admin
-    .from('usuarios')
-    .select('id')
-    .eq('email', email)
-    .maybeSingle()
-
-  if (existente) {
-    return { error: 'Este correo ya está registrado. Inicia sesión o usa otro correo.' }
-  }
-
-  const supabase = await createClient()
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-  })
-
-  if (error) {
-    console.error('[enviarOtpEmail] Error:', JSON.stringify({ message: error.message, status: error.status }))
-    return { error: `No pudimos enviar el código (${error.message}). Verifica tu correo e intenta de nuevo.` }
+  try {
+    await goFetch('/api/v1/auth/otp/email', {
+      method: 'POST',
+      body: { email },
+    })
+  } catch (err) {
+    if (err instanceof GoAPIError) {
+      if (err.code === 'EMAIL_EXISTS') {
+        return { error: 'Este correo ya está registrado. Inicia sesión o usa otro correo.' }
+      }
+      return { error: 'No pudimos enviar el código. Verifica tu correo e intenta de nuevo.' }
+    }
+    return { error: 'Ocurrió un error inesperado. Intenta de nuevo.' }
   }
 
   console.log('[enviarOtpEmail] OTP enviado exitosamente')
@@ -35,19 +28,18 @@ export async function enviarOtpEmail(email: string) {
 }
 
 export async function enviarOtpSms(telefono: string, codigoPais: string) {
-  const telefonoLimpio = telefono.replace(/\D/g, '')
-  const telefonoCompleto = `${codigoPais}${telefonoLimpio}`
+  console.log('[enviarOtpSms] Enviando OTP via backend')
 
-  console.log('[enviarOtpSms] Enviando OTP')
-
-  const supabase = await createClient()
-  const { error } = await supabase.auth.signInWithOtp({
-    phone: telefonoCompleto,
-  })
-
-  if (error) {
-    console.error('[enviarOtpSms] Error completo:', JSON.stringify({ message: error.message, status: error.status, name: error.name }))
-    return { error: `No pudimos enviar el código SMS (${error.message}). Verifica el número e intenta de nuevo.` }
+  try {
+    await goFetch('/api/v1/auth/otp/sms', {
+      method: 'POST',
+      body: { telefono, codigoPais },
+    })
+  } catch (err) {
+    if (err instanceof GoAPIError) {
+      return { error: 'No pudimos enviar el código SMS. Verifica el número e intenta de nuevo.' }
+    }
+    return { error: 'Ocurrió un error inesperado. Intenta de nuevo.' }
   }
 
   console.log('[enviarOtpSms] OTP enviado exitosamente')
@@ -62,10 +54,11 @@ export async function verificarOtpYRegistrar(formData: FormData) {
       email: formData.get('email') as string,
       password: formData.get('password') as string,
       confirmPassword: formData.get('confirmPassword') as string,
-      tipoDocumento: formData.get('tipoDocumento') as 'CEDULA' | 'PASAPORTE',
+      tipoDocumento: formData.get('tipoDocumento') as string,
       numeroDocumento: formData.get('numeroDocumento') as string,
       telefono: formData.get('telefono') as string,
       codigoPais: (formData.get('codigoPais') as string) || '+58',
+      otp: formData.get('otp') as string,
     }
 
     const validacion = registroSchema.safeParse(datos)
@@ -73,78 +66,20 @@ export async function verificarOtpYRegistrar(formData: FormData) {
       return { error: validacion.error.issues[0].message }
     }
 
-    const otp = formData.get('otp') as string
-    if (!otp || otp.length < 6) {
+    if (!datos.otp || datos.otp.length < 6) {
       return { error: 'Ingresa el código de verificación' }
     }
 
+    const result = await goFetch<{ ok: boolean; userId: string }>('/api/v1/auth/register', {
+      method: 'POST',
+      body: datos,
+    })
+
+    if (!result.ok) {
+      return { error: 'No se pudo completar el registro. Intenta de nuevo.' }
+    }
+
     const supabase = await createClient()
-
-    const { data: otpData, error: otpError } = await supabase.auth.verifyOtp({
-      email: datos.email,
-      token: otp,
-      type: 'email',
-    })
-
-    if (otpError) {
-      console.error('[registro] OTP error:', otpError.message)
-      return { error: 'Código de verificación inválido. Intenta de nuevo.' }
-    }
-
-    const userId = otpData.user?.id
-    if (!userId) {
-      console.error('[registro] No se obtuvo user ID del OTP')
-      return { error: 'Error de verificación. Intenta de nuevo.' }
-    }
-
-    const telefonoCompleto = `${datos.codigoPais}${datos.telefono.replace(/\D/g, '')}`
-
-    const { error: updateError } = await supabase.auth.updateUser({
-      password: datos.password,
-      data: {
-        nombre: datos.nombre,
-        apellido: datos.apellido,
-        telefono: telefonoCompleto,
-        cedula: datos.numeroDocumento,
-      },
-    })
-
-    if (updateError) {
-      console.error('[registro] updateError:', updateError.message)
-      return { error: 'No se pudo establecer la contraseña. Intenta de nuevo.' }
-    }
-
-    const admin = createAdminClient()
-    const { error: profileError } = await admin.from('usuarios').insert({
-      id: userId,
-      email: datos.email,
-      nombre: datos.nombre,
-      apellido: datos.apellido,
-      telefono: telefonoCompleto,
-      cedula: datos.numeroDocumento,
-      verificado: false,
-      rol: 'BOOGER',
-      plan_suscripcion: 'FREE',
-    })
-
-    if (profileError) {
-      console.error('[registro] Profile insert error:', profileError.message)
-      if (profileError.code === '23505') {
-        console.log('[registro] Profile already exists, continuing')
-      } else {
-        return { error: 'No se pudo crear tu perfil. Intenta de nuevo.' }
-      }
-    }
-
-    const { error: appMetaError } = await admin.auth.admin.updateUserById(userId, {
-      app_metadata: { rol: 'BOOGER' },
-    })
-    if (appMetaError) {
-      console.warn('[registro] app_metadata sync failed:', appMetaError.message)
-    }
-
-    await supabase.auth.signOut()
-
     const { error: loginError } = await supabase.auth.signInWithPassword({
       email: datos.email,
       password: datos.password,
@@ -157,6 +92,21 @@ export async function verificarOtpYRegistrar(formData: FormData) {
 
     return { exito: true }
   } catch (err) {
+    if (err instanceof GoAPIError) {
+      if (err.code === 'OTP_INVALID') {
+        return { error: 'Código de verificación inválido. Intenta de nuevo.' }
+      }
+      if (err.code === 'EMAIL_EXISTS' || err.code === 'DUPLICATE') {
+        return { error: 'Este correo ya está registrado. Inicia sesión o usa otro correo.' }
+      }
+      if (err.code === 'INVALID_PASSWORD') {
+        return { error: err.message }
+      }
+      if (err.code === 'PASSWORD_MISMATCH') {
+        return { error: 'Las contraseñas no coinciden.' }
+      }
+      return { error: err.message || 'No se pudo completar el registro.' }
+    }
     console.error('[registro] Error completo:', err)
     return { error: 'Ocurrió un error inesperado. Intenta de nuevo.' }
   }

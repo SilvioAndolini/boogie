@@ -117,6 +117,17 @@ func (h *AuthHandler) SendOtpEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if h.repo != nil {
+		exists, err := h.repo.EmailExists(r.Context(), req.Email)
+		if err != nil {
+			slog.Error("[auth/otp-email] email check error", "error", err)
+		}
+		if exists {
+			ErrorJSON(w, http.StatusConflict, "EMAIL_EXISTS", "Este correo ya esta registrado")
+			return
+		}
+	}
+
 	if err := h.authClient.SendOTP(r.Context(), req.Email); err != nil {
 		slog.Error("[auth/otp-email] error", "error", err)
 		ErrorJSON(w, http.StatusBadRequest, "OTP_ERROR", "No pudimos enviar el codigo")

@@ -15,12 +15,13 @@ import (
 )
 
 type mockAuthRepo struct {
-	getUserRoleFn         func(ctx context.Context, userID string) (string, error)
-	createUserProfileFn   func(ctx context.Context, userID, email, nombre, apellido, telefono, cedula string) error
-	updateProfileFn       func(ctx context.Context, userID, nombre, apellido, cedula, telefono string) error
-	getUserProfileFn      func(ctx context.Context, userID string) (map[string]interface{}, error)
+	getUserRoleFn          func(ctx context.Context, userID string) (string, error)
+	emailExistsFn          func(ctx context.Context, email string) (bool, error)
+	createUserProfileFn    func(ctx context.Context, userID, email, nombre, apellido, telefono, cedula string) error
+	updateProfileFn        func(ctx context.Context, userID, nombre, apellido, cedula, telefono string) error
+	getUserProfileFn       func(ctx context.Context, userID string) (map[string]interface{}, error)
 	updatePerfilCompletoFn func(ctx context.Context, userID string, campos map[string]interface{}) error
-	updateAvatarURLFn     func(ctx context.Context, userID, avatarURL string) error
+	updateAvatarURLFn      func(ctx context.Context, userID, avatarURL string) error
 }
 
 func (m *mockAuthRepo) GetUserRole(ctx context.Context, userID string) (string, error) {
@@ -28,6 +29,13 @@ func (m *mockAuthRepo) GetUserRole(ctx context.Context, userID string) (string, 
 		return m.getUserRoleFn(ctx, userID)
 	}
 	return "", errors.New("not implemented")
+}
+
+func (m *mockAuthRepo) EmailExists(ctx context.Context, email string) (bool, error) {
+	if m.emailExistsFn != nil {
+		return m.emailExistsFn(ctx, email)
+	}
+	return false, nil
 }
 
 func (m *mockAuthRepo) CreateUserProfile(ctx context.Context, userID, email, nombre, apellido, telefono, cedula string) error {

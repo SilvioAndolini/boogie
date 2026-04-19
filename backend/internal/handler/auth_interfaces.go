@@ -4,6 +4,7 @@ import "context"
 
 type AuthRepository interface {
 	GetUserRole(ctx context.Context, userID string) (string, error)
+	EmailExists(ctx context.Context, email string) (bool, error)
 	CreateUserProfile(ctx context.Context, userID, email, nombre, apellido, telefono, cedula string) error
 	UpdateProfile(ctx context.Context, userID, nombre, apellido, cedula, telefono string) error
 	GetUserProfile(ctx context.Context, userID string) (map[string]interface{}, error)

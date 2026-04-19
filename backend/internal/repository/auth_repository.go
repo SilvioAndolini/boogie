@@ -89,6 +89,15 @@ func (r *AuthRepo) UpdatePerfilCompleto(ctx context.Context, userID string, camp
 	return err
 }
 
+func (r *AuthRepo) EmailExists(ctx context.Context, email string) (bool, error) {
+	var exists bool
+	err := r.pool.QueryRow(ctx, `SELECT true FROM usuarios WHERE email = $1 LIMIT 1`, email).Scan(&exists)
+	if err != nil {
+		return false, nil
+	}
+	return true, nil
+}
+
 func (r *AuthRepo) UpdateAvatarURL(ctx context.Context, userID, avatarURL string) error {
 	_, err := r.pool.Exec(ctx, `
 		UPDATE usuarios SET avatar_url = $1 WHERE id = $2`,
