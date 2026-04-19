@@ -56,12 +56,16 @@ export async function cambiarContrasena(formData: FormData) {
   const passwordNueva = formData.get('passwordNueva') as string
   const passwordActual = formData.get('passwordActual') as string
 
+  if (!passwordActual) {
+    return { error: 'La contraseña actual es requerida' }
+  }
+
   if (!passwordNueva || passwordNueva.length < 8) {
     return { error: 'La contraseña debe tener al menos 8 caracteres' }
   }
 
   try {
-    await goPost('/api/v1/auth/password', { passwordNueva })
+    await goPost('/api/v1/auth/password', { passwordActual, passwordNueva })
     return { exito: true }
   } catch (err: unknown) {
     return { error: err instanceof Error ? err.message : 'Error al cambiar la contraseña' }

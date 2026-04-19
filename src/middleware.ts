@@ -97,7 +97,14 @@ export async function middleware(request: NextRequest) {
       }
     }
   } catch (error) {
-    console.error('[middleware] Error during auth check:', error)
+    console.error('[middleware] Auth error:', error)
+    const { pathname } = request.nextUrl
+    if (!esRutaPublica(pathname) && !pathname.startsWith('/api/')) {
+      const redirectUrl = request.nextUrl.clone()
+      redirectUrl.pathname = '/login'
+      redirectUrl.searchParams.set('redirect', pathname)
+      return NextResponse.redirect(redirectUrl)
+    }
     return NextResponse.next({ request })
   }
 

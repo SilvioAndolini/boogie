@@ -2,6 +2,7 @@
 
 import { goApi, goGet, goPost, goPatch, goDelete, GoAPIError, getAuthToken } from '@/lib/go-api-client'
 import { getUsuarioAutenticado } from '@/lib/auth'
+import { requireAdmin } from '@/lib/admin-auth'
 import { revalidatePath } from 'next/cache'
 
 export async function getVerificacionUsuario() {
@@ -73,6 +74,9 @@ export async function subirDocumentoManual(formData: FormData) {
 }
 
 export async function getVerificacionesPendientes() {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
   try {
     const verificaciones = await goGet<Array<Record<string, unknown>>>('/api/v1/admin/verificaciones')
     return { verificaciones }
@@ -83,6 +87,9 @@ export async function getVerificacionesPendientes() {
 }
 
 export async function revisarVerificacion(formData: FormData) {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
   const verificacionId = formData.get('verificacionId') as string
   const accion = formData.get('accion') as string
   const motivoRechazo = (formData.get('motivoRechazo') as string) || undefined
@@ -116,6 +123,9 @@ type AdminCountsResult = {
 }
 
 export async function getUsuariosAdmin(): Promise<UsuariosResult> {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
   try {
     const outer = await goApi<Record<string, unknown>>('/api/v1/admin/usuarios', { raw: true })
     const raw = (outer?.data ?? outer) as Record<string, unknown>
@@ -132,6 +142,9 @@ export async function getUsuariosAdmin(): Promise<UsuariosResult> {
 }
 
 export async function actualizarRolUsuario(formData: FormData) {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
   const usuarioId = formData.get('usuarioId') as string
   const rol = (formData.get('rol') as string) || undefined
   const activo = (formData.get('activo') as string) || undefined
@@ -157,6 +170,9 @@ export async function actualizarRolUsuario(formData: FormData) {
 }
 
 export async function eliminarUsuarioAdmin(formData: FormData) {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
   const usuarioId = formData.get('usuarioId') as string
   if (!usuarioId) return { error: 'ID de usuario requerido' }
 
@@ -171,6 +187,9 @@ export async function eliminarUsuarioAdmin(formData: FormData) {
 }
 
 export async function getAdminCounts(): Promise<AdminCountsResult> {
+  const auth = await requireAdmin()
+  if (auth.error) return { error: auth.error }
+
   try {
     return await goGet<{
       verificacionesPendientes: number;

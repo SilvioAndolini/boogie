@@ -45,23 +45,6 @@ export async function registrarPago(formData: FormData) {
   return { exito: true, mensaje: 'Pago registrado. Será verificado pronto.' }
 }
 
-export async function verificarPago(pagoId: string, aprobado: boolean, notas?: string) {
-  const user = await getUsuarioAutenticado()
-  if (!user) return { error: 'No autenticado' }
-
-  try {
-    await goPost(`/api/v1/pagos/${pagoId}/verificar`, { aprobado, notas })
-  } catch (e: unknown) {
-    const message = e instanceof Error ? e.message : 'Error al verificar el pago'
-    return { error: message }
-  }
-
-  revalidatePath('/dashboard/reservas-recibidas')
-  revalidatePath('/dashboard/mis-reservas')
-  revalidatePath('/dashboard/pagos')
-  return { exito: true }
-}
-
 export async function getMisPagos() {
   const user = await getUsuarioAutenticado()
   if (!user) return []
