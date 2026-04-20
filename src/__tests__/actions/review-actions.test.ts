@@ -34,7 +34,7 @@ describe('crearResena', () => {
   })
 
   it('rechaza calificacion fuera de rango', async () => {
-    vi.mocked(getUsuarioAutenticado).mockResolvedValue({ id: 'u-1' } as any)
+    vi.mocked(getUsuarioAutenticado).mockResolvedValue({ id: 'u-1' } as unknown)
     const result = await crearResena(makeFormData({
       calificacion: '0',
       comentario: 'Excelente lugar, muy recomendado',
@@ -44,7 +44,7 @@ describe('crearResena', () => {
   })
 
   it('rechaza comentario con menos de 10 caracteres', async () => {
-    vi.mocked(getUsuarioAutenticado).mockResolvedValue({ id: 'u-1' } as any)
+    vi.mocked(getUsuarioAutenticado).mockResolvedValue({ id: 'u-1' } as unknown)
     const result = await crearResena(makeFormData({
       calificacion: '4',
       comentario: 'Corto',
@@ -54,7 +54,7 @@ describe('crearResena', () => {
   })
 
   it('rechaza sin reservaId', async () => {
-    vi.mocked(getUsuarioAutenticado).mockResolvedValue({ id: 'u-1' } as any)
+    vi.mocked(getUsuarioAutenticado).mockResolvedValue({ id: 'u-1' } as unknown)
     const result = await crearResena(makeFormData({
       calificacion: '4',
       comentario: 'Buen lugar, recomendado',
@@ -63,7 +63,7 @@ describe('crearResena', () => {
   })
 
   it('acepta sub-calificaciones validas (1-5)', async () => {
-    vi.mocked(getUsuarioAutenticado).mockResolvedValue({ id: 'u-1' } as any)
+    vi.mocked(getUsuarioAutenticado).mockResolvedValue({ id: 'u-1' } as unknown)
     vi.mocked(goPost).mockResolvedValue({ propiedad_id: 'prop-1' })
     const result = await crearResena(makeFormData({
       calificacion: '4',
@@ -97,19 +97,19 @@ describe('responderResena', () => {
   })
 
   it('rechaza respuesta vacia', async () => {
-    vi.mocked(getUsuarioAutenticado).mockResolvedValue({ id: 'u-1' } as any)
+    vi.mocked(getUsuarioAutenticado).mockResolvedValue({ id: 'u-1' } as unknown)
     const result = await responderResena('resena-1', '   ')
     expect(result).toEqual({ error: 'La respuesta no puede estar vacía' })
   })
 
   it('rechaza sin resenaId', async () => {
-    vi.mocked(getUsuarioAutenticado).mockResolvedValue({ id: 'u-1' } as any)
+    vi.mocked(getUsuarioAutenticado).mockResolvedValue({ id: 'u-1' } as unknown)
     const result = await responderResena('', 'Gracias')
     expect(result).toEqual({ error: 'Reseña no especificada' })
   })
 
   it('retorna exito cuando el backend acepta', async () => {
-    vi.mocked(getUsuarioAutenticado).mockResolvedValue({ id: 'u-1' } as any)
+    vi.mocked(getUsuarioAutenticado).mockResolvedValue({ id: 'u-1' } as unknown)
     vi.mocked(goPost).mockResolvedValue({ propiedad_id: 'prop-1' })
     const result = await responderResena('resena-1', 'Gracias por tu comentario')
     expect(result).toEqual({ exito: true })

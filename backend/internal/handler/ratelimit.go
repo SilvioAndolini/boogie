@@ -69,6 +69,12 @@ func RateLimitMiddleware(limiter *RedisRateLimiter) func(http.Handler) http.Hand
 }
 
 func GetClientIP(r *http.Request) string {
+	if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
+		parts := strings.SplitN(forwarded, ",", 2)
+		if ip := strings.TrimSpace(parts[0]); ip != "" {
+			return ip
+		}
+	}
 	if realIP := r.Header.Get("X-Real-IP"); realIP != "" {
 		return realIP
 	}

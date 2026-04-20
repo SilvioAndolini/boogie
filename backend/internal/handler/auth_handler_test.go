@@ -181,7 +181,7 @@ func TestAuthRegister_MissingParams(t *testing.T) {
 
 func TestAuthRegister_PasswordMismatch(t *testing.T) {
 	h := newAuthHandler()
-	body := `{"email":"test@test.com","password":"password123","confirmPassword":"password456","otp":"123456"}`
+	body := `{"email":"test@test.com","password":"Password123","confirmPassword":"Password456","otp":"123456"}`
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/register", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -206,7 +206,7 @@ func TestAuthRegister_PasswordTooShort(t *testing.T) {
 	var resp map[string]interface{}
 	_ = json.NewDecoder(w.Body).Decode(&resp)
 	errBody := resp["error"].(map[string]interface{})
-	assert.Equal(t, "PASSWORD_TOO_SHORT", errBody["code"])
+	assert.Equal(t, "INVALID_PASSWORD", errBody["code"])
 }
 
 func TestAuthRegister_MissingName(t *testing.T) {
