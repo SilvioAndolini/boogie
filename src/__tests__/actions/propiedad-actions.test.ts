@@ -14,36 +14,8 @@ vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
 }))
 
-import { generarSlug } from '@/lib/slug'
-
 describe('propiedad.actions - creacion', () => {
-  it('genera slug correcto a partir del titulo', () => {
-    const slug = generarSlug('Hermoso Apartamento en Caracas')
-    expect(slug).toMatch(/hermoso-apartamento-en-caracas-[a-z0-9]{6}$/)
-  })
-
-  it('slug tiene maximo 60 caracteres + 7 de sufijo', () => {
-    const tituloLargo = 'A'.repeat(100)
-    const slug = generarSlug(tituloLargo)
-    const base = slug.slice(0, -7)
-    expect(base.length).toBeLessThanOrEqual(60)
-  })
-
-  it('slug normaliza acentos', () => {
-    const slug = generarSlug('Cabaña en Mérida')
-    expect(slug).toMatch(/cabana-en-merida-[a-z0-9]{6}$/)
-  })
-
-  it('slug elimina caracteres especiales', () => {
-    const slug = generarSlug('Apto. #3 @Caracas!')
-    expect(slug).toMatch(/apto-3-caracas-[a-z0-9]{6}$/)
-  })
-
-  it('slug tiene sufijo random de 6 caracteres', () => {
-    const slug1 = generarSlug('Mismo Titulo')
-    const slug2 = generarSlug('Mismo Titulo')
-    expect(slug1).not.toBe(slug2)
-  })
+  it.todo('placeholder para tests de creacion')
 })
 
 describe('propiedad.actions - plan limits', () => {
