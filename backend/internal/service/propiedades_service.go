@@ -104,10 +104,14 @@ func (s *PropiedadesService) GetByIDOrSlug(ctx context.Context, idOrSlug string)
 
 	var result repository.PropiedadDetalleFull
 	err := s.cache.GetOrFetchInto(ctx, key, ttl, &result, func() (interface{}, error) {
-		if isUUID(idOrSlug) {
+		if isUUID(idOrSlug) || isULID(idOrSlug) {
 			return s.repo.GetByID(ctx, idOrSlug)
 		}
-		return s.repo.GetBySlug(ctx, idOrSlug)
+		result, err := s.repo.GetBySlug(ctx, idOrSlug)
+		if err != nil {
+			return s.repo.GetByID(ctx, idOrSlug)
+		}
+		return result, nil
 	})
 	if err != nil {
 		return nil, err
@@ -187,6 +191,18 @@ func isUUID(s string) bool {
 			if (c < '0' || c > '9') && (c < 'a' || c > 'f') && (c < 'A' || c > 'F') {
 				return false
 			}
+		}
+	}
+	return true
+}
+
+func isULID(s string) bool {
+	if len(s) != 24 {
+		return false
+	}
+	for _, c := range s {
+		if (c < '0' || c > '9') && (c < 'a' || c > 'z') && (c < 'A' || c > 'Z') {
+			return false
 		}
 	}
 	return true
