@@ -1,5 +1,7 @@
 'use server'
 
+import * as Sentry from '@sentry/nextjs'
+
 import { goApi, goPost, GoAPIError } from '@/lib/go-api-client'
 import { requireAdmin } from '@/lib/admin-auth'
 import { revalidatePath } from 'next/cache'
@@ -31,6 +33,7 @@ export async function getResenasAdmin(filtros?: {
       stats: raw?.stats as { total: number; promedio: number; distribucion: Record<string, number> } | undefined,
     }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al cargar reseñas' }
   }
@@ -49,6 +52,7 @@ export async function moderarResenaAdmin(formData: FormData) {
     revalidatePath('/admin/resenas')
     return { exito: true }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al moderar la reseña' }
   }

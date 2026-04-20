@@ -19,7 +19,7 @@ func NewSeccionesHandler(svc *service.SeccionesService) *SeccionesHandler {
 func (h *SeccionesHandler) GetPublicas(w http.ResponseWriter, r *http.Request) {
 	secciones, err := h.svc.GetPublicas(r.Context())
 	if err != nil {
-		mapError(w, err, "[secciones/publicas]")
+		mapError(w, r, err, "[secciones/publicas]")
 		return
 	}
 	JSON(w, http.StatusOK, secciones)
@@ -28,7 +28,7 @@ func (h *SeccionesHandler) GetPublicas(w http.ResponseWriter, r *http.Request) {
 func (h *SeccionesHandler) GetAdmin(w http.ResponseWriter, r *http.Request) {
 	secciones, err := h.svc.GetAdmin(r.Context())
 	if err != nil {
-		mapError(w, err, "[secciones/admin]")
+		mapError(w, r, err, "[secciones/admin]")
 		return
 	}
 	JSON(w, http.StatusOK, secciones)
@@ -64,7 +64,7 @@ func (h *SeccionesHandler) Upsert(w http.ResponseWriter, r *http.Request) {
 		Orden:        req.Orden,
 		Activa:       req.Activa,
 	}); err != nil {
-		mapError(w, err, "[secciones/upsert] error")
+		mapError(w, r, err, "[secciones/upsert] error")
 		return
 	}
 
@@ -79,7 +79,7 @@ func (h *SeccionesHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.svc.Delete(r.Context(), id); err != nil {
-		mapError(w, err, "[secciones/delete] error")
+		mapError(w, r, err, "[secciones/delete] error")
 		return
 	}
 
@@ -90,7 +90,7 @@ func (h *SeccionesHandler) SearchPropiedades(w http.ResponseWriter, r *http.Requ
 	query := r.URL.Query().Get("q")
 	results, err := h.svc.SearchPropiedades(r.Context(), query)
 	if err != nil {
-		mapError(w, err, "[secciones/search]")
+		mapError(w, r, err, "[secciones/search]")
 		return
 	}
 	JSON(w, http.StatusOK, results)
@@ -105,7 +105,7 @@ func (h *SeccionesHandler) GetPropiedadesByIDs(w http.ResponseWriter, r *http.Re
 
 	results, err := h.svc.GetPropiedadesByIDs(r.Context(), ids)
 	if err != nil {
-		mapError(w, err, "[secciones/propiedades-by-ids]")
+		mapError(w, r, err, "[secciones/propiedades-by-ids]")
 		return
 	}
 	JSON(w, http.StatusOK, results)
@@ -127,7 +127,7 @@ func (h *SeccionesHandler) PreviewPropiedades(w http.ResponseWriter, r *http.Req
 
 	results, err := h.svc.PreviewPropiedades(r.Context(), tipoFiltro, filtroEstado, filtroCiudad)
 	if err != nil {
-		mapError(w, err, "[secciones/preview]")
+		mapError(w, r, err, "[secciones/preview]")
 		return
 	}
 	JSON(w, http.StatusOK, results)

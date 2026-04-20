@@ -1,5 +1,7 @@
 'use server'
 
+import * as Sentry from '@sentry/nextjs'
+
 import { getUsuarioAutenticado } from '@/lib/auth'
 import { goPost, GoAPIError } from '@/lib/go-api-client'
 import { redirect } from 'next/navigation'
@@ -30,6 +32,7 @@ export async function completarPerfilGoogle(formData: FormData) {
       codigoPais,
     })
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) {
       console.error('[completarPerfilGoogle] Error:', err.message)
       if (err.code === 'DUPLICATE_CEDULA' || err.message?.toLowerCase().includes('documento')) {

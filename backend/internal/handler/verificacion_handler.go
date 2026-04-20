@@ -65,7 +65,7 @@ func (h *VerificacionHandler) IniciarMetaMap(w http.ResponseWriter, r *http.Requ
 
 	id, err := h.svc.IniciarMetaMap(r.Context(), userID)
 	if err != nil {
-		mapError(w, err, "[verificacion/iniciar-metamap] error", "userId", userID)
+		mapError(w, r, err, "[verificacion/iniciar-metamap] error", "userId", userID)
 		return
 	}
 
@@ -129,25 +129,25 @@ func (h *VerificacionHandler) SubirDocumento(w http.ResponseWriter, r *http.Requ
 
 	fotoFrontalURL, err := uploadOne("fotoFrontal", "frontal")
 	if err != nil {
-		mapError(w, err, "[verificacion/subir-documento] frontal upload error", "userId", userID)
+		mapError(w, r, err, "[verificacion/subir-documento] frontal upload error", "userId", userID)
 		return
 	}
 
 	fotoTraseraURL, err := uploadOne("fotoTrasera", "trasera")
 	if err != nil {
-		mapError(w, err, "[verificacion/subir-documento] trasera upload error", "userId", userID)
+		mapError(w, r, err, "[verificacion/subir-documento] trasera upload error", "userId", userID)
 		return
 	}
 
 	fotoSelfieURL, err := uploadOne("fotoSelfie", "selfie")
 	if err != nil {
-		mapError(w, err, "[verificacion/subir-documento] selfie upload error", "userId", userID)
+		mapError(w, r, err, "[verificacion/subir-documento] selfie upload error", "userId", userID)
 		return
 	}
 
 	id, err := h.svc.SubirDocumento(r.Context(), userID, fotoFrontalURL, fotoTraseraURL, fotoSelfieURL)
 	if err != nil {
-		mapError(w, err, "[verificacion/subir-documento] error", "userId", userID)
+		mapError(w, r, err, "[verificacion/subir-documento] error", "userId", userID)
 		return
 	}
 
@@ -168,7 +168,7 @@ func (h *VerificacionHandler) ListAll(w http.ResponseWriter, r *http.Request) {
 
 	verifs, err := h.svc.ListAll(r.Context())
 	if err != nil {
-		mapError(w, err, "[admin/verificaciones]")
+		mapError(w, r, err, "[admin/verificaciones]")
 		return
 	}
 
@@ -206,7 +206,7 @@ func (h *VerificacionHandler) Revisar(w http.ResponseWriter, r *http.Request) {
 		Accion:         req.Accion,
 		MotivoRechazo:  req.MotivoRechazo,
 	}); err != nil {
-		mapError(w, err, "[admin/verificaciones/revisar] error", "verifId", verifID)
+		mapError(w, r, err, "[admin/verificaciones/revisar] error", "verifId", verifID)
 		return
 	}
 
@@ -225,7 +225,7 @@ func (h *VerificacionHandler) AdminCounts(w http.ResponseWriter, r *http.Request
 
 	counts, err := h.svc.GetAdminCounts(r.Context())
 	if err != nil {
-		mapError(w, err, "[admin/counts]")
+		mapError(w, r, err, "[admin/counts]")
 		return
 	}
 

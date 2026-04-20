@@ -33,7 +33,7 @@ func (h *DashboardHandler) GetDashboard(w http.ResponseWriter, r *http.Request) 
 
 	dashboardData, err := h.svc.GetDashboard(r.Context(), propiedadID, userID)
 	if err != nil {
-		mapError(w, err, "[dashboard] error", "propiedadID", propiedadID)
+		mapError(w, r, err, "[dashboard] error", "propiedadID", propiedadID)
 		return
 	}
 
@@ -86,7 +86,7 @@ func (h *DashboardHandler) CrearGasto(w http.ResponseWriter, r *http.Request) {
 
 	gasto, err := h.svc.CrearGasto(r.Context(), propiedadID, userID, req.Descripcion, req.Monto, req.Moneda, req.Categoria, req.Fecha)
 	if err != nil {
-		mapError(w, err, "[dashboard/gastos] crear error")
+		mapError(w, r, err, "[dashboard/gastos] crear error")
 		return
 	}
 
@@ -108,7 +108,7 @@ func (h *DashboardHandler) EliminarGasto(w http.ResponseWriter, r *http.Request)
 	}
 
 	if err := h.svc.EliminarGasto(r.Context(), gastoID, propiedadID, userID); err != nil {
-		mapError(w, err, "[dashboard/gastos] eliminar error")
+		mapError(w, r, err, "[dashboard/gastos] eliminar error")
 		return
 	}
 

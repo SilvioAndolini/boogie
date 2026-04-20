@@ -15,7 +15,7 @@ func (h *AdminHandler) GetResenas(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.svc.GetResenas(r.Context(), calificacionMin, busqueda, pagina)
 	if err != nil {
-		mapError(w, err, "[admin/resenas]")
+		mapError(w, r, err, "[admin/resenas]")
 		return
 	}
 
@@ -47,7 +47,7 @@ func (h *AdminHandler) ModerarResena(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.svc.ModerarResena(r.Context(), req.ResenaID, req.Accion); err != nil {
-		mapError(w, err, "[admin/resenas/moderar]")
+		mapError(w, r, err, "[admin/resenas/moderar]")
 		return
 	}
 	h.auditLog(r, "", "moderar_resena", "resena", &req.ResenaID, map[string]interface{}{"accion": req.Accion, "motivo": req.Motivo})

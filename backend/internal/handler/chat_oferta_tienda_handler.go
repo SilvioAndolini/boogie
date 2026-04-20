@@ -46,7 +46,7 @@ func (h *ChatHandler) GetConversaciones(w http.ResponseWriter, r *http.Request) 
 
 	convs, err := h.svc.GetConversaciones(r.Context(), userID)
 	if err != nil {
-		mapError(w, err, "[chat/conversaciones]", "userId", userID)
+		mapError(w, r, err, "[chat/conversaciones]", "userId", userID)
 		return
 	}
 
@@ -78,7 +78,7 @@ func (h *ChatHandler) GetOrCreateConversacion(w http.ResponseWriter, r *http.Req
 
 	conv, err := h.svc.GetOrCreateConversacion(r.Context(), userID, req.OtroUsuarioID, req.PropiedadID)
 	if err != nil {
-		mapError(w, err, "[chat/conversacion/create]")
+		mapError(w, r, err, "[chat/conversacion/create]")
 		return
 	}
 
@@ -109,7 +109,7 @@ func (h *ChatHandler) GetMensajes(w http.ResponseWriter, r *http.Request) {
 
 	msgs, err := h.svc.GetMensajes(r.Context(), convID, userID, limit, offset)
 	if err != nil {
-		mapError(w, err, "[chat/mensajes]")
+		mapError(w, r, err, "[chat/mensajes]")
 		return
 	}
 
@@ -148,7 +148,7 @@ func (h *ChatHandler) EnviarMensaje(w http.ResponseWriter, r *http.Request) {
 
 	msg, err := h.svc.EnviarMensaje(r.Context(), req.ConversacionID, userID, req.Contenido, tipo, req.ImagenURL)
 	if err != nil {
-		mapError(w, err, "[chat/enviar]")
+		mapError(w, r, err, "[chat/enviar]")
 		return
 	}
 
@@ -181,7 +181,7 @@ func (h *ChatHandler) GetConversacionInfo(w http.ResponseWriter, r *http.Request
 
 	info, err := h.svc.GetConversacionInfo(r.Context(), convID, userID)
 	if err != nil {
-		mapError(w, err, "[chat/conversacion/info]")
+		mapError(w, r, err, "[chat/conversacion/info]")
 		return
 	}
 
@@ -197,7 +197,7 @@ func (h *ChatHandler) GetMensajesRapidos(w http.ResponseWriter, r *http.Request)
 
 	mensajes, err := h.svc.GetMensajesRapidos(r.Context(), userID)
 	if err != nil {
-		mapError(w, err, "[chat/mensajes-rapidos]", "userId", userID)
+		mapError(w, r, err, "[chat/mensajes-rapidos]", "userId", userID)
 		return
 	}
 
@@ -229,7 +229,7 @@ func (h *ChatHandler) CrearMensajeRapido(w http.ResponseWriter, r *http.Request)
 
 	msg, err := h.svc.CrearMensajeRapido(r.Context(), userID, req.Contenido, tipo)
 	if err != nil {
-		mapError(w, err, "[chat/mensajes-rapidos/crear]")
+		mapError(w, r, err, "[chat/mensajes-rapidos/crear]")
 		return
 	}
 
@@ -260,7 +260,7 @@ func (h *ChatHandler) ActualizarMensajeRapido(w http.ResponseWriter, r *http.Req
 	}
 
 	if err := h.svc.ActualizarMensajeRapido(r.Context(), id, userID, req.Contenido); err != nil {
-		mapError(w, err, "[chat/mensajes-rapidos/actualizar]")
+		mapError(w, r, err, "[chat/mensajes-rapidos/actualizar]")
 		return
 	}
 
@@ -281,7 +281,7 @@ func (h *ChatHandler) EliminarMensajeRapido(w http.ResponseWriter, r *http.Reque
 	}
 
 	if err := h.svc.EliminarMensajeRapido(r.Context(), id, userID); err != nil {
-		mapError(w, err, "[chat/mensajes-rapidos/eliminar]")
+		mapError(w, r, err, "[chat/mensajes-rapidos/eliminar]")
 		return
 	}
 
@@ -311,7 +311,7 @@ func (h *ChatHandler) SeedMensajesRapidos(w http.ResponseWriter, r *http.Request
 	}
 
 	if err := h.svc.SeedMensajesRapidos(r.Context(), userID, rol); err != nil {
-		mapError(w, err, "[chat/mensajes-rapidos/seed]")
+		mapError(w, r, err, "[chat/mensajes-rapidos/seed]")
 		return
 	}
 
@@ -353,13 +353,13 @@ func (h *ChatHandler) SubirImagen(w http.ResponseWriter, r *http.Request) {
 
 	fileBytes, err := io.ReadAll(file)
 	if err != nil {
-		ErrorJSON(w, http.StatusInternalServerError, "READ_ERROR", "Error al leer archivo")
+		CaptureError(w, r, http.StatusInternalServerError, "READ_ERROR", "Error al leer archivo", err)
 		return
 	}
 
 	publicURL, err := h.storage.UploadStorage(r.Context(), h.supabaseURL, h.serviceKey, "imagenes-chat", storagePath, fileBytes, contentType)
 	if err != nil {
-		mapError(w, err, "[chat/imagen] upload", "userId", userID)
+		mapError(w, r, err, "[chat/imagen] upload", "userId", userID)
 		return
 	}
 
@@ -424,7 +424,7 @@ func (h *OfertaHandler) Crear(w http.ResponseWriter, r *http.Request) {
 		Mensaje:           req.Mensaje,
 	})
 	if err != nil {
-		mapError(w, err, "[ofertas/crear]")
+		mapError(w, r, err, "[ofertas/crear]")
 		return
 	}
 
@@ -456,7 +456,7 @@ func (h *OfertaHandler) Responder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.svc.Responder(r.Context(), ofertaID, userID, req.Accion, req.MotivoRechazo); err != nil {
-		mapError(w, err, "[ofertas/responder]")
+		mapError(w, r, err, "[ofertas/responder]")
 		return
 	}
 
@@ -472,7 +472,7 @@ func (h *OfertaHandler) GetRecibidas(w http.ResponseWriter, r *http.Request) {
 
 	ofertas, err := h.svc.GetRecibidas(r.Context(), userID)
 	if err != nil {
-		mapError(w, err, "[ofertas/recibidas]", "userId", userID)
+		mapError(w, r, err, "[ofertas/recibidas]", "userId", userID)
 		return
 	}
 
@@ -494,7 +494,7 @@ func (h *OfertaHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 	detalle, err := h.svc.GetDetalleByID(r.Context(), ofertaID, userID)
 	if err != nil {
-		mapError(w, err, "[ofertas/detalle]", "ofertaID", ofertaID)
+		mapError(w, r, err, "[ofertas/detalle]", "ofertaID", ofertaID)
 		return
 	}
 
@@ -562,7 +562,7 @@ func (h *OfertaHandler) GetEnviadas(w http.ResponseWriter, r *http.Request) {
 
 	ofertas, err := h.svc.GetEnviadas(r.Context(), userID)
 	if err != nil {
-		mapError(w, err, "[ofertas/enviadas]", "userId", userID)
+		mapError(w, r, err, "[ofertas/enviadas]", "userId", userID)
 		return
 	}
 
@@ -580,7 +580,7 @@ func NewTiendaHandler(svc *service.TiendaService) *TiendaHandler {
 func (h *TiendaHandler) GetProductos(w http.ResponseWriter, r *http.Request) {
 	prods, err := h.svc.GetProductos(r.Context())
 	if err != nil {
-		mapError(w, err, "[tienda/productos]")
+		mapError(w, r, err, "[tienda/productos]")
 		return
 	}
 	JSON(w, http.StatusOK, prods)
@@ -589,7 +589,7 @@ func (h *TiendaHandler) GetProductos(w http.ResponseWriter, r *http.Request) {
 func (h *TiendaHandler) GetServicios(w http.ResponseWriter, r *http.Request) {
 	servs, err := h.svc.GetServicios(r.Context())
 	if err != nil {
-		mapError(w, err, "[tienda/servicios]")
+		mapError(w, r, err, "[tienda/servicios]")
 		return
 	}
 	JSON(w, http.StatusOK, servs)
@@ -603,7 +603,7 @@ func (h *TiendaHandler) GetAllProductos(w http.ResponseWriter, r *http.Request) 
 	}
 	prods, err := h.svc.GetAllProductos(r.Context())
 	if err != nil {
-		mapError(w, err, "[tienda/all-productos]")
+		mapError(w, r, err, "[tienda/all-productos]")
 		return
 	}
 	JSON(w, http.StatusOK, prods)
@@ -617,7 +617,7 @@ func (h *TiendaHandler) GetAllServicios(w http.ResponseWriter, r *http.Request) 
 	}
 	servs, err := h.svc.GetAllServicios(r.Context())
 	if err != nil {
-		mapError(w, err, "[tienda/all-servicios]")
+		mapError(w, r, err, "[tienda/all-servicios]")
 		return
 	}
 	JSON(w, http.StatusOK, servs)

@@ -1,5 +1,7 @@
 'use server'
 
+import * as Sentry from '@sentry/nextjs'
+
 import { goApi, goPost, GoAPIError } from '@/lib/go-api-client'
 import { requireAdmin } from '@/lib/admin-auth'
 import { revalidatePath } from 'next/cache'
@@ -18,6 +20,7 @@ export async function enviarNotificacionAdmin(formData: FormData) {
     revalidatePath('/admin/notificaciones')
     return { exito: true, ...result }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al enviar la notificación' }
   }
@@ -42,6 +45,7 @@ export async function getNotificacionesAdmin(filtros?: {
       totalPaginas: (raw?.totalPaginas ?? 0) as number,
     }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al cargar notificaciones' }
   }

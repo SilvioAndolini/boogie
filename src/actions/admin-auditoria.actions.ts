@@ -1,5 +1,7 @@
 'use server'
 
+import * as Sentry from '@sentry/nextjs'
+
 import { goApi, GoAPIError } from '@/lib/go-api-client'
 import { requireAdmin } from '@/lib/admin-auth'
 
@@ -38,6 +40,7 @@ export async function getAuditLogAdmin(filtros?: {
       totalPaginas: (raw?.totalPaginas ?? 0) as number,
     }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al cargar auditoría' }
   }

@@ -1,5 +1,7 @@
 'use server'
 
+import * as Sentry from '@sentry/nextjs'
+
 import { goApi, goGet, goPost, goPatch, goDelete, GoAPIError, getAuthToken } from '@/lib/go-api-client'
 import { getUsuarioAutenticado } from '@/lib/auth'
 import { requireAdmin } from '@/lib/admin-auth'
@@ -13,6 +15,7 @@ export async function getVerificacionUsuario() {
     const verificacion = await goGet<Record<string, unknown>>('/api/v1/verificacion')
     return { verificacion }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al consultar verificación' }
   }
@@ -26,6 +29,7 @@ export async function iniciarVerificacionMetaMap() {
     const verificacion = await goPost<Record<string, unknown>>('/api/v1/verificacion/iniciar-metamap')
     return { verificacion }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al crear verificación' }
   }
@@ -68,6 +72,7 @@ export async function subirDocumentoManual(formData: FormData) {
     revalidatePath('/dashboard/verificar-identidad')
     return { verificacion: (data as { data?: unknown }).data ?? data }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al registrar verificación' }
   }
@@ -81,6 +86,7 @@ export async function getVerificacionesPendientes() {
     const verificaciones = await goGet<Array<Record<string, unknown>>>('/api/v1/admin/verificaciones')
     return { verificaciones }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al cargar verificaciones' }
   }
@@ -102,6 +108,7 @@ export async function revisarVerificacion(formData: FormData) {
     revalidatePath('/admin/verificaciones')
     return { exito: true }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al actualizar verificación' }
   }
@@ -136,6 +143,7 @@ export async function getUsuariosAdmin(): Promise<UsuariosResult> {
       totalPaginas: (raw?.totalPaginas ?? 0) as number,
     }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al cargar usuarios' }
   }
@@ -164,6 +172,7 @@ export async function actualizarRolUsuario(formData: FormData) {
     revalidatePath('/admin/usuarios')
     return { exito: true }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al actualizar usuario' }
   }
@@ -181,6 +190,7 @@ export async function eliminarUsuarioAdmin(formData: FormData) {
     revalidatePath('/admin/usuarios')
     return { exito: true }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al eliminar usuario' }
   }
@@ -197,6 +207,7 @@ export async function getAdminCounts(): Promise<AdminCountsResult> {
       pagosPendientes: number;
     }>('/api/v1/admin/counts')
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al cargar conteos' }
   }

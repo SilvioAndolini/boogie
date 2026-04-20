@@ -15,7 +15,7 @@ func (h *AdminHandler) GetCupones(w http.ResponseWriter, r *http.Request) {
 	}
 	cupones, err := h.svc.GetCupones(r.Context())
 	if err != nil {
-		mapError(w, err, "[admin/cupones]")
+		mapError(w, r, err, "[admin/cupones]")
 		return
 	}
 	JSON(w, http.StatusOK, cupones)
@@ -28,7 +28,7 @@ func (h *AdminHandler) GetCuponByID(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	cupon, err := h.svc.GetCuponByID(r.Context(), id)
 	if err != nil {
-		mapError(w, err, "[admin/cupones/by-id]", "id", id)
+		mapError(w, r, err, "[admin/cupones/by-id]", "id", id)
 		return
 	}
 	JSON(w, http.StatusOK, cupon)
@@ -99,7 +99,7 @@ func (h *AdminHandler) CrearCupon(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.svc.CrearCupon(r.Context(), cupon); err != nil {
-		mapError(w, err, "[admin/cupones/crear]")
+		mapError(w, r, err, "[admin/cupones/crear]")
 		return
 	}
 	h.auditLog(r, userID, "crear_cupon", "cupon", nil, map[string]interface{}{"codigo": req.Codigo, "nombre": req.Nombre})
@@ -181,7 +181,7 @@ func (h *AdminHandler) EditarCupon(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.svc.UpdateCupon(r.Context(), req.ID, fields); err != nil {
-		mapError(w, err, "[admin/cupones/editar]")
+		mapError(w, r, err, "[admin/cupones/editar]")
 		return
 	}
 	h.auditLog(r, "", "editar_cupon", "cupon", &req.ID, fields)
@@ -199,7 +199,7 @@ func (h *AdminHandler) ToggleCuponActivo(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	if err := h.svc.ToggleCuponActivo(r.Context(), id, req.Activo); err != nil {
-		mapError(w, err, "[admin/cupones/toggle]")
+		mapError(w, r, err, "[admin/cupones/toggle]")
 		return
 	}
 	h.auditLog(r, "", "toggle_cupon", "cupon", &id, map[string]interface{}{"activo": req.Activo})
@@ -212,7 +212,7 @@ func (h *AdminHandler) DeleteCupon(w http.ResponseWriter, r *http.Request) {
 	}
 	id := chi.URLParam(r, "id")
 	if err := h.svc.DeleteCupon(r.Context(), id); err != nil {
-		mapError(w, err, "[admin/cupones/delete]")
+		mapError(w, r, err, "[admin/cupones/delete]")
 		return
 	}
 	h.auditLog(r, "", "delete_cupon", "cupon", &id, nil)
@@ -226,7 +226,7 @@ func (h *AdminHandler) GetCuponUsos(w http.ResponseWriter, r *http.Request) {
 	cuponID := r.URL.Query().Get("cuponId")
 	usos, err := h.svc.GetCuponUsos(r.Context(), cuponID)
 	if err != nil {
-		mapError(w, err, "[admin/cupones/usos]")
+		mapError(w, r, err, "[admin/cupones/usos]")
 		return
 	}
 	JSON(w, http.StatusOK, usos)
@@ -241,7 +241,7 @@ func (h *AdminHandler) GetCuponesActivosUsuario(w http.ResponseWriter, r *http.R
 
 	cupones, err := h.svc.GetCuponesActivosUsuario(r.Context(), userID)
 	if err != nil {
-		mapError(w, err, "[cupones/activos]")
+		mapError(w, r, err, "[cupones/activos]")
 		return
 	}
 

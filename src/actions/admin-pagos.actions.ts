@@ -1,5 +1,7 @@
 'use server'
 
+import * as Sentry from '@sentry/nextjs'
+
 import { goApi, goGet, goPost, GoAPIError } from '@/lib/go-api-client'
 import { requireAdmin } from '@/lib/admin-auth'
 import { revalidatePath } from 'next/cache'
@@ -47,6 +49,7 @@ export async function getPagosAdmin(filtros?: {
       totalPaginas: (raw?.totalPaginas ?? 0) as number,
     }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al cargar pagos' }
   }
@@ -59,6 +62,7 @@ export async function getPagosStatsAdmin(): Promise<PagosStatsResult> {
   try {
     return await goGet<PagosStatsResult>('/api/v1/admin/pagos/stats')
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al cargar estadísticas de pagos' }
   }
@@ -82,6 +86,7 @@ export async function verificarPagoAdmin(formData: FormData) {
     revalidatePath('/dashboard/pagos')
     return { exito: true }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al actualizar el pago' }
   }

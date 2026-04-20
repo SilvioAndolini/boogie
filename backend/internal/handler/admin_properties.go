@@ -18,7 +18,7 @@ func (h *AdminHandler) GetPropiedades(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.svc.GetPropiedades(r.Context(), estado, ciudad, busqueda, categoria, pagina)
 	if err != nil {
-		mapError(w, err, "[admin/propiedades]")
+		mapError(w, r, err, "[admin/propiedades]")
 		return
 	}
 	JSON(w, http.StatusOK, result)
@@ -43,7 +43,7 @@ func (h *AdminHandler) UpdatePropiedad(w http.ResponseWriter, r *http.Request) {
 		estado = *req.EstadoPublicacion
 	}
 	if err := h.svc.UpdatePropiedad(r.Context(), req.PropiedadID, estado, req.Destacada); err != nil {
-		mapError(w, err, "[admin/propiedades/update]")
+		mapError(w, r, err, "[admin/propiedades/update]")
 		return
 	}
 	h.auditLog(r, "", "update_propiedad", "propiedad", &req.PropiedadID, map[string]interface{}{"estado": estado, "destacada": req.Destacada})
@@ -60,7 +60,7 @@ func (h *AdminHandler) DeletePropiedad(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.svc.DeletePropiedad(r.Context(), id); err != nil {
-		mapError(w, err, "[admin/propiedades/delete]")
+		mapError(w, r, err, "[admin/propiedades/delete]")
 		return
 	}
 	h.auditLog(r, "", "delete_propiedad", "propiedad", &id, nil)
@@ -74,7 +74,7 @@ func (h *AdminHandler) GetPropiedadByID(w http.ResponseWriter, r *http.Request) 
 	id := chi.URLParam(r, "id")
 	result, err := h.svc.GetPropiedadByID(r.Context(), id)
 	if err != nil {
-		mapError(w, err, "[admin/propiedades/by-id]", "id", id)
+		mapError(w, r, err, "[admin/propiedades/by-id]", "id", id)
 		return
 	}
 	JSON(w, http.StatusOK, result)
@@ -87,7 +87,7 @@ func (h *AdminHandler) GetPropiedadIngresos(w http.ResponseWriter, r *http.Reque
 	id := chi.URLParam(r, "id")
 	result, err := h.svc.GetPropiedadIngresos(r.Context(), id)
 	if err != nil {
-		mapError(w, err, "[admin/propiedades/ingresos]")
+		mapError(w, r, err, "[admin/propiedades/ingresos]")
 		return
 	}
 	JSON(w, http.StatusOK, result)

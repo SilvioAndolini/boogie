@@ -1,5 +1,7 @@
 'use server'
 
+import * as Sentry from '@sentry/nextjs'
+
 import { goGet } from '@/lib/go-api-client'
 import type { StoreProducto, StoreServicio, CategoriaStoreProducto, CategoriaStoreServicio } from '@/lib/store-constants'
 
@@ -19,6 +21,7 @@ export async function getProductosStore(): Promise<StoreProducto[]> {
       orden: p.orden as number,
     }))
   } catch (err) {
+      Sentry.captureException(err)
     console.error('[getProductosStore] Error:', err)
     return []
   }
@@ -41,6 +44,7 @@ export async function getServiciosStore(): Promise<StoreServicio[]> {
       orden: s.orden as number,
     }))
   } catch (err) {
+      Sentry.captureException(err)
     console.error('[getServiciosStore] Error:', err)
     return []
   }

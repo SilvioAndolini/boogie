@@ -1,5 +1,7 @@
 'use server'
 
+import * as Sentry from '@sentry/nextjs'
+
 import { goGet, goPost, goPatch, goDelete, goApi, GoAPIError } from '@/lib/go-api-client'
 import { requireAdmin } from '@/lib/admin-auth'
 import { revalidatePath } from 'next/cache'
@@ -16,6 +18,7 @@ export async function subirImagenStore(formData: FormData): Promise<{ url?: stri
     })
     return { url: result.url }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al subir la imagen' }
   }
@@ -60,6 +63,7 @@ export async function crearProductoStore(datos: {
     revalidatePath('/admin/boogie-store')
     return { exito: true }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al crear el producto' }
   }
@@ -83,6 +87,7 @@ export async function actualizarProductoStore(id: string, datos: {
     revalidatePath('/admin/boogie-store')
     return { exito: true }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al actualizar el producto' }
   }
@@ -97,6 +102,7 @@ export async function eliminarProductoStore(id: string) {
     revalidatePath('/admin/boogie-store')
     return { exito: true }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al eliminar el producto' }
   }
@@ -120,6 +126,7 @@ export async function crearServicioStore(datos: {
     revalidatePath('/admin/boogie-store')
     return { exito: true }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al crear el servicio' }
   }
@@ -144,6 +151,7 @@ export async function actualizarServicioStore(id: string, datos: {
     revalidatePath('/admin/boogie-store')
     return { exito: true }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al actualizar el servicio' }
   }
@@ -158,6 +166,7 @@ export async function eliminarServicioStore(id: string) {
     revalidatePath('/admin/boogie-store')
     return { exito: true }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al eliminar el servicio' }
   }

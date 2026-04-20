@@ -24,7 +24,7 @@ func (h *UbicacionesHandler) Search(w http.ResponseWriter, r *http.Request) {
 
 	results, err := h.service.Search(q)
 	if err != nil {
-		mapError(w, err, "[ubicaciones/search]")
+		mapError(w, r, err, "[ubicaciones/search]")
 		return
 	}
 

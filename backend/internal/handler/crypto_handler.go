@@ -63,7 +63,7 @@ func (h *CryptoHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	if h.cryptoSvc.Config.WalletAddress == "" {
 		slog.Error("[crypto/create] CRYPTAPI_WALLET_ADDRESS not configured")
-		ErrorJSON(w, http.StatusInternalServerError, "WALLET_NOT_CONFIGURED", "Wallet no configurada")
+		CaptureError(w, r, http.StatusInternalServerError, "WALLET_NOT_CONFIGURED", "Wallet no configurada", fmt.Errorf("CRYPTAPI_WALLET_ADDRESS not configured"))
 		return
 	}
 
@@ -89,7 +89,7 @@ func (h *CryptoHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 		_, titulo, precioPorNoche, moneda, propietarioID, err := h.reservaSvc.ObtenerPropiedad(r.Context(), req.PropiedadID)
 		if err != nil {
-			mapError(w, err, "[crypto/create] propiedad", "propId", req.PropiedadID)
+			mapError(w, r, err, "[crypto/create] propiedad", "propId", req.PropiedadID)
 			return
 		}
 
@@ -102,7 +102,7 @@ func (h *CryptoHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 		cryptoResult, err := h.cryptoSvc.CreateAddress(callbackURL)
 		if err != nil {
-			mapError(w, err, "[crypto/create]")
+			mapError(w, r, err, "[crypto/create]")
 			return
 		}
 
@@ -146,7 +146,7 @@ func (h *CryptoHandler) Create(w http.ResponseWriter, r *http.Request) {
 				ErrorJSON(w, http.StatusBadRequest, "RESERVA_NOT_AVAILABLE", "Las fechas seleccionadas ya no estan disponibles")
 				return
 			}
-			mapError(w, txErr, "[crypto/create] tx", "propId", req.PropiedadID)
+			mapError(w, r, txErr, "[crypto/create] tx", "propId", req.PropiedadID)
 			return
 		}
 
@@ -173,7 +173,7 @@ func (h *CryptoHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	cryptoResult, err := h.cryptoSvc.CreateAddress(callbackURL)
 	if err != nil {
-		mapError(w, err, "[crypto/create]")
+		mapError(w, r, err, "[crypto/create]")
 		return
 	}
 
@@ -264,7 +264,7 @@ func (h *CryptoHandler) Callback(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.cryptoRepo.UpdateCryptoPago(r.Context(), pagoID, txHash, ref, newEstado, confirmations, valueCoin, verifiedAt); err != nil {
 		slog.Error("[crypto/callback] pago update error", "error", err)
-		ErrorJSON(w, http.StatusInternalServerError, "DB_ERROR", "Error updating pago")
+		CaptureError(w, r, http.StatusInternalServerError, "DB_ERROR", "Error updating pago", err)
 		return
 	}
 
@@ -318,7 +318,7 @@ func (h *CryptoHandler) SolicitarVerificacionManual(w http.ResponseWriter, r *ht
 
 	err := h.cryptoRepo.SolicitarVerificacionManual(r.Context(), req.ReservaID)
 	if err != nil {
-		mapError(w, err, "[crypto/manual]", "reservaId", req.ReservaID)
+		mapError(w, r, err, "[crypto/manual]", "reservaId", req.ReservaID)
 		return
 	}
 
@@ -352,7 +352,7 @@ func (h *CryptoHandler) CancelarFallida(w http.ResponseWriter, r *http.Request) 
 		return h.cryptoRepo.CancelarCryptoFallidaWithDB(r.Context(), tx, req.ReservaID, userID)
 	})
 	if err != nil {
-		mapError(w, err, "[crypto/cancel-fallida]", "reservaId", req.ReservaID)
+		mapError(w, r, err, "[crypto/cancel-fallida]", "reservaId", req.ReservaID)
 		return
 	}
 
@@ -367,7 +367,7 @@ func (h *CryptoHandler) ExpirarAbandonados(w http.ResponseWriter, r *http.Reques
 		return txErr
 	})
 	if err != nil {
-		mapError(w, err, "[crypto/expirar]")
+		mapError(w, r, err, "[crypto/expirar]")
 		return
 	}
 	JSON(w, http.StatusOK, OKExpiradosResponse{Ok: true, Expirados: n})

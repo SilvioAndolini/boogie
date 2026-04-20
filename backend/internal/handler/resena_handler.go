@@ -83,7 +83,7 @@ func (h *ResenaHandler) Crear(w http.ResponseWriter, r *http.Request) {
 		Comentario:   req.Comentario,
 	})
 	if err != nil {
-		mapError(w, err, "[resenas/crear] error", "userId", userID)
+		mapError(w, r, err, "[resenas/crear] error", "userId", userID)
 		return
 	}
 
@@ -132,7 +132,7 @@ func (h *ResenaHandler) Responder(w http.ResponseWriter, r *http.Request) {
 		Respuesta: req.Respuesta,
 	})
 	if err != nil {
-		mapError(w, err, "[resenas/responder] error", "resenaId", resenaID)
+		mapError(w, r, err, "[resenas/responder] error", "resenaId", resenaID)
 		return
 	}
 
@@ -158,7 +158,7 @@ func (h *ResenaHandler) ListByPropiedad(w http.ResponseWriter, r *http.Request) 
 
 	resenas, total, err := h.svc.ListByPropiedad(r.Context(), propiedadID, page, perPage)
 	if err != nil {
-		mapError(w, err, "[resenas/list]", "propiedadId", propiedadID)
+		mapError(w, r, err, "[resenas/list]", "propiedadId", propiedadID)
 		return
 	}
 

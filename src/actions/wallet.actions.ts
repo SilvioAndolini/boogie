@@ -1,5 +1,7 @@
 'use server'
 
+import * as Sentry from '@sentry/nextjs'
+
 import { getUsuarioAutenticado } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import { goGet, goPost } from '@/lib/go-api-client'
@@ -31,6 +33,7 @@ export async function crearRecargaWallet(datos: {
     revalidatePath('/dashboard/pagos/configuracion/wallet')
     return { transaccion }
   } catch (e: unknown) {
+      Sentry.captureException(e)
     const message = e instanceof Error ? e.message : 'Error al registrar la recarga'
     return { error: message }
   }
@@ -44,6 +47,7 @@ export async function getWallet() {
     const wallet = await goGet<Record<string, unknown> & { id: string }>('/api/v1/wallet')
     return { wallet }
   } catch (e: unknown) {
+      Sentry.captureException(e)
     const message = e instanceof Error ? e.message : 'Error al consultar wallet'
     return { error: message }
   }
@@ -56,6 +60,7 @@ export async function activarWallet() {
   try {
     await goPost('/api/v1/wallet/activar')
   } catch (e: unknown) {
+      Sentry.captureException(e)
     const message = e instanceof Error ? e.message : 'Error al activar tu wallet'
     return { error: message }
   }

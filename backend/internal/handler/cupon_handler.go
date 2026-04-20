@@ -55,7 +55,7 @@ func (h *CuponHandler) Validar(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.svc.ValidarCupon(r.Context(), req.Codigo, userID, req.PropiedadID, req.MontoTotal, req.Noches)
 	if err != nil {
-		mapError(w, err, "[cupones/validar] error")
+		mapError(w, r, err, "[cupones/validar] error")
 		return
 	}
 

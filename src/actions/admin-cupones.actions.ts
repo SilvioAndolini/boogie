@@ -1,5 +1,7 @@
 'use server'
 
+import * as Sentry from '@sentry/nextjs'
+
 import { goGet, goPost, goPut, goPatch, goDelete, goApi, GoAPIError } from '@/lib/go-api-client'
 import { requireAdmin } from '@/lib/admin-auth'
 import { revalidatePath } from 'next/cache'
@@ -36,6 +38,7 @@ export async function crearCupon(formData: FormData) {
     revalidatePath('/admin/cupones')
     return { success: true }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al crear el cupón' }
   }
@@ -51,6 +54,7 @@ export async function editarCupon(formData: FormData) {
     revalidatePath('/admin/cupones')
     return { success: true }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al actualizar el cupón' }
   }
@@ -65,6 +69,7 @@ export async function toggleCuponActivo(id: string, activo: boolean) {
     revalidatePath('/admin/cupones')
     return { success: true }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al cambiar estado' }
   }
@@ -79,6 +84,7 @@ export async function eliminarCupon(id: string) {
     revalidatePath('/admin/cupones')
     return { success: true }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al eliminar cupón' }
   }
@@ -118,6 +124,7 @@ export async function actualizarComisiones(formData: FormData) {
     revalidatePath('/admin/configuracion')
     return { success: true }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al actualizar comisiones' }
   }
@@ -143,6 +150,7 @@ export async function validarCupon(codigo: string, propiedadId: string, montoTot
       noches,
     })
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al validar cupón' }
   }

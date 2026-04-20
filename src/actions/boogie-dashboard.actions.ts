@@ -1,5 +1,7 @@
 'use server'
 
+import * as Sentry from '@sentry/nextjs'
+
 import { getUsuarioAutenticado } from '@/lib/auth'
 import { goGet, goPost, goDelete } from '@/lib/go-api-client'
 import { revalidatePath } from 'next/cache'
@@ -34,6 +36,7 @@ export async function getBoogieDashboard(propiedadId: string) {
       ocupadas: (data.ocupadas as { fecha_entrada: string; fecha_salida: string; estado: string; huesped?: string }[]) || [],
     }
   } catch (err: unknown) {
+      Sentry.captureException(err)
     return { error: err instanceof Error ? err.message : 'Boogie no encontrado' }
   }
 }
@@ -60,6 +63,7 @@ export async function crearGastoMantenimiento(formData: FormData) {
     revalidatePath(`/dashboard/mis-propiedades/${propiedadId}`)
     return { exito: true }
   } catch (err: unknown) {
+      Sentry.captureException(err)
     return { error: err instanceof Error ? err.message : 'Error al crear el gasto' }
   }
 }
@@ -73,6 +77,7 @@ export async function eliminarGastoMantenimiento(gastoId: string, propiedadId: s
     revalidatePath(`/dashboard/mis-propiedades/${propiedadId}`)
     return { exito: true }
   } catch (err: unknown) {
+      Sentry.captureException(err)
     return { error: err instanceof Error ? err.message : 'Error al eliminar el gasto' }
   }
 }

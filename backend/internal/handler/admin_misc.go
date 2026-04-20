@@ -10,7 +10,7 @@ func (h *AdminHandler) GetDashboard(w http.ResponseWriter, r *http.Request) {
 	}
 	stats, err := h.svc.GetDashboardStats(r.Context())
 	if err != nil {
-		mapError(w, err, "[admin/dashboard]")
+		mapError(w, r, err, "[admin/dashboard]")
 		return
 	}
 	JSON(w, http.StatusOK, stats)
@@ -22,7 +22,7 @@ func (h *AdminHandler) GetComisiones(w http.ResponseWriter, r *http.Request) {
 	}
 	comisiones, err := h.svc.GetComisiones(r.Context())
 	if err != nil {
-		mapError(w, err, "[admin/comisiones]")
+		mapError(w, r, err, "[admin/comisiones]")
 		return
 	}
 	JSON(w, http.StatusOK, comisiones)
@@ -39,7 +39,7 @@ func (h *AdminHandler) UpdateComisiones(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if err := h.svc.UpdateComisiones(r.Context(), req.ComisionHuesped, req.ComisionAnfitrion, userID); err != nil {
-		mapError(w, err, "[admin/comisiones]")
+		mapError(w, r, err, "[admin/comisiones]")
 		return
 	}
 	h.auditLog(r, userID, "update_comisiones", "comisiones", nil, map[string]interface{}{"comisionHuesped": req.ComisionHuesped, "comisionAnfitrion": req.ComisionAnfitrion})
@@ -58,7 +58,7 @@ func (h *AdminHandler) GetAuditLog(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.svc.GetAuditLog(r.Context(), entidad, adminID, fechaInicio, fechaFin, pagina)
 	if err != nil {
-		mapError(w, err, "[admin/auditoria]")
+		mapError(w, r, err, "[admin/auditoria]")
 		return
 	}
 	JSON(w, http.StatusOK, result)
@@ -70,7 +70,7 @@ func (h *AdminHandler) GetCiudades(w http.ResponseWriter, r *http.Request) {
 	}
 	ciudades, err := h.svc.GetCiudades(r.Context())
 	if err != nil {
-		mapError(w, err, "[admin/propiedades/ciudades]")
+		mapError(w, r, err, "[admin/propiedades/ciudades]")
 		return
 	}
 	JSON(w, http.StatusOK, ciudades)

@@ -1,5 +1,7 @@
 'use server'
 
+import * as Sentry from '@sentry/nextjs'
+
 import { getUsuarioAutenticado } from '@/lib/auth'
 import { goGet, goPost, goDelete } from '@/lib/go-api-client'
 import { revalidatePath } from 'next/cache'
@@ -12,6 +14,7 @@ export async function getMetodosPago() {
     const metodos = await goGet('/api/v1/metodos-pago')
     return { metodos }
   } catch (err: unknown) {
+      Sentry.captureException(err)
     return { error: err instanceof Error ? err.message : 'Error al consultar metodos de pago' }
   }
 }
@@ -34,6 +37,7 @@ export async function crearMetodoPago(datos: {
     revalidatePath('/dashboard/pagos/configuracion')
     return { metodo }
   } catch (err: unknown) {
+      Sentry.captureException(err)
     return { error: err instanceof Error ? err.message : 'Error al guardar el metodo de pago' }
   }
 }
@@ -47,6 +51,7 @@ export async function eliminarMetodoPago(id: string) {
     revalidatePath('/dashboard/pagos/configuracion')
     return { exito: true }
   } catch (err: unknown) {
+      Sentry.captureException(err)
     return { error: err instanceof Error ? err.message : 'Error al eliminar el metodo de pago' }
   }
 }

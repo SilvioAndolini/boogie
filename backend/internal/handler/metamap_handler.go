@@ -102,7 +102,7 @@ func (h *MetamapHandler) Webhook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.metamapRepo.UpdateVerificacionEstado(r.Context(), verifID, nuevoEstado, resourceJSON); err != nil {
-		mapError(w, err, "[metamap/webhook] update", "verifId", verifID)
+		mapError(w, r, err, "[metamap/webhook] update", "verifId", verifID)
 		return
 	}
 

@@ -1,5 +1,7 @@
 'use server'
 
+import * as Sentry from '@sentry/nextjs'
+
 import { requireAdmin } from '@/lib/admin-auth'
 import { goGet, goPost, goPut, goDelete } from '@/lib/go-api-client'
 import { revalidatePath } from 'next/cache'
@@ -23,6 +25,7 @@ export async function getSeccionesDestacadasPublicas() {
     const data = await goGet<(SeccionDestacada & { propiedades: unknown[] })[]>('/api/v1/secciones-destacadas')
     return data || []
   } catch (err) {
+      Sentry.captureException(err)
     console.error('[getSeccionesDestacadasPublicas] Go error:', err)
     return []
   }
@@ -36,6 +39,7 @@ export async function getSeccionesDestacadasAdmin() {
     const secciones = await goGet<SeccionDestacada[]>('/api/v1/admin/secciones-destacadas')
     return { secciones: secciones || [] }
   } catch (err: unknown) {
+      Sentry.captureException(err)
     return { error: err instanceof Error ? err.message : 'Error al cargar secciones' }
   }
 }
@@ -81,6 +85,7 @@ export async function actualizarSeccionDestacada(formData: FormData) {
     revalidatePath('/admin/secciones')
     return { exito: true }
   } catch (err: unknown) {
+      Sentry.captureException(err)
     return { error: err instanceof Error ? err.message : 'Error al guardar seccion' }
   }
 }
@@ -98,6 +103,7 @@ export async function eliminarSeccionDestacada(formData: FormData) {
     revalidatePath('/admin/secciones')
     return { exito: true }
   } catch (err: unknown) {
+      Sentry.captureException(err)
     return { error: err instanceof Error ? err.message : 'Error al eliminar sección' }
   }
 }

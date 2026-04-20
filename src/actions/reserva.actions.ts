@@ -1,5 +1,7 @@
 'use server'
 
+import * as Sentry from '@sentry/nextjs'
+
 import { revalidatePath } from 'next/cache'
 import { goGet, goPost, goPut, GoAPIError } from '@/lib/go-api-client'
 import type { PoliticaCancelacion, MetodoPagoEnum, EstadoPago, Moneda, EstadoReserva } from '@/types'
@@ -21,6 +23,7 @@ export async function crearReserva(rawData: {
 
     return { exito: true, datos: reserva }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) {
       return { exito: false, error: { codigo: err.code || 'ERR-010', mensaje: err.message } }
     }
@@ -43,6 +46,7 @@ export async function cancelarReserva(
 
     return { exito: true, datos: result }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) {
       return { exito: false, error: { codigo: err.code || 'ERR-010', mensaje: err.message } }
     }
@@ -70,6 +74,7 @@ export async function confirmarORechazarReserva(
 
     return { exito: true }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) {
       return { exito: false, error: { codigo: err.code || 'ERR-010', mensaje: err.message } }
     }
@@ -108,6 +113,7 @@ export async function getMisReservas(): Promise<ReservaConPropiedad[]> {
       },
     }))
   } catch (err) {
+      Sentry.captureException(err)
     console.error('[getMisReservas] Error:', err)
     return []
   }
@@ -150,6 +156,7 @@ export async function getReservasRecibidas(): Promise<ReservaConPropiedad[]> {
       estadoPago: r.estado_pago as string | undefined,
     }))
   } catch (err) {
+      Sentry.captureException(err)
     console.error('[getReservasRecibidas] Error:', err)
     return []
   }
@@ -194,6 +201,7 @@ export async function getReservaPorId(reservaId: string): Promise<ReservaConProp
       pago: r.pago as ReservaConPropiedad['pago'],
     } as ReservaConPropiedad
   } catch (err) {
+      Sentry.captureException(err)
     console.error('[getReservaPorId] Error:', err)
     return null
   }
@@ -251,6 +259,7 @@ export async function getModosReserva(): Promise<PropiedadModoReserva[]> {
       imagenUrl: (r.imagen_url ?? null) as string | null,
     }))
   } catch (err) {
+      Sentry.captureException(err)
     console.error('[getModosReserva] Error:', err)
     return []
   }
@@ -265,6 +274,7 @@ export async function updateModoReserva(
     revalidatePath('/dashboard/reservas-recibidas')
     return { exito: true }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) {
       return { exito: false, error: { codigo: err.code || 'ERR-020', mensaje: err.message } }
     }

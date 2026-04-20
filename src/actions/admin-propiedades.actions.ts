@@ -1,5 +1,7 @@
 'use server'
 
+import * as Sentry from '@sentry/nextjs'
+
 import { goGet, goApi, goPatch, goDelete, GoAPIError } from '@/lib/go-api-client'
 import { requireAdmin } from '@/lib/admin-auth'
 import { revalidatePath } from 'next/cache'
@@ -32,6 +34,7 @@ export async function getPropiedadesAdmin(filters: {
       paginas: (obj?.totalPaginas as number) ?? 0,
     }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al cargar propiedades' }
   }
@@ -60,6 +63,7 @@ export async function getPropiedadDetalleAdmin(id: string) {
       reservas: (ingresos?.reservas as Record<string, unknown>[]) || [],
     }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Propiedad no encontrada' }
   }
@@ -79,6 +83,7 @@ export async function actualizarPropiedadAdmin(formData: FormData) {
     revalidatePath('/admin/propiedades')
     return { exito: true }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al actualizar propiedad' }
   }
@@ -96,6 +101,7 @@ export async function eliminarPropiedadAdmin(formData: FormData) {
     revalidatePath('/admin/propiedades')
     return { exito: true }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al eliminar propiedad' }
   }
@@ -108,6 +114,7 @@ export async function getPropiedadIngresos(propiedadId: string) {
   try {
     return await goGet<Record<string, unknown>>(`/api/v1/admin/propiedades/${propiedadId}/ingresos`)
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al cargar ingresos' }
   }

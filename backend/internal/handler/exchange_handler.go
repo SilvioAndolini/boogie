@@ -17,7 +17,7 @@ func NewExchangeHandler(s *service.ExchangeService) *ExchangeHandler {
 func (h *ExchangeHandler) Get(w http.ResponseWriter, r *http.Request) {
 	cotizacion, err := h.service.GetCotizacion()
 	if err != nil {
-		mapError(w, err, "[exchange]")
+		mapError(w, r, err, "[exchange]")
 		return
 	}
 

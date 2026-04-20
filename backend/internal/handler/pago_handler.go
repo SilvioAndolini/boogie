@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/boogie/backend/internal/auth"
 	"github.com/boogie/backend/internal/domain/enums"
@@ -76,7 +77,7 @@ func (h *PagoHandler) RegistrarSimple(w http.ResponseWriter, r *http.Request) {
 
 	pagoID, err := h.svc.RegistrarPagoSimple(r.Context(), req.ReservaID, userID, req.Monto, moneda, enums.MetodoPagoEnum(req.MetodoPago), req.Referencia)
 	if err != nil {
-		mapError(w, err, "[pagos/registrar] error")
+		mapError(w, r, err, "[pagos/registrar] error")
 		return
 	}
 
@@ -130,7 +131,7 @@ func (h *PagoHandler) RegistrarConComprobante(w http.ResponseWriter, r *http.Req
 
 	pagoID, err := h.svc.RegistrarPagoConComprobante(r.Context(), req.ReservaID, userID, req.Monto, moneda, enums.MetodoPagoEnum(req.MetodoPago), req.Referencia, req.ComprobanteURL, req.BancoEmisor, req.TelefonoEmisor)
 	if err != nil {
-		mapError(w, err, "[pagos/registrar-comprobante] error")
+		mapError(w, r, err, "[pagos/registrar-comprobante] error")
 		return
 	}
 
@@ -165,7 +166,7 @@ func (h *PagoHandler) Verificar(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.svc.Verificar(r.Context(), pagoID, userID, req.Aprobado, req.Notas); err != nil {
-		mapError(w, err, "[pagos/verificar] error", "pagoId", pagoID)
+		mapError(w, r, err, "[pagos/verificar] error", "pagoId", pagoID)
 		return
 	}
 
@@ -184,7 +185,7 @@ func (h *PagoHandler) MisPagos(w http.ResponseWriter, r *http.Request) {
 
 	pagos, err := h.svc.GetMisPagos(r.Context(), userID)
 	if err != nil {
-		mapError(w, err, "[pagos/mis-pagos]", "userId", userID)
+		mapError(w, r, err, "[pagos/mis-pagos]", "userId", userID)
 		return
 	}
 
@@ -230,10 +231,10 @@ func (h *PagoHandler) SubirComprobante(w http.ResponseWriter, r *http.Request) {
 		contentType = "image/webp"
 	}
 
-	path := fmt.Sprintf("comprobantes/%s/%s.%s", userID, req.ReservaID, ext)
+	path := fmt.Sprintf("comprobantes/%s/%s-%d.%s", userID, req.ReservaID, time.Now().UnixMilli(), ext)
 	publicURL, err := h.authClient.UploadStorage(r.Context(), h.supabaseURL, h.serviceKey, "pagos", path, fileBytes, contentType)
 	if err != nil {
-		mapError(w, err, "[pagos/subir-comprobante]", "userId", userID)
+		mapError(w, r, err, "[pagos/subir-comprobante]", "userId", userID)
 		return
 	}
 
@@ -297,7 +298,7 @@ func (h *PagoHandler) AgregarStoreItems(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if err := h.storeItemRepo.InsertBatch(r.Context(), items); err != nil {
-		mapError(w, err, "[pagos/store-items]", "reservaId", req.ReservaID)
+		mapError(w, r, err, "[pagos/store-items]", "reservaId", req.ReservaID)
 		return
 	}
 

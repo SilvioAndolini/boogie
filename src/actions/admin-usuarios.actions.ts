@@ -1,5 +1,7 @@
 'use server'
 
+import * as Sentry from '@sentry/nextjs'
+
 import { goPost, GoAPIError } from '@/lib/go-api-client'
 import { requireAdmin } from '@/lib/admin-auth'
 
@@ -24,6 +26,7 @@ export async function registrarUsuarioAdmin(formData: FormData) {
     await goPost('/api/v1/admin/usuarios', datos) as { ok?: boolean; mensaje?: string }
     return { exito: true }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al registrar usuario' }
   }

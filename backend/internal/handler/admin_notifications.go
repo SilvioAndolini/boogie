@@ -11,7 +11,7 @@ func (h *AdminHandler) GetNotificaciones(w http.ResponseWriter, r *http.Request)
 	pagina := intQueryParam(r, "pagina", 1)
 	result, err := h.svc.GetNotificaciones(r.Context(), pagina)
 	if err != nil {
-		mapError(w, err, "[admin/notificaciones]")
+		mapError(w, r, err, "[admin/notificaciones]")
 		return
 	}
 	JSON(w, http.StatusOK, result)
@@ -36,7 +36,7 @@ func (h *AdminHandler) EnviarNotificacion(w http.ResponseWriter, r *http.Request
 		usuarioID = *req.UsuarioID
 	}
 	if err := h.svc.EnviarNotificacion(r.Context(), usuarioID, req.Titulo, req.Mensaje, req.URLAccion); err != nil {
-		mapError(w, err, "[admin/notificaciones/enviar]")
+		mapError(w, r, err, "[admin/notificaciones/enviar]")
 		return
 	}
 	h.auditLog(r, "", "enviar_notificacion", "notificacion", nil, map[string]interface{}{"titulo": req.Titulo, "usuarioId": usuarioID})

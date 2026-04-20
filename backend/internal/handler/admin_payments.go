@@ -15,7 +15,7 @@ func (h *AdminHandler) GetPagos(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.svc.GetPagos(r.Context(), estado, metodoPago, busqueda, pagina)
 	if err != nil {
-		mapError(w, err, "[admin/pagos]")
+		mapError(w, r, err, "[admin/pagos]")
 		return
 	}
 	JSON(w, http.StatusOK, result)
@@ -27,7 +27,7 @@ func (h *AdminHandler) GetPagosStats(w http.ResponseWriter, r *http.Request) {
 	}
 	stats, err := h.svc.GetPagosStats(r.Context())
 	if err != nil {
-		mapError(w, err, "[admin/pagos/stats]")
+		mapError(w, r, err, "[admin/pagos/stats]")
 		return
 	}
 	JSON(w, http.StatusOK, stats)
@@ -47,7 +47,7 @@ func (h *AdminHandler) VerificarPago(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.svc.VerificarPago(r.Context(), req.PagoID, req.Accion, req.Notas); err != nil {
-		mapError(w, err, "[admin/pagos/verificar]")
+		mapError(w, r, err, "[admin/pagos/verificar]")
 		return
 	}
 	h.auditLog(r, auditID(r), "verificar_pago", "pago", &req.PagoID, nil)

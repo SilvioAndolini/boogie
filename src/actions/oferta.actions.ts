@@ -1,5 +1,7 @@
 'use server'
 
+import * as Sentry from '@sentry/nextjs'
+
 import { getUsuarioAutenticado } from '@/lib/auth'
 import { crearOfertaSchema, responderOfertaSchema } from '@/lib/oferta-validations'
 import { goGet, goPost } from '@/lib/go-api-client'
@@ -38,6 +40,7 @@ export async function crearOferta(formData: FormData) {
     })
     return { exito: true, oferta }
   } catch (e: unknown) {
+      Sentry.captureException(e)
     const message = e instanceof Error ? e.message : 'Error al crear la oferta'
     return { error: message }
   }
@@ -66,6 +69,7 @@ export async function responderOferta(formData: FormData) {
     })
     return { exito: true, estado: result.estado, fechaExpiracion: result.fecha_expiracion }
   } catch (e: unknown) {
+      Sentry.captureException(e)
     const message = e instanceof Error ? e.message : 'Error al responder la oferta'
     return { error: message }
   }
@@ -114,6 +118,7 @@ export async function getOfertasRecibidas() {
     const ofertas = (raw ?? []).map(mapOferta)
     return { ofertas }
   } catch (e: unknown) {
+      Sentry.captureException(e)
     const message = e instanceof Error ? e.message : 'Error al cargar ofertas'
     return { error: message }
   }
@@ -128,6 +133,7 @@ export async function getOfertasEnviadas() {
     const ofertas = (raw ?? []).map(mapOferta)
     return { ofertas }
   } catch (e: unknown) {
+      Sentry.captureException(e)
     const message = e instanceof Error ? e.message : 'Error al cargar ofertas'
     return { error: message }
   }
@@ -141,6 +147,7 @@ export async function getOfertaPorId(ofertaId: string) {
     const oferta = await goGet<Record<string, unknown>>(`/api/v1/ofertas/${ofertaId}`)
     return { oferta }
   } catch (e: unknown) {
+      Sentry.captureException(e)
     const message = e instanceof Error ? e.message : 'Error al cargar la oferta'
     return { error: message }
   }

@@ -1,5 +1,7 @@
 'use server'
 
+import * as Sentry from '@sentry/nextjs'
+
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { goGet, goPost, goPut, goPatch, goDelete, goFetch, getAuthToken } from '@/lib/go-api-client'
@@ -329,6 +331,7 @@ export async function crearPropiedad(formData: FormData) {
       amenidades,
     })
   } catch (e: unknown) {
+      Sentry.captureException(e)
     const msg = e instanceof Error ? e.message : 'Error al crear el boogie'
     return { error: msg }
   }
@@ -369,6 +372,7 @@ export async function crearPropiedad(formData: FormData) {
       try {
         await goPost(`/api/v1/propiedades/${propiedadId}/imagenes`, { imagenes })
       } catch (e: unknown) {
+          Sentry.captureException(e)
         console.error('[crearPropiedad] error saving image records:', e)
       }
     }
@@ -385,6 +389,7 @@ export async function eliminarPropiedad(propiedadId: string) {
   try {
     await goDelete(`/api/v1/propiedades/${propiedadId}`)
   } catch (e: unknown) {
+      Sentry.captureException(e)
     const msg = e instanceof Error ? e.message : 'Error al eliminar el boogie'
     return { error: msg }
   }
@@ -400,6 +405,7 @@ export async function actualizarEstadoPropiedad(propiedadId: string, estado: str
   try {
     await goPatch(`/api/v1/propiedades/${propiedadId}/estado`, { estado })
   } catch (e: unknown) {
+      Sentry.captureException(e)
     const msg = e instanceof Error ? e.message : 'Error al actualizar'
     return { error: msg }
   }
@@ -493,6 +499,7 @@ export async function actualizarPropiedad(propiedadId: string, formData: FormDat
       amenidades,
     })
   } catch (e: unknown) {
+      Sentry.captureException(e)
     const msg = e instanceof Error ? e.message : 'Error al actualizar el boogie'
     return { error: msg }
   }
@@ -507,6 +514,7 @@ export async function actualizarPropiedad(propiedadId: string, formData: FormDat
     try {
       await goPut(`/api/v1/propiedades/${propiedadId}/imagenes`, { updates: imageUpdates })
     } catch (e: unknown) {
+        Sentry.captureException(e)
       console.error('[actualizarPropiedad] error updating image categories:', e)
     }
   }
@@ -545,6 +553,7 @@ export async function actualizarPropiedad(propiedadId: string, formData: FormDat
       try {
         await goPost(`/api/v1/propiedades/${propiedadId}/imagenes`, { imagenes })
       } catch (e: unknown) {
+          Sentry.captureException(e)
         console.error('[actualizarPropiedad] error saving new image records:', e)
       }
     }

@@ -1,5 +1,7 @@
 'use server'
 
+import * as Sentry from '@sentry/nextjs'
+
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { registroSchema, loginSchema, recuperacionSchema } from '@/lib/validations'
@@ -14,6 +16,7 @@ export async function enviarOtpEmail(email: string) {
       body: { email },
     })
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) {
       if (err.code === 'EMAIL_EXISTS') {
         return { error: 'Este correo ya está registrado. Inicia sesión o usa otro correo.' }
@@ -36,6 +39,7 @@ export async function enviarOtpSms(telefono: string, codigoPais: string) {
       body: { telefono, codigoPais },
     })
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) {
       return { error: 'No pudimos enviar el código SMS. Verifica el número e intenta de nuevo.' }
     }
@@ -92,6 +96,7 @@ export async function verificarOtpYRegistrar(formData: FormData) {
 
     return { exito: true }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) {
       if (err.code === 'OTP_INVALID') {
         return { error: 'Código de verificación inválido. Intenta de nuevo.' }
@@ -165,6 +170,7 @@ export async function iniciarSesionAdmin(formData: FormData) {
       password: datos.password,
     })
   } catch (err) {
+      Sentry.captureException(err)
     await supabase.auth.signOut()
     if (err instanceof GoAPIError) {
       return { error: 'No tienes permisos de administrador.' }
@@ -199,6 +205,7 @@ export async function recuperarContrasena(formData: FormData) {
 
     return { exito: true, mensaje: 'Te enviamos un correo para restablecer tu contraseña.', codeVerifier: result.code_verifier }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) {
       console.error('[recuperarContrasena] Backend error:', { code: err.code, status: err.status, message: err.message })
       if (err.code === 'RATE_LIMITED') {
@@ -227,6 +234,7 @@ export async function restablecerContrasena(formData: FormData) {
     const { goPut } = await import('@/lib/go-api-client')
     await goPut('/api/v1/auth/recovery-password', { password })
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof Error && 'status' in err) {
       const goErr = err as { code?: string; status: number; message: string }
       console.error('[restablecerContrasena] Backend error:', { code: goErr.code, status: goErr.status, message: goErr.message })
@@ -257,6 +265,7 @@ export async function exchangePkceCode(code: string, codeVerifier: string) {
       refreshToken: result.refresh_token,
     }
   } catch (err) {
+      Sentry.captureException(err)
     console.error('[exchangePkceCode] Error:', err)
     return { error: 'No se pudo verificar el codigo' }
   }

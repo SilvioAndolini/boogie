@@ -76,7 +76,7 @@ func (h *ReservaHandler) Crear(w http.ResponseWriter, r *http.Request) {
 		NotasHuesped:      req.NotasHuesped,
 	})
 	if err != nil {
-		mapError(w, err, "[reservas/crear]", "userId", userID, "propId", req.PropiedadID)
+		mapError(w, r, err, "[reservas/crear]", "userId", userID, "propId", req.PropiedadID)
 		return
 	}
 
@@ -202,7 +202,7 @@ func (h *ReservaHandler) CrearConPago(w http.ResponseWriter, r *http.Request) {
 		CuponCodigo:       req.CuponCodigo,
 	})
 	if err != nil {
-		mapError(w, err, "[reservas/crear-con-pago]", "userId", userID, "propId", req.PropiedadID)
+		mapError(w, r, err, "[reservas/crear-con-pago]", "userId", userID, "propId", req.PropiedadID)
 		return
 	}
 
@@ -241,7 +241,7 @@ func (h *ReservaHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 	detalle, err := h.svc.GetByID(r.Context(), reservaID, userID)
 	if err != nil {
-		mapError(w, err, "[reservas/get-by-id]", "reservaId", reservaID)
+		mapError(w, r, err, "[reservas/get-by-id]", "reservaId", reservaID)
 		return
 	}
 
@@ -259,7 +259,7 @@ func (h *ReservaHandler) MisReservas(w http.ResponseWriter, r *http.Request) {
 
 	reservas, total, err := h.svc.ListByHuesped(r.Context(), userID, page, perPage)
 	if err != nil {
-		mapError(w, err, "[reservas/mis]", "userId", userID)
+		mapError(w, r, err, "[reservas/mis]", "userId", userID)
 		return
 	}
 
@@ -286,7 +286,7 @@ func (h *ReservaHandler) ReservasRecibidas(w http.ResponseWriter, r *http.Reques
 
 	reservas, total, err := h.svc.ListByPropietario(r.Context(), userID, estado, page, perPage)
 	if err != nil {
-		mapError(w, err, "[reservas/recibidas]", "userId", userID)
+		mapError(w, r, err, "[reservas/recibidas]", "userId", userID)
 		return
 	}
 
@@ -332,7 +332,7 @@ func (h *ReservaHandler) ConfirmarORechazar(w http.ResponseWriter, r *http.Reque
 
 	err := h.svc.ConfirmarORechazar(r.Context(), reservaID, userID, service.TransicionEstado(req.Accion), req.Motivo)
 	if err != nil {
-		mapError(w, err, "[reservas/confirmar-rechazar]", "reservaId", reservaID)
+		mapError(w, r, err, "[reservas/confirmar-rechazar]", "reservaId", reservaID)
 		return
 	}
 
@@ -371,7 +371,7 @@ func (h *ReservaHandler) Cancelar(w http.ResponseWriter, r *http.Request) {
 		Motivo:    req.Motivo,
 	})
 	if err != nil {
-		mapError(w, err, "[reservas/cancelar]", "reservaId", reservaID)
+		mapError(w, r, err, "[reservas/cancelar]", "reservaId", reservaID)
 		return
 	}
 
@@ -409,7 +409,7 @@ func (h *ReservaHandler) Disponibilidad(w http.ResponseWriter, r *http.Request) 
 
 	result, err := h.disponSvc.Verificar(r.Context(), propID, fechaEntrada, fechaSalida)
 	if err != nil {
-		mapError(w, err, "[reservas/disponibilidad]")
+		mapError(w, r, err, "[reservas/disponibilidad]")
 		return
 	}
 
@@ -427,7 +427,7 @@ func (h *ReservaHandler) FechasOcupadas(w http.ResponseWriter, r *http.Request) 
 
 	fechas, err := h.disponSvc.ObtenerFechasOcupadas(r.Context(), propID)
 	if err != nil {
-		mapError(w, err, "[reservas/fechas-ocupadas]")
+		mapError(w, r, err, "[reservas/fechas-ocupadas]")
 		return
 	}
 
@@ -495,7 +495,7 @@ func parseFlexibleDate(s string) (time.Time, error) {
 func (h *ReservaHandler) AutoConfirmarExpiradas(w http.ResponseWriter, r *http.Request) {
 	confirmadas, err := h.svc.AutoConfirmarExpiradas(r.Context())
 	if err != nil {
-		mapError(w, err, "[reserva/auto-confirmar]")
+		mapError(w, r, err, "[reserva/auto-confirmar]")
 		return
 	}
 	JSON(w, http.StatusOK, AutoConfirmarResponse{
@@ -513,7 +513,7 @@ func (h *ReservaHandler) GetModosReserva(w http.ResponseWriter, r *http.Request)
 
 	props, err := h.svc.ListPropiedadesModoReserva(r.Context(), userID)
 	if err != nil {
-		mapError(w, err, "[reservas/modos-reserva]", "userId", userID)
+		mapError(w, r, err, "[reservas/modos-reserva]", "userId", userID)
 		return
 	}
 
@@ -553,7 +553,7 @@ func (h *ReservaHandler) UpdateModoReserva(w http.ResponseWriter, r *http.Reques
 	}
 
 	if err := h.svc.UpdateModoReserva(r.Context(), req.PropiedadID, userID, req.Modo); err != nil {
-		mapError(w, err, "[reservas/update-modo-reserva]")
+		mapError(w, r, err, "[reservas/update-modo-reserva]")
 		return
 	}
 

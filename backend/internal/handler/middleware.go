@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5/middleware"
-	boogiesentry "github.com/boogie/backend/internal/sentry"
 	sentrysdk "github.com/getsentry/sentry-go"
 )
 
@@ -22,12 +21,15 @@ func RecoveryMiddleware(next http.Handler) http.Handler {
 					"method", r.Method,
 					"stack", string(debug.Stack()),
 				)
-			sentrysdk.ConfigureScope(func(scope *sentrysdk.Scope) {
-				scope.SetTag("request_path", r.URL.Path)
-				scope.SetTag("request_method", r.Method)
-			})
-				boogiesentry.Recover()
-				boogiesentry.Flush()
+				if hub := sentrysdk.GetHubFromContext(r.Context()); hub != nil {
+					hub.Scope().SetTag("request_path", r.URL.Path)
+					hub.Scope().SetTag("request_method", r.Method)
+					hub.Recover(err)
+					hub.Flush(5 * time.Second)
+				} else {
+					sentrysdk.Recover()
+					sentrysdk.Flush(5 * time.Second)
+				}
 				ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Internal server error")
 			}
 		}()

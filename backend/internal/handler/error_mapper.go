@@ -8,18 +8,18 @@ import (
 	bizerrors "github.com/boogie/backend/internal/domain/errors"
 )
 
-func mapError(w http.ResponseWriter, err error, logPrefix string, logArgs ...interface{}) {
+func mapError(w http.ResponseWriter, r *http.Request, err error, logPrefix string, logArgs ...interface{}) {
 	var bizErr *bizerrors.BusinessError
 	if errors.As(err, &bizErr) {
 		status, code := bizCodeToHTTP(bizErr.Code)
 		args := append([]interface{}{"error", err, "code", bizErr.Code}, logArgs...)
 		slog.Error(logPrefix, args...)
-		ErrorJSON(w, status, code, bizErr.Message)
+		CaptureError(w, r, status, code, bizErr.Message, err)
 		return
 	}
 	args := append([]interface{}{"error", err}, logArgs...)
 	slog.Error(logPrefix, args...)
-	ErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Error interno del servidor")
+	CaptureError(w, r, http.StatusInternalServerError, "INTERNAL_ERROR", "Error interno del servidor", err)
 }
 
 func bizCodeToHTTP(code bizerrors.Code) (int, string) {

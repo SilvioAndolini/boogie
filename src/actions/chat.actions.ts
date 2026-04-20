@@ -1,5 +1,7 @@
 'use server'
 
+import * as Sentry from '@sentry/nextjs'
+
 import { getUsuarioAutenticado } from '@/lib/auth'
 import { goGet, goPost, goPut, goDelete } from '@/lib/go-api-client'
 import { Conversacion, Mensaje, MensajeRapido } from '@/types/chat'
@@ -44,6 +46,7 @@ export async function getConversacionInfo(
         : null,
     }
   } catch (err: unknown) {
+      Sentry.captureException(err)
     return { exito: false, error: err instanceof Error ? err.message : 'Conversacion no encontrada' }
   }
 }
@@ -65,6 +68,7 @@ export async function obtenerOCrearConversacion(
     })
     return { exito: true, datos }
   } catch (e: unknown) {
+      Sentry.captureException(e)
     const message = e instanceof Error ? e.message : 'Error al crear conversación'
     return { exito: false, error: message }
   }
@@ -99,6 +103,7 @@ export async function getConversaciones(): Promise<{ exito: boolean; datos?: Con
     })) as Conversacion[]
     return { exito: true, datos }
   } catch (e: unknown) {
+      Sentry.captureException(e)
     const message = e instanceof Error ? e.message : 'Error al obtener conversaciones'
     return { exito: false, error: message }
   }
@@ -115,6 +120,7 @@ export async function getMensajes(
     const datos = await goGet<Mensaje[]>(`/api/v1/chat/mensajes?conversacionId=${conversacionId}&offset=${offset}`)
     return { exito: true, datos: datos ?? [] }
   } catch (e: unknown) {
+      Sentry.captureException(e)
     const message = e instanceof Error ? e.message : 'Error al obtener mensajes'
     return { exito: false, error: message }
   }
@@ -155,6 +161,7 @@ export async function enviarMensaje(
     }
     return { exito: true, datos }
   } catch (e: unknown) {
+      Sentry.captureException(e)
     const message = e instanceof Error ? e.message : 'Error al enviar mensaje'
     return { exito: false, error: message }
   }
@@ -172,6 +179,7 @@ export async function subirImagenChat(formData: FormData): Promise<{ exito: bool
     const result = await goPost<{ ok: boolean; url: string }>('/api/v1/chat/imagen', formData)
     return { exito: true, url: result.url }
   } catch (err: unknown) {
+      Sentry.captureException(err)
     return { exito: false, error: err instanceof Error ? err.message : 'Error al subir imagen' }
   }
 }
@@ -196,6 +204,7 @@ export async function getMensajesRapidos(): Promise<{ exito: boolean; datos?: Me
     const datos = await goGet<MensajeRapido[]>('/api/v1/chat/mensajes-rapidos')
     return { exito: true, datos: datos ?? [] }
   } catch (err: unknown) {
+      Sentry.captureException(err)
     return { exito: false, error: err instanceof Error ? err.message : 'Error al obtener mensajes rapidos' }
   }
 }
@@ -221,6 +230,7 @@ export async function actualizarMensajeRapido(
     revalidatePath('/dashboard/mensajes')
     return { exito: true }
   } catch (err: unknown) {
+      Sentry.captureException(err)
     return { exito: false, error: err instanceof Error ? err.message : 'Error al actualizar' }
   }
 }
@@ -236,6 +246,7 @@ export async function crearMensajeRapido(
     const datos = await goPost<MensajeRapido>('/api/v1/chat/mensajes-rapidos', { contenido, tipo })
     return { exito: true, datos }
   } catch (err: unknown) {
+      Sentry.captureException(err)
     return { exito: false, error: err instanceof Error ? err.message : 'Error al crear' }
   }
 }
@@ -249,6 +260,7 @@ export async function eliminarMensajeRapido(id: string): Promise<{ exito: boolea
     revalidatePath('/dashboard/mensajes')
     return { exito: true }
   } catch (err: unknown) {
+      Sentry.captureException(err)
     return { exito: false, error: err instanceof Error ? err.message : 'Error al eliminar' }
   }
 }

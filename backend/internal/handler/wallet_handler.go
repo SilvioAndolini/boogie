@@ -40,7 +40,7 @@ func (h *WalletHandler) Activar(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.svc.Activar(r.Context(), userID); err != nil {
-		mapError(w, err, "[wallet/activar] error")
+		mapError(w, r, err, "[wallet/activar] error")
 		return
 	}
 
@@ -82,7 +82,7 @@ func (h *WalletHandler) Recarga(w http.ResponseWriter, r *http.Request) {
 
 	txID, err := h.svc.CrearRecarga(r.Context(), userID, req.MontoUSD, req.Metodo, req.DatosPago)
 	if err != nil {
-		mapError(w, err, "[wallet/recarga] error")
+		mapError(w, r, err, "[wallet/recarga] error")
 		return
 	}
 
@@ -107,7 +107,7 @@ func (h *WalletHandler) Transacciones(w http.ResponseWriter, r *http.Request) {
 
 	txs, err := h.svc.GetTransacciones(r.Context(), walletID, userID)
 	if err != nil {
-		mapError(w, err, "[wallet/transacciones] error")
+		mapError(w, r, err, "[wallet/transacciones] error")
 		return
 	}
 

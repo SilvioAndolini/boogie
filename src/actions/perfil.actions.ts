@@ -1,5 +1,7 @@
 'use server'
 
+import * as Sentry from '@sentry/nextjs'
+
 import { getUsuarioAutenticado } from '@/lib/auth'
 import { perfilSchema } from '@/lib/validations'
 import { goGet, goPost, goPut } from '@/lib/go-api-client'
@@ -19,6 +21,7 @@ export async function getPerfilUsuario() {
     const perfil = await goGet('/api/v1/auth/me')
     return { perfil }
   } catch (err) {
+      Sentry.captureException(err)
     console.error('[getPerfilUsuario] Go API error:', err instanceof Error ? err.message : err)
     return { error: 'Error al cargar perfil' }
   }
@@ -48,6 +51,7 @@ export async function actualizarPerfil(formData: FormData) {
     revalidatePath('/dashboard/perfil')
     return { exito: true }
   } catch (err: unknown) {
+      Sentry.captureException(err)
     return { error: err instanceof Error ? err.message : 'Error al guardar los cambios' }
   }
 }
@@ -68,6 +72,7 @@ export async function cambiarContrasena(formData: FormData) {
     await goPost('/api/v1/auth/password', { passwordActual, passwordNueva })
     return { exito: true }
   } catch (err: unknown) {
+      Sentry.captureException(err)
     return { error: err instanceof Error ? err.message : 'Error al cambiar la contraseña' }
   }
 }
@@ -92,6 +97,7 @@ export async function subirAvatar(formData: FormData) {
     revalidatePath('/dashboard/perfil')
     return { exito: true, url: result.url }
   } catch (err: unknown) {
+      Sentry.captureException(err)
     return { error: err instanceof Error ? err.message : 'Error al subir la imagen' }
   }
 }

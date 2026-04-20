@@ -253,11 +253,11 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	if h.repo == nil {
 		slog.Error("[auth/register] no database available for profile creation")
-		ErrorJSON(w, http.StatusInternalServerError, "DB_ERROR", "Error al crear perfil de usuario")
+		CaptureError(w, r, http.StatusInternalServerError, "DB_ERROR", "Error al crear perfil de usuario", fmt.Errorf("database not available for profile creation"))
 		return
 	}
 	if err := h.repo.CreateUserProfile(r.Context(), userID, req.Email, req.Nombre, req.Apellido, telefonoCompleto, documento); err != nil {
-		mapError(w, err, "[auth/register] profile error", "userId", userID)
+		mapError(w, r, err, "[auth/register] profile error", "userId", userID)
 		return
 	}
 
@@ -299,7 +299,7 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	codeVerifier, err := auth.GenerateCodeVerifier()
 	if err != nil {
 		slog.Error("[auth/reset-password] generate code_verifier", "error", err)
-		ErrorJSON(w, http.StatusInternalServerError, "INTERNAL", "Error interno")
+		CaptureError(w, r, http.StatusInternalServerError, "INTERNAL", "Error interno", err)
 		return
 	}
 	codeChallenge := auth.ComputeCodeChallenge(codeVerifier)
@@ -388,7 +388,7 @@ func (h *AuthHandler) CompletarPerfil(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.repo.UpdateProfile(r.Context(), userID, req.Nombre, req.Apellido, documento, telefonoCompleto); err != nil {
-		mapError(w, err, "[auth/completar-perfil]", "userId", userID)
+		mapError(w, r, err, "[auth/completar-perfil]", "userId", userID)
 		return
 	}
 
@@ -422,7 +422,7 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 
 	profile, err := h.repo.GetUserProfile(r.Context(), userID)
 	if err != nil {
-		mapError(w, err, "[auth/me]", "userId", userID)
+		mapError(w, r, err, "[auth/me]", "userId", userID)
 		return
 	}
 
@@ -470,7 +470,7 @@ func (h *AuthHandler) ActualizarPerfil(w http.ResponseWriter, r *http.Request) {
 		"tiktok":                req.Tiktok,
 		"instagram":             req.Instagram,
 	}); err != nil {
-		mapError(w, err, "[auth/perfil] update", "userId", userID)
+		mapError(w, r, err, "[auth/perfil] update", "userId", userID)
 		return
 	}
 
@@ -529,7 +529,7 @@ func (h *AuthHandler) CambiarContrasena(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if err := h.authClient.UpdateUserPassword(r.Context(), h.serviceKey, userID, req.PasswordNueva); err != nil {
-		mapError(w, err, "[auth/password] error", "userID", userID)
+		mapError(w, r, err, "[auth/password] error", "userID", userID)
 		return
 	}
 
@@ -572,13 +572,13 @@ func (h *AuthHandler) SubirAvatar(w http.ResponseWriter, r *http.Request) {
 
 	fileBytes, err := io.ReadAll(file)
 	if err != nil {
-		ErrorJSON(w, http.StatusInternalServerError, "READ_ERROR", "Error al leer archivo")
+		CaptureError(w, r, http.StatusInternalServerError, "READ_ERROR", "Error al leer archivo", err)
 		return
 	}
 
 	publicURL, err := h.authClient.UploadStorage(r.Context(), h.supabaseURL, h.serviceKey, "imagenes", storagePath, fileBytes, contentType)
 	if err != nil {
-		mapError(w, err, "[auth/avatar] upload", "userId", userID)
+		mapError(w, r, err, "[auth/avatar] upload", "userId", userID)
 		return
 	}
 
@@ -587,7 +587,7 @@ func (h *AuthHandler) SubirAvatar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.repo.UpdateAvatarURL(r.Context(), userID, publicURL); err != nil {
-		mapError(w, err, "[auth/avatar] db update", "userId", userID)
+		mapError(w, r, err, "[auth/avatar] db update", "userId", userID)
 		return
 	}
 
@@ -662,7 +662,7 @@ func (h *AuthHandler) RestablecerContrasena(w http.ResponseWriter, r *http.Reque
 
 	if err := h.authClient.UpdateUserPassword(r.Context(), h.serviceKey, userID, req.Password); err != nil {
 		slog.Error("[auth/restablecer] error", "userID", userID, "error", err)
-		ErrorJSON(w, http.StatusInternalServerError, "UPDATE_ERROR", "No pudimos actualizar la contraseña. Intenta de nuevo.")
+		CaptureError(w, r, http.StatusInternalServerError, "UPDATE_ERROR", "No pudimos actualizar la contraseña. Intenta de nuevo.", err)
 		return
 	}
 

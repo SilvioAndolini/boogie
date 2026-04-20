@@ -1,5 +1,7 @@
 'use server'
 
+import * as Sentry from '@sentry/nextjs'
+
 import { revalidatePath } from 'next/cache'
 import { getUsuarioAutenticado } from '@/lib/auth'
 import { goPost, GoAPIError } from '@/lib/go-api-client'
@@ -49,6 +51,7 @@ export async function crearResena(formData: FormData) {
     revalidatePath(`/propiedades/${result.propiedad_id}`)
     return { exito: true }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) {
       return { error: err.message }
     }
@@ -75,6 +78,7 @@ export async function responderResena(resenaId: string, respuesta: string) {
     revalidatePath(`/propiedades/${result.propiedad_id}`)
     return { exito: true }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) {
       return { error: err.message }
     }

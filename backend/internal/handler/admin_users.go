@@ -19,7 +19,7 @@ func (h *AdminHandler) GetUsuarios(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.svc.GetUsuarios(r.Context(), busqueda, rol, pagina, limite)
 	if err != nil {
-		mapError(w, err, "[admin/usuarios]")
+		mapError(w, r, err, "[admin/usuarios]")
 		return
 	}
 	JSON(w, http.StatusOK, result)
@@ -48,7 +48,7 @@ func (h *AdminHandler) CrearUsuario(w http.ResponseWriter, r *http.Request) {
 	}
 	result, err := h.svc.CrearUsuario(r.Context(), req.Email, req.Password, req.Nombre, req.Apellido, req.Telefono, req.Rol, adminID)
 	if err != nil {
-		mapError(w, err, "[admin/usuarios/crear]")
+		mapError(w, r, err, "[admin/usuarios/crear]")
 		return
 	}
 	h.auditLog(r, adminID, "crear_usuario", "usuario", nil, map[string]interface{}{"email": req.Email, "rol": req.Rol})
@@ -77,7 +77,7 @@ func (h *AdminHandler) UpdateUsuario(w http.ResponseWriter, r *http.Request) {
 		plan = req.Plan
 	}
 	if err := h.svc.UpdateUsuario(r.Context(), id, req.Rol, plan, req.Reputacion, req.Activo); err != nil {
-		mapError(w, err, "[admin/usuarios/update]")
+		mapError(w, r, err, "[admin/usuarios/update]")
 		return
 	}
 	if req.Rol != nil && h.authClient != nil {
@@ -97,7 +97,7 @@ func (h *AdminHandler) DeleteUsuario(w http.ResponseWriter, r *http.Request) {
 	}
 	id := chi.URLParam(r, "id")
 	if err := h.svc.DeleteUsuario(r.Context(), id); err != nil {
-		mapError(w, err, "[admin/usuarios/delete]")
+		mapError(w, r, err, "[admin/usuarios/delete]")
 		return
 	}
 	h.auditLog(r, "", "delete_usuario", "usuario", &id, nil)

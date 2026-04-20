@@ -42,7 +42,7 @@ func (h *AdminHandler) CrearProductoStore(w http.ResponseWriter, r *http.Request
 		moneda = "USD"
 	}
 	if err := h.tiendaSvc.CrearProducto(r.Context(), req.Nombre, req.Descripcion, req.Precio, moneda, req.ImagenURL, req.Categoria, orden); err != nil {
-		mapError(w, err, "[admin/store/productos/crear]")
+		mapError(w, r, err, "[admin/store/productos/crear]")
 		return
 	}
 	h.auditLog(r, "", "crear_producto_store", "producto", nil, map[string]interface{}{"nombre": req.Nombre, "precio": req.Precio})
@@ -69,7 +69,7 @@ func (h *AdminHandler) ActualizarProductoStore(w http.ResponseWriter, r *http.Re
 		return
 	}
 	if err := h.tiendaSvc.ActualizarProducto(r.Context(), id, req.Nombre, req.Descripcion, req.Precio, req.Moneda, req.ImagenURL, req.Categoria, req.Activo, req.Orden); err != nil {
-		mapError(w, err, "[admin/store/productos/actualizar]")
+		mapError(w, r, err, "[admin/store/productos/actualizar]")
 		return
 	}
 	h.auditLog(r, "", "actualizar_producto_store", "producto", &id, nil)
@@ -82,7 +82,7 @@ func (h *AdminHandler) EliminarProductoStore(w http.ResponseWriter, r *http.Requ
 	}
 	id := chi.URLParam(r, "id")
 	if err := h.tiendaSvc.EliminarProducto(r.Context(), id); err != nil {
-		mapError(w, err, "[admin/store/productos/eliminar]")
+		mapError(w, r, err, "[admin/store/productos/eliminar]")
 		return
 	}
 	h.auditLog(r, "", "eliminar_producto_store", "producto", &id, nil)
@@ -124,7 +124,7 @@ func (h *AdminHandler) CrearServicioStore(w http.ResponseWriter, r *http.Request
 		tipoPrecio = "FIJO"
 	}
 	if err := h.tiendaSvc.CrearServicio(r.Context(), req.Nombre, req.Descripcion, req.Precio, moneda, tipoPrecio, req.Categoria, req.ImagenURL, orden); err != nil {
-		mapError(w, err, "[admin/store/servicios/crear]")
+		mapError(w, r, err, "[admin/store/servicios/crear]")
 		return
 	}
 	h.auditLog(r, "", "crear_servicio_store", "servicio", nil, map[string]interface{}{"nombre": req.Nombre, "precio": req.Precio})
@@ -152,7 +152,7 @@ func (h *AdminHandler) ActualizarServicioStore(w http.ResponseWriter, r *http.Re
 		return
 	}
 	if err := h.tiendaSvc.ActualizarServicio(r.Context(), id, req.Nombre, req.Descripcion, req.Precio, req.Moneda, req.TipoPrecio, req.ImagenURL, req.Categoria, req.Activo, req.Orden); err != nil {
-		mapError(w, err, "[admin/store/servicios/actualizar]")
+		mapError(w, r, err, "[admin/store/servicios/actualizar]")
 		return
 	}
 	h.auditLog(r, "", "actualizar_servicio_store", "servicio", &id, nil)
@@ -165,7 +165,7 @@ func (h *AdminHandler) EliminarServicioStore(w http.ResponseWriter, r *http.Requ
 	}
 	id := chi.URLParam(r, "id")
 	if err := h.tiendaSvc.EliminarServicio(r.Context(), id); err != nil {
-		mapError(w, err, "[admin/store/servicios/eliminar]")
+		mapError(w, r, err, "[admin/store/servicios/eliminar]")
 		return
 	}
 	h.auditLog(r, "", "eliminar_servicio_store", "servicio", &id, nil)
@@ -203,13 +203,13 @@ func (h *AdminHandler) SubirImagenStore(w http.ResponseWriter, r *http.Request) 
 
 	fileBytes, err := io.ReadAll(file)
 	if err != nil {
-		ErrorJSON(w, http.StatusInternalServerError, "READ_ERROR", "Error al leer archivo")
+		CaptureError(w, r, http.StatusInternalServerError, "READ_ERROR", "Error al leer archivo", err)
 		return
 	}
 
 	publicURL, err := h.storage.UploadStorage(r.Context(), h.supabaseURL, h.serviceKey, "imagenes", storagePath, fileBytes, contentType)
 	if err != nil {
-		mapError(w, err, "[admin/store/upload-imagen]")
+		mapError(w, r, err, "[admin/store/upload-imagen]")
 		return
 	}
 

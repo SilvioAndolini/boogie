@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+
+	sentrysdk "github.com/getsentry/sentry-go"
 )
 
 // APIResponse wraps successful responses in a {data: ...} envelope.
@@ -58,6 +60,20 @@ func ErrorJSON(w http.ResponseWriter, status int, code string, message string) {
 	}); err != nil {
 		slog.Error("[response] error JSON encode", "error", err, "status", status)
 	}
+}
+
+// CaptureError sends err to Sentry (when status >= 500) and writes an error JSON response.
+func CaptureError(w http.ResponseWriter, r *http.Request, status int, code string, message string, err error) {
+	if status >= 500 && err != nil {
+		if hub := sentrysdk.GetHubFromContext(r.Context()); hub != nil {
+			hub.Scope().SetTag("http.status", http.StatusText(status))
+			hub.Scope().SetTag("error_code", code)
+			hub.CaptureException(err)
+		} else {
+			sentrysdk.CaptureException(err)
+		}
+	}
+	ErrorJSON(w, status, code, message)
 }
 
 // ErrorJSONWithDetails writes an error JSON response with extra details.

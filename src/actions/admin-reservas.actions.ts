@@ -1,5 +1,7 @@
 'use server'
 
+import * as Sentry from '@sentry/nextjs'
+
 import { goApi, goGet, goPost, GoAPIError } from '@/lib/go-api-client'
 import { requireAdmin } from '@/lib/admin-auth'
 import { revalidatePath } from 'next/cache'
@@ -48,6 +50,7 @@ export async function getReservasAdmin(filtros?: {
       totalPaginas: (raw?.totalPaginas ?? 0) as number,
     }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al cargar reservas' }
   }
@@ -73,6 +76,7 @@ export async function getReservaDetalleAdmin(reservaId: string) {
       fuenteBCV,
     }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Reserva no encontrada' }
   }
@@ -95,6 +99,7 @@ export async function accionReservaAdmin(formData: FormData) {
     revalidatePath('/dashboard/pagos')
     return { exito: true }
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al actualizar la reserva' }
   }
@@ -115,6 +120,7 @@ export async function getReservasStatsAdmin(): Promise<ReservasStatsResult> {
       RECHAZADA: number;
     }>('/api/v1/admin/reservas/stats')
   } catch (err) {
+      Sentry.captureException(err)
     if (err instanceof GoAPIError) return { error: err.message }
     return { error: 'Error al cargar estadísticas de reservas' }
   }

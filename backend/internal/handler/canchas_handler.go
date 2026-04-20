@@ -32,7 +32,7 @@ func (h *CanchasHandler) GetDisponibilidad(w http.ResponseWriter, r *http.Reques
 
 	bloques, err := h.repo.GetDisponibilidadHoraria(r.Context(), id, fecha)
 	if err != nil {
-		mapError(w, err, "[canchas/disponibilidad]", "id", id)
+		mapError(w, r, err, "[canchas/disponibilidad]", "id", id)
 		return
 	}
 

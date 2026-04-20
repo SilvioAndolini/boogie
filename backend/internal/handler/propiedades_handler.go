@@ -85,7 +85,7 @@ func (h *PropiedadesHandler) Search(w http.ResponseWriter, r *http.Request) {
 
 	results, total, err := h.svc.Search(r.Context(), filtros)
 	if err != nil {
-		mapError(w, err, "[propiedades/search]")
+		mapError(w, r, err, "[propiedades/search]")
 		return
 	}
 
@@ -110,7 +110,7 @@ func (h *PropiedadesHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.svc.GetByIDOrSlug(r.Context(), id)
 	if err != nil {
-		mapError(w, err, "[propiedades/get-by-id]", "id", id)
+		mapError(w, r, err, "[propiedades/get-by-id]", "id", id)
 		return
 	}
 
@@ -127,7 +127,7 @@ func (h *PropiedadesHandler) MisPropiedades(w http.ResponseWriter, r *http.Reque
 
 	results, err := h.svc.ListByPropietario(r.Context(), userID)
 	if err != nil {
-		mapError(w, err, "[propiedades/mis]", "userId", userID)
+		mapError(w, r, err, "[propiedades/mis]", "userId", userID)
 		return
 	}
 
@@ -216,7 +216,7 @@ func (h *PropiedadesHandler) Crear(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.svc.Crear(r.Context(), userID, input, req.Amenidades)
 	if err != nil {
-		mapError(w, err, "[propiedades/crear]", "userID", userID)
+		mapError(w, r, err, "[propiedades/crear]", "userID", userID)
 		return
 	}
 
@@ -307,7 +307,7 @@ func (h *PropiedadesHandler) Actualizar(w http.ResponseWriter, r *http.Request) 
 
 	result, err := h.svc.Actualizar(r.Context(), userID, id, input, req.Amenidades)
 	if err != nil {
-		mapError(w, err, "[propiedades/actualizar]", "id", id, "userID", userID)
+		mapError(w, r, err, "[propiedades/actualizar]", "id", id, "userID", userID)
 		return
 	}
 
@@ -345,7 +345,7 @@ func (h *PropiedadesHandler) AgregarImagenes(w http.ResponseWriter, r *http.Requ
 	}
 
 	if err := h.svc.AgregarImagenes(r.Context(), userID, id, req.Imagenes); err != nil {
-		mapError(w, err, "[propiedades/agregar-imagenes]", "id", id)
+		mapError(w, r, err, "[propiedades/agregar-imagenes]", "id", id)
 		return
 	}
 
@@ -374,7 +374,7 @@ func (h *PropiedadesHandler) ActualizarImagenes(w http.ResponseWriter, r *http.R
 	}
 
 	if err := h.svc.ActualizarImagenes(r.Context(), userID, id, req.Updates); err != nil {
-		mapError(w, err, "[propiedades/actualizar-imagenes]", "id", id)
+		mapError(w, r, err, "[propiedades/actualizar-imagenes]", "id", id)
 		return
 	}
 
@@ -411,7 +411,7 @@ func (h *PropiedadesHandler) UpdateEstado(w http.ResponseWriter, r *http.Request
 	}
 
 	if err := h.svc.UpdateEstado(r.Context(), id, req.Estado, userID); err != nil {
-		mapError(w, err, "[propiedades/update-estado]", "id", id, "userId", userID)
+		mapError(w, r, err, "[propiedades/update-estado]", "id", id, "userId", userID)
 		return
 	}
 
@@ -432,7 +432,7 @@ func (h *PropiedadesHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.svc.Delete(r.Context(), id, userID); err != nil {
-		mapError(w, err, "[propiedades/delete]", "id", id, "userId", userID)
+		mapError(w, r, err, "[propiedades/delete]", "id", id, "userId", userID)
 		return
 	}
 
@@ -448,7 +448,7 @@ func (h *PropiedadesHandler) GetAmenidades(w http.ResponseWriter, r *http.Reques
 
 	amenidades, err := h.svc.GetAmenidades(r.Context(), id)
 	if err != nil {
-		mapError(w, err, "[propiedades/amenidades]", "id", id)
+		mapError(w, r, err, "[propiedades/amenidades]", "id", id)
 		return
 	}
 
@@ -475,7 +475,7 @@ func (h *PropiedadesHandler) GetReservas(w http.ResponseWriter, r *http.Request)
 
 	reservas, total, err := h.reservaSvc.ListByPropiedad(r.Context(), id, page, perPage)
 	if err != nil {
-		mapError(w, err, "[propiedades/reservas]", "id", id)
+		mapError(w, r, err, "[propiedades/reservas]", "id", id)
 		return
 	}
 

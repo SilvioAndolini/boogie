@@ -1,5 +1,7 @@
 'use server'
 
+import * as Sentry from '@sentry/nextjs'
+
 import { revalidatePath } from 'next/cache'
 import { pagoSchema } from '@/lib/validations'
 import { getUsuarioAutenticado } from '@/lib/auth'
@@ -37,6 +39,7 @@ export async function registrarPago(formData: FormData) {
       moneda: data.moneda,
     })
   } catch (e: unknown) {
+      Sentry.captureException(e)
     const message = e instanceof Error ? e.message : 'Error al registrar el pago'
     return { error: message }
   }

@@ -25,7 +25,7 @@ func (h *MetodoPagoHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	metodos, err := h.svc.List(r.Context(), userID)
 	if err != nil {
-		mapError(w, err, "[metodos-pago/list]", "userId", userID)
+		mapError(w, r, err, "[metodos-pago/list]", "userId", userID)
 		return
 	}
 
@@ -72,7 +72,7 @@ func (h *MetodoPagoHandler) Crear(w http.ResponseWriter, r *http.Request) {
 		DireccionUSDT: req.DireccionUSDT,
 	})
 	if err != nil {
-		mapError(w, err, "[metodos-pago/crear] error", "userId", userID)
+		mapError(w, r, err, "[metodos-pago/crear] error", "userId", userID)
 		return
 	}
 
@@ -93,7 +93,7 @@ func (h *MetodoPagoHandler) Eliminar(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.svc.Eliminar(r.Context(), id, userID); err != nil {
-		mapError(w, err, "[metodos-pago/eliminar] error", "id", id, "userId", userID)
+		mapError(w, r, err, "[metodos-pago/eliminar] error", "id", id, "userId", userID)
 		return
 	}
 
