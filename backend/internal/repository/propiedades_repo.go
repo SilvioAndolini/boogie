@@ -323,6 +323,9 @@ func (r *PropiedadesRepo) GetByID(ctx context.Context, id string) (*PropiedadDet
 		&p.ModoReserva,
 	)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, bizerrors.PropiedadNoEncontrada()
+		}
 		return nil, fmt.Errorf("get propiedad: %w", err)
 	}
 	p.Zona = zona
@@ -346,7 +349,7 @@ func (r *PropiedadesRepo) GetByID(ctx context.Context, id string) (*PropiedadDet
 	}
 
 	var batch pgx.Batch
-	batch.Queue(`SELECT id, nombre, apellido, avatar_url, icono, categoria FROM amenidades a JOIN propiedad_amenidades pa ON pa.amenidad_id = a.id WHERE pa.propiedad_id = $1`, p.ID)
+	batch.Queue(`SELECT a.id, a.nombre, a.icono, a.categoria FROM amenidades a JOIN propiedad_amenidades pa ON pa.amenidad_id = a.id WHERE pa.propiedad_id = $1`, p.ID)
 	batch.Queue(`SELECT id, propiedad_id, url, thumbnail_url, alt, categoria, orden FROM imagenes_propiedad WHERE propiedad_id = $1 ORDER BY orden`, p.ID)
 
 	br := r.pool.SendBatch(ctx, &batch)
@@ -374,6 +377,9 @@ func (r *PropiedadesRepo) GetBySlug(ctx context.Context, slug string) (*Propieda
 	var id string
 	err := r.pool.QueryRow(ctx, `SELECT id FROM propiedades WHERE slug = $1`, slug).Scan(&id)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, bizerrors.PropiedadNoEncontrada()
+		}
 		return nil, fmt.Errorf("propiedad by slug: %w", err)
 	}
 	return r.GetByID(ctx, id)
