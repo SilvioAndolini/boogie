@@ -3,6 +3,7 @@
 import { getUsuarioAutenticado } from '@/lib/auth'
 import { goPost } from '@/lib/go-api-client'
 import { revalidatePath } from 'next/cache'
+import * as Sentry from '@sentry/nextjs'
 
 export async function registrarPagoReserva(datos: {
   reservaId: string
@@ -30,6 +31,7 @@ export async function registrarPagoReserva(datos: {
       comprobanteUrl = uploadResult.url
     } catch (err) {
       console.error('[registrarPagoReserva] Upload error:', err)
+      Sentry.captureException(err, { tags: { action: 'registrarPagoReserva', step: 'upload' } })
     }
   }
 
@@ -46,6 +48,7 @@ export async function registrarPagoReserva(datos: {
     })
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : 'Error al registrar el pago'
+    Sentry.captureException(e, { tags: { action: 'registrarPagoReserva', step: 'registrar' } })
     return { error: message }
   }
 
@@ -95,6 +98,7 @@ export async function crearReservaConPago(datos: {
       comprobanteUrl = uploadResult.url
     } catch (err) {
       console.error('[crearReservaConPago] Upload error:', err)
+      Sentry.captureException(err, { tags: { action: 'crearReservaConPago', step: 'upload' } })
     }
   }
 
@@ -135,6 +139,7 @@ export async function crearReservaConPago(datos: {
     return { exito: true, reservaId: (reserva as Record<string, unknown>).id as string }
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : 'Error al crear la reserva'
+    Sentry.captureException(e, { tags: { action: 'crearReservaConPago', step: 'crear' } })
     return { error: message }
   }
 }
