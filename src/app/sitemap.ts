@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next'
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.boogierent.com'
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 const GO_URL = process.env.GO_BACKEND_URL || 'http://localhost:8080'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

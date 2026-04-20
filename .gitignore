@@ -57,6 +57,9 @@ CREDENCIALES_NECESARIAS.md
 imagenes/
 tsconfig.tsbuildinfo
 
+# supabase cli cache
+supabase/.temp/
+
 # local dev scripts
 dev.bat
 dev.ps1

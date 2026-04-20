@@ -34,7 +34,8 @@ export default function LoginPage() {
       formData.append('password', datos.password)
       const resultado = await iniciarSesion(formData)
       if (resultado?.error) setErrorForm(resultado.error)
-    } catch {
+    } catch (e: unknown) {
+      if (e instanceof Error && (e.message === 'NEXT_REDIRECT' || e.digest?.startsWith('NEXT_REDIRECT'))) throw e
       setErrorForm('Ocurrió un error inesperado. Intenta de nuevo.')
     } finally {
       setCargando(false)
