@@ -429,7 +429,13 @@ func (s *ReservaService) Cancelar(ctx context.Context, input *CancelarInput) (*R
 		return nil, bizerrors.ReservaNoEncontrada()
 	}
 
-	if detalle.Estado != enums.EstadoReservaPendiente && detalle.Estado != enums.EstadoReservaConfirmada {
+	estadosCancelables := map[enums.EstadoReserva]bool{
+		enums.EstadoReservaPendiente:        true,
+		enums.EstadoReservaPendientePago:    true,
+		enums.EstadoReservaPendienteConfirm: true,
+		enums.EstadoReservaConfirmada:       true,
+	}
+	if !estadosCancelables[detalle.Estado] {
 		return nil, bizerrors.EstadoInvalido("la reserva no se puede cancelar en su estado actual")
 	}
 

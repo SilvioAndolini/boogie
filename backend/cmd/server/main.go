@@ -378,6 +378,8 @@ func main() {
 			AutoConfirmarExpiradas: reservaH.AutoConfirmarExpiradas,
 			GetModosReserva:        reservaH.GetModosReserva,
 			UpdateModoReserva:      reservaH.UpdateModoReserva,
+			EliminarPendientePago:  reservaH.EliminarPendientePago,
+			ExpirarPendientes:      reservaH.ExpirarPendientes,
 		}
 	}
 
