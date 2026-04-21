@@ -232,12 +232,6 @@ function ReservarContent() {
     ? new Date(fechaCreacionReserva.getTime() + 15 * 60 * 1000)
     : null
 
-  useEffect(() => {
-    if (metodoPago !== 'CRIPTO' && metodoPago !== 'WALLET' && reservaCreadaId && metodoPago) {
-      setReservaCreadaId(null)
-    }
-  }, [metodoPago])
-
   if (cargando || !propiedad) {
     return (
       <div className="flex items-center justify-center py-24">
