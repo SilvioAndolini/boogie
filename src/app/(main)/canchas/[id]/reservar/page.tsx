@@ -164,9 +164,13 @@ function ReservarContent() {
   const handleCancelarReserva = async () => {
     if (!reservaCreadaId) return
     try {
-      await cancelarReserva(reservaCreadaId)
-      toast.success('Reserva cancelada')
-      router.push(`/canchas/${propiedadId}`)
+      const result = await cancelarReserva(reservaCreadaId, undefined, propiedadId)
+      if (result.exito) {
+        toast.success('Reserva cancelada')
+        router.push(`/canchas/${propiedadId}`)
+      } else {
+        toast.error(result.error?.mensaje || 'Error al cancelar la reserva')
+      }
     } catch {
       toast.error('Error al cancelar la reserva')
     }
@@ -213,9 +217,14 @@ function ReservarContent() {
     }
   }
 
-  const handleTTLExpired = useCallback(() => {
+  const handleTTLExpired = useCallback(async () => {
+    if (reservaCreadaId) {
+      try {
+        await cancelarReserva(reservaCreadaId, 'TTL expirado', propiedadId)
+      } catch {}
+    }
     setTtlExpired(true)
-  }, [])
+  }, [reservaCreadaId, propiedadId])
 
   const fechaExpiracion = fechaCreacionReserva
     ? new Date(fechaCreacionReserva.getTime() + 15 * 60 * 1000)

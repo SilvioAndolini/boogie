@@ -67,7 +67,8 @@ export async function crearReserva(rawData: {
 
 export async function cancelarReserva(
   reservaId: string,
-  motivo?: string
+  motivo?: string,
+  propiedadId?: string,
 ): Promise<ResultadoAccion<{ reembolso?: string }>> {
   try {
     const result = await goPost<{ reembolso?: string }>(`/api/v1/reservas/${reservaId}/cancelar`, { motivo })
@@ -77,6 +78,9 @@ export async function cancelarReserva(
     revalidatePath('/dashboard/pagos')
     revalidatePath('/admin/reservas')
     revalidatePath('/admin/pagos')
+    if (propiedadId) {
+      revalidatePath(`/propiedades/${propiedadId}`)
+    }
 
     return { exito: true, datos: result }
   } catch (err) {
@@ -269,9 +273,13 @@ export async function rechazarReservaAction(formData: FormData) {
 
 export async function cancelarReservaAction(formData: FormData) {
   const reservaId = formData.get('reservaId') as string
-  const result = await cancelarReserva(reservaId)
+  const propiedadId = formData.get('propiedadId') as string | null
+  const result = await cancelarReserva(reservaId, undefined, propiedadId || undefined)
   if (!result.exito) {
     console.error('[cancelarReservaAction]', result.error)
+  }
+  if (propiedadId) {
+    revalidatePath(`/propiedades/${propiedadId}`)
   }
 }
 

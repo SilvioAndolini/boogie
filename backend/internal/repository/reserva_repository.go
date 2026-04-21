@@ -452,7 +452,7 @@ func (r *ReservaRepo) GetReservasExpiradas(ctx context.Context, ventana time.Dur
 func (r *ReservaRepo) CancelarHuesped(ctx context.Context, reservaID, motivo string) error {
 	tag, err := r.pool.Exec(ctx, `
 		UPDATE reservas SET estado = 'CANCELADA_HUESPED', fecha_cancelacion = NOW(), motivo_cancelacion = $2
-		WHERE id = $1 AND estado IN ('PENDIENTE', 'CONFIRMADA')
+		WHERE id = $1 AND estado IN ('PENDIENTE', 'PENDIENTE_PAGO', 'PENDIENTE_CONFIRMACION', 'CONFIRMADA')
 	`, reservaID, motivo)
 	if err != nil {
 		return fmt.Errorf("cancelar reserva huesped: %w", err)
@@ -466,7 +466,7 @@ func (r *ReservaRepo) CancelarHuesped(ctx context.Context, reservaID, motivo str
 func (r *ReservaRepo) CancelarAnfitrion(ctx context.Context, reservaID, motivo string) error {
 	tag, err := r.pool.Exec(ctx, `
 		UPDATE reservas SET estado = 'CANCELADA_ANFITRION', fecha_cancelacion = NOW(), motivo_cancelacion = $2
-		WHERE id = $1 AND estado IN ('PENDIENTE', 'CONFIRMADA')
+		WHERE id = $1 AND estado IN ('PENDIENTE', 'PENDIENTE_PAGO', 'PENDIENTE_CONFIRMACION', 'CONFIRMADA')
 	`, reservaID, motivo)
 	if err != nil {
 		return fmt.Errorf("cancelar reserva anfitrion: %w", err)
