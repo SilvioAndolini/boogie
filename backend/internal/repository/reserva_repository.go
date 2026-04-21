@@ -463,11 +463,11 @@ func (r *ReservaRepo) CancelarHuesped(ctx context.Context, reservaID, motivo str
 	return nil
 }
 
-func (r *ReservaRepo) CancelarAnfitrion(ctx context.Context, reservaID, motivo string) error {
+func (r *ReservaRepo) CancelarAnfitrion(ctx context.Context, reservaID, _ string) error {
 	tag, err := r.pool.Exec(ctx, `
-		UPDATE reservas SET estado = 'CANCELADA_ANFITRION', fecha_cancelacion = NOW(), motivo_cancelacion = $2
+		UPDATE reservas SET estado = 'CANCELADA_ANFITRION', fecha_cancelacion = NOW()
 		WHERE id = $1 AND estado IN ('PENDIENTE', 'PENDIENTE_PAGO', 'PENDIENTE_CONFIRMACION', 'CONFIRMADA')
-	`, reservaID, motivo)
+	`, reservaID)
 	if err != nil {
 		return fmt.Errorf("cancelar reserva anfitrion: %w", err)
 	}
