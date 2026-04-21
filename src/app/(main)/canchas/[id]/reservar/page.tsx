@@ -15,7 +15,7 @@ import { CuponInput } from '@/components/reservas/cupon-input'
 import { TTLCountdown } from '@/components/reservas/ttl-countdown'
 import { TTLExpiredModal } from '@/components/reservas/ttl-expired-modal'
 import { COMISION_PLATAFORMA_HUESPED } from '@/lib/constants'
-import { crearReserva, cancelarReserva } from '@/actions/reserva.actions'
+import { crearReserva, eliminarReservaPendiente } from '@/actions/reserva.actions'
 import { registrarPagoReserva } from '@/actions/pago-reserva.actions'
 import Image from 'next/image'
 import { toast } from 'sonner'
@@ -164,7 +164,7 @@ function ReservarContent() {
   const handleCancelarReserva = async () => {
     if (!reservaCreadaId) return
     try {
-      const result = await cancelarReserva(reservaCreadaId, undefined, propiedadId)
+      const result = await eliminarReservaPendiente(reservaCreadaId, propiedadId)
       if (result.exito) {
         toast.success('Reserva cancelada')
         router.push(`/canchas/${propiedadId}`)
@@ -220,7 +220,7 @@ function ReservarContent() {
   const handleTTLExpired = useCallback(async () => {
     if (reservaCreadaId) {
       try {
-        await cancelarReserva(reservaCreadaId, 'TTL expirado', propiedadId)
+        await eliminarReservaPendiente(reservaCreadaId, propiedadId)
       } catch {}
     }
     setTtlExpired(true)

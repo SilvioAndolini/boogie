@@ -145,8 +145,9 @@ type ReservaHandlers struct {
 	CalcularReembolso      http.HandlerFunc
 	AutoConfirmarExpiradas http.HandlerFunc
 	GetModosReserva        http.HandlerFunc
-	UpdateModoReserva      http.HandlerFunc
-	ExpirarPendientes      http.HandlerFunc
+	UpdateModoReserva        http.HandlerFunc
+	ExpirarPendientes       http.HandlerFunc
+	EliminarPendientePago   http.HandlerFunc
 }
 
 type AdminHandlers struct {
@@ -444,6 +445,7 @@ func New(opts *RouterOpts) http.Handler {
 					r.Put("/modos-reserva", opts.ReservaHandlers.UpdateModoReserva)
 					r.Get("/{id}", opts.ReservaHandlers.GetByID)
 					r.Post("/{id}/cancelar", opts.ReservaHandlers.Cancelar)
+				r.Post("/{id}/eliminar-pendiente", opts.ReservaHandlers.EliminarPendientePago)
 					r.Post("/{id}/confirmar", opts.ReservaHandlers.ConfirmarORechazar)
 					r.Post("/{id}/rechazar", opts.ReservaHandlers.ConfirmarORechazar)
 				})

@@ -601,3 +601,24 @@ func (h *ReservaHandler) ExpirarPendientes(w http.ResponseWriter, r *http.Reques
 		Confirmadas: expiradas,
 	})
 }
+
+func (h *ReservaHandler) EliminarPendientePago(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetUserID(r.Context())
+	if userID == "" {
+		ErrorJSON(w, http.StatusUnauthorized, "AUTH_REQUIRED", "No autenticado")
+		return
+	}
+
+	reservaID := chi.URLParam(r, "id")
+	if reservaID == "" {
+		ErrorJSON(w, http.StatusBadRequest, "MISSING_ID", "ID de reserva requerido")
+		return
+	}
+
+	if err := h.svc.EliminarPendientePago(r.Context(), reservaID, userID); err != nil {
+		mapError(w, r, err, "[reservas/eliminar-pendiente]", "reservaId", reservaID)
+		return
+	}
+
+	JSON(w, http.StatusOK, map[string]any{"ok": true})
+}

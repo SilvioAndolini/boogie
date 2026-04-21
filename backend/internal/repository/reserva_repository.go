@@ -380,11 +380,11 @@ func (r *ReservaRepo) Confirmar(ctx context.Context, reservaID string) error {
 	return nil
 }
 
-func (r *ReservaRepo) Rechazar(ctx context.Context, reservaID, motivo string) error {
+func (r *ReservaRepo) Rechazar(ctx context.Context, reservaID, _ string) error {
 	tag, err := r.pool.Exec(ctx, `
-		UPDATE reservas SET estado = 'RECHAZADA', fecha_cancelacion = NOW(), motivo_cancelacion = $2
+		UPDATE reservas SET estado = 'RECHAZADA', fecha_cancelacion = NOW()
 		WHERE id = $1 AND estado IN ('PENDIENTE', 'PENDIENTE_CONFIRMACION')
-	`, reservaID, motivo)
+	`, reservaID)
 	if err != nil {
 		return fmt.Errorf("rechazar reserva: %w", err)
 	}
@@ -449,11 +449,11 @@ func (r *ReservaRepo) GetReservasExpiradas(ctx context.Context, ventana time.Dur
 	return ids, nil
 }
 
-func (r *ReservaRepo) CancelarHuesped(ctx context.Context, reservaID, motivo string) error {
+func (r *ReservaRepo) CancelarHuesped(ctx context.Context, reservaID, _ string) error {
 	tag, err := r.pool.Exec(ctx, `
-		UPDATE reservas SET estado = 'CANCELADA_HUESPED', fecha_cancelacion = NOW(), motivo_cancelacion = $2
+		UPDATE reservas SET estado = 'CANCELADA_HUESPED', fecha_cancelacion = NOW()
 		WHERE id = $1 AND estado IN ('PENDIENTE', 'PENDIENTE_PAGO', 'PENDIENTE_CONFIRMACION', 'CONFIRMADA')
-	`, reservaID, motivo)
+	`, reservaID)
 	if err != nil {
 		return fmt.Errorf("cancelar reserva huesped: %w", err)
 	}
@@ -466,7 +466,7 @@ func (r *ReservaRepo) CancelarHuesped(ctx context.Context, reservaID, motivo str
 func (r *ReservaRepo) CancelarAnfitrion(ctx context.Context, reservaID, _ string) error {
 	tag, err := r.pool.Exec(ctx, `
 		UPDATE reservas SET estado = 'CANCELADA_ANFITRION', fecha_cancelacion = NOW()
-		WHERE id = $1 AND estado IN ('PENDIENTE', 'PENDIENTE_PAGO', 'PENDIENTE_CONFIRMACION', 'CONFIRMADA')
+		WHERE id = $1 AND estado IN ('PENDIENTE', 'CONFIRMADA')
 	`, reservaID)
 	if err != nil {
 		return fmt.Errorf("cancelar reserva anfitrion: %w", err)
@@ -924,9 +924,7 @@ func (r *ReservaRepo) UpdateModoReserva(ctx context.Context, propiedadID, propie
 
 func (r *ReservaRepo) ExpirarPendientesWithDB(ctx context.Context, db DBTX) (int, error) {
 	tag, err := db.Exec(ctx, `
-		UPDATE reservas
-		SET estado = 'CANCELADA_HUESPED',
-		    fecha_cancelacion = NOW()
+		DELETE FROM reservas
 		WHERE estado = 'PENDIENTE_PAGO'
 		  AND fecha_creacion < NOW() - INTERVAL '15 minutes'
 	`)
@@ -934,4 +932,18 @@ func (r *ReservaRepo) ExpirarPendientesWithDB(ctx context.Context, db DBTX) (int
 		return 0, fmt.Errorf("expirar pendientes: %w", err)
 	}
 	return int(tag.RowsAffected()), nil
+}
+
+func (r *ReservaRepo) EliminarPendientePago(ctx context.Context, reservaID, userID string) error {
+	tag, err := r.pool.Exec(ctx, `
+		DELETE FROM reservas
+		WHERE id = $1 AND estado = 'PENDIENTE_PAGO' AND huesped_id = $2
+	`, reservaID, userID)
+	if err != nil {
+		return fmt.Errorf("eliminar pendiente pago: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return bizerrors.ReservaNoEncontrada()
+	}
+	return nil
 }

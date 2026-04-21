@@ -429,8 +429,7 @@ func (s *ReservaService) Cancelar(ctx context.Context, input *CancelarInput) (*R
 		return nil, bizerrors.ReservaNoEncontrada()
 	}
 
-	if detalle.Estado != enums.EstadoReservaPendiente && detalle.Estado != enums.EstadoReservaConfirmada &&
-		detalle.Estado != enums.EstadoReservaPendientePago && detalle.Estado != enums.EstadoReservaPendienteConfirm {
+	if detalle.Estado != enums.EstadoReservaPendiente && detalle.Estado != enums.EstadoReservaConfirmada {
 		return nil, bizerrors.EstadoInvalido("la reserva no se puede cancelar en su estado actual")
 	}
 
@@ -573,4 +572,8 @@ func (s *ReservaService) ExpirarPendientes(ctx context.Context) (int, error) {
 		return 0, err
 	}
 	return n, nil
+}
+
+func (s *ReservaService) EliminarPendientePago(ctx context.Context, reservaID, userID string) error {
+	return s.repo.EliminarPendientePago(ctx, reservaID, userID)
 }

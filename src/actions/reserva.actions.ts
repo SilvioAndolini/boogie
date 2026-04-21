@@ -92,6 +92,26 @@ export async function cancelarReserva(
   }
 }
 
+export async function eliminarReservaPendiente(
+  reservaId: string,
+  propiedadId: string,
+): Promise<ResultadoAccion> {
+  try {
+    await goPost(`/api/v1/reservas/${reservaId}/eliminar-pendiente`, {})
+
+    revalidatePath(`/propiedades/${propiedadId}`)
+    revalidatePath(`/canchas/${propiedadId}`)
+
+    return { exito: true }
+  } catch (err) {
+      Sentry.captureException(err)
+    if (err instanceof GoAPIError) {
+      return { exito: false, error: { codigo: err.code || 'ERR-010', mensaje: err.message } }
+    }
+    return { exito: false, error: { codigo: 'ERR-010', mensaje: 'Error al eliminar la reserva' } }
+  }
+}
+
 export async function confirmarORechazarReserva(
   reservaId: string,
   accion: 'confirmar' | 'rechazar',

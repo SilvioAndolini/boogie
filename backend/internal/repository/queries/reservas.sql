@@ -4,7 +4,7 @@ SELECT r.id, r.codigo, r.propiedad_id, r.huesped_id,
        r.precio_por_noche, r.subtotal, r.comision_plataforma, r.comision_anfitrion,
        r.total, r.moneda, r.cantidad_huespedes, r.estado,
        r.notas_huesped, r.fecha_creacion, r.fecha_confirmacion,
-       r.fecha_cancelacion, r.motivo_cancelacion,
+       r.fecha_cancelacion,
        p.titulo as propiedad_titulo, p.slug as propiedad_slug,
        p.propietario_id, p.politica_cancelacion,
        p.direccion as propiedad_direccion, p.ciudad as propiedad_ciudad,
@@ -92,17 +92,17 @@ WHERE id = $1 AND estado = 'PENDIENTE';
 
 -- name: RechazarReserva :exec
 UPDATE reservas
-SET estado = 'RECHAZADA', fecha_cancelacion = NOW(), motivo_cancelacion = $2
+SET estado = 'RECHAZADA', fecha_cancelacion = NOW()
 WHERE id = $1 AND estado = 'PENDIENTE';
 
 -- name: CancelarReservaHuesped :exec
 UPDATE reservas
-SET estado = 'CANCELADA_HUESPED', fecha_cancelacion = NOW(), motivo_cancelacion = $2
+SET estado = 'CANCELADA_HUESPED', fecha_cancelacion = NOW()
 WHERE id = $1 AND estado IN ('PENDIENTE', 'CONFIRMADA');
 
 -- name: CancelarReservaAnfitrion :exec
 UPDATE reservas
-SET estado = 'CANCELADA_ANFITRION', fecha_cancelacion = NOW(), motivo_cancelacion = $2
+SET estado = 'CANCELADA_ANFITRION', fecha_cancelacion = NOW()
 WHERE id = $1 AND estado IN ('PENDIENTE', 'CONFIRMADA');
 
 -- name: CompletarReserva :exec
