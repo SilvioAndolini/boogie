@@ -132,8 +132,8 @@ FROM reservas
 WHERE huesped_id = $1;
 
 -- name: InsertNotificacion :exec
-INSERT INTO notificaciones (tipo, titulo, mensaje, usuario_id, url_accion, created_at)
-VALUES ($1, $2, $3, $4, $5, NOW());
+INSERT INTO notificaciones (tipo, titulo, mensaje, usuario_id, url_accion)
+VALUES ($1, $2, $3, $4, $5);
 
 -- name: GetFechasOcupadas :many
 SELECT fecha_entrada as inicio, fecha_salida as fin

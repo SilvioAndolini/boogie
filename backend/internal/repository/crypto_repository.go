@@ -112,10 +112,11 @@ func (r *CryptoRepo) ConfirmarReservaFromCrypto(ctx context.Context, reservaID s
 
 // InsertNotificacion inserts a notification record.
 func (r *CryptoRepo) InsertNotificacion(ctx context.Context, tipo, titulo, mensaje, usuarioID, urlAccion string) error {
+	id := idgen.New()
 	_, err := r.pool.Exec(ctx, `
-		INSERT INTO notificaciones (tipo, titulo, mensaje, usuario_id, url_accion, created_at)
-		VALUES ($1, $2, $3, $4, $5, NOW())
-	`, tipo, titulo, mensaje, usuarioID, urlAccion)
+		INSERT INTO notificaciones (id, tipo, titulo, mensaje, usuario_id, url_accion)
+		VALUES ($1, $2, $3, $4, $5, $6)
+	`, id, tipo, titulo, mensaje, usuarioID, urlAccion)
 	if err != nil {
 		return fmt.Errorf("insert notificacion crypto: %w", err)
 	}
@@ -160,10 +161,11 @@ func (r *CryptoRepo) InsertCryptoPagoWithDB(ctx context.Context, db DBTX, reserv
 }
 
 func (r *CryptoRepo) InsertNotificacionWithDB(ctx context.Context, db DBTX, tipo, titulo, mensaje, usuarioID, urlAccion string) error {
+	id := idgen.New()
 	_, err := db.Exec(ctx, `
-		INSERT INTO notificaciones (tipo, titulo, mensaje, usuario_id, url_accion, created_at)
-		VALUES ($1, $2, $3, $4, $5, NOW())
-	`, tipo, titulo, mensaje, usuarioID, urlAccion)
+		INSERT INTO notificaciones (id, tipo, titulo, mensaje, usuario_id, url_accion)
+		VALUES ($1, $2, $3, $4, $5, $6)
+	`, id, tipo, titulo, mensaje, usuarioID, urlAccion)
 	if err != nil {
 		return fmt.Errorf("insert notificacion crypto (tx): %w", err)
 	}

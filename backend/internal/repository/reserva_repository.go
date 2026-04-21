@@ -512,10 +512,11 @@ func (r *ReservaRepo) GetStats(ctx context.Context, userID string, esPropietario
 }
 
 func (r *ReservaRepo) InsertNotificacion(ctx context.Context, tipo, titulo, mensaje, usuarioID, urlAccion string) error {
+	id := idgen.New()
 	_, err := r.pool.Exec(ctx, `
-		INSERT INTO notificaciones (tipo, titulo, mensaje, usuario_id, url_accion, created_at)
-		VALUES ($1, $2, $3, $4, $5, NOW())
-	`, tipo, titulo, mensaje, usuarioID, urlAccion)
+		INSERT INTO notificaciones (id, tipo, titulo, mensaje, usuario_id, url_accion)
+		VALUES ($1, $2, $3, $4, $5, $6)
+	`, id, tipo, titulo, mensaje, usuarioID, urlAccion)
 	return err
 }
 
@@ -756,10 +757,11 @@ func (r *ReservaRepo) UpdateCuponDescuentoWithDB(ctx context.Context, db DBTX, r
 }
 
 func (r *ReservaRepo) InsertNotificacionWithDB(ctx context.Context, db DBTX, tipo, titulo, mensaje, usuarioID, urlAccion string) error {
+	id := idgen.New()
 	_, err := db.Exec(ctx, `
-		INSERT INTO notificaciones (tipo, titulo, mensaje, usuario_id, url_accion, created_at)
-		VALUES ($1, $2, $3, $4, $5, NOW())
-	`, tipo, titulo, mensaje, usuarioID, urlAccion)
+		INSERT INTO notificaciones (id, tipo, titulo, mensaje, usuario_id, url_accion)
+		VALUES ($1, $2, $3, $4, $5, $6)
+	`, id, tipo, titulo, mensaje, usuarioID, urlAccion)
 	return err
 }
 
@@ -918,4 +920,18 @@ func (r *ReservaRepo) UpdateModoReserva(ctx context.Context, propiedadID, propie
 		return bizerrors.PropiedadNoPertenece()
 	}
 	return nil
+}
+
+func (r *ReservaRepo) ExpirarPendientesWithDB(ctx context.Context, db DBTX) (int, error) {
+	tag, err := db.Exec(ctx, `
+		UPDATE reservas
+		SET estado = 'CANCELADA_HUESPED',
+		    fecha_cancelacion = NOW()
+		WHERE estado = 'PENDIENTE_PAGO'
+		  AND fecha_creacion < NOW() - INTERVAL '15 minutes'
+	`)
+	if err != nil {
+		return 0, fmt.Errorf("expirar pendientes: %w", err)
+	}
+	return int(tag.RowsAffected()), nil
 }

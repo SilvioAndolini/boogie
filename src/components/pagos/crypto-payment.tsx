@@ -39,6 +39,7 @@ export function CryptoPayment({
   const [status, setStatus] = useState<CryptoStatus>('generating')
   const [elapsed, setElapsed] = useState(0)
   const [pollAttempts, setPollAttempts] = useState(0)
+  const [verificationAttempts, setVerificationAttempts] = useState(0)
   const onPagoRegistradoRef = useRef(onPagoRegistrado)
   onPagoRegistradoRef.current = onPagoRegistrado
 
@@ -136,18 +137,6 @@ export function CryptoPayment({
     setPollAttempts(0)
   }
 
-  useEffect(() => {
-    if (status !== 'failed') return
-    const rid = createdReservaId || reservaId
-    if (!rid) return
-
-    fetch('/api/crypto/cancelar-fallida', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reservaId: rid }),
-    }).catch(() => {})
-  }, [status, createdReservaId, reservaId])
-
   const handleManualVerification = async () => {
     const rid = createdReservaId || reservaId
     if (!rid) return
@@ -169,6 +158,7 @@ export function CryptoPayment({
   }
 
   const handleGoBack = () => {
+    setVerificationAttempts((prev) => prev + 1)
     setStatus('waiting')
     setPollAttempts(0)
   }
@@ -238,6 +228,47 @@ export function CryptoPayment({
   }
 
   if (status === 'failed') {
+    const maxAttempts = 3
+    const reachedMax = verificationAttempts + 1 >= maxAttempts
+
+    if (reachedMax) {
+      return (
+        <div className="flex flex-col items-center gap-4 py-8">
+          <motion.div
+            initial={{ scale: 0 }} animate={{ scale: 1 }}
+            className="flex h-20 w-20 items-center justify-center rounded-full bg-[#FEE2E2]"
+          >
+            <XCircle className="h-10 w-10 text-[#C1121F]" />
+          </motion.div>
+          <div className="text-center">
+            <p className="text-lg font-bold text-[#1A1A1A]">No pudimos verificar tu pago</p>
+            <p className="text-sm text-[#6B6560] mt-1">
+              Se agotaron los intentos de verificación automática.
+            </p>
+          </div>
+          <div className="w-full max-w-sm rounded-xl border border-[#E8E4DF] bg-[#F8F6F3] p-4 space-y-2">
+            <p className="text-xs font-semibold text-[#1B4332] mb-2">Contacta a soporte técnico</p>
+            <div className="flex items-center gap-2 text-sm text-[#1A1A1A]">
+              <span className="text-[#9E9892]">WhatsApp</span>
+              <span className="flex-1 border-b border-dotted border-[#E8E4DF]" />
+              <span className="font-medium">+58 412-000-0000</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-[#1A1A1A]">
+              <span className="text-[#9E9892]">Email</span>
+              <span className="flex-1 border-b border-dotted border-[#E8E4DF]" />
+              <span className="font-medium">soporte@boogierent.com</span>
+            </div>
+          </div>
+          <button
+            onClick={() => window.location.href = '/dashboard/mis-reservas'}
+            className="mt-2 h-11 rounded-xl bg-[#1B4332] px-8 text-sm font-semibold text-white hover:bg-[#2D6A4F]"
+          >
+            Ver mis reservas
+          </button>
+        </div>
+      )
+    }
+
     return (
       <div className="flex flex-col items-center gap-4 py-8">
         <motion.div
@@ -248,19 +279,20 @@ export function CryptoPayment({
         </motion.div>
         <div className="text-center">
           <p className="text-lg font-bold text-[#1A1A1A]">No pudimos verificar tu pago</p>
-          <p className="text-sm text-[#6B6560] mt-1">La transaccion no ha podido ser verificada automaticamente.</p>
+          <p className="text-sm text-[#6B6560] mt-1">La transacción no ha podido ser verificada automáticamente.</p>
+          <p className="text-xs text-[#9E9892] mt-1">Intento {verificationAttempts + 1} de {maxAttempts}</p>
         </div>
         <div className="flex w-full max-w-sm flex-col gap-2 mt-2">
           <button
             onClick={handleGoBack}
-            className="flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E8E4DF] text-sm font-medium text-[#1A1A1A] hover:bg-[#F8F6F3]"
+            className="flex h-11 items-center justify-center gap-2 rounded-xl bg-[#1B4332] text-sm font-semibold text-white hover:bg-[#2D6A4F]"
           >
             <ArrowLeft className="h-4 w-4" />
-            Volver atras
+            Volver a verificar pago
           </button>
           <button
             onClick={handleManualVerification}
-            className="flex h-11 items-center justify-center gap-2 rounded-xl bg-[#1B4332] text-sm font-semibold text-white hover:bg-[#2D6A4F]"
+            className="flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E8E4DF] text-sm font-medium text-[#1A1A1A] hover:bg-[#F8F6F3]"
           >
             Verificar pago manualmente
           </button>

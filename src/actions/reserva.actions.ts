@@ -13,9 +13,43 @@ export async function crearReserva(rawData: {
   fechaSalida: string
   cantidadHuespedes: number
   notasHuesped?: string
+  cuponCodigo?: string
+  storeItems?: Array<{
+    tipo: string
+    nombre: string
+    cantidad: number
+    precio: number
+    moneda: string
+    tipoPrecio?: string
+    id: string
+  }>
+  noches?: number
 }): Promise<ResultadoAccion<ReservaConPropiedad>> {
   try {
-    const reserva = await goPost<ReservaConPropiedad>('/api/v1/reservas', rawData)
+    const storeItems = (rawData.storeItems || []).map((item) => ({
+      tipo_item: item.tipo,
+      nombre: item.nombre,
+      cantidad: item.cantidad,
+      precio_unitario: item.precio,
+      moneda: item.moneda,
+      subtotal: (item.tipo === 'servicio' && item.tipoPrecio === 'POR_NOCHE'
+        ? item.precio * (rawData.noches || 1)
+        : item.precio) * item.cantidad,
+      producto_id: item.tipo === 'producto' ? item.id : null,
+      servicio_id: item.tipo === 'servicio' ? item.id : null,
+    }))
+
+    const body: Record<string, unknown> = {
+      propiedadId: rawData.propiedadId,
+      fechaEntrada: rawData.fechaEntrada,
+      fechaSalida: rawData.fechaSalida,
+      cantidadHuespedes: rawData.cantidadHuespedes,
+      notasHuesped: rawData.notasHuesped || null,
+      cuponCodigo: rawData.cuponCodigo || '',
+      storeItems,
+    }
+
+    const reserva = await goPost<ReservaConPropiedad>('/api/v1/reservas', body)
 
     revalidatePath('/dashboard/mis-reservas')
     revalidatePath('/dashboard/reservas-recibidas')

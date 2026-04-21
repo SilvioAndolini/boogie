@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Phone, CreditCard, Upload, X, Loader2, ArrowRight, Building2, FileText, Wallet,
+  Phone, CreditCard, Upload, X, Loader2, ArrowRight, Building2, FileText, Wallet, Clock,
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -46,6 +46,7 @@ export function PaymentForm({
 }: PaymentFormProps) {
   const [mostrarFormulario, setMostrarFormulario] = useState(false)
   const [enviando, setEnviando] = useState(false)
+  const [pagoEnviado, setPagoEnviado] = useState(false)
   const [tasaBCV, setTasaBCV] = useState<number | null>(null)
   const [fuenteBCV, setFuenteBCV] = useState('')
   const [datosPago, setDatosPago] = useState<PaymentData | null>(null)
@@ -93,6 +94,7 @@ export function PaymentForm({
     formData.append('telefonoEmisor', telefonoEmisor)
     if (comprobante) formData.append('comprobante', comprobante)
     onSubmit(formData)
+    setPagoEnviado(true)
     setEnviando(false)
   }
 
@@ -225,6 +227,29 @@ export function PaymentForm({
           </div>
         )}
         <p className="text-center text-xs text-[#9E9892]">Método de pago en desarrollo.</p>
+      </div>
+    )
+  }
+
+  if (esPagoMovil && pagoEnviado) {
+    return (
+      <div className="flex flex-col items-center gap-4 py-8">
+        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#D8F3DC]">
+          <Clock className="h-10 w-10 text-[#1B4332]" />
+        </div>
+        <div className="text-center">
+          <p className="text-lg font-bold text-[#1B4332]">Pago registrado</p>
+          <p className="text-sm text-[#6B6560] mt-1">
+            Tu pago está en verificación. Las verificaciones pueden tardar hasta 30 minutos.
+          </p>
+          <p className="text-xs text-[#9E9892] mt-2">Te notificaremos por correo una vez verificado.</p>
+        </div>
+        <button
+          onClick={() => window.location.href = '/dashboard/mis-reservas'}
+          className="mt-2 h-11 rounded-xl bg-[#1B4332] px-8 text-sm font-semibold text-white hover:bg-[#2D6A4F]"
+        >
+          Ver mis reservas
+        </button>
       </div>
     )
   }

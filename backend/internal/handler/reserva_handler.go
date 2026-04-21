@@ -30,6 +30,17 @@ type crearReservaRequest struct {
 	FechaSalida       string  `json:"fechaSalida"`
 	CantidadHuespedes int     `json:"cantidadHuespedes"`
 	NotasHuesped      *string `json:"notasHuesped"`
+	CuponCodigo       string  `json:"cuponCodigo"`
+	StoreItems        []struct {
+		TipoItem       string  `json:"tipo_item"`
+		Nombre         string  `json:"nombre"`
+		Cantidad       int     `json:"cantidad"`
+		PrecioUnitario float64 `json:"precio_unitario"`
+		Moneda         string  `json:"moneda"`
+		Subtotal       float64 `json:"subtotal"`
+		ProductoID     *string `json:"producto_id"`
+		ServicioID     *string `json:"servicio_id"`
+	} `json:"storeItems"`
 }
 
 func (h *ReservaHandler) Crear(w http.ResponseWriter, r *http.Request) {
@@ -67,6 +78,20 @@ func (h *ReservaHandler) Crear(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var storeItems []repository.StoreItemInput
+	for _, it := range req.StoreItems {
+		storeItems = append(storeItems, repository.StoreItemInput{
+			TipoItem:       it.TipoItem,
+			Nombre:         it.Nombre,
+			Cantidad:       it.Cantidad,
+			PrecioUnitario: it.PrecioUnitario,
+			Moneda:         it.Moneda,
+			Subtotal:       it.Subtotal,
+			ProductoID:     it.ProductoID,
+			ServicioID:     it.ServicioID,
+		})
+	}
+
 	result, err := h.svc.Crear(r.Context(), &service.CrearReservaInput{
 		PropiedadID:       req.PropiedadID,
 		HuespedID:         userID,
@@ -74,6 +99,8 @@ func (h *ReservaHandler) Crear(w http.ResponseWriter, r *http.Request) {
 		FechaSalida:       fechaSalida,
 		CantidadHuespedes: req.CantidadHuespedes,
 		NotasHuesped:      req.NotasHuesped,
+		CuponCodigo:       req.CuponCodigo,
+		StoreItems:        storeItems,
 	})
 	if err != nil {
 		mapError(w, r, err, "[reservas/crear]", "userId", userID, "propId", req.PropiedadID)
@@ -560,5 +587,17 @@ func (h *ReservaHandler) UpdateModoReserva(w http.ResponseWriter, r *http.Reques
 	JSON(w, http.StatusOK, UpdateModoReservaResponse{
 		Ok:      true,
 		Mensaje: fmt.Sprintf("Modo de reserva actualizado a %s", req.Modo),
+	})
+}
+
+func (h *ReservaHandler) ExpirarPendientes(w http.ResponseWriter, r *http.Request) {
+	expiradas, err := h.svc.ExpirarPendientes(r.Context())
+	if err != nil {
+		mapError(w, r, err, "[reservas/expirar-pendientes]")
+		return
+	}
+	JSON(w, http.StatusOK, AutoConfirmarResponse{
+		Ok:          true,
+		Confirmadas: expiradas,
 	})
 }

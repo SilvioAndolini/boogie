@@ -146,6 +146,7 @@ type ReservaHandlers struct {
 	AutoConfirmarExpiradas http.HandlerFunc
 	GetModosReserva        http.HandlerFunc
 	UpdateModoReserva      http.HandlerFunc
+	ExpirarPendientes      http.HandlerFunc
 }
 
 type AdminHandlers struct {
@@ -448,6 +449,7 @@ func New(opts *RouterOpts) http.Handler {
 				})
 
 				r.With(cronSecretMiddleware(opts.CronSecret)).Post("/cron/auto-confirmar", opts.ReservaHandlers.AutoConfirmarExpiradas)
+				r.With(cronSecretMiddleware(opts.CronSecret)).Post("/cron/expirar-pendientes", opts.ReservaHandlers.ExpirarPendientes)
 			})
 		}
 

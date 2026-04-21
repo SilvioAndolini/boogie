@@ -30,6 +30,7 @@ type CrearReservaInput struct {
 	CantidadHuespedes int
 	NotasHuesped      *string
 	CuponCodigo       string
+	StoreItems        []repository.StoreItemInput
 }
 
 type CrearReservaResult struct {
@@ -292,6 +293,17 @@ func (s *ReservaService) Crear(ctx context.Context, input *CrearReservaInput) (*
 			slog.Error("[reserva-service] notificacion nueva reserva", "error", notifErr)
 		}
 
+		if len(input.StoreItems) > 0 && s.storeItemRepo != nil {
+			items := make([]repository.StoreItemInput, len(input.StoreItems))
+			copy(items, input.StoreItems)
+			for i := range items {
+				items[i].ReservaID = reserva.ID
+			}
+			if batchErr := s.storeItemRepo.InsertBatchWithDB(ctx, tx, items); batchErr != nil {
+				return fmt.Errorf("error al insertar store items: %w", batchErr)
+			}
+		}
+
 		return nil
 	})
 	if err != nil {
@@ -547,4 +559,17 @@ func (s *ReservaService) ListPropiedadesModoReserva(ctx context.Context, propiet
 
 func (s *ReservaService) UpdateModoReserva(ctx context.Context, propiedadID, propietarioID, modo string) error {
 	return s.repo.UpdateModoReserva(ctx, propiedadID, propietarioID, modo)
+}
+
+func (s *ReservaService) ExpirarPendientes(ctx context.Context) (int, error) {
+	var n int
+	err := repository.WithTx(ctx, s.repo.Pool(), func(tx pgx.Tx) error {
+		var txErr error
+		n, txErr = s.repo.ExpirarPendientesWithDB(ctx, tx)
+		return txErr
+	})
+	if err != nil {
+		return 0, err
+	}
+	return n, nil
 }

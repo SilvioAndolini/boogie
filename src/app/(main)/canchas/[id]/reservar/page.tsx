@@ -1,20 +1,22 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, Shield, Loader2,
   MapPin, Receipt, Check, ArrowRight, Clock, DollarSign,
-  Sparkles, Trophy, CalendarDays, Tag,
+  Sparkles, Trophy, CalendarDays, Tag, XCircle,
 } from 'lucide-react'
 import { PaymentMethodSelector } from '@/components/pagos/payment-method-selector'
 import { PaymentForm } from '@/components/pagos/payment-form'
 import { BoogieStore } from '@/components/reservas/boogie-store'
 import { CuponInput } from '@/components/reservas/cupon-input'
+import { TTLCountdown } from '@/components/reservas/ttl-countdown'
+import { TTLExpiredModal } from '@/components/reservas/ttl-expired-modal'
 import { COMISION_PLATAFORMA_HUESPED } from '@/lib/constants'
-import { crearReserva } from '@/actions/reserva.actions'
-import { crearReservaConPago } from '@/actions/pago-reserva.actions'
+import { crearReserva, cancelarReserva } from '@/actions/reserva.actions'
+import { registrarPagoReserva } from '@/actions/pago-reserva.actions'
 import Image from 'next/image'
 import { toast } from 'sonner'
 import type { MetodoPagoEnum } from '@/types'
@@ -45,10 +47,9 @@ function formatDateLong(d: Date) {
 }
 
 const PASOS = [
+  { id: 'store', label: 'Arma tu Boogie', icon: Sparkles },
   { id: 'resumen', label: 'Resumen', icon: Receipt },
-  { id: 'store', label: 'Boogie Store', icon: Sparkles },
   { id: 'pago', label: 'Pago', icon: Shield },
-  { id: 'confirmacion', label: 'Listo', icon: Check },
 ] as const
 
 type PasoId = typeof PASOS[number]['id']
@@ -57,16 +58,18 @@ function ReservarContent() {
   const params = useParams()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [paso, setPaso] = useState<PasoId>('resumen')
+  const [paso, setPaso] = useState<PasoId>('store')
   const [metodoPago, setMetodoPago] = useState<MetodoPagoEnum | undefined>()
   const [propiedad, setPropiedad] = useState<PropiedadReserva | null>(null)
   const [cargando, setCargando] = useState(true)
   const [creandoReserva, setCreandoReserva] = useState(false)
   const [reservaCreadaId, setReservaCreadaId] = useState<string | null>(null)
+  const [fechaCreacionReserva, setFechaCreacionReserva] = useState<Date | null>(null)
   const [storeCart, setStoreCart] = useState<CartItem[]>([])
   const [tasaCambio, setTasaCambio] = useState(78.39)
   const [cuponCodigo, setCuponCodigo] = useState<string | null>(null)
   const [descuentoCupon, setDescuentoCupon] = useState(0)
+  const [ttlExpired, setTtlExpired] = useState(false)
 
   const propiedadId = params.id as string
   const fecha = searchParams.get('fecha') || ''
@@ -128,33 +131,68 @@ function ReservarContent() {
 
   const total = subtotalConDescuento + comision + storeTotal
 
-  const handlePaymentSubmit = async (paymentFormData: FormData) => {
-    if (!propiedad || !metodoPago) return
+  const handleConfirmarReserva = async () => {
+    if (!propiedad) return
     setCreandoReserva(true)
     try {
-      const referencia = paymentFormData.get('referencia') as string
-      const bancoEmisor = paymentFormData.get('bancoEmisor') as string
-      const telefonoEmisor = paymentFormData.get('telefonoEmisor') as string
-      const comprobanteFile = paymentFormData.get('comprobante') as File | null
-
-      let comprobanteBase64: string | undefined
-      let comprobanteExt: string | undefined
-      if (comprobanteFile) {
-        comprobanteExt = comprobanteFile.name.split('.').pop() || 'jpg'
-        const bytes = new Uint8Array(await comprobanteFile.arrayBuffer())
-        let binary = ''
-        for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
-        comprobanteBase64 = btoa(binary)
-      }
-
       const fechaDate = new Date(fecha + 'T00:00:00')
-      const fechaFinDate = new Date(fecha + 'T00:00:00')
-
-      const result = await crearReservaConPago({
+      const result = await crearReserva({
         propiedadId: propiedad.id,
         fechaEntrada: fechaDate.toISOString(),
-        fechaSalida: fechaFinDate.toISOString(),
+        fechaSalida: fechaDate.toISOString(),
         cantidadHuespedes: 1,
+        storeItems: storeCart,
+        noches: horas,
+        cuponCodigo: cuponCodigo || undefined,
+      })
+
+      if (result.exito && result.datos) {
+        setReservaCreadaId(result.datos.id)
+        setFechaCreacionReserva(new Date())
+        setPaso('pago')
+      } else if (result.error) {
+        toast.error(result.error.mensaje)
+      }
+    } catch (err) {
+      console.error('[CanchaReservarPage] Error:', err)
+      toast.error(err instanceof Error ? err.message : 'Error al crear la reserva')
+    } finally {
+      setCreandoReserva(false)
+    }
+  }
+
+  const handleCancelarReserva = async () => {
+    if (!reservaCreadaId) return
+    try {
+      await cancelarReserva(reservaCreadaId)
+      toast.success('Reserva cancelada')
+      router.push(`/canchas/${propiedadId}`)
+    } catch {
+      toast.error('Error al cancelar la reserva')
+    }
+  }
+
+  const handlePaymentSubmit = async (paymentFormData: FormData) => {
+    if (!propiedad || !metodoPago || !reservaCreadaId) return
+
+    const referencia = paymentFormData.get('referencia') as string
+    const bancoEmisor = paymentFormData.get('bancoEmisor') as string
+    const telefonoEmisor = paymentFormData.get('telefonoEmisor') as string
+    const comprobanteFile = paymentFormData.get('comprobante') as File | null
+
+    let comprobanteBase64: string | undefined
+    let comprobanteExt: string | undefined
+    if (comprobanteFile) {
+      comprobanteExt = comprobanteFile.name.split('.').pop() || 'jpg'
+      const bytes = new Uint8Array(await comprobanteFile.arrayBuffer())
+      let binary = ''
+      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
+      comprobanteBase64 = btoa(binary)
+    }
+
+    try {
+      const result = await registrarPagoReserva({
+        reservaId: reservaCreadaId,
         monto: total,
         moneda: propiedad.moneda,
         metodoPago: metodoPago,
@@ -163,35 +201,25 @@ function ReservarContent() {
         telefonoEmisor: telefonoEmisor || undefined,
         comprobanteBase64,
         comprobanteExt,
-        storeItems: storeCart,
-        noches: horas,
-        cuponCodigo: cuponCodigo || undefined,
       })
 
       if (result.error) {
         toast.error(result.error)
         return
       }
-
-      if (result.reservaId) {
-        setReservaCreadaId(result.reservaId)
-      }
-
-      setPaso('confirmacion')
     } catch (err) {
-      console.error('[CanchaReservarPage] Error:', err)
-      const msg = err instanceof Error ? err.message : 'Error al crear la reserva'
-      toast.error(msg)
-    } finally {
-      setCreandoReserva(false)
+      console.error('[CanchaReservarPage] Payment error:', err)
+      toast.error(err instanceof Error ? err.message : 'Error al registrar el pago')
     }
   }
 
-  const getBackAction = () => {
-    if (paso === 'store') return () => setPaso('resumen')
-    if (paso === 'pago') return () => setPaso('store')
-    return () => router.push(`/canchas/${propiedadId}`)
-  }
+  const handleTTLExpired = useCallback(() => {
+    setTtlExpired(true)
+  }, [])
+
+  const fechaExpiracion = fechaCreacionReserva
+    ? new Date(fechaCreacionReserva.getTime() + 15 * 60 * 1000)
+    : null
 
   if (cargando || !propiedad) {
     return (
@@ -204,8 +232,18 @@ function ReservarContent() {
   const imagenPrincipal = propiedad.imagenes?.find((i) => i.es_principal)?.url || propiedad.imagenes?.[0]?.url
   const pasoIndex = PASOS.findIndex((p) => p.id === paso)
 
+  const getBackAction = () => {
+    if (paso === 'resumen') return () => setPaso('store')
+    if (paso === 'pago' && !reservaCreadaId) return () => setPaso('resumen')
+    return () => router.push(`/canchas/${propiedadId}`)
+  }
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
+
+      {ttlExpired && reservaCreadaId && (
+        <TTLExpiredModal onVolver={() => router.push(`/canchas/${propiedadId}`)} />
+      )}
 
       {/* ====== BACK ====== */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-6">
@@ -214,7 +252,7 @@ function ReservarContent() {
           className="flex items-center gap-2 text-sm text-[#9E9892] hover:text-[#1A1A1A] transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
-          {paso === 'store' ? 'Volver al resumen' : paso === 'pago' ? 'Volver al store' : 'Volver'}
+          {paso === 'resumen' ? 'Volver al store' : paso === 'pago' && !reservaCreadaId ? 'Volver al resumen' : 'Volver'}
         </button>
       </motion.div>
 
@@ -247,6 +285,21 @@ function ReservarContent() {
 
       {/* ====== STEPS ====== */}
       <AnimatePresence mode="wait">
+        {paso === 'store' && (
+          <motion.div key="store" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }}>
+            <BoogieStore
+              noches={horas}
+              tasaCambio={tasaCambio}
+              initialCart={storeCart}
+              onBack={() => router.push(`/canchas/${propiedadId}`)}
+              onContinue={(cart) => {
+                setStoreCart(cart)
+                setPaso('resumen')
+              }}
+            />
+          </motion.div>
+        )}
+
         {paso === 'resumen' && (
           <motion.div key="resumen" variants={stagger} initial="hidden" animate="visible" exit={{ opacity: 0, y: -10 }} className="space-y-4">
 
@@ -295,7 +348,7 @@ function ReservarContent() {
                 </div>
                 <div className="flex items-center gap-2.5 text-sm">
                   <Clock className="h-3.5 w-3.5 text-[#9E9892] shrink-0" />
-                  <span className="text-[#9E9892]">Duración</span>
+                  <span className="text-[#9E9892]">Duracion</span>
                   <span className="flex-1 border-b border-dotted border-[#E8E4DF] min-w-[12px]" />
                   <span className="font-medium text-[#1A1A1A]">{horas} hora{horas > 1 ? 's' : ''}</span>
                 </div>
@@ -314,70 +367,63 @@ function ReservarContent() {
                 {descuentoCupon > 0 && (
                   <div className="flex items-center gap-2.5 text-sm">
                     <Tag className="h-3.5 w-3.5 text-[#52B788] shrink-0" />
-                    <span className="text-[#52B788]">Cupón {cuponCodigo}</span>
+                    <span className="text-[#52B788]">Cupon {cuponCodigo}</span>
                     <span className="flex-1 border-b border-dotted border-[#52B788]/30 min-w-[12px]" />
                     <span className="font-medium text-[#52B788]">-{formatUSD(descuentoCupon)}</span>
                   </div>
                 )}
                 <div className="flex items-center gap-2.5 text-sm">
                   <Shield className="h-3.5 w-3.5 text-[#9E9892] shrink-0" />
-                  <span className="text-[#9E9892]">Comisión ({(COMISION_PLATAFORMA_HUESPED * 100).toFixed(0)}%)</span>
+                  <span className="text-[#9E9892]">Comision ({(COMISION_PLATAFORMA_HUESPED * 100).toFixed(0)}%)</span>
                   <span className="flex-1 border-b border-dotted border-[#E8E4DF] min-w-[12px]" />
                   <span className="font-medium text-[#1A1A1A]">{formatUSD(comision)}</span>
                 </div>
+                {storeTotal > 0 && (
+                  <div className="flex items-center gap-2.5 text-sm">
+                    <Sparkles className="h-3.5 w-3.5 text-[#9E9892] shrink-0" />
+                    <span className="text-[#9E9892]">Boogie Store ({storeCart.length} item{storeCart.length > 1 ? 's' : ''})</span>
+                    <span className="flex-1 border-b border-dotted border-[#E8E4DF] min-w-[12px]" />
+                    <span className="font-medium text-[#1A1A1A]">{formatUSD(storeTotal)}</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-2.5 text-sm pt-2 border-t border-[#E8E4DF]">
                   <DollarSign className="h-3.5 w-3.5 text-[#1B4332] shrink-0" />
                   <span className="font-bold text-[#1A1A1A]">Total</span>
                   <span className="flex-1 border-b border-dotted border-[#1B4332]/30 min-w-[12px]" />
-                  <span className="text-lg font-bold text-[#1B4332]">{formatUSD(subtotalConDescuento + comision)}</span>
+                  <span className="text-lg font-bold text-[#1B4332]">{formatUSD(total)}</span>
                 </div>
               </div>
             </motion.div>
 
-            {/* Coupon input */}
-            <motion.div variants={fadeUp}>
-              <CuponInput
-                propiedadId={propiedadId}
-                subtotal={subtotal}
-                noches={horas}
-                appliedCupon={cuponCodigo}
-                descuento={descuentoCupon}
-                onApply={(desc, cod) => { setDescuentoCupon(desc); setCuponCodigo(cod) }}
-                onRemove={() => { setDescuentoCupon(0); setCuponCodigo(null) }}
-              />
-            </motion.div>
-
             <motion.div variants={fadeUp}>
               <button
-                onClick={() => setPaso('store')}
-                className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1B4332] text-sm font-semibold text-white transition-all hover:bg-[#2D6A4F] active:scale-[0.98]"
+                onClick={handleConfirmarReserva}
+                disabled={creandoReserva}
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1B4332] text-sm font-semibold text-white transition-all hover:bg-[#2D6A4F] active:scale-[0.98] disabled:opacity-50"
               >
-                <Sparkles className="h-4 w-4" />
-                Arma tu Boogie!
-                <ArrowRight className="h-4 w-4" />
+                {creandoReserva ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <Shield className="h-4 w-4" />
+                    Confirmar reserva y pagar
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
               </button>
             </motion.div>
           </motion.div>
         )}
 
-        {paso === 'store' && (
-          <motion.div key="store" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }}>
-            <BoogieStore
-              noches={horas}
-              tasaCambio={tasaCambio}
-              initialCart={storeCart}
-              onBack={() => setPaso('resumen')}
-              onContinue={(cart) => {
-                setStoreCart(cart)
-                setPaso('pago')
-              }}
-            />
-          </motion.div>
-        )}
-
-        {paso === 'pago' && (
+        {paso === 'pago' && reservaCreadaId && (
           <motion.div key="pago" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }} className="space-y-5">
 
+            {/* TTL Countdown */}
+            {fechaExpiracion && (
+              <TTLCountdown fechaExpiracion={fechaExpiracion} onExpired={handleTTLExpired} />
+            )}
+
+            {/* Total badge */}
             <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1B4332] via-[#2D6A4F] to-[#40916C]">
               <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-white/5" />
               <div className="relative flex items-center justify-between p-5">
@@ -413,6 +459,16 @@ function ReservarContent() {
               </div>
             )}
 
+            <CuponInput
+              propiedadId={propiedadId}
+              subtotal={subtotal + storeTotal}
+              noches={horas}
+              appliedCupon={cuponCodigo}
+              descuento={descuentoCupon}
+              onApply={(desc, cod) => { setDescuentoCupon(desc); setCuponCodigo(cod) }}
+              onRemove={() => { setDescuentoCupon(0); setCuponCodigo(null) }}
+            />
+
             <PaymentMethodSelector selected={metodoPago} onSelect={setMetodoPago} />
 
             {metodoPago && (
@@ -429,42 +485,15 @@ function ReservarContent() {
                 onSubmit={handlePaymentSubmit}
               />
             )}
-          </motion.div>
-        )}
 
-        {paso === 'confirmacion' && (
-          <motion.div key="confirmacion" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
-            <div className="relative overflow-hidden rounded-2xl border border-[#E8E4DF] bg-gradient-to-br from-white to-[#F8F6F3]">
-              <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-[#1B4332]/[0.03]" />
-              <div className="absolute -bottom-6 -left-6 h-20 w-20 rounded-full bg-[#1B4332]/[0.03]" />
-
-              <div className="relative flex flex-col items-center gap-4 p-8 text-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[#1B4332] to-[#40916C]">
-                  <Check className="h-8 w-8 text-white" />
-                </div>
-
-                <h2 className="text-xl font-bold text-[#1A1A1A]">Reserva registrada!</h2>
-
-                <p className="max-w-sm text-sm text-[#6B6560] leading-relaxed">
-                  Tu pago está en verificación. Te notificaremos por correo cuando sea confirmado.
-                </p>
-
-                <div className="mt-2 flex gap-3">
-                  <button
-                    onClick={() => router.push('/dashboard/mis-reservas')}
-                    className="flex h-10 items-center gap-2 rounded-xl border border-[#E8E4DF] bg-white px-5 text-sm font-medium text-[#1A1A1A] transition-all hover:bg-[#F8F6F3]"
-                  >
-                    Mis reservas
-                  </button>
-                  <button
-                    onClick={() => router.push('/canchas')}
-                    className="flex h-10 items-center gap-2 rounded-xl bg-[#1B4332] px-5 text-sm font-medium text-white transition-all hover:bg-[#2D6A4F]"
-                  >
-                    Explorar canchas
-                  </button>
-                </div>
-              </div>
-            </div>
+            {/* Cancel reservation button */}
+            <button
+              onClick={handleCancelarReserva}
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-red-200 text-sm font-medium text-red-600 transition-all hover:bg-red-50"
+            >
+              <XCircle className="h-4 w-4" />
+              Cancelar reserva
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
