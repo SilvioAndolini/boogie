@@ -104,7 +104,6 @@ model Propiedad {
   duracionMinimaMin  Int?               @default(60) @map("duracion_minima_min")
   esExpress          Boolean            @default(false) @map("es_express")
   precioExpress      Decimal?           @map("precio_express") @db.Decimal(10, 2)
-  modoReserva        ModoReserva        @default(MANUAL) @map("modo_reserva")
 
   propietarioId     String              @map("propietario_id")
   propietario       Usuario             @relation("Propietario", fields: [propietarioId], references: [id])
@@ -283,11 +282,6 @@ enum EstadoReserva {
   CANCELADA_HUESPED
   CANCELADA_ANFITRION
   RECHAZADA
-}
-
-enum ModoReserva {
-  MANUAL
-  AUTOMATICO
 }
 
 // =============================================

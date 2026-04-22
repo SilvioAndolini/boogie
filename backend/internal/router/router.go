@@ -133,21 +133,18 @@ type SeccionesHandlers struct {
 }
 
 type ReservaHandlers struct {
-	Crear                  http.HandlerFunc
-	CrearConPago           http.HandlerFunc
-	GetByID                http.HandlerFunc
-	MisReservas            http.HandlerFunc
-	ReservasRecibidas      http.HandlerFunc
-	ConfirmarORechazar     http.HandlerFunc
-	Cancelar               http.HandlerFunc
-	Disponibilidad         http.HandlerFunc
-	FechasOcupadas         http.HandlerFunc
-	CalcularReembolso      http.HandlerFunc
-	AutoConfirmarExpiradas http.HandlerFunc
-	GetModosReserva        http.HandlerFunc
-	UpdateModoReserva        http.HandlerFunc
-	ExpirarPendientes       http.HandlerFunc
-	EliminarPendientePago   http.HandlerFunc
+	Crear                http.HandlerFunc
+	CrearConPago         http.HandlerFunc
+	GetByID              http.HandlerFunc
+	MisReservas          http.HandlerFunc
+	ReservasRecibidas    http.HandlerFunc
+	ConfirmarORechazar   http.HandlerFunc
+	Cancelar             http.HandlerFunc
+	Disponibilidad       http.HandlerFunc
+	FechasOcupadas       http.HandlerFunc
+	CalcularReembolso    http.HandlerFunc
+	ExpirarPendientes    http.HandlerFunc
+	EliminarPendientePago http.HandlerFunc
 }
 
 type AdminHandlers struct {
@@ -441,8 +438,6 @@ func New(opts *RouterOpts) http.Handler {
 					r.Post("/crear-con-pago", opts.ReservaHandlers.CrearConPago)
 					r.Get("/mias", opts.ReservaHandlers.MisReservas)
 					r.Get("/recibidas", opts.ReservaHandlers.ReservasRecibidas)
-					r.Get("/modos-reserva", opts.ReservaHandlers.GetModosReserva)
-					r.Put("/modos-reserva", opts.ReservaHandlers.UpdateModoReserva)
 					r.Get("/{id}", opts.ReservaHandlers.GetByID)
 					r.Post("/{id}/cancelar", opts.ReservaHandlers.Cancelar)
 				r.Post("/{id}/eliminar-pendiente", opts.ReservaHandlers.EliminarPendientePago)
@@ -450,7 +445,6 @@ func New(opts *RouterOpts) http.Handler {
 					r.Post("/{id}/rechazar", opts.ReservaHandlers.ConfirmarORechazar)
 				})
 
-				r.With(cronSecretMiddleware(opts.CronSecret)).Post("/cron/auto-confirmar", opts.ReservaHandlers.AutoConfirmarExpiradas)
 				r.With(cronSecretMiddleware(opts.CronSecret)).Post("/cron/expirar-pendientes", opts.ReservaHandlers.ExpirarPendientes)
 			})
 		}

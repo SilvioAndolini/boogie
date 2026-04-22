@@ -337,7 +337,6 @@ type PropiedadInfo struct {
 	Capacidad      int
 	EstanciaMinima int
 	EstanciaMaxima int
-	ModoReserva    string
 }
 
 func (r *ReservaRepo) GetPropiedadForReserva(ctx context.Context, propiedadID string) (*PropiedadInfo, error) {
@@ -347,12 +346,11 @@ func (r *ReservaRepo) GetPropiedadForReserva(ctx context.Context, propiedadID st
 	err := r.pool.QueryRow(ctx, `
 		SELECT id, titulo, precio_por_noche, moneda, propietario_id, estado_publicacion,
 		       COALESCE(capacidad_maxima, 1),
-		       COALESCE(estancia_minima, 1), COALESCE(estancia_maxima, 365),
-		       COALESCE(modo_reserva, 'MANUAL')
+		       COALESCE(estancia_minima, 1), COALESCE(estancia_maxima, 365)
 		FROM propiedades WHERE id = $1
 	`, propiedadID).Scan(
 		&p.ID, &p.Titulo, &p.PrecioPorNoche, &p.Moneda, &p.PropietarioID, &p.Estado,
-		&p.Capacidad, &estanciaMin, &estanciaMax, &p.ModoReserva,
+		&p.Capacidad, &estanciaMin, &estanciaMax,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("get propiedad for reserva: %w", err)
@@ -421,32 +419,6 @@ func (r *ReservaRepo) RegistrarPenalizacion(ctx context.Context, anfitrionID str
 		VALUES ($1, $2, $3, $4, NOW(), false)
 	`, id, anfitrionID, porcentaje, descripcion)
 	return err
-}
-
-func (r *ReservaRepo) GetReservasExpiradas(ctx context.Context, ventana time.Duration) ([]string, error) {
-	rows, err := r.pool.Query(ctx, `
-		SELECT id FROM reservas
-		WHERE estado = 'PENDIENTE_CONFIRMACION'
-		  AND fecha_confirmacion IS NOT NULL
-		  AND fecha_confirmacion + $1 < NOW()
-	`, ventana)
-	if err != nil {
-		return nil, fmt.Errorf("get expiradas: %w", err)
-	}
-	defer rows.Close()
-
-	var ids []string
-	for rows.Next() {
-		var id string
-		if err := rows.Scan(&id); err != nil {
-			return nil, err
-		}
-		ids = append(ids, id)
-	}
-	if ids == nil {
-		ids = []string{}
-	}
-	return ids, nil
 }
 
 func (r *ReservaRepo) CancelarHuesped(ctx context.Context, reservaID, _ string) error {
@@ -635,52 +607,6 @@ type NuevoPago struct {
 	BancoEmisor    *string
 	TelefonoEmisor *string
 	Notas          *string
-}
-
-func (r *ReservaRepo) GetModoReservaByReservaID(ctx context.Context, reservaID string) (string, error) {
-	var modo string
-	err := r.pool.QueryRow(ctx, `
-		SELECT COALESCE(p.modo_reserva, 'MANUAL')
-		FROM reservas r
-		JOIN propiedades p ON p.id = r.propiedad_id
-		WHERE r.id = $1
-	`, reservaID).Scan(&modo)
-	if err != nil {
-		return "MANUAL", fmt.Errorf("get modo reserva: %w", err)
-	}
-	return modo, nil
-}
-
-type PropiedadModoReserva struct {
-	ID          string  `json:"id"`
-	Titulo      string  `json:"titulo"`
-	ModoReserva string  `json:"modo_reserva"`
-	ImagenURL   *string `json:"imagen_url"`
-}
-
-func (r *ReservaRepo) ListPropiedadesModoReserva(ctx context.Context, propietarioID string) ([]PropiedadModoReserva, error) {
-	rows, err := r.pool.Query(ctx, `
-		SELECT p.id, p.titulo, COALESCE(p.modo_reserva, 'MANUAL'),
-		       ip.url
-		FROM propiedades p
-		LEFT JOIN LATERAL (SELECT url FROM imagenes_propiedad WHERE propiedad_id = p.id AND es_principal = true LIMIT 1) ip ON true
-		WHERE p.propietario_id = $1 AND p.estado_publicacion = 'PUBLICADA'
-		ORDER BY p.titulo
-	`, propietarioID)
-	if err != nil {
-		return nil, fmt.Errorf("list propiedades modo reserva: %w", err)
-	}
-	defer rows.Close()
-
-	var results []PropiedadModoReserva
-	for rows.Next() {
-		var item PropiedadModoReserva
-		if err := rows.Scan(&item.ID, &item.Titulo, &item.ModoReserva, &item.ImagenURL); err != nil {
-			return nil, fmt.Errorf("scan propiedad modo reserva: %w", err)
-		}
-		results = append(results, item)
-	}
-	return results, nil
 }
 
 func (r *ReservaRepo) CrearWithDB(ctx context.Context, db DBTX, prop *PropiedadInfo, huespedID string, fechaEntrada, fechaSalida time.Time, cantidadHuespedes int, notasHuesped *string, comisionH, comisionA float64) (*models.Reserva, error) {
@@ -906,20 +832,6 @@ func (r *ReservaRepo) ExistsSolapamientoWithDB(ctx context.Context, db DBTX, pro
 		return false, fmt.Errorf("check solapamiento bloqueadas (tx): %w", err)
 	}
 	return exists, nil
-}
-
-func (r *ReservaRepo) UpdateModoReserva(ctx context.Context, propiedadID, propietarioID, modo string) error {
-	tag, err := r.pool.Exec(ctx, `
-		UPDATE propiedades SET modo_reserva = $1::text
-		WHERE id = $2 AND propietario_id = $3
-	`, modo, propiedadID, propietarioID)
-	if err != nil {
-		return fmt.Errorf("update modo reserva: %w", err)
-	}
-	if tag.RowsAffected() == 0 {
-		return bizerrors.PropiedadNoPertenece()
-	}
-	return nil
 }
 
 func (r *ReservaRepo) ExpirarPendientesWithDB(ctx context.Context, db DBTX) (int, error) {

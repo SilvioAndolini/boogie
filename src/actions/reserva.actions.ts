@@ -3,7 +3,7 @@
 import * as Sentry from '@sentry/nextjs'
 
 import { revalidatePath } from 'next/cache'
-import { goGet, goPost, goPut, GoAPIError } from '@/lib/go-api-client'
+import { goGet, goPost, GoAPIError } from '@/lib/go-api-client'
 import type { PoliticaCancelacion, MetodoPagoEnum, EstadoPago, Moneda, EstadoReserva } from '@/types'
 import type { ResultadoAccion, ReservaConPropiedad } from '@/types/reserva'
 
@@ -300,46 +300,5 @@ export async function cancelarReservaAction(formData: FormData) {
   }
   if (propiedadId) {
     revalidatePath(`/propiedades/${propiedadId}`)
-  }
-}
-
-export interface PropiedadModoReserva {
-  id: string
-  titulo: string
-  modoReserva: 'MANUAL' | 'AUTOMATICO'
-  imagenUrl: string | null
-}
-
-export async function getModosReserva(): Promise<PropiedadModoReserva[]> {
-  try {
-    const raw = await goGet<Record<string, unknown>[]>('/api/v1/reservas/modos-reserva')
-    if (!Array.isArray(raw)) return []
-    return raw.map((r) => ({
-      id: r.id as string,
-      titulo: r.titulo as string,
-      modoReserva: (r.modo_reserva || 'MANUAL') as 'MANUAL' | 'AUTOMATICO',
-      imagenUrl: (r.imagen_url ?? null) as string | null,
-    }))
-  } catch (err) {
-      Sentry.captureException(err)
-    console.error('[getModosReserva] Error:', err)
-    return []
-  }
-}
-
-export async function updateModoReserva(
-  propiedadId: string,
-  modo: 'MANUAL' | 'AUTOMATICO'
-): Promise<ResultadoAccion> {
-  try {
-    await goPut('/api/v1/reservas/modos-reserva', { propiedadId, modo })
-    revalidatePath('/dashboard/reservas-recibidas')
-    return { exito: true }
-  } catch (err) {
-      Sentry.captureException(err)
-    if (err instanceof GoAPIError) {
-      return { exito: false, error: { codigo: err.code || 'ERR-020', mensaje: err.message } }
-    }
-    return { exito: false, error: { codigo: 'ERR-020', mensaje: 'Error al actualizar modo de reserva' } }
   }
 }

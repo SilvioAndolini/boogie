@@ -139,11 +139,6 @@ type StoreItemsResponse struct {
 	Mensaje string `json:"mensaje"`
 }
 
-type UpdateModoReservaResponse struct {
-	Ok      bool   `json:"ok"`
-	Mensaje string `json:"mensaje"`
-}
-
 type AdminResenasResponse struct {
 	Data         interface{}       `json:"data"`
 	Total        int               `json:"total"`

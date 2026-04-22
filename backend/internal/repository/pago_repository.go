@@ -113,14 +113,6 @@ func (r *PagoRepo) ConfirmarReserva(ctx context.Context, reservaID string) error
 	return err
 }
 
-func (r *PagoRepo) SetReservaPendienteConfirm(ctx context.Context, reservaID string) error {
-	_, err := r.pool.Exec(ctx, `
-		UPDATE reservas SET estado = 'PENDIENTE_CONFIRMACION', fecha_confirmacion = NOW()
-		WHERE id = $1 AND estado IN ('PENDIENTE_PAGO','PENDIENTE')
-	`, reservaID)
-	return err
-}
-
 func (r *PagoRepo) InsertPagoSimple(ctx context.Context, reservaID, usuarioID string, monto float64, moneda enums.Moneda, metodo enums.MetodoPagoEnum, referencia string) (string, error) {
 	id := idgen.New()
 	_, err := r.pool.Exec(ctx, `
@@ -287,14 +279,6 @@ func (r *PagoRepo) GetReservaOwnerForPagoWithDB(ctx context.Context, db DBTX, pa
 func (r *PagoRepo) ConfirmarReservaWithDB(ctx context.Context, db DBTX, reservaID string) error {
 	_, err := db.Exec(ctx, `
 		UPDATE reservas SET estado = 'CONFIRMADA', fecha_confirmacion = NOW()
-		WHERE id = $1 AND estado IN ('PENDIENTE_PAGO','PENDIENTE')
-	`, reservaID)
-	return err
-}
-
-func (r *PagoRepo) SetReservaPendienteConfirmWithDB(ctx context.Context, db DBTX, reservaID string) error {
-	_, err := db.Exec(ctx, `
-		UPDATE reservas SET estado = 'PENDIENTE_CONFIRMACION', fecha_confirmacion = NOW()
 		WHERE id = $1 AND estado IN ('PENDIENTE_PAGO','PENDIENTE')
 	`, reservaID)
 	return err

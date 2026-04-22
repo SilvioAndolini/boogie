@@ -1,11 +1,8 @@
-import { getReservasRecibidas, getModosReserva } from '@/actions/reserva.actions'
+import { getReservasRecibidas } from '@/actions/reserva.actions'
 import { ReservasRecibidasClient } from './reservas-recibidas-client'
 
 export default async function ReservasRecibidasPage() {
-  const [reservas, propiedades] = await Promise.all([
-    getReservasRecibidas(),
-    getModosReserva(),
-  ])
+  const reservas = await getReservasRecibidas()
 
-  return <ReservasRecibidasClient reservas={reservas} propiedades={propiedades} />
+  return <ReservasRecibidasClient reservas={reservas} />
 }

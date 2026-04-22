@@ -18,7 +18,6 @@ type PagoRepository interface {
 	GetReservaOwnerForPago(ctx context.Context, pagoID string) (reservaID, propietarioID, estadoReserva string, err error)
 	Verificar(ctx context.Context, pagoID, verificadoPor, estado string, notas *string) error
 	ConfirmarReserva(ctx context.Context, reservaID string) error
-	SetReservaPendienteConfirm(ctx context.Context, reservaID string) error
 	ReservaBelongsToUser(ctx context.Context, reservaID, userID string) (bool, error)
 	InsertPagoSimple(ctx context.Context, reservaID, usuarioID string, monto float64, moneda enums.Moneda, metodo enums.MetodoPagoEnum, referencia string) (string, error)
 	InsertPagoConComprobante(ctx context.Context, reservaID, usuarioID string, monto float64, moneda enums.Moneda, metodo enums.MetodoPagoEnum, referencia string, comprobanteURL *string, bancoEmisor, telefonoEmisor *string) (string, error)
@@ -29,17 +28,15 @@ type PagoRepository interface {
 	VerificarWithDB(ctx context.Context, db repository.DBTX, pagoID, verificadoPor, estado string, notas *string) error
 	GetReservaOwnerForPagoWithDB(ctx context.Context, db repository.DBTX, pagoID string) (reservaID, propietarioID, estadoReserva string, err error)
 	ConfirmarReservaWithDB(ctx context.Context, db repository.DBTX, reservaID string) error
-	SetReservaPendienteConfirmWithDB(ctx context.Context, db repository.DBTX, reservaID string) error
 	Pool() *pgxpool.Pool
 }
 
 type PagoService struct {
-	pagoRepo    PagoRepository
-	reservaRepo ReservaModoRepository
+	pagoRepo PagoRepository
 }
 
-func NewPagoService(pagoRepo PagoRepository, reservaRepo ReservaModoRepository) *PagoService {
-	return &PagoService{pagoRepo: pagoRepo, reservaRepo: reservaRepo}
+func NewPagoService(pagoRepo PagoRepository) *PagoService {
+	return &PagoService{pagoRepo: pagoRepo}
 }
 
 func (s *PagoService) GetMisPagos(ctx context.Context, userID string) ([]repository.PagoConReserva, error) {
@@ -79,20 +76,8 @@ func (s *PagoService) Verificar(ctx context.Context, pagoID, userID string, apro
 		}
 
 		if aprobado && (estadoReserva == "PENDIENTE" || estadoReserva == "PENDIENTE_PAGO") {
-			modoReserva := "MANUAL"
-			if s.reservaRepo != nil {
-				if m, mErr := s.reservaRepo.GetModoReservaByReservaID(ctx, reservaID); mErr == nil {
-					modoReserva = m
-				}
-			}
-			if modoReserva == "AUTOMATICO" {
-				if err := s.pagoRepo.ConfirmarReservaWithDB(ctx, tx, reservaID); err != nil {
-					return fmt.Errorf("pago verificado pero error al confirmar reserva automaticamente: %w", err)
-				}
-			} else {
-				if err := s.pagoRepo.SetReservaPendienteConfirmWithDB(ctx, tx, reservaID); err != nil {
-					return fmt.Errorf("pago verificado pero error al actualizar reserva: %w", err)
-				}
+			if err := s.pagoRepo.ConfirmarReservaWithDB(ctx, tx, reservaID); err != nil {
+				return fmt.Errorf("pago verificado pero error al confirmar reserva: %w", err)
 			}
 		}
 

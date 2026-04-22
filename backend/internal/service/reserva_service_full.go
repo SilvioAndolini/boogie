@@ -404,25 +404,6 @@ func (s *ReservaService) ConfirmarORechazar(ctx context.Context, reservaID, user
 	return nil
 }
 
-func (s *ReservaService) AutoConfirmarExpiradas(ctx context.Context) (int, error) {
-	ventana := 1 * time.Hour
-	ids, err := s.repo.GetReservasExpiradas(ctx, ventana)
-	if err != nil {
-		return 0, fmt.Errorf("auto-confirmar expiradas: %w", err)
-	}
-
-	confirmadas := 0
-	for _, id := range ids {
-		if err := s.repo.Confirmar(ctx, id); err != nil {
-			slog.Error("[reserva-service] auto-confirmar", "error", err, "reservaID", id)
-			continue
-		}
-		confirmadas++
-		slog.Info("[reserva-service] reserva auto-confirmada por expiracion", "reservaID", id)
-	}
-	return confirmadas, nil
-}
-
 func (s *ReservaService) Cancelar(ctx context.Context, input *CancelarInput) (*ReembolsoCalculado, error) {
 	detalle, err := s.repo.GetByID(ctx, input.ReservaID)
 	if err != nil {
@@ -557,14 +538,6 @@ func (s *ReservaService) RegistrarPago(ctx context.Context, pago *repository.Nue
 func (s *ReservaService) ListByPropiedad(ctx context.Context, propiedadID string, page, perPage int) ([]repository.ReservaConHuesped, int, error) {
 	offset := (page - 1) * perPage
 	return s.repo.ListByPropiedadID(ctx, propiedadID, perPage, offset)
-}
-
-func (s *ReservaService) ListPropiedadesModoReserva(ctx context.Context, propietarioID string) ([]repository.PropiedadModoReserva, error) {
-	return s.repo.ListPropiedadesModoReserva(ctx, propietarioID)
-}
-
-func (s *ReservaService) UpdateModoReserva(ctx context.Context, propiedadID, propietarioID, modo string) error {
-	return s.repo.UpdateModoReserva(ctx, propiedadID, propietarioID, modo)
 }
 
 func (s *ReservaService) ExpirarPendientes(ctx context.Context) (int, error) {

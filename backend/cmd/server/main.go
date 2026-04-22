@@ -148,7 +148,7 @@ func main() {
 
 		pagoRepo := repository.NewPagoRepo(db)
 
-		pagoSvc := service.NewPagoService(pagoRepo, reservaRepo)
+		pagoSvc := service.NewPagoService(pagoRepo)
 		walletSvc := service.NewWalletService(pagoRepo)
 		paymentDataSvc := service.NewPaymentDataService()
 		storeItemRepo := repository.NewStoreItemRepo(db)
@@ -252,7 +252,7 @@ func main() {
 		}
 
 		adminRepo := admin.NewAdminRepo(db)
-		adminSvc := service.NewAdminService(adminRepo, reservaRepo)
+		adminSvc := service.NewAdminService(adminRepo)
 		adminH := handler.NewAdminHandler(adminSvc, tiendaSvc)
 		adminH.WithStorage(storageSvc, cfg.SupabaseURL, cfg.SupabaseSecretKey)
 		adminH.WithAuthClient(authClient)
@@ -365,21 +365,18 @@ func main() {
 		reservaH := handler.NewReservaHandler(reservaSvc, reservaDisponSvc)
 
 		reservaHandlers = &router.ReservaHandlers{
-			Crear:                  reservaH.Crear,
-			CrearConPago:           reservaH.CrearConPago,
-			GetByID:                reservaH.GetByID,
-			MisReservas:            reservaH.MisReservas,
-			ReservasRecibidas:      reservaH.ReservasRecibidas,
-			ConfirmarORechazar:     reservaH.ConfirmarORechazar,
-			Cancelar:               reservaH.Cancelar,
-			Disponibilidad:         reservaH.Disponibilidad,
-			FechasOcupadas:         reservaH.FechasOcupadas,
-			CalcularReembolso:      reservaH.CalcularReembolso,
-			AutoConfirmarExpiradas: reservaH.AutoConfirmarExpiradas,
-			GetModosReserva:        reservaH.GetModosReserva,
-			UpdateModoReserva:      reservaH.UpdateModoReserva,
-			EliminarPendientePago:  reservaH.EliminarPendientePago,
-			ExpirarPendientes:      reservaH.ExpirarPendientes,
+			Crear:                reservaH.Crear,
+			CrearConPago:         reservaH.CrearConPago,
+			GetByID:              reservaH.GetByID,
+			MisReservas:          reservaH.MisReservas,
+			ReservasRecibidas:    reservaH.ReservasRecibidas,
+			ConfirmarORechazar:   reservaH.ConfirmarORechazar,
+			Cancelar:             reservaH.Cancelar,
+			Disponibilidad:       reservaH.Disponibilidad,
+			FechasOcupadas:       reservaH.FechasOcupadas,
+			CalcularReembolso:    reservaH.CalcularReembolso,
+			EliminarPendientePago: reservaH.EliminarPendientePago,
+			ExpirarPendientes:    reservaH.ExpirarPendientes,
 		}
 	}
 
