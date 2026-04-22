@@ -130,6 +130,7 @@ func (r *PagoRepo) InsertPagoSimple(ctx context.Context, reservaID, usuarioID st
 	if err != nil {
 		return "", fmt.Errorf("insert pago simple: %w", err)
 	}
+	_, _ = r.pool.Exec(ctx, `UPDATE reservas SET estado = 'PENDIENTE' WHERE id = $1 AND estado = 'PENDIENTE_PAGO'`, reservaID)
 	return id, nil
 }
 
@@ -143,6 +144,7 @@ func (r *PagoRepo) InsertPagoConComprobante(ctx context.Context, reservaID, usua
 	if err != nil {
 		return "", fmt.Errorf("insert pago con comprobante: %w", err)
 	}
+	_, _ = r.pool.Exec(ctx, `UPDATE reservas SET estado = 'PENDIENTE' WHERE id = $1 AND estado = 'PENDIENTE_PAGO'`, reservaID)
 	return id, nil
 }
 

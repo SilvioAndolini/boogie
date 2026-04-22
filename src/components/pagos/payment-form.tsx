@@ -22,7 +22,8 @@ interface PaymentFormProps {
   fechaSalida?: string
   cantidadHuespedes?: number
   onCryptoReservaCreated?: (reservaId: string) => void
-  onSubmit: (data: FormData) => void
+  onSubmit: (data: FormData) => Promise<boolean | undefined>
+  onPagoExitoso?: () => void
 }
 
 const BANCOS_VENEZUELA = [
@@ -42,7 +43,7 @@ function formatUSD(n: number) {
 
 export function PaymentForm({
   metodo, monto, moneda, reservaId, propiedadId, fechaEntrada, fechaSalida, cantidadHuespedes,
-  onCryptoReservaCreated, onSubmit,
+  onCryptoReservaCreated, onSubmit, onPagoExitoso,
 }: PaymentFormProps) {
   const [mostrarFormulario, setMostrarFormulario] = useState(false)
   const [enviando, setEnviando] = useState(false)
@@ -93,9 +94,12 @@ export function PaymentForm({
     formData.append('bancoEmisor', bancoEmisor)
     formData.append('telefonoEmisor', telefonoEmisor)
     if (comprobante) formData.append('comprobante', comprobante)
-    onSubmit(formData)
-    setPagoEnviado(true)
+    const result = await onSubmit(formData)
     setEnviando(false)
+    if (result !== false) {
+      setPagoEnviado(true)
+      onPagoExitoso?.()
+    }
   }
 
   const datosReceptor = datosPago ? datosPago[metodo as keyof PaymentData] : null
@@ -110,6 +114,7 @@ export function PaymentForm({
         fechaSalida={fechaSalida}
         cantidadHuespedes={cantidadHuespedes}
         onPagoRegistrado={onCryptoReservaCreated || (() => {})}
+        onTTLCancel={onPagoExitoso}
       />
     )
   }
@@ -134,7 +139,10 @@ export function PaymentForm({
         const formData = new FormData()
         formData.append('metodoPago', 'WALLET')
         formData.append('referencia', `WALLET-${Date.now()}`)
-        onSubmit(formData)
+        const result = await onSubmit(formData)
+        if (result !== false) {
+          onPagoExitoso?.()
+        }
       } catch {
         setWalletError('Error al procesar el pago con wallet')
       }
@@ -232,26 +240,7 @@ export function PaymentForm({
   }
 
   if (esPagoMovil && pagoEnviado) {
-    return (
-      <div className="flex flex-col items-center gap-4 py-8">
-        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#D8F3DC]">
-          <Clock className="h-10 w-10 text-[#1B4332]" />
-        </div>
-        <div className="text-center">
-          <p className="text-lg font-bold text-[#1B4332]">Pago registrado</p>
-          <p className="text-sm text-[#6B6560] mt-1">
-            Tu pago está en verificación. Las verificaciones pueden tardar hasta 30 minutos.
-          </p>
-          <p className="text-xs text-[#9E9892] mt-2">Te notificaremos por correo una vez verificado.</p>
-        </div>
-        <button
-          onClick={() => window.location.href = '/dashboard/mis-reservas'}
-          className="mt-2 h-11 rounded-xl bg-[#1B4332] px-8 text-sm font-semibold text-white hover:bg-[#2D6A4F]"
-        >
-          Ver mis reservas
-        </button>
-      </div>
-    )
+    return null
   }
 
   return (

@@ -98,7 +98,7 @@ export interface ReservaConPropiedad {
 
 export const ESTADO_RESERVA_LABELS: Record<EstadoReserva, string> = {
   PENDIENTE_PAGO: 'Esperando Pago',
-  PENDIENTE: 'Pendiente',
+  PENDIENTE: 'Verificación de pago pendiente',
   PENDIENTE_CONFIRMACION: 'Pendiente por Confirmar',
   CONFIRMADA: 'Confirmada',
   EN_CURSO: 'En curso',

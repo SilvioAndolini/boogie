@@ -17,6 +17,7 @@ interface CryptoPaymentProps {
   fechaSalida?: string
   cantidadHuespedes?: number
   onPagoRegistrado: (reservaId: string) => void
+  onTTLCancel?: () => void
 }
 
 type CryptoStatus = 'generating' | 'waiting' | 'confirming' | 'confirmed' | 'failed' | 'manual'
@@ -30,7 +31,7 @@ function formatUSD(n: number) {
 }
 
 export function CryptoPayment({
-  reservaId, monto, propiedadId, fechaEntrada, fechaSalida, cantidadHuespedes, onPagoRegistrado,
+  reservaId, monto, propiedadId, fechaEntrada, fechaSalida, cantidadHuespedes, onPagoRegistrado, onTTLCancel,
 }: CryptoPaymentProps) {
   const [cryptoAddress, setCryptoAddress] = useState<string | null>(null)
   const [createdReservaId, setCreatedReservaId] = useState<string | null>(null)
@@ -42,6 +43,14 @@ export function CryptoPayment({
   const [verificationAttempts, setVerificationAttempts] = useState(0)
   const onPagoRegistradoRef = useRef(onPagoRegistrado)
   onPagoRegistradoRef.current = onPagoRegistrado
+  const onTTLCancelRef = useRef(onTTLCancel)
+  onTTLCancelRef.current = onTTLCancel
+
+  useEffect(() => {
+    if (status === 'confirming' || status === 'confirmed' || status === 'manual') {
+      onTTLCancelRef.current?.()
+    }
+  }, [status])
 
   useEffect(() => {
     let cancelled = false

@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, Shield, Loader2,
   MapPin, Receipt, Check, ArrowRight, Clock, DollarSign,
-  Sparkles, Trophy, CalendarDays, Tag, XCircle,
+  Sparkles, Trophy, CalendarDays, Tag, XCircle, Hourglass,
 } from 'lucide-react'
 import { PaymentMethodSelector } from '@/components/pagos/payment-method-selector'
 import { PaymentForm } from '@/components/pagos/payment-form'
@@ -70,6 +70,7 @@ function ReservarContent() {
   const [cuponCodigo, setCuponCodigo] = useState<string | null>(null)
   const [descuentoCupon, setDescuentoCupon] = useState(0)
   const [ttlExpired, setTtlExpired] = useState(false)
+  const [pagoExitoso, setPagoExitoso] = useState(false)
 
   const propiedadId = params.id as string
   const fecha = searchParams.get('fecha') || ''
@@ -176,8 +177,8 @@ function ReservarContent() {
     }
   }
 
-  const handlePaymentSubmit = async (paymentFormData: FormData) => {
-    if (!propiedad || !metodoPago || !reservaCreadaId) return
+  const handlePaymentSubmit = async (paymentFormData: FormData): Promise<boolean | undefined> => {
+    if (!propiedad || !metodoPago || !reservaCreadaId) return false
 
     const referencia = paymentFormData.get('referencia') as string
     const bancoEmisor = paymentFormData.get('bancoEmisor') as string
@@ -209,11 +210,13 @@ function ReservarContent() {
 
       if (result.error) {
         toast.error(result.error)
-        return
+        return false
       }
+      return true
     } catch (err) {
       console.error('[CanchaReservarPage] Payment error:', err)
       toast.error(err instanceof Error ? err.message : 'Error al registrar el pago')
+      return false
     }
   }
 
@@ -225,6 +228,11 @@ function ReservarContent() {
     }
     setTtlExpired(true)
   }, [reservaCreadaId, propiedadId])
+
+  const handlePagoExitoso = useCallback(() => {
+    setFechaCreacionReserva(null)
+    setPagoExitoso(true)
+  }, [])
 
   const fechaExpiracion = fechaCreacionReserva
     ? new Date(fechaCreacionReserva.getTime() + 15 * 60 * 1000)
@@ -240,6 +248,7 @@ function ReservarContent() {
 
   const imagenPrincipal = propiedad.imagenes?.find((i) => i.es_principal)?.url || propiedad.imagenes?.[0]?.url
   const pasoIndex = PASOS.findIndex((p) => p.id === paso)
+  const showStepper = !pagoExitoso
 
   const getBackAction = () => {
     if (paso === 'resumen') return () => setPaso('store')
@@ -255,6 +264,7 @@ function ReservarContent() {
       )}
 
       {/* ====== BACK ====== */}
+      {!pagoExitoso && (
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-6">
         <button
           onClick={getBackAction()}
@@ -264,8 +274,10 @@ function ReservarContent() {
           {paso === 'resumen' ? 'Volver al store' : paso === 'pago' && !reservaCreadaId ? 'Volver al resumen' : 'Volver'}
         </button>
       </motion.div>
+      )}
 
       {/* ====== STEPPER ====== */}
+      {showStepper && (
       <div className="mb-8 flex items-center justify-center gap-0">
         {PASOS.map((p, i) => {
           const active = paso === p.id
@@ -291,8 +303,32 @@ function ReservarContent() {
           )
         })}
       </div>
+      )}
 
       {/* ====== STEPS ====== */}
+      {pagoExitoso ? (
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center gap-5 py-10">
+          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.15, type: 'spring', stiffness: 200 }}>
+            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[#D8F3DC]">
+              <Hourglass className="h-12 w-12 text-[#1B4332]" />
+            </div>
+          </motion.div>
+          <div className="text-center max-w-sm">
+            <h2 className="text-xl font-bold text-[#1A1A1A]">Pago en proceso de verificación</h2>
+            <p className="text-sm text-[#6B6560] mt-2 leading-relaxed">
+              Hemos recibido tu comprobante de pago. Nuestro equipo lo verificará en un plazo de hasta 30 minutos.
+            </p>
+            <p className="text-xs text-[#9E9892] mt-3">Te notificaremos por correo una vez verificado.</p>
+          </div>
+          <button
+            onClick={() => router.push('/dashboard/mis-reservas')}
+            className="mt-2 flex h-12 items-center justify-center gap-2 rounded-xl bg-[#1B4332] px-8 text-sm font-semibold text-white transition-all hover:bg-[#2D6A4F] active:scale-[0.98]"
+          >
+            Ver mis reservas
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </motion.div>
+      ) : (
       <AnimatePresence mode="wait">
         {paso === 'store' && (
           <motion.div key="store" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }}>
@@ -492,6 +528,7 @@ function ReservarContent() {
                 cantidadHuespedes={1}
                 onCryptoReservaCreated={(id) => setReservaCreadaId(id)}
                 onSubmit={handlePaymentSubmit}
+                onPagoExitoso={handlePagoExitoso}
               />
             )}
 
@@ -506,6 +543,7 @@ function ReservarContent() {
           </motion.div>
         )}
       </AnimatePresence>
+      )}
     </div>
   )
 }
